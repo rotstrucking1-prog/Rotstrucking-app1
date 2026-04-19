@@ -1,0 +1,14 @@
+{
+  "name": "ROTS Trucking Command Center",
+  "short_name": "ROTS HQ",
+  "description": "AI Dispatch & Financial Management",
+  "start_url": "/",
+  "display": "standalone",
+  "scope": "/",
+  "background_color": "#0a0e27",
+  "theme_color": "#0a0e27",
+  "orientation": "portrait-primary",
+  "icons": [
+    {"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230a0e27'/><text x='96' y='130' font-size='160' text-anchor='middle'>🚛</text></svg>", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}

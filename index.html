@@ -966,7 +966,7 @@
       document.getElementById('ytd-income').textContent = '$1.04M';
       document.getElementById('ytd-profit').textContent = '$320K';
       document.getElementById('fuel-cost').textContent = '$47.1K';
-      document.getElementById('fuel-ppg').textContent = '$3.47';
+      document.getElementById('fuel-ppg').textContent = '$4.65'; // Mudflap actual paid avg Apr 2026 (3 fills: $4.43–$4.89)
 
       // === BRAD'S EXACT RPM FORMULA ===
       // (CPM × monthly miles) + fixed monthly bills = total you need
@@ -977,7 +977,7 @@
 
       // ── FUEL ──
       const lastRecordedFuelPrice = 3.339; // Last logged in Fuel sheet: Sep 19, 2025 - Holladay, TN
-      const currentFuelPrice = 4.63;       // REAL: Mudflap actual paid avg (Apr 2026: $4.43–$4.89/gal)
+      const currentFuelPrice = 4.65;       // REAL: Mudflap weighted avg Apr 2026 (3 fills: $4.43–$4.89/gal)
       const mpg = 5.5;                     // truck MPG
       const fuelCPM = currentFuelPrice / mpg; // $/mile driven
 
@@ -1035,7 +1035,7 @@
       
       // Business rolling costs — fuel calculated from real price/MPG × actual monthly miles
       const lastRecordedFuelPriceC = 3.339; // Last in Fuel sheet: Sep 19 2025 Holladay TN
-      const currentFuelPriceC = 4.63;       // REAL: Mudflap actual paid avg (Apr 2026: $4.43–$4.89/gal)
+      const currentFuelPriceC = 4.65;       // REAL: Mudflap weighted avg Apr 2026 (3 fills: $4.43–$4.89/gal)
       const truckMPG = 5.5;
       const avgMonthlyMiles = 5872;  // actual Omnitracs avg (Jan–Apr 2026)
       const fuelCost = (currentFuelPriceC / truckMPG) * avgMonthlyMiles; // ~$4,940 (real Mudflap price)

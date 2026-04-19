@@ -692,10 +692,11 @@
           <div id="rollingCosts" style="background: rgba(0, 255, 136, 0.05); border-left: 3px solid #00ff88; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
             <h3 style="color: #00ff88; font-size: 12px; margin-bottom: 8px;">🚛 TRUCK ROLLING (On the Road)</h3>
             <div style="font-size: 18px; color: #ffb300; font-weight: bold; margin-bottom: 8px;" id="rollingTotal">$0.00</div>
-            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel: <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
-            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🛣️ Tolls: <span id="tollsCost" style="color: #00ff88;">$0.00</span></div>
-            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🔧 Maintenance: <span id="maintCost" style="color: #00ff88;">$0.00</span></div>
-            <div style="font-size: 10px; color: #aaa;">⚖️ PrePass (weigh stations): <span id="prepassCost" style="color: #00ff88;">$0.00</span> <span style="color:#555; font-size:9px;">avg/mo</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel (<span id="fuelPriceLabel">$5.53</span>/gal ÷ 5.5 MPG × <span id="monthlyMilesLabel">5,872</span> mi): <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 9px; color: #555; margin-bottom: 6px; margin-left: 12px;">Last logged in sheet: $3.339/gal (Sep 2025) — log new fuel stop to update</div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🛣️ Tolls (avg from bank): <span id="tollsCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🔧 Maintenance (~$170/wk × 4 weeks): <span id="maintCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa;">⚖️ PrePass (weigh stations, avg/mo): <span id="prepassCost" style="color: #00ff88;">$0.00</span></div>
           </div>
           
           <div id="sittingCosts" style="background: rgba(255, 136, 0, 0.05); border-left: 3px solid #ff8800; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
@@ -941,25 +942,36 @@
       // (CPM × monthly miles) + fixed monthly bills = total you need
       // total needed ÷ monthly miles = RPM
       //
-      // CPM = variable truck running costs per mile (fuel + maintenance + tolls)
-      // Fixed bills = everything you owe regardless of whether the truck moves
+      // CPM = ALL rolling truck costs per mile (fuel + maintenance + tolls + prepass)
+      // Fixed bills = everything owed regardless of whether truck moves
 
-      const fuelPricePerGal = 5.53;   // Brad's current price
-      const mpg = 5.5;                // truck MPG
-      const fuelCPM = fuelPricePerGal / mpg; // $1.005/mile — fuel only
+      // ── FUEL ──
+      const lastRecordedFuelPrice = 3.339; // Last logged in Fuel sheet: Sep 19, 2025 - Holladay, TN
+      const currentFuelPrice = 5.53;       // Brad's current market price (update when new fuel logged)
+      const mpg = 5.5;                     // truck MPG
+      const fuelCPM = currentFuelPrice / mpg; // $/mile driven
 
-      // Other variable truck running costs per mile (from real bank data avg 2025-2026)
-      // Maintenance avg: ~$618/mo, PrePass avg: ~$72/mo, tolls: ~$450/mo
-      // We'll spread over miles Brad actually runs
-      const weeklyMilesTarget = 3000;        // Brad's stated typical weekly miles
-      const monthlyMiles = weeklyMilesTarget * 4; // 12,000/month
-      const variableMaintTolls = (618 + 72 + 450) / monthlyMiles; // $0.095/mile at 12k miles
+      // ── ACTUAL MONTHLY MILES (from Omnitracs GPS data Jan–Apr 2026) ──
+      // Jan 5,505 | Feb 3,292 | Mar 4,895 | Apr partial 1,008 → avg full months = 4,564/mo
+      // Using 5,872 (14,683 mi ÷ 2.5 active months) as rolling avg
+      const actualMonthlyMiles = 5872; // real Omnitracs average
 
-      // CPM = fuel + maintenance + tolls (pure variable — goes up/down with miles)
-      const cpm = fuelCPM + variableMaintTolls;
+      // ── ROLLING COSTS/MONTH (from bank data) ──
+      // Maintenance: estimated as weekly avg × 4 weeks
+      const weeklyMaintAvg = 170;            // ~$680/mo ÷ 4 weeks from bank data
+      const monthlyMaint = weeklyMaintAvg * 4;
+      const monthlyTolls = 450;              // tolls avg from bank data
+      const monthlyPrepass = 72;             // PrePass weigh stations avg
+
+      const totalRollingPerMonth = (fuelCPM * actualMonthlyMiles) + monthlyMaint + monthlyTolls + monthlyPrepass;
+
+      // CPM = total rolling costs ÷ actual monthly miles
+      const cpm = totalRollingPerMonth / actualMonthlyMiles;
+
       document.getElementById('cpm').textContent = '$' + cpm.toFixed(2);
       document.getElementById('cpm').title =
-        'Fuel: $' + fuelCPM.toFixed(3) + '/mi  Maintenance+Tolls: $' + variableMaintTolls.toFixed(3) + '/mi';
+        'Fuel $' + fuelCPM.toFixed(3) + '/mi + Maint ($' + weeklyMaintAvg + '/wk×4=$' + monthlyMaint + ') + Tolls $' + monthlyTolls + ' + PrePass $' + monthlyPrepass + ' ÷ ' + actualMonthlyMiles.toLocaleString() + ' mi/mo' +
+        ' | Last recorded fuel: $' + lastRecordedFuelPrice + '/gal (Sep 2025 - log new fuel to update)';
 
       // ── FIXED MONTHLY BILLS (always due, truck moving or not) ──
       const insuranceBill  = 1248.64;  // Great West Casualty — confirmed bank data
@@ -970,19 +982,17 @@
       const fixedMonthlyBills = insuranceBill + loadboardBill + omnitraccBill + personalBills;
 
       // ── BRAD'S FORMULA ──
-      // Truck running cost (rolling) = CPM × miles
-      const truckRunningCost = cpm * monthlyMiles;
-      // Total needed = rolling cost + fixed bills
-      const totalNeeded = truckRunningCost + fixedMonthlyBills;
+      // Rolling cost already = totalRollingPerMonth (real costs at actual miles)
+      // Total needed = rolling + fixed bills
+      const totalNeeded = totalRollingPerMonth + fixedMonthlyBills;
       // RPM break-even = total / miles
-      const rpm = totalNeeded / monthlyMiles;
+      const rpm = totalNeeded / actualMonthlyMiles;
 
       const el = document.getElementById('rpm');
       el.textContent = '$' + rpm.toFixed(2);
       el.title =
-        'Formula: ($' + cpm.toFixed(2) + ' CPM × ' + monthlyMiles.toLocaleString() + ' mi = $' +
-        truckRunningCost.toFixed(0) + ') + $' + fixedMonthlyBills.toFixed(0) +
-        ' fixed bills = $' + totalNeeded.toFixed(0) + ' ÷ ' + monthlyMiles.toLocaleString() + ' mi';
+        'Rolling $' + totalRollingPerMonth.toFixed(0) + ' + Fixed $' + fixedMonthlyBills.toFixed(0) +
+        ' = $' + totalNeeded.toFixed(0) + ' ÷ ' + actualMonthlyMiles.toLocaleString() + ' mi';
     }
     
     // Load monthly costs
@@ -993,13 +1003,16 @@
       // Personal home expenses
       const personalTotal = 2850; // Estimated mortgage, utilities, insurance, etc.
       
-      // Business rolling costs — fuel calculated from real price/MPG × avg monthly miles
-      const fuelPricePerGal = 5.53;  // Brad's current fuel price
+      // Business rolling costs — fuel calculated from real price/MPG × actual monthly miles
+      const lastRecordedFuelPriceC = 3.339; // Last in Fuel sheet: Sep 19 2025 Holladay TN
+      const currentFuelPriceC = 5.53;       // Brad's current market price
       const truckMPG = 5.5;
-      const avgMonthlyMiles = 5872;  // 1,468 mi/wk avg × 4 (from Omnitracs data)
-      const fuelCost = (fuelPricePerGal / truckMPG) * avgMonthlyMiles; // ~$5,901
+      const avgMonthlyMiles = 5872;  // actual Omnitracs avg (Jan–Apr 2026)
+      const fuelCost = (currentFuelPriceC / truckMPG) * avgMonthlyMiles; // ~$5,901
       const tollsCost = 450;
-      const maintCost = 680;
+      // Maintenance: estimated as weekly avg × 4 weeks (from bank data)
+      const weeklyMaintEstimate = 170;       // ~$170/week from bank avg
+      const maintCost = weeklyMaintEstimate * 4; // $680/month
       const prepassCost = 72; // PrePass weigh station bypass — variable usage-based, avg from bank data ($44–$127/mo)
       const rollingTotal = fuelCost + tollsCost + maintCost + prepassCost;
       
@@ -1024,6 +1037,8 @@
       // Update rolling section
       document.getElementById('rollingTotal').textContent = formatMoney(rollingTotal);
       document.getElementById('fuelCost').textContent = formatMoney(fuelCost);
+      document.getElementById('fuelPriceLabel').textContent = '$' + currentFuelPriceC.toFixed(3);
+      document.getElementById('monthlyMilesLabel').textContent = avgMonthlyMiles.toLocaleString();
       document.getElementById('tollsCost').textContent = formatMoney(tollsCost);
       document.getElementById('maintCost').textContent = formatMoney(maintCost);
       document.getElementById('prepassCost').textContent = formatMoney(prepassCost);

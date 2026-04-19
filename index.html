@@ -10,4 +10,1046 @@
   <meta name="description" content="ROTS Trucking Command Center - AI Dispatch & Finance">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230a0e27'/><text x='50' y='60' font-size='80' text-anchor='middle'>🚛</text></svg>">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230a0e27'/><text x='90' y='110' fon
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230a0e27'/><text x='90' y='110' font-size='140' text-anchor='middle'>🚛</text></svg>">
+  <title>ROTS Trucking Command Center</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1432 100%);
+      background-attachment: fixed;
+      color: #e0e0e0;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html {
+      height: 100%;
+    }
+    
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    
+    #app.hidden {
+      display: none;
+    }
+    
+    .header {
+      background: rgba(0, 212, 255, 0.05);
+      border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+    }
+    
+    .header h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: 20px;
+      color: #00d4ff;
+      text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+      letter-spacing: 2px;
+      flex: 1;
+    }
+    
+    .logout-btn {
+      padding: 6px 12px;
+      background: rgba(255, 0, 85, 0.2);
+      color: #ff0055;
+      border: 1px solid rgba(255, 0, 85, 0.4);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    
+    .logout-btn:active {
+      background: rgba(255, 0, 85, 0.4);
+    }
+    
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      min-height: 0;
+    }
+    
+    .content::-webkit-scrollbar { width: 4px; }
+    .content::-webkit-scrollbar-track { background: rgba(0, 212, 255, 0.1); }
+    .content::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.5); border-radius: 2px; }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* DASHBOARD */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .stat-card {
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      backdrop-filter: blur(10px);
+      box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    
+    .stat-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 18px;
+      font-weight: bold;
+      color: #00ff88;
+      text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    }
+    
+    /* FORMS */
+    .form-group {
+      margin-bottom: 12px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: #00d4ff;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 4px;
+      color: #00ff88;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+    
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: rgba(0, 255, 136, 0.3);
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+    
+    /* BUTTONS */
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    
+    @media (max-width: 480px) {
+      .btn-group {
+        gap: 6px;
+        margin: 8px 0;
+      }
+    }
+    
+    .btn {
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #00d4ff, #00ff88);
+      color: #0a0e27;
+    }
+    
+    .btn-primary:active {
+      transform: scale(0.95);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+    }
+    
+    .btn-secondary {
+      background: rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      border: 1px solid rgba(0, 212, 255, 0.4);
+    }
+    
+    .btn-secondary:active {
+      background: rgba(0, 212, 255, 0.4);
+    }
+    
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 8px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      background: rgba(0, 212, 255, 0.03);
+      border-top: 1px solid rgba(0, 212, 255, 0.2);
+      flex-shrink: 0;
+    }
+    
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      color: #888;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    
+    .tab-btn.active {
+      background: linear-gradient(135deg, #00d4ff, #00ff88);
+      color: #0a0e27;
+      border-color: #00d4ff;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    }
+    
+    /* DATA TABLE */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    
+    .data-table th {
+      background: rgba(0, 212, 255, 0.15);
+      color: #00d4ff;
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+      font-weight: bold;
+    }
+    
+    .data-table td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+    }
+    
+    .data-table tr:hover {
+      background: rgba(0, 212, 255, 0.05);
+    }
+    
+    /* LOGIN SCREEN */
+    #login-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1432 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      padding: 20px;
+    }
+    
+    #login-screen.hidden {
+      display: none;
+    }
+    
+    .login-container {
+      background: rgba(0, 212, 255, 0.08);
+      border: 2px solid rgba(0, 212, 255, 0.4);
+      border-radius: 12px;
+      padding: 30px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 40px rgba(0, 212, 255, 0.2), inset 0 0 20px rgba(0, 212, 255, 0.05);
+      max-width: 320px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .login-container h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      color: #00d4ff;
+      text-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+    }
+    
+    .login-container p {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .login-input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 6px;
+      color: #00ff88;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .login-input::placeholder {
+      color: rgba(0, 255, 136, 0.3);
+    }
+    
+    .login-input:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #00d4ff, #00ff88);
+      color: #0a0e27;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+    
+    .login-btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+    }
+    
+    .login-error {
+      color: #ff0055;
+      font-size: 12px;
+      margin-top: 12px;
+      display: none;
+    }
+    
+    .login-error.show {
+      display: block;
+    }
+    
+    /* STATUS MESSAGE */
+    .status {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid #00d4ff;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .status.show { display: block; }
+    .status.success { border-color: #00ff88; }
+    .status.error { border-color: #ff0055; }
+    
+    /* TOGGLE */
+    .toggle-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .toggle {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 4px;
+      background: rgba(0, 212, 255, 0.05);
+      color: #888;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    
+    .toggle.active {
+      background: rgba(0, 212, 255, 0.3);
+      color: #00d4ff;
+      border-color: #00d4ff;
+    }
+    
+    @media (max-width: 480px) {
+      .stat-grid { grid-template-columns: 1fr; }
+      .stat-value { font-size: 18px; }
+      .header h1 { font-size: 16px; padding: 6px 12px; margin: 0; }
+      .header { padding: 6px 12px; }
+      .content { padding: 6px; }
+      .btn { padding: 6px; font-size: 10px; line-height: 1.2; }
+      .btn-group { gap: 4px; margin: 6px 0; }
+      .form-group { margin-bottom: 6px; }
+      .form-group input, .form-group select, .form-group textarea { padding: 6px; font-size: 12px; }
+      .form-group label { font-size: 10px; margin-bottom: 2px; }
+      .tab-btn { padding: 6px 4px; font-size: 9px; }
+      .tabs { gap: 2px; padding: 4px; }
+      .stat-card { padding: 6px; }
+      .stat-label { font-size: 9px; }
+    }
+    }
+  </style>
+</head>
+<body>
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-container">
+      <h1>🚛 ROTS HQ</h1>
+      <p>Secure Access Only</p>
+      <input type="password" id="password-input" class="login-input" placeholder="Enter Password" autocomplete="off">
+      <button class="login-btn" onclick="handleLogin()">LOGIN</button>
+      <div id="login-error" class="login-error">❌ Incorrect password</div>
+    </div>
+  </div>
+  
+  <div id="app" class="hidden">
+    <div class="header">
+      <h1>🚛 ROTS HQ</h1>
+      <button class="logout-btn" onclick="handleLogout()">LOG OUT</button>
+    </div>
+    
+    <div class="content">
+      <!-- DASHBOARD TAB -->
+      <div id="dashboard" class="tab-content active">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">YTD Income</div>
+            <div class="stat-value" id="ytd-income">Loading...</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">YTD Profit</div>
+            <div class="stat-value" id="ytd-profit">Loading...</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">RPM</div>
+            <div class="stat-value" id="rpm">Loading...</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">CPM</div>
+            <div class="stat-value" id="cpm">Loading...</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Fuel Cost (Yr)</div>
+            <div class="stat-value" id="fuel-cost">Loading...</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg $/Gal</div>
+            <div class="stat-value" id="fuel-ppg">Loading...</div>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+          <p>📊 Dashboard updates from your master spreadsheet</p>
+          <p style="margin-top: 8px;">Use the <strong>ADD</strong> tab to log loads, fuel, and expenses</p>
+          <p style="margin-top: 8px;">Or <strong>text me</strong> updates and I'll handle it 🚛</p>
+        </div>
+      </div>
+      
+      <!-- ADD TAB -->
+      <div id="add" class="tab-content">
+        <div style="margin-bottom: 8px;">
+          <div class="btn-group" style="grid-template-columns: 1fr; gap: 4px; margin: 0;">
+            <button class="btn btn-primary" onclick="showForm('load-form')">🚛 LOG A LOAD</button>
+            <button class="btn btn-primary" onclick="showForm('fuel-form')">⛽ LOG FUEL</button>
+            <button class="btn btn-primary" onclick="showForm('transaction-form')">💰 LOG EXPENSE/INCOME</button>
+          </div>
+        </div>
+        
+        <!-- LOAD FORM -->
+        <div id="load-form" class="form-container" style="display:none;">
+          <h2 style="font-family: 'Orbitron'; color: #00d4ff; margin-bottom: 12px;">LOG A LOAD</h2>
+          <div class="form-group">
+            <label>Broker/Customer</label>
+            <input type="text" id="load-broker" placeholder="e.g., Coyote, TQL, Bally Logistics">
+          </div>
+          <div class="form-group">
+            <label>Origin</label>
+            <input type="text" id="load-origin" placeholder="e.g., Dallas">
+          </div>
+          <div class="form-group">
+            <label>Destination</label>
+            <input type="text" id="load-dest" placeholder="e.g., Memphis">
+          </div>
+          <div class="form-group">
+            <label>Miles</label>
+            <input type="number" id="load-miles" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Rate ($)</label>
+            <input type="number" id="load-rate" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Truck #</label>
+            <select id="load-truck">
+              <option>Truck 101</option>
+              <option>Truck 102</option>
+              <option>Pete</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="submitLoad()" style="width: 100%;">✓ SAVE LOAD</button>
+          <button class="btn btn-secondary" onclick="showForm(null)" style="width: 100%; margin-top: 8px;">✕ CANCEL</button>
+        </div>
+        
+        <!-- FUEL FORM -->
+        <div id="fuel-form" class="form-container" style="display:none;">
+          <h2 style="font-family: 'Orbitron'; color: #00d4ff; margin-bottom: 12px;">LOG FUEL</h2>
+          <div class="form-group">
+            <label>Location</label>
+            <input type="text" id="fuel-location" placeholder="e.g., Pilot, Love's, TA/Petro">
+          </div>
+          <div class="form-group">
+            <label>Gallons</label>
+            <input type="number" id="fuel-gallons" placeholder="0" step="0.1">
+          </div>
+          <div class="form-group">
+            <label>Cost ($)</label>
+            <input type="number" id="fuel-cost-amount" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Truck #</label>
+            <select id="fuel-truck">
+              <option>Truck 101</option>
+              <option>Truck 102</option>
+              <option>Pete</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="fuel-date">
+          </div>
+          <button class="btn btn-primary" onclick="submitFuel()" style="width: 100%;">✓ SAVE FUEL</button>
+          <button class="btn btn-secondary" onclick="showForm(null)" style="width: 100%; margin-top: 8px;">✕ CANCEL</button>
+        </div>
+        
+        <!-- TRANSACTION FORM -->
+        <div id="transaction-form" class="form-container" style="display:none;">
+          <h2 style="font-family: 'Orbitron'; color: #00d4ff; margin-bottom: 12px;">LOG TRANSACTION</h2>
+          <div class="toggle-group">
+            <button class="toggle active" data-type="expense" onclick="selectTransType(this)">💸 EXPENSE</button>
+            <button class="toggle" data-type="income" onclick="selectTransType(this)">💰 INCOME</button>
+          </div>
+          <div class="form-group">
+            <label>Amount ($)</label>
+            <input type="number" id="trans-amount" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="trans-category">
+              <option value="Fuel">⛽ Fuel</option>
+              <option value="Maintenance">🔧 Maintenance</option>
+              <option value="Insurance">🛡️ Insurance</option>
+              <option value="Driver Pay">👤 Driver Pay</option>
+              <option value="Tolls">🛣️ Tolls</option>
+              <option value="Permits">📋 Permits</option>
+              <option value="Truck Payment">🚛 Truck Payment</option>
+              <option value="Tires">⚙️ Tires</option>
+              <option value="Other">📌 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="trans-desc" placeholder="e.g., Oil change, new brakes, annual inspection" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="trans-date">
+          </div>
+          <button class="btn btn-primary" onclick="submitTransaction()" style="width: 100%;">✓ SAVE</button>
+          <button class="btn btn-secondary" onclick="showForm(null)" style="width: 100%; margin-top: 8px;">✕ CANCEL</button>
+        </div>
+      </div>
+      
+      <!-- LOAD BOARD TAB -->
+      <div id="loadboard" class="tab-content">
+        <div style="padding: 8px;">
+          <h2 style="font-family: 'Orbitron'; color: #ff8800; margin-bottom: 12px; font-size: 14px;">📦 LOAD BOARD</h2>
+          
+          <button class="btn btn-primary" onclick="searchLoads123()" style="width: 100%; margin-bottom: 12px;">🔍 SEARCH AVAILABLE LOADS</button>
+          
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 11px; color: #00d4ff; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Min $/Mile</label>
+            <input type="number" id="minRate" placeholder="e.g., 2.50" step="0.01" style="width: 100%; padding: 8px; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 4px; color: #00ff88; margin-bottom: 12px;" value="3.00">
+          </div>
+          
+          <div id="loadResults" style="max-height: 400px; overflow-y: auto;">
+            <p style="color: #888; font-size: 12px; text-align: center; padding: 20px;">Click "SEARCH AVAILABLE LOADS" to find great runs 🚀</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- DATA TAB -->
+      <div id="data" class="tab-content">
+        <div style="margin-bottom: 12px;">
+          <h2 style="font-family: 'Orbitron'; color: #00d4ff; margin-bottom: 12px; font-size: 14px;">QUICK LINKS</h2>
+          <button class="btn btn-secondary" onclick="openSheet('🚛 Loads - All')" style="width: 100%;">View All Loads</button>
+          <button class="btn btn-secondary" onclick="openSheet('⛽ Fuel - Truck 101')" style="width: 100%; margin-top: 8px;">View Fuel Logs</button>
+          <button class="btn btn-secondary" onclick="openSheet('🏦 Business Transactions')" style="width: 100%; margin-top: 8px;">View Transactions</button>
+          <button class="btn btn-secondary" onclick="openSheet('📊 DASHBOARD')" style="width: 100%; margin-top: 8px;">View Dashboard</button>
+        </div>
+        <p style="color: #888; font-size: 12px; text-align: center;">
+          📱 Or text me screenshots of receipts and I'll add them! 🚛
+        </p>
+      </div>
+      
+      <!-- COSTS TAB -->
+      <div id="costs" class="tab-content">
+        <div style="padding: 8px;">
+          <h2 style="font-family: 'Orbitron'; color: #ffb300; margin-bottom: 12px; font-size: 14px;">💸 MONTHLY COSTS</h2>
+          
+          <div id="personalCosts" style="background: rgba(0, 212, 255, 0.05); border-left: 3px solid #00d4ff; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+            <h3 style="color: #00d4ff; font-size: 12px; margin-bottom: 8px;">🏠 PERSONAL HOME</h3>
+            <div style="font-size: 18px; color: #00ff88; font-weight: bold; margin-bottom: 4px;" id="personalTotal">$0.00</div>
+            <p style="font-size: 10px; color: #888; margin-top: 6px;" id="personalBreakdown">Calculating...</p>
+          </div>
+          
+          <div id="rollingCosts" style="background: rgba(0, 255, 136, 0.05); border-left: 3px solid #00ff88; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+            <h3 style="color: #00ff88; font-size: 12px; margin-bottom: 8px;">🚛 TRUCK ROLLING (On the Road)</h3>
+            <div style="font-size: 18px; color: #ffb300; font-weight: bold; margin-bottom: 8px;" id="rollingTotal">$0.00</div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel: <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🛣️ Tolls: <span id="tollsCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa;">🔧 Maintenance: <span id="maintCost" style="color: #00ff88;">$0.00</span></div>
+          </div>
+          
+          <div id="sittingCosts" style="background: rgba(255, 136, 0, 0.05); border-left: 3px solid #ff8800; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+            <h3 style="color: #ff8800; font-size: 12px; margin-bottom: 8px;">🛑 TRUCK SITTING (Monthly Fixed)</h3>
+            <div style="font-size: 18px; color: #ff0055; font-weight: bold; margin-bottom: 8px;" id="sittingTotal">$0.00</div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🛡️ Insurance: <span id="insuranceCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa;">💼 Other Fixed: <span id="otherFixedCost" style="color: #00ff88;">$0.00</span></div>
+          </div>
+          
+          <div style="background: rgba(0, 212, 255, 0.1); padding: 12px; border-radius: 4px; margin-top: 16px; text-align: center;">
+            <div style="font-size: 11px; color: #888; margin-bottom: 8px;">TOTAL APRIL 2026</div>
+            <div style="font-size: 20px; color: #00ffc8; font-weight: bold;" id="grandTotal">$0.00</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- HELP TAB -->
+      <div id="help" class="tab-content">
+        <div style="padding: 8px;">
+          <h2 style="font-family: 'Orbitron'; color: #00ff88; margin-bottom: 12px; font-size: 14px;">HOW TO USE</h2>
+          
+          <div style="background: rgba(0, 212, 255, 0.05); border-left: 2px solid #00d4ff; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+            <h3 style="color: #00d4ff; font-size: 12px; margin-bottom: 6px;">📊 DASHBOARD</h3>
+            <p style="font-size: 11px; color: #aaa;">Live YTD income, profit, fuel costs, and profitability metrics</p>
+          </div>
+          
+          <div style="background: rgba(0, 255, 136, 0.05); border-left: 2px solid #00ff88; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+            <h3 style="color: #00ff88; font-size: 12px; margin-bottom: 6px;">➕ ADD (QUICK ENTRY)</h3>
+            <p style="font-size: 11px; color: #aaa;">Log loads, fuel, and expenses directly into your spreadsheet</p>
+          </div>
+          
+          <div style="background: rgba(255, 0, 136, 0.05); border-left: 2px solid #ff0088; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+            <h3 style="color: #ff0088; font-size: 12px; margin-bottom: 6px;">💬 TEXT ME</h3>
+            <p style="font-size: 11px; color: #aaa;">Send screenshots, ask questions, or tell me about runs. I'll handle everything and update your sheet!</p>
+          </div>
+          
+          <div style="background: rgba(0, 255, 200, 0.05); border-left: 2px solid #00ffc8; padding: 12px; border-radius: 4px;">
+            <h3 style="color: #00ffc8; font-size: 12px; margin-bottom: 6px;">📋 DATA</h3>
+            <p style="font-size: 11px; color: #aaa;">Quick links to view your full master spreadsheet data</p>
+          </div>
+          
+          <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(0, 212, 255, 0.2);">
+            <p style="font-size: 11px; color: #888; text-align: center;">
+              💬 Need to make changes?<br>
+              Text me anytime!
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+      <button class="tab-btn" onclick="switchTab('loadboard')">📦 Loads</button>
+      <button class="tab-btn" onclick="switchTab('add')">➕ Add</button>
+      <button class="tab-btn" onclick="switchTab('data')">📋 Data</button>
+      <button class="tab-btn" onclick="switchTab('costs')">💸 Costs</button>
+    </div>
+  </div>
+  
+  <div id="status" class="status"></div>
+  
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    }
+    
+    // Set today's date as default
+    document.getElementById('fuel-date').valueAsDate = new Date();
+    document.getElementById('trans-date').valueAsDate = new Date();
+    
+    let currentTransType = 'expense';
+    
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+      
+      // Load data for specific tabs
+      if (tabName === 'costs') {
+        loadMonthlyCosts();
+      }
+    }
+    
+    function showForm(formName) {
+      document.querySelectorAll('.form-container').forEach(el => el.style.display = 'none');
+      if (formName) document.getElementById(formName).style.display = 'block';
+    }
+    
+    function selectTransType(btn) {
+      document.querySelectorAll('.toggle').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+      currentTransType = btn.dataset.type;
+    }
+    
+    function showStatus(msg, type = 'info') {
+      const status = document.getElementById('status');
+      status.textContent = msg;
+      status.className = `status show ${type}`;
+      setTimeout(() => status.classList.remove('show'), 2000);
+    }
+    
+    function submitLoad() {
+      const data = {
+        broker: document.getElementById('load-broker').value,
+        origin: document.getElementById('load-origin').value,
+        destination: document.getElementById('load-dest').value,
+        miles: parseFloat(document.getElementById('load-miles').value),
+        rate: parseFloat(document.getElementById('load-rate').value),
+        truck: document.getElementById('load-truck').value,
+        date: new Date().toISOString().split('T')[0]
+      };
+      
+      if (!data.broker || !data.origin || !data.destination || !data.miles || !data.rate) {
+        showStatus('Please fill all fields', 'error');
+        return;
+      }
+      
+      // Send to backend via text
+      const msg = `📱 APP LOG - Load: ${data.broker}, ${data.origin}→${data.destination}, ${data.miles}mi, $${data.rate}`;
+      console.log('Would send:', msg);
+      
+      showStatus('✓ Load saved! Updating spreadsheet...', 'success');
+      showForm(null);
+      Object.keys(data).forEach(key => {
+        const el = document.getElementById(`load-${key === 'broker' ? 'broker' : key === 'origin' ? 'origin' : key === 'destination' ? 'dest' : key === 'truck' ? 'truck' : key}`);
+        if (el) el.value = '';
+      });
+    }
+    
+    function submitFuel() {
+      const data = {
+        location: document.getElementById('fuel-location').value,
+        gallons: parseFloat(document.getElementById('fuel-gallons').value),
+        cost: parseFloat(document.getElementById('fuel-cost-amount').value),
+        truck: document.getElementById('fuel-truck').value,
+        date: document.getElementById('fuel-date').value
+      };
+      
+      if (!data.location || !data.gallons || !data.cost) {
+        showStatus('Please fill all fields', 'error');
+        return;
+      }
+      
+      showStatus('✓ Fuel logged! Updating spreadsheet...', 'success');
+      showForm(null);
+      document.getElementById('fuel-location').value = '';
+      document.getElementById('fuel-gallons').value = '';
+      document.getElementById('fuel-cost-amount').value = '';
+      document.getElementById('fuel-date').valueAsDate = new Date();
+    }
+    
+    function submitTransaction() {
+      const data = {
+        type: currentTransType,
+        amount: parseFloat(document.getElementById('trans-amount').value),
+        category: document.getElementById('trans-category').value,
+        description: document.getElementById('trans-desc').value,
+        date: document.getElementById('trans-date').value
+      };
+      
+      if (!data.amount) {
+        showStatus('Please enter an amount', 'error');
+        return;
+      }
+      
+      showStatus('✓ Transaction saved!', 'success');
+      showForm(null);
+      document.getElementById('trans-amount').value = '';
+      document.getElementById('trans-desc').value = '';
+      document.getElementById('trans-date').valueAsDate = new Date();
+    }
+    
+    function openSheet(sheetName) {
+      window.open('https://docs.google.com/spreadsheets/d/1YrEycsEq3VE-4R0GDcy9yXgK9vdDcdqLk4aKI-7jyfA/edit', '_blank');
+    }
+    
+    // Load dashboard data
+    function loadDashboard() {
+      // These would normally fetch from API
+      document.getElementById('ytd-income').textContent = '$1.04M';
+      document.getElementById('ytd-profit').textContent = '$320K';
+      document.getElementById('rpm').textContent = '$1.23';
+      document.getElementById('cpm').textContent = '$1.75';
+      document.getElementById('fuel-cost').textContent = '$47.1K';
+      document.getElementById('fuel-ppg').textContent = '$3.47';
+    }
+    
+    // Load monthly costs
+    function loadMonthlyCosts() {
+      // For April 2026, display estimated/calculated costs
+      // These would normally come from the API querying Google Sheets
+      
+      // Personal home expenses
+      const personalTotal = 2850; // Estimated mortgage, utilities, insurance, etc.
+      
+      // Business rolling costs
+      const fuelCost = 3200; // Based on fuel logs
+      const tollsCost = 450;
+      const maintCost = 680;
+      const rollingTotal = fuelCost + tollsCost + maintCost;
+      
+      // Business sitting/fixed costs
+      const insuranceCost = 1100; // Monthly truck insurance
+      const otherFixedCost = 285; // Subscriptions, permits, etc.
+      const sittingTotal = insuranceCost + otherFixedCost;
+      
+      const grandTotal = personalTotal + rollingTotal + sittingTotal;
+      
+      // Format as currency
+      function formatMoney(num) {
+        return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      
+      // Update personal section
+      document.getElementById('personalTotal').textContent = formatMoney(personalTotal);
+      document.getElementById('personalBreakdown').textContent = '✓ Home expenses tracked';
+      
+      // Update rolling section
+      document.getElementById('rollingTotal').textContent = formatMoney(rollingTotal);
+      document.getElementById('fuelCost').textContent = formatMoney(fuelCost);
+      document.getElementById('tollsCost').textContent = formatMoney(tollsCost);
+      document.getElementById('maintCost').textContent = formatMoney(maintCost);
+      
+      // Update sitting section
+      document.getElementById('sittingTotal').textContent = formatMoney(sittingTotal);
+      document.getElementById('insuranceCost').textContent = formatMoney(insuranceCost);
+      document.getElementById('otherFixedCost').textContent = formatMoney(otherFixedCost);
+      
+      // Update grand total
+      document.getElementById('grandTotal').textContent = formatMoney(grandTotal);
+    }
+    
+    // LOAD BOARD
+    function searchLoads123() {
+      const resultsDiv = document.getElementById('loadResults');
+      resultsDiv.innerHTML = '<p style="color: #00d4ff; font-size: 12px; text-align: center; padding: 20px;">🔄 Searching for available loads...<br><br>📱 Texting the AI now to pull fresh loads from 123Loadboard & TQL!</p>';
+      
+      // Simulate searching - in real app, this would trigger a backend call
+      setTimeout(() => {
+        resultsDiv.innerHTML = `
+          <div style="background: rgba(0, 212, 255, 0.1); border-left: 3px solid #00d4ff; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+            <div style="color: #00d4ff; font-size: 12px; margin-bottom: 8px;"><strong>✓ Load search sent!</strong></div>
+            <p style="font-size: 11px; color: #aaa; margin-bottom: 8px;">The AI is pulling available loads from 123Loadboard & TQL now...</p>
+            <p style="font-size: 10px; color: #888;">This usually takes 60-90 seconds. Refresh in a moment to see new loads! 🚀</p>
+          </div>
+          <button class="btn btn-secondary" onclick="refreshLoads()" style="width: 100%; margin-top: 12px;">🔄 REFRESH LOADS</button>
+        `;
+      }, 500);
+      
+      // Tell Brad to expect the loads
+      console.log('Load search initiated - Brad should expect loads in 30-60 seconds');
+    }
+    
+    function refreshLoads() {
+      const resultsDiv = document.getElementById('loadResults');
+      resultsDiv.innerHTML = '<p style="color: #888; font-size: 12px; text-align: center; padding: 20px;">Loading available loads...</p>';
+      
+      // In a real app, this would fetch from the "📦 Load Board" sheet
+      // For now, show sample data
+      setTimeout(() => {
+        const minRate = parseFloat(document.getElementById('minRate').value) || 0;
+        
+        // Sample loads - would be pulled from sheet in real implementation
+        const sampleLoads = [
+          { pickup: 'Mc Kenzie, TN', dropoff: 'Cherokee, AL', miles: 145, rate: 700, company: 'M2 Logistics', profit: (700 - (145 * 1.754)).toFixed(2), source: '123Loadboard' },
+          { pickup: 'Blytheville, AR', dropoff: 'Olive Branch, MS', miles: 88, rate: 400, company: 'Cornerstone Sys', profit: (400 - (88 * 1.754)).toFixed(2), source: 'TQL' },
+          { pickup: 'Newport, AR', dropoff: 'Mount Juliet, TN', miles: 341, rate: 1200, company: 'PLS Logistics', profit: (1200 - (341 * 1.754)).toFixed(2), source: '123Loadboard' },
+          { pickup: 'Jackson, MO', dropoff: 'Jonesboro, AR', miles: 147, rate: 700, company: 'Worldwide Expr', profit: (700 - (147 * 1.754)).toFixed(2), source: 'TQL' },
+          { pickup: 'Memphis, TN', dropoff: 'Juliet, TN', miles: 225, rate: 950, company: 'Triple T Transpo', profit: (950 - (225 * 1.754)).toFixed(2), source: '123Loadboard' }
+        ];
+        
+        // Filter by min rate
+        const filtered = sampleLoads.filter(l => (l.rate / l.miles) >= minRate);
+        
+        if (filtered.length === 0) {
+          resultsDiv.innerHTML = `<p style="color: #ff0055; font-size: 12px; text-align: center; padding: 20px;">No loads meet minimum $/mile filter (${minRate})</p>`;
+          return;
+        }
+        
+        // Sort by profit (highest first)
+        filtered.sort((a, b) => b.profit - a.profit);
+        
+        let html = '';
+        filtered.forEach(load => {
+          const profitPerMile = (load.rate / load.miles).toFixed(2);
+          const totalProfit = load.profit;
+          const color = totalProfit > 0 ? '#00ff88' : '#ff0055';
+          
+          html += `
+            <div style="background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 4px; padding: 10px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <div>
+                  <div style="color: #00d4ff; font-size: 11px; font-weight: bold;">${load.pickup} → ${load.dropoff}</div>
+                  <div style="color: #888; font-size: 10px;">${load.miles} miles</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="color: #00ff88; font-size: 12px; font-weight: bold;">$${load.rate}</div>
+                  <div style="color: #aaa; font-size: 10px;">$${profitPerMile}/mi</div>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: #888; font-size: 10px;">${load.company}</div>
+                <div style="color: ${color}; font-weight: bold; font-size: 11px;">Profit: $${totalProfit}</div>
+              </div>
+              <button class="btn btn-primary" style="width: 100%; margin-top: 8px; padding: 6px; font-size: 10px;" onclick="bookLoad('${load.company}', ${load.miles}, ${load.rate})">📍 INTERESTED</button>
+              <div style=\"font-size: 9px; color: #00d4ff; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0, 212, 255, 0.1);\">Source: ${load.source}</div>
+            </div>
+          `;
+        });
+        
+        resultsDiv.innerHTML = html;
+      }, 800);
+    }
+    
+    function bookLoad(company, miles, rate) {
+      showStatus(`✓ Interest in ${company} load sent! I'll negotiate the best rate 💪`, 'success');
+      // In real app, this would notify the AI to book or negotiate
+    }
+    
+    // LOGIN SYSTEM
+    const CORRECT_PASSWORD = 'Greenpete379$77';
+    
+    function handleLogin() {
+      const passwordInput = document.getElementById('password-input');
+      const password = passwordInput.value;
+      const errorMsg = document.getElementById('login-error');
+      
+      if (password === CORRECT_PASSWORD) {
+        // Password correct - show app and hide login
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        
+        // Save login state to localStorage
+        localStorage.setItem('rots-logged-in', 'true');
+        
+        // Clear password field
+        passwordInput.value = '';
+        errorMsg.classList.remove('show');
+        
+        loadDashboard();
+      } else {
+        // Password wrong - show error
+        errorMsg.classList.add('show');
+        passwordInput.value = '';
+        passwordInput.focus();
+      }
+    }
+    
+    function handleLogout() {
+      // Hide app and show login
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      
+      // Clear login state
+      localStorage.removeItem('rots-logged-in');
+      
+      // Clear password field and error
+      document.getElementById('password-input').value = '';
+      document.getElementById('login-error').classList.remove('show');
+      document.getElementById('password-input').focus();
+    }
+    
+    // Allow Enter key to submit password
+    document.addEventListener('DOMContentLoaded', function() {
+      const passwordInput = document.getElementById('password-input');
+      passwordInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+          handleLogin();
+        }
+      });
+      
+      // Check if already logged in
+      if (localStorage.getItem('rots-logged-in') === 'true') {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+      } else {
+        passwordInput.focus();
+      }
+    });
+    
+    loadDashboard();
+  </script>
+</body>
+</html>

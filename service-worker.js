@@ -1,8 +1,8 @@
-const CACHE_NAME = 'rots-v1';
+const CACHE_NAME = 'rots-v3';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  '/Rotstrucking-app1/',
+  '/Rotstrucking-app1/index.html',
+  '/Rotstrucking-app1/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,7 +33,25 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') {
     return;
   }
-  
+
+  // Network-first for index.html so updates always come through
+  if (event.request.url.includes('index.html') || event.request.url.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
@@ -51,7 +69,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          return caches.match('/index.html');
+          return caches.match('/Rotstrucking-app1/index.html');
         });
     })
   );

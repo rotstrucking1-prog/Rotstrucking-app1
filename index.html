@@ -871,7 +871,7 @@
       const rollingTotal = fuelCost + tollsCost + maintCost;
       
       // Business sitting/fixed costs
-      const insuranceCost = 1100; // Monthly truck insurance
+      const insuranceCost = 1248.64; // Monthly truck insurance — Great West Casualty (actual from bank statements, GRTWESTCAS ACH Debit)
       const otherFixedCost = 285; // Subscriptions, permits, etc.
       const sittingTotal = insuranceCost + otherFixedCost;
       
@@ -926,55 +926,76 @@
       const resultsDiv = document.getElementById('loadResults');
       resultsDiv.innerHTML = '<p style="color: #888; font-size: 12px; text-align: center; padding: 20px;">Loading available loads...</p>';
       
-      // In a real app, this would fetch from the "📦 Load Board" sheet
-      // For now, show sample data
+      // FUEL CALC CONSTANTS — Brad's spec
+      const FUEL_PRICE_PER_GAL = 5.53;  // Current diesel price (Brad: update later)
+      const MPG = 5.5;                   // Truck MPG (Brad confirmed)
+      const FUEL_COST_PER_MILE = FUEL_PRICE_PER_GAL / MPG; // $/mile all-in
+      
       setTimeout(() => {
         const minRate = parseFloat(document.getElementById('minRate').value) || 0;
         
-        // Sample loads - would be pulled from sheet in real implementation
-        const sampleLoads = [
-          { pickup: 'Mc Kenzie, TN', dropoff: 'Cherokee, AL', miles: 145, rate: 700, company: 'M2 Logistics', profit: (700 - (145 * 1.754)).toFixed(2), source: '123Loadboard' },
-          { pickup: 'Blytheville, AR', dropoff: 'Olive Branch, MS', miles: 88, rate: 400, company: 'Cornerstone Sys', profit: (400 - (88 * 1.754)).toFixed(2), source: 'TQL' },
-          { pickup: 'Newport, AR', dropoff: 'Mount Juliet, TN', miles: 341, rate: 1200, company: 'PLS Logistics', profit: (1200 - (341 * 1.754)).toFixed(2), source: '123Loadboard' },
-          { pickup: 'Jackson, MO', dropoff: 'Jonesboro, AR', miles: 147, rate: 700, company: 'Worldwide Expr', profit: (700 - (147 * 1.754)).toFixed(2), source: 'TQL' },
-          { pickup: 'Memphis, TN', dropoff: 'Juliet, TN', miles: 225, rate: 950, company: 'Triple T Transpo', profit: (950 - (225 * 1.754)).toFixed(2), source: '123Loadboard' }
+        // Loads with deadhead miles from McKenzie, TN home base
+        // profit = rate - ((deadhead + loaded miles) / 5.5 MPG * fuel price)
+        const rawLoads = [
+          { pickup: 'Mc Kenzie, TN',   dropoff: 'Cherokee, AL',    miles: 145, deadhead: 3,   rate: 700,  company: 'M2 Logistics',      source: '123Loadboard' },
+          { pickup: 'Gleason, TN',     dropoff: 'Frankfort, KY',   miles: 288, deadhead: 8,   rate: 900,  company: 'Worldwide Express',  source: '123Loadboard' },
+          { pickup: 'Dickson, TN',     dropoff: 'Morrilton, AR',   miles: 348, deadhead: 67,  rate: 800,  company: 'Logistic Dynamics',  source: '123Loadboard' },
+          { pickup: 'Newport, AR',     dropoff: 'Mt Juliet, TN',   miles: 341, deadhead: 151, rate: 1200, company: 'PLS Logistics',      source: '123Loadboard' },
+          { pickup: 'Memphis, TN',     dropoff: 'Mt Juliet, TN',   miles: 225, deadhead: 104, rate: 950,  company: 'Triple T Transport', source: '123Loadboard' },
+          { pickup: 'Blytheville, AR', dropoff: 'Olive Branch, MS',miles: 88,  deadhead: 130, rate: 400,  company: 'Cornerstone Sys',    source: 'TQL' },
+          { pickup: 'Jackson, MO',     dropoff: 'Jonesboro, AR',   miles: 147, deadhead: 200, rate: 700,  company: 'Worldwide Expr',     source: 'TQL' }
         ];
         
-        // Filter by min rate
-        const filtered = sampleLoads.filter(l => (l.rate / l.miles) >= minRate);
+        // Calculate real profit for each load
+        const sampleLoads = rawLoads.map(l => {
+          const totalMiles = l.deadhead + l.miles;
+          const fuelCost = (totalMiles / MPG) * FUEL_PRICE_PER_GAL;
+          const netProfit = l.rate - fuelCost;
+          const grossPerMile = l.rate / l.miles; // $/loaded mile only
+          return { ...l, totalMiles, fuelCost, netProfit, grossPerMile };
+        });
+        
+        // Filter by min gross $/loaded mile
+        const filtered = sampleLoads.filter(l => l.grossPerMile >= minRate);
         
         if (filtered.length === 0) {
           resultsDiv.innerHTML = `<p style="color: #ff0055; font-size: 12px; text-align: center; padding: 20px;">No loads meet minimum $/mile filter (${minRate})</p>`;
           return;
         }
         
-        // Sort by profit (highest first)
-        filtered.sort((a, b) => b.profit - a.profit);
+        // Sort by net profit (highest first)
+        filtered.sort((a, b) => b.netProfit - a.netProfit);
         
-        let html = '';
-        filtered.forEach(load => {
-          const profitPerMile = (load.rate / load.miles).toFixed(2);
-          const totalProfit = load.profit;
-          const color = totalProfit > 0 ? '#00ff88' : '#ff0055';
+        // Header showing fuel calc basis
+        let html = `
+          <div style="background: rgba(255, 179, 0, 0.08); border: 1px solid rgba(255, 179, 0, 0.3); border-radius: 4px; padding: 8px; margin-bottom: 10px; font-size: 10px; color: #ffb300;">
+            ⛽ Fuel: $${FUEL_PRICE_PER_GAL.toFixed(2)}/gal &nbsp;|&nbsp; ${MPG} MPG &nbsp;|&nbsp; $${FUEL_COST_PER_MILE.toFixed(3)}/mile &nbsp;|&nbsp; Deadhead included
+          </div>`;
+        
+        filtered.forEach((load, idx) => {
+          const profitColor = load.netProfit > 400 ? '#00ff88' : load.netProfit > 0 ? '#ffb300' : '#ff0055';
+          const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx+1}`;
           
           html += `
             <div style="background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 4px; padding: 10px; margin-bottom: 10px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <div>
-                  <div style="color: #00d4ff; font-size: 11px; font-weight: bold;">${load.pickup} → ${load.dropoff}</div>
-                  <div style="color: #888; font-size: 10px;">${load.miles} miles</div>
+                <div style="flex: 1;">
+                  <div style="color: #00d4ff; font-size: 11px; font-weight: bold;">${medal} ${load.pickup} → ${load.dropoff}</div>
+                  <div style="color: #888; font-size: 10px;">${load.deadhead} mi deadhead + ${load.miles} mi loaded = ${load.totalMiles} total</div>
                 </div>
                 <div style="text-align: right;">
-                  <div style="color: #00ff88; font-size: 12px; font-weight: bold;">$${load.rate}</div>
-                  <div style="color: #aaa; font-size: 10px;">$${profitPerMile}/mi</div>
+                  <div style="color: #00ff88; font-size: 13px; font-weight: bold;">$${load.rate.toLocaleString()}</div>
+                  <div style="color: #aaa; font-size: 10px;">$${load.grossPerMile.toFixed(2)}/loaded mi</div>
                 </div>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="color: #888; font-size: 10px;">${load.company}</div>
-                <div style="color: ${color}; font-weight: bold; font-size: 11px;">Profit: $${totalProfit}</div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; padding: 5px;">
+                <div style="font-size: 10px; color: #ff6b6b;">⛽ Fuel: -$${load.fuelCost.toFixed(0)}</div>
+                <div style="font-size: 11px; font-weight: bold; color: ${profitColor};">NET: $${load.netProfit.toFixed(0)}</div>
               </div>
-              <button class="btn btn-primary" style="width: 100%; margin-top: 8px; padding: 6px; font-size: 10px;" onclick="bookLoad('${load.company}', ${load.miles}, ${load.rate})">📍 INTERESTED</button>
-              <div style=\"font-size: 9px; color: #00d4ff; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0, 212, 255, 0.1);\">Source: ${load.source}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: #888; font-size: 10px;">${load.company} · ${load.source}</div>
+              </div>
+              <button class="btn btn-primary" style="width: 100%; margin-top: 8px; padding: 6px; font-size: 10px;" onclick="bookLoad('${load.company}', ${load.miles}, ${load.rate})">📍 I'M INTERESTED</button>
             </div>
           `;
         });

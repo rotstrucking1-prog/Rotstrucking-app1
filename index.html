@@ -800,6 +800,102 @@
         </div>
       </div>
 
+      <!-- TAXES TAB -->
+      <div id="taxes" class="tab-content">
+        <div style="padding: 8px;">
+          <h2 style="font-family: 'Orbitron'; color: #ffb300; margin-bottom: 6px; font-size: 13px; letter-spacing: 1px;">🧾 TAX DUE — 2019 TO PRESENT</h2>
+          <p style="font-size: 10px; color: #888; margin-bottom: 12px;">IRS Schedule C · Self-Employment Tax · Applicable Deductions for OTR Owner-Operators</p>
+
+          <!-- DISCLAIMER -->
+          <div style="background: rgba(255,100,0,0.1); border: 1px solid rgba(255,100,0,0.4); border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <p style="font-size: 10px; color: #ff8800;">⚠️ <strong>Estimate only.</strong> Based on bank deposit data + IRS rules. Does not include Section 179 truck depreciation, which could significantly reduce what you owe. Consult a CPA to file.</p>
+          </div>
+
+          <!-- TOGGLE -->
+          <div style="display:flex; gap:8px; margin-bottom: 12px;">
+            <button id="btnWithDed" onclick="showTaxView('with')" style="flex:1; padding:8px; background:rgba(0,255,136,0.2); border:1px solid #00ff88; border-radius:6px; color:#00ff88; font-size:11px; font-weight:bold;">✅ WITH Deductions</button>
+            <button id="btnNoDed" onclick="showTaxView('without')" style="flex:1; padding:8px; background:rgba(255,0,85,0.1); border:1px solid rgba(255,0,85,0.3); border-radius:6px; color:#aaa; font-size:11px;">❌ WITHOUT Deductions</button>
+          </div>
+
+          <!-- SUMMARY CARDS -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+            <div style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.3); border-radius:6px; padding:10px; text-align:center;">
+              <div style="font-size:9px; color:#00ff88; margin-bottom:4px;">WITH DEDUCTIONS</div>
+              <div style="font-size:20px; font-weight:bold; color:#00ff88;" id="totalWithDed">$292,347</div>
+              <div style="font-size:9px; color:#888;">estimated total owed</div>
+            </div>
+            <div style="background:rgba(255,0,85,0.05); border:1px solid rgba(255,0,85,0.3); border-radius:6px; padding:10px; text-align:center;">
+              <div style="font-size:9px; color:#ff0055; margin-bottom:4px;">WITHOUT DEDUCTIONS</div>
+              <div style="font-size:20px; font-weight:bold; color:#ff0055;" id="totalNoDed">$381,798</div>
+              <div style="font-size:9px; color:#888;">if no deductions taken</div>
+            </div>
+          </div>
+
+          <!-- SAVINGS CARD -->
+          <div style="background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.4); border-radius:6px; padding:10px; margin-bottom:12px; text-align:center;">
+            <div style="font-size:9px; color:#ffb300; margin-bottom:2px;">💰 DEDUCTIONS SAVE YOU</div>
+            <div style="font-size:24px; font-weight:bold; color:#ffb300;" id="totalSavings">$89,451</div>
+            <div style="font-size:9px; color:#888;">fuel · insurance · per diem · ELD · load board</div>
+          </div>
+
+          <!-- YEAR BY YEAR TABLE -->
+          <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(0,212,255,0.2); border-radius:6px; overflow:hidden; margin-bottom:12px;">
+            <div style="padding:10px; border-bottom:1px solid rgba(0,212,255,0.15);">
+              <h3 style="font-family:'Orbitron'; color:#00d4ff; font-size:10px;">📅 YEAR BY YEAR BREAKDOWN</h3>
+            </div>
+            <div id="taxTable" style="padding: 8px;"></div>
+          </div>
+
+          <!-- DEDUCTIONS BREAKDOWN -->
+          <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(0,212,255,0.2); border-radius:6px; overflow:hidden; margin-bottom:12px;">
+            <div style="padding:10px; border-bottom:1px solid rgba(0,212,255,0.15);">
+              <h3 style="font-family:'Orbitron'; color:#00d4ff; font-size:10px;">✂️ DEDUCTIONS APPLIED (IRS Schedule C)</h3>
+            </div>
+            <div style="padding:10px;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:10px;">
+                <div style="color:#00ff88;">⛽ Fuel & Oil</div><div style="color:#aaa;">Schedule C Line 9</div>
+                <div style="color:#00ff88;">🛡️ Insurance (GWC)</div><div style="color:#aaa;">Schedule C Line 15</div>
+                <div style="color:#00ff88;">🔧 Maintenance/Repairs</div><div style="color:#aaa;">Schedule C Line 21</div>
+                <div style="color:#00ff88;">🏨 Per Diem (OTR)</div><div style="color:#aaa;">80% × $63–69/day</div>
+                <div style="color:#00ff88;">📡 ELD (Omnitracs)</div><div style="color:#aaa;">Schedule C Line 18</div>
+                <div style="color:#00ff88;">📦 Load Board (123LB)</div><div style="color:#aaa;">Schedule C Line 18</div>
+                <div style="color:#00ff88;">🧾 Factoring Fees (RTS)</div><div style="color:#aaa;">$50,422 total (deductible)</div>
+              </div>
+              <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); font-size:9px; color:#888;">
+                ⚠️ Section 179 truck depreciation NOT included — could eliminate $50K+ in taxable income per truck purchase year. Ask your CPA.
+              </div>
+            </div>
+          </div>
+
+          <!-- QUARTERLY 2026 -->
+          <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,179,0,0.3); border-radius:6px; overflow:hidden; margin-bottom:12px;">
+            <div style="padding:10px; border-bottom:1px solid rgba(255,179,0,0.2);">
+              <h3 style="font-family:'Orbitron'; color:#ffb300; font-size:10px;">📆 2026 QUARTERLY ESTIMATES DUE</h3>
+            </div>
+            <div style="padding:10px; font-size:11px;">
+              <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span style="color:#aaa;">Q1 (Jan–Mar) — Due Apr 15</span>
+                <span style="color:#ff8800; font-weight:bold;">$817</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span style="color:#aaa;">Q2 (Apr–Jun) — Due Jun 16</span>
+                <span style="color:#ffb300; font-weight:bold;">~$817</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span style="color:#aaa;">Q3 (Jul–Sep) — Due Sep 15</span>
+                <span style="color:#ffb300; font-weight:bold;">~$817</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:6px 0;">
+                <span style="color:#aaa;">Q4 (Oct–Dec) — Due Jan 15</span>
+                <span style="color:#ffb300; font-weight:bold;">~$817</span>
+              </div>
+              <div style="margin-top:8px; font-size:9px; color:#888;">Based on $3,268 projected 2026 tax ÷ 4 quarters. Pay via IRS Direct Pay or EFTPS.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <div id="help" class="tab-content">
         <div style="padding: 8px;">
           <h2 style="font-family: 'Orbitron'; color: #00ff88; margin-bottom: 12px; font-size: 14px;">HOW TO USE</h2>
@@ -841,6 +937,7 @@
       <button class="tab-btn" onclick="switchTab('data')">📋 Data</button>
       <button class="tab-btn" onclick="switchTab('costs')">💸 Costs</button>
       <button class="tab-btn" onclick="switchTab('mileage')">🗺️ Miles</button>
+      <button class="tab-btn" onclick="switchTab('taxes')">🧾 Taxes</button>
     </div>
   </div>
   
@@ -870,6 +967,9 @@
       }
       if (tabName === 'mileage') {
         loadMileageData();
+      }
+      if (tabName === 'taxes') {
+        buildTaxTab();
       }
     }
     
@@ -1347,6 +1447,7 @@
     
     loadDashboard();
     loadMonthlyCosts();
+    buildTaxTab();
 
     // ===== MILEAGE TAB =====
     const WEEKLY_MILES = [
@@ -1445,6 +1546,58 @@
           </div>`).join('');
       }
     }
+  // ===== TAX TAB =====
+  const TAX_DATA = [
+    { year: 2019, gross: 1529,   fuel: 1056,  ins: 0,     maint: 0,    perDiem: 1512,  eld: 0,    totalDed: 1376,  netTax: 153,   withDed: 36,    noDed: 358,    savings: 322   },
+    { year: 2020, gross: 110597, fuel: 6829,  ins: 0,     maint: 385,  perDiem: 7560,  eld: 0,    totalDed: 14839, netTax: 95758, withDed: 28161, noDed: 33337,  savings: 5176  },
+    { year: 2021, gross: 181265, fuel: 22107, ins: 0,     maint: 2541, perDiem: 10080, eld: 0,    totalDed: 35121, netTax: 146144,withDed: 46289, noDed: 59085,  savings: 12796 },
+    { year: 2022, gross: 285791, fuel: 9856,  ins: 2400,  maint: 3321, perDiem: 12096, eld: 1308, totalDed: 24051, netTax: 261740,withDed: 92509, noDed: 103716, savings: 11207 },
+    { year: 2023, gross: 122727, fuel: 8612,  ins: 14984, maint: 1170, perDiem: 11088, eld: 1308, totalDed: 37663, netTax: 85064, withDed: 24464, noDed: 37757,  savings: 13293 },
+    { year: 2024, gross: 278082, fuel: 26214, ins: 14984, maint: 4752, perDiem: 11592, eld: 1308, totalDed: 74221, netTax: 203861,withDed: 67317, noDed: 100119, savings: 32802 },
+    { year: 2025, gross: 132164, fuel: 8012,  ins: 14984, maint: 1820, perDiem: 9072,  eld: 1308, totalDed: 30214, netTax: 101951,withDed: 30303, noDed: 41195,  savings: 10893 },
+    { year: 2026, gross: 25561,  fuel: 3012,  ins: 3746,  maint: 340,  perDiem: 3024,  eld: 365,  totalDed: 11717, netTax: 13843, withDed: 3268,  noDed: 6230,   savings: 2962  },
+  ];
+
+  let taxViewMode = 'with';
+
+  function buildTaxTab() {
+    renderTaxTable();
+  }
+
+  function showTaxView(mode) {
+    taxViewMode = mode;
+    document.getElementById('btnWithDed').style.background = mode === 'with' ? 'rgba(0,255,136,0.2)' : 'rgba(255,0,85,0.1)';
+    document.getElementById('btnWithDed').style.borderColor = mode === 'with' ? '#00ff88' : 'rgba(255,0,85,0.3)';
+    document.getElementById('btnWithDed').style.color = mode === 'with' ? '#00ff88' : '#aaa';
+    document.getElementById('btnNoDed').style.background = mode === 'without' ? 'rgba(255,0,85,0.2)' : 'rgba(255,0,85,0.1)';
+    document.getElementById('btnNoDed').style.borderColor = mode === 'without' ? '#ff0055' : 'rgba(255,0,85,0.3)';
+    document.getElementById('btnNoDed').style.color = mode === 'without' ? '#ff0055' : '#aaa';
+    renderTaxTable();
+  }
+
+  function renderTaxTable() {
+    const el = document.getElementById('taxTable');
+    if (!el) return;
+    const isWith = taxViewMode === 'with';
+
+    el.innerHTML = TAX_DATA.map(r => {
+      const taxAmt = isWith ? r.withDed : r.noDed;
+      const color = taxAmt > 50000 ? '#ff4444' : taxAmt > 20000 ? '#ff8800' : '#00ff88';
+      return `
+        <div style="border-bottom:1px solid rgba(255,255,255,0.06); padding:8px 4px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-weight:bold; color:#00d4ff; font-size:13px;">${r.year}</span>
+            <span style="font-weight:bold; color:${color}; font-size:14px;">$${taxAmt.toLocaleString()}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:#888;">
+            <span>Gross: $${r.gross.toLocaleString()}</span>
+            ${isWith ? `<span>Deductions: $${r.totalDed.toLocaleString()}</span><span>Net: $${r.netTax.toLocaleString()}</span>` : '<span>No deductions taken</span>'}
+          </div>
+          ${isWith ? `<div style="font-size:9px; color:#666; margin-top:3px;">⛽ $${r.fuel.toLocaleString()} fuel · 🛡️ $${r.ins.toLocaleString()} ins · 🔧 $${r.maint.toLocaleString()} maint · 🏨 $${r.perDiem.toLocaleString()} per diem</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
   </script>
 </body>
 </html>

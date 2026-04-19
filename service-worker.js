@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rots-v4';
+const CACHE_NAME = 'rots-v5';
 const ASSETS = [
   '/Rotstrucking-app1/',
   '/Rotstrucking-app1/index.html',

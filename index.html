@@ -692,7 +692,7 @@
           <div id="rollingCosts" style="background: rgba(0, 255, 136, 0.05); border-left: 3px solid #00ff88; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
             <h3 style="color: #00ff88; font-size: 12px; margin-bottom: 8px;">🚛 TRUCK ROLLING (On the Road)</h3>
             <div style="font-size: 18px; color: #ffb300; font-weight: bold; margin-bottom: 8px;" id="rollingTotal">$0.00</div>
-            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel (<span id="fuelPriceLabel">$5.53</span>/gal ÷ 5.5 MPG × <span id="monthlyMilesLabel">5,872</span> mi): <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel (<span id="fuelPriceLabel">$4.63</span>/gal ÷ 5.5 MPG × <span id="monthlyMilesLabel">5,872</span> mi): <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
             <div style="font-size: 9px; color: #555; margin-bottom: 6px; margin-left: 12px;">Last logged in sheet: $3.339/gal (Sep 2025) — log new fuel stop to update</div>
             <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🛣️ Tolls (avg from bank): <span id="tollsCost" style="color: #00ff88;">$0.00</span></div>
             <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🔧 Maintenance (~$170/wk × 4 weeks): <span id="maintCost" style="color: #00ff88;">$0.00</span></div>
@@ -947,7 +947,7 @@
 
       // ── FUEL ──
       const lastRecordedFuelPrice = 3.339; // Last logged in Fuel sheet: Sep 19, 2025 - Holladay, TN
-      const currentFuelPrice = 5.53;       // Brad's current market price (update when new fuel logged)
+      const currentFuelPrice = 4.63;       // REAL: Mudflap actual paid avg (Apr 2026: $4.43–$4.89/gal)
       const mpg = 5.5;                     // truck MPG
       const fuelCPM = currentFuelPrice / mpg; // $/mile driven
 
@@ -1005,10 +1005,10 @@
       
       // Business rolling costs — fuel calculated from real price/MPG × actual monthly miles
       const lastRecordedFuelPriceC = 3.339; // Last in Fuel sheet: Sep 19 2025 Holladay TN
-      const currentFuelPriceC = 5.53;       // Brad's current market price
+      const currentFuelPriceC = 4.63;       // REAL: Mudflap actual paid avg (Apr 2026: $4.43–$4.89/gal)
       const truckMPG = 5.5;
       const avgMonthlyMiles = 5872;  // actual Omnitracs avg (Jan–Apr 2026)
-      const fuelCost = (currentFuelPriceC / truckMPG) * avgMonthlyMiles; // ~$5,901
+      const fuelCost = (currentFuelPriceC / truckMPG) * avgMonthlyMiles; // ~$4,940 (real Mudflap price)
       const tollsCost = 450;
       // Maintenance: estimated as weekly avg × 4 weeks (from bank data)
       const weeklyMaintEstimate = 170;       // ~$170/week from bank avg
@@ -1068,7 +1068,7 @@
       //
       // CPM = fuel + maintenance + tolls (what it costs to MOVE the truck per mile)
       // fuelPricePerGal and truckMPG already declared above
-      const fuelCPMc = fuelPricePerGal / truckMPG; // $1.005/mi
+      const fuelCPMc = currentFuelPriceC / truckMPG; // actual Mudflap $/mi
       const weeklyMilesTarget = 3000;
       const projectedMonthlyMiles = weeklyMilesTarget * 4; // 12,000
 
@@ -1115,7 +1115,7 @@
       resultsDiv.innerHTML = '<p style="color: #888; font-size: 12px; text-align: center; padding: 20px;">Loading available loads...</p>';
       
       // FUEL CALC CONSTANTS — Brad's spec
-      const FUEL_PRICE_PER_GAL = 5.53;  // Current diesel price (Brad: update later)
+      const FUEL_PRICE_PER_GAL = 4.63;  // REAL: Mudflap actual paid avg (Apr 2026)
       const MPG = 5.5;                   // Truck MPG (Brad confirmed)
       const FUEL_COST_PER_MILE = FUEL_PRICE_PER_GAL / MPG; // $/mile all-in
       

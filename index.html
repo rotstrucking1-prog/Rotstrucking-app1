@@ -479,12 +479,14 @@
             <div class="stat-value" id="ytd-profit">Loading...</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">RPM</div>
+            <div class="stat-label">RPM Needed</div>
             <div class="stat-value" id="rpm">Loading...</div>
+            <div style="font-size:8px;color:#888;margin-top:2px;">break-even/mile</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">CPM</div>
+            <div class="stat-label">CPM (Truck)</div>
             <div class="stat-value" id="cpm">Loading...</div>
+            <div style="font-size:8px;color:#888;margin-top:2px;">cost per mile</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Fuel Cost (Yr)</div>
@@ -653,7 +655,34 @@
       <div id="costs" class="tab-content">
         <div style="padding: 8px;">
           <h2 style="font-family: 'Orbitron'; color: #ffb300; margin-bottom: 12px; font-size: 14px;">💸 MONTHLY COSTS</h2>
-          
+
+          <!-- BREAK-EVEN CARD -->
+          <div style="background: rgba(255,0,136,0.1); border: 2px solid #ff0088; border-radius: 8px; padding: 12px; margin-bottom: 14px; text-align: center;">
+            <div style="font-size: 10px; color: #ff0088; font-weight: bold; letter-spacing: 1px; margin-bottom: 4px;">⚡ BREAK-EVEN RPM</div>
+            <div style="font-size: 28px; font-weight: bold; color: #fff;" id="breakEvenRPM">$0.00</div>
+            <div style="font-size: 9px; color: #aaa; margin-top: 4px;">minimum you must earn per mile to cover ALL expenses</div>
+            <div style="font-size: 9px; color: #888; margin-top: 2px;" id="breakEvenFormula">Total expenses ÷ projected monthly miles</div>
+          </div>
+
+          <!-- TRUCK COSTS TOTAL (Rolling + Sitting combined) -->
+          <div style="background: rgba(255,183,0,0.1); border: 1px solid rgba(255,183,0,0.4); border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <div style="font-size: 10px; color: #ffb300; font-weight: bold; margin-bottom: 6px;">🚛 TOTAL TRUCK COSTS (Rolling + Fixed)</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <div style="font-size: 10px; color: #aaa;">🛡️ Insurance (GWC):</div>
+              <div style="font-size: 11px; color: #ff8800; font-weight: bold;" id="insuranceSummary">$1,248.64</div>
+              <div style="font-size: 10px; color: #aaa;">⛽ Fuel (est.):</div>
+              <div style="font-size: 11px; color: #00ff88;" id="fuelSummary">$0.00</div>
+              <div style="font-size: 10px; color: #aaa;">🛣️ Tolls + PrePass:</div>
+              <div style="font-size: 11px; color: #00ff88;" id="tollsSummary">$0.00</div>
+              <div style="font-size: 10px; color: #aaa;">🔧 Maintenance:</div>
+              <div style="font-size: 11px; color: #00ff88;" id="maintSummary">$0.00</div>
+              <div style="font-size: 10px; color: #aaa;">📋 Loadboard + ELD:</div>
+              <div style="font-size: 11px; color: #00ff88;" id="fixedSummary">$0.00</div>
+              <div style="font-size: 10px; color: #ffb300; font-weight: bold; border-top: 1px solid #333; padding-top: 4px;">TRUCK TOTAL:</div>
+              <div style="font-size: 12px; color: #ffb300; font-weight: bold; border-top: 1px solid #333; padding-top: 4px;" id="truckGrandTotal">$0.00</div>
+            </div>
+          </div>
+
           <div id="personalCosts" style="background: rgba(0, 212, 255, 0.05); border-left: 3px solid #00d4ff; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
             <h3 style="color: #00d4ff; font-size: 12px; margin-bottom: 8px;">🏠 PERSONAL HOME</h3>
             <div style="font-size: 18px; color: #00ff88; font-weight: bold; margin-bottom: 4px;" id="personalTotal">$0.00</div>
@@ -903,13 +932,37 @@
     
     // Load dashboard data
     function loadDashboard() {
-      // These would normally fetch from API
       document.getElementById('ytd-income').textContent = '$1.04M';
       document.getElementById('ytd-profit').textContent = '$320K';
-      document.getElementById('rpm').textContent = '$1.23';
-      document.getElementById('cpm').textContent = '$1.75';
       document.getElementById('fuel-cost').textContent = '$47.1K';
       document.getElementById('fuel-ppg').textContent = '$3.47';
+
+      // === REAL-TIME CPM & RPM CALCULATION ===
+      // CPM = Cost Per Mile (what it costs to run the truck per mile)
+      const fuelPricePerGal = 5.53;   // Brad's current price
+      const mpg = 5.5;                // truck MPG
+      const fuelCPM = fuelPricePerGal / mpg; // $1.005/mile just for fuel
+
+      // Monthly fixed costs per mile (using avg 5,872 mi/month = 1,468 mi/wk × 4)
+      const avgMonthlyMiles = 5872;
+      const insuranceCPM = 1248.64 / avgMonthlyMiles;   // $0.213/mile
+      const fixedCPM = (79 + 30.45) / avgMonthlyMiles;  // $0.019/mile (loadboard + ELD)
+      const tollsMaintCPM = (450 + 680) / avgMonthlyMiles; // $0.193/mile
+
+      const cpm = fuelCPM + insuranceCPM + fixedCPM + tollsMaintCPM;
+      document.getElementById('cpm').textContent = '$' + cpm.toFixed(2);
+
+      // RPM = Revenue Per Mile NEEDED to cover ALL expenses (break-even)
+      // Brad's formula: total monthly expenses ÷ projected monthly miles
+      const personalExp = 2850;
+      const rollingExp = (fuelPricePerGal / mpg * avgMonthlyMiles) + 450 + 680 + 72;
+      const sittingExp = 1248.64 + 79 + 30.45;
+      const totalMonthlyExp = personalExp + rollingExp + sittingExp;
+
+      const rpm = totalMonthlyExp / avgMonthlyMiles;
+      const el = document.getElementById('rpm');
+      el.textContent = '$' + rpm.toFixed(2);
+      el.title = 'Break-even: $' + totalMonthlyExp.toFixed(0) + ' total expenses ÷ ' + avgMonthlyMiles.toLocaleString() + ' avg monthly miles';
     }
     
     // Load monthly costs
@@ -920,8 +973,11 @@
       // Personal home expenses
       const personalTotal = 2850; // Estimated mortgage, utilities, insurance, etc.
       
-      // Business rolling costs
-      const fuelCost = 3200; // Based on fuel logs
+      // Business rolling costs — fuel calculated from real price/MPG × avg monthly miles
+      const fuelPricePerGal = 5.53;  // Brad's current fuel price
+      const truckMPG = 5.5;
+      const avgMonthlyMiles = 5872;  // 1,468 mi/wk avg × 4 (from Omnitracs data)
+      const fuelCost = (fuelPricePerGal / truckMPG) * avgMonthlyMiles; // ~$5,901
       const tollsCost = 450;
       const maintCost = 680;
       const prepassCost = 72; // PrePass weigh station bypass — variable usage-based, avg from bank data ($44–$127/mo)
@@ -961,6 +1017,22 @@
       
       // Update grand total
       document.getElementById('grandTotal').textContent = formatMoney(grandTotal);
+
+      // Update summary card
+      const truckTotal = rollingTotal + sittingTotal;
+      document.getElementById('insuranceSummary').textContent = formatMoney(insuranceCost);
+      document.getElementById('fuelSummary').textContent = formatMoney(fuelCost);
+      document.getElementById('tollsSummary').textContent = formatMoney(tollsCost + prepassCost);
+      document.getElementById('maintSummary').textContent = formatMoney(maintCost);
+      document.getElementById('fixedSummary').textContent = formatMoney(loadboardCost + omnitraccCost);
+      document.getElementById('truckGrandTotal').textContent = formatMoney(truckTotal);
+
+      // Break-even RPM calc
+      const avgMonthlyMiles = 5872; // 1,468 mi/wk avg × 4 weeks (from Omnitracs IFTA data)
+      const breakEven = grandTotal / avgMonthlyMiles;
+      document.getElementById('breakEvenRPM').textContent = '$' + breakEven.toFixed(2);
+      document.getElementById('breakEvenFormula').textContent =
+        formatMoney(grandTotal) + ' total expenses ÷ ' + avgMonthlyMiles.toLocaleString() + ' avg monthly miles';
     }
     
     // LOAD BOARD

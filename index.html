@@ -484,9 +484,14 @@
             <div style="font-size:8px;color:#888;margin-top:2px;">break-even/mile</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">CPM (Truck)</div>
+            <div class="stat-label">CPM (Rolling)</div>
             <div class="stat-value" id="cpm">Loading...</div>
-            <div style="font-size:8px;color:#888;margin-top:2px;">cost per mile</div>
+            <div style="font-size:8px;color:#888;margin-top:2px;">fuel+maint+tolls/mi</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ALL-IN CPM</div>
+            <div class="stat-value" id="cpm-allin">Loading...</div>
+            <div style="font-size:8px;color:#f90;margin-top:2px;">break-even $/mi (all bills)</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Fuel Cost (Yr)</div>
@@ -1000,8 +1005,15 @@
 
       document.getElementById('cpm').textContent = '$' + cpm.toFixed(2);
       document.getElementById('cpm').title =
-        'Fuel $' + fuelCPM.toFixed(3) + '/mi + Maint ($' + weeklyMaintAvg + '/wk×4=$' + monthlyMaint + ') + Tolls $' + monthlyTolls + ' + PrePass $' + monthlyPrepass + ' ÷ ' + actualMonthlyMiles.toLocaleString() + ' mi/mo' +
-        ' | Last recorded fuel: $' + lastRecordedFuelPrice + '/gal (Sep 2025 - log new fuel to update)';
+        'Fuel $' + fuelCPM.toFixed(3) + '/mi + Maint ($' + weeklyMaintAvg + '/wk×4=$' + monthlyMaint + ') + Tolls $' + monthlyTolls + ' + PrePass $' + monthlyPrepass + ' ÷ ' + actualMonthlyMiles.toLocaleString() + ' mi/mo';
+
+      // ALL-IN CPM: rolling + fixed bills spread per mile
+      const fixedPerMonth = insuranceBill + loadboardBill + omnitraccBill + personalBills;
+      const fixedCPM = fixedPerMonth / actualMonthlyMiles;
+      const allInCPM = cpm + fixedCPM;
+      document.getElementById('cpm-allin').textContent = '$' + allInCPM.toFixed(2);
+      document.getElementById('cpm-allin').title =
+        'Rolling $' + cpm.toFixed(2) + '/mi + Fixed $' + fixedCPM.toFixed(2) + '/mi (insurance+ELD+loadboard+personal $' + fixedPerMonth.toLocaleString() + '/mo ÷ ' + actualMonthlyMiles.toLocaleString() + ' mi) = ALL-IN break-even';
 
       // ── FIXED MONTHLY BILLS (always due, truck moving or not) ──
       const insuranceBill  = 1248.64;  // Great West Casualty — confirmed bank data

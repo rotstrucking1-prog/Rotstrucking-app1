@@ -937,32 +937,52 @@
       document.getElementById('fuel-cost').textContent = '$47.1K';
       document.getElementById('fuel-ppg').textContent = '$3.47';
 
-      // === REAL-TIME CPM & RPM CALCULATION ===
-      // CPM = Cost Per Mile (what it costs to run the truck per mile)
+      // === BRAD'S EXACT RPM FORMULA ===
+      // (CPM × monthly miles) + fixed monthly bills = total you need
+      // total needed ÷ monthly miles = RPM
+      //
+      // CPM = variable truck running costs per mile (fuel + maintenance + tolls)
+      // Fixed bills = everything you owe regardless of whether the truck moves
+
       const fuelPricePerGal = 5.53;   // Brad's current price
       const mpg = 5.5;                // truck MPG
-      const fuelCPM = fuelPricePerGal / mpg; // $1.005/mile just for fuel
+      const fuelCPM = fuelPricePerGal / mpg; // $1.005/mile — fuel only
 
-      // Monthly fixed costs per mile (using avg 5,872 mi/month = 1,468 mi/wk × 4)
-      const avgMonthlyMiles = 5872;
-      const insuranceCPM = 1248.64 / avgMonthlyMiles;   // $0.213/mile
-      const fixedCPM = (79 + 30.45) / avgMonthlyMiles;  // $0.019/mile (loadboard + ELD)
-      const tollsMaintCPM = (450 + 680) / avgMonthlyMiles; // $0.193/mile
+      // Other variable truck running costs per mile (from real bank data avg 2025-2026)
+      // Maintenance avg: ~$618/mo, PrePass avg: ~$72/mo, tolls: ~$450/mo
+      // We'll spread over miles Brad actually runs
+      const weeklyMilesTarget = 3000;        // Brad's stated typical weekly miles
+      const monthlyMiles = weeklyMilesTarget * 4; // 12,000/month
+      const variableMaintTolls = (618 + 72 + 450) / monthlyMiles; // $0.095/mile at 12k miles
 
-      const cpm = fuelCPM + insuranceCPM + fixedCPM + tollsMaintCPM;
+      // CPM = fuel + maintenance + tolls (pure variable — goes up/down with miles)
+      const cpm = fuelCPM + variableMaintTolls;
       document.getElementById('cpm').textContent = '$' + cpm.toFixed(2);
+      document.getElementById('cpm').title =
+        'Fuel: $' + fuelCPM.toFixed(3) + '/mi  Maintenance+Tolls: $' + variableMaintTolls.toFixed(3) + '/mi';
 
-      // RPM = Revenue Per Mile NEEDED to cover ALL expenses (break-even)
-      // Brad's formula: total monthly expenses ÷ projected monthly miles
-      const personalExp = 2850;
-      const rollingExp = (fuelPricePerGal / mpg * avgMonthlyMiles) + 450 + 680 + 72;
-      const sittingExp = 1248.64 + 79 + 30.45;
-      const totalMonthlyExp = personalExp + rollingExp + sittingExp;
+      // ── FIXED MONTHLY BILLS (always due, truck moving or not) ──
+      const insuranceBill  = 1248.64;  // Great West Casualty — confirmed bank data
+      const loadboardBill  = 79.00;    // 123Loadboard
+      const omnitraccBill  = 30.45;    // Omnitracs ELD
+      const personalBills  = 2850;     // Carroll County Electric ~$1,300 + State Farm + other personal
 
-      const rpm = totalMonthlyExp / avgMonthlyMiles;
+      const fixedMonthlyBills = insuranceBill + loadboardBill + omnitraccBill + personalBills;
+
+      // ── BRAD'S FORMULA ──
+      // Truck running cost (rolling) = CPM × miles
+      const truckRunningCost = cpm * monthlyMiles;
+      // Total needed = rolling cost + fixed bills
+      const totalNeeded = truckRunningCost + fixedMonthlyBills;
+      // RPM break-even = total / miles
+      const rpm = totalNeeded / monthlyMiles;
+
       const el = document.getElementById('rpm');
       el.textContent = '$' + rpm.toFixed(2);
-      el.title = 'Break-even: $' + totalMonthlyExp.toFixed(0) + ' total expenses ÷ ' + avgMonthlyMiles.toLocaleString() + ' avg monthly miles';
+      el.title =
+        'Formula: ($' + cpm.toFixed(2) + ' CPM × ' + monthlyMiles.toLocaleString() + ' mi = $' +
+        truckRunningCost.toFixed(0) + ') + $' + fixedMonthlyBills.toFixed(0) +
+        ' fixed bills = $' + totalNeeded.toFixed(0) + ' ÷ ' + monthlyMiles.toLocaleString() + ' mi';
     }
     
     // Load monthly costs
@@ -1027,12 +1047,32 @@
       document.getElementById('fixedSummary').textContent = formatMoney(loadboardCost + omnitraccCost);
       document.getElementById('truckGrandTotal').textContent = formatMoney(truckTotal);
 
-      // Break-even RPM calc
-      const avgMonthlyMiles = 5872; // 1,468 mi/wk avg × 4 weeks (from Omnitracs IFTA data)
-      const breakEven = grandTotal / avgMonthlyMiles;
-      document.getElementById('breakEvenRPM').textContent = '$' + breakEven.toFixed(2);
+      // ── BRAD'S EXACT BREAK-EVEN RPM FORMULA ──
+      // (CPM × monthly miles) + monthly bills = total needed
+      // RPM = total needed ÷ monthly miles
+      //
+      // CPM = fuel + maintenance + tolls (what it costs to MOVE the truck per mile)
+      const fuelPricePerGal = 5.53;
+      const truckMPGc = 5.5;
+      const fuelCPMc = fuelPricePerGal / truckMPGc; // $1.005/mi
+      const weeklyMilesTarget = 3000;
+      const projectedMonthlyMiles = weeklyMilesTarget * 4; // 12,000
+
+      const variablePerMile = fuelCPMc + (maintCost + prepassCost + tollsCost) / projectedMonthlyMiles;
+      const truckRunningCostMonth = variablePerMile * projectedMonthlyMiles;
+
+      // Fixed bills = insurance + personal + loadboard + ELD (always owed)
+      const fixedBills = insuranceCost + personalTotal + loadboardCost + omnitraccCost;
+
+      const totalNeededMonth = truckRunningCostMonth + fixedBills;
+      const breakEvenRPM = totalNeededMonth / projectedMonthlyMiles;
+
+      document.getElementById('breakEvenRPM').textContent = '$' + breakEvenRPM.toFixed(2);
       document.getElementById('breakEvenFormula').textContent =
-        formatMoney(grandTotal) + ' total expenses ÷ ' + avgMonthlyMiles.toLocaleString() + ' avg monthly miles';
+        '($' + variablePerMile.toFixed(2) + ' CPM × ' + projectedMonthlyMiles.toLocaleString() +
+        ' mi = ' + formatMoney(truckRunningCostMonth) + ' truck) + ' +
+        formatMoney(fixedBills) + ' fixed bills = ' +
+        formatMoney(totalNeededMonth) + ' total ÷ ' + projectedMonthlyMiles.toLocaleString() + ' mi';
     }
     
     // LOAD BOARD

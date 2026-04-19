@@ -686,6 +686,55 @@
       </div>
       
       <!-- HELP TAB -->
+      <div id="mileage" class="tab-content">
+        <div style="padding: 8px;">
+          <h2 style="font-family: 'Orbitron'; color: #00ff88; margin-bottom: 4px; font-size: 14px;">🗺️ MILEAGE TRACKER</h2>
+          <p style="font-size: 10px; color: #888; margin-bottom: 12px;">Vehicle 101 · Jan–Apr 2026 · Omnitracs GPS</p>
+
+          <!-- SUMMARY CARDS -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <div style="background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 10px; color: #888;">TOTAL MILES</div>
+              <div style="font-size: 20px; font-weight: bold; color: #00ff88;">14,683</div>
+              <div style="font-size: 9px; color: #666;">Jan 9 – Apr 16</div>
+            </div>
+            <div style="background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 10px; color: #888;">AVG / WEEK</div>
+              <div style="font-size: 20px; font-weight: bold; color: #00d4ff;">1,468</div>
+              <div style="font-size: 9px; color: #666;">based on 10 weeks</div>
+            </div>
+            <div style="background: rgba(255,136,0,0.08); border: 1px solid rgba(255,136,0,0.3); border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 10px; color: #888;">BEST WEEK</div>
+              <div style="font-size: 20px; font-weight: bold; color: #ff8800;">2,558</div>
+              <div style="font-size: 9px; color: #666;">Jan 12–18, 2026</div>
+            </div>
+            <div style="background: rgba(255,0,136,0.08); border: 1px solid rgba(255,0,136,0.3); border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 10px; color: #888;">BEST DAY</div>
+              <div style="font-size: 20px; font-weight: bold; color: #ff0088;">637</div>
+              <div style="font-size: 9px; color: #666;">Jan 20, 2026</div>
+            </div>
+          </div>
+
+          <!-- WEEKLY BAR CHART -->
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(0,212,255,0.2); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+            <h3 style="font-family: 'Orbitron'; color: #00d4ff; font-size: 11px; margin-bottom: 10px;">📅 WEEKLY MILEAGE</h3>
+            <div id="weeklyBars"></div>
+          </div>
+
+          <!-- STATE BREAKDOWN -->
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(0,212,255,0.2); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+            <h3 style="font-family: 'Orbitron'; color: #00d4ff; font-size: 11px; margin-bottom: 10px;">📍 MILES BY STATE (IFTA)</h3>
+            <div id="stateMiles"></div>
+          </div>
+
+          <!-- RECENT DAILY LOG -->
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(0,212,255,0.2); border-radius: 6px; padding: 12px;">
+            <h3 style="font-family: 'Orbitron'; color: #00d4ff; font-size: 11px; margin-bottom: 10px;">📋 TOP DRIVING DAYS</h3>
+            <div id="dailyLog"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="help" class="tab-content">
         <div style="padding: 8px;">
           <h2 style="font-family: 'Orbitron'; color: #00ff88; margin-bottom: 12px; font-size: 14px;">HOW TO USE</h2>
@@ -726,6 +775,7 @@
       <button class="tab-btn" onclick="switchTab('add')">➕ Add</button>
       <button class="tab-btn" onclick="switchTab('data')">📋 Data</button>
       <button class="tab-btn" onclick="switchTab('costs')">💸 Costs</button>
+      <button class="tab-btn" onclick="switchTab('mileage')">🗺️ Miles</button>
     </div>
   </div>
   
@@ -752,6 +802,9 @@
       // Load data for specific tabs
       if (tabName === 'costs') {
         loadMonthlyCosts();
+      }
+      if (tabName === 'mileage') {
+        loadMileageData();
       }
     }
     
@@ -1081,6 +1134,104 @@
     
     loadDashboard();
     loadMonthlyCosts();
+
+    // ===== MILEAGE TAB =====
+    const WEEKLY_MILES = [
+      { week: 'Jan 5–11', miles: 65.5 },
+      { week: 'Jan 12–18', miles: 2557.9 },
+      { week: 'Jan 19–25', miles: 1994.9 },
+      { week: 'Jan 26–Feb 1', miles: 879.6 },
+      { week: 'Feb 2–8', miles: 1836.8 },
+      { week: 'Feb 9–15', miles: 1451.1 },
+      { week: 'Mar 2–8', miles: 1915.0 },
+      { week: 'Mar 9–15', miles: 1756.9 },
+      { week: 'Mar 23–29', miles: 1218.3 },
+      { week: 'Apr 13–19', miles: 1007.3 },
+    ];
+
+    const STATE_MILES = [
+      { state: 'Tennessee', miles: 4615.9 },
+      { state: 'Mississippi', miles: 3427.8 },
+      { state: 'Arkansas', miles: 1553.2 },
+      { state: 'Alabama', miles: 1234.4 },
+      { state: 'Kentucky', miles: 724.7 },
+      { state: 'Louisiana', miles: 669.1 },
+      { state: 'Georgia', miles: 517.9 },
+      { state: 'Florida', miles: 474.9 },
+      { state: 'Ohio', miles: 409.7 },
+      { state: 'Illinois', miles: 365.0 },
+      { state: 'Michigan', miles: 296.6 },
+      { state: 'Missouri', miles: 203.4 },
+      { state: 'Oklahoma', miles: 145.2 },
+      { state: 'Indiana', miles: 45.5 },
+    ];
+
+    const TOP_DAYS = [
+      { date: 'Jan 20', miles: 636.5 },
+      { date: 'Jan 23', miles: 580.9 },
+      { date: 'Jan 18', miles: 572.2 },
+      { date: 'Feb 10', miles: 571.2 },
+      { date: 'Jan 14', miles: 567.4 },
+      { date: 'Feb 2', miles: 560.8 },
+      { date: 'Mar 3', miles: 546.0 },
+      { date: 'Jan 16', miles: 499.2 },
+      { date: 'Mar 4', miles: 496.0 },
+      { date: 'Mar 5', miles: 489.5 },
+    ];
+
+    function loadMileageData() {
+      const totalMiles = STATE_MILES.reduce((s, r) => s + r.miles, 0);
+      const maxWeekly = Math.max(...WEEKLY_MILES.map(w => w.miles));
+
+      // Weekly bars
+      const barsEl = document.getElementById('weeklyBars');
+      if (barsEl && !barsEl.dataset.loaded) {
+        barsEl.dataset.loaded = '1';
+        barsEl.innerHTML = WEEKLY_MILES.map(w => {
+          const pct = (w.miles / maxWeekly * 100).toFixed(1);
+          const color = w.miles > 2000 ? '#00ff88' : w.miles > 1400 ? '#00d4ff' : '#ff8800';
+          return `<div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin-bottom:2px;">
+              <span>${w.week}</span><span style="color:${color};font-weight:bold;">${w.miles.toLocaleString()} mi</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.08);border-radius:3px;height:10px;overflow:hidden;">
+              <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.5s;"></div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      // State miles
+      const stateEl = document.getElementById('stateMiles');
+      if (stateEl && !stateEl.dataset.loaded) {
+        stateEl.dataset.loaded = '1';
+        const maxState = STATE_MILES[0].miles;
+        stateEl.innerHTML = STATE_MILES.map(s => {
+          const pct = (s.miles / maxState * 100).toFixed(1);
+          const sharePct = (s.miles / totalMiles * 100).toFixed(1);
+          return `<div style="margin-bottom:6px;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin-bottom:2px;">
+              <span>${s.state}</span>
+              <span style="color:#00d4ff;">${s.miles.toLocaleString()} mi <span style="color:#666;">(${sharePct}%)</span></span>
+            </div>
+            <div style="background:rgba(255,255,255,0.08);border-radius:3px;height:8px;overflow:hidden;">
+              <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#00d4ff,#0088ff);border-radius:3px;"></div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      // Top days
+      const dailyEl = document.getElementById('dailyLog');
+      if (dailyEl && !dailyEl.dataset.loaded) {
+        dailyEl.dataset.loaded = '1';
+        dailyEl.innerHTML = TOP_DAYS.map((d, i) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <span style="font-size:10px;color:#888;">#${i+1} &nbsp; ${d.date}</span>
+            <span style="font-size:12px;font-weight:bold;color:#00ff88;">${d.miles.toLocaleString()} mi</span>
+          </div>`).join('');
+      }
+    }
   </script>
 </body>
 </html>

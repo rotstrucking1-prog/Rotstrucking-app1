@@ -821,12 +821,12 @@
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
             <div style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.3); border-radius:6px; padding:10px; text-align:center;">
               <div style="font-size:9px; color:#00ff88; margin-bottom:4px;">WITH DEDUCTIONS</div>
-              <div style="font-size:20px; font-weight:bold; color:#00ff88;" id="totalWithDed">$292,347</div>
+              <div style="font-size:20px; font-weight:bold; color:#00ff88;" id="totalWithDed">$212,316</div>
               <div style="font-size:9px; color:#888;">estimated total owed</div>
             </div>
             <div style="background:rgba(255,0,85,0.05); border:1px solid rgba(255,0,85,0.3); border-radius:6px; padding:10px; text-align:center;">
               <div style="font-size:9px; color:#ff0055; margin-bottom:4px;">WITHOUT DEDUCTIONS</div>
-              <div style="font-size:20px; font-weight:bold; color:#ff0055;" id="totalNoDed">$381,798</div>
+              <div style="font-size:20px; font-weight:bold; color:#ff0055;" id="totalNoDed">$355,932</div>
               <div style="font-size:9px; color:#888;">if no deductions taken</div>
             </div>
           </div>
@@ -834,7 +834,7 @@
           <!-- SAVINGS CARD -->
           <div style="background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.4); border-radius:6px; padding:10px; margin-bottom:12px; text-align:center;">
             <div style="font-size:9px; color:#ffb300; margin-bottom:2px;">💰 DEDUCTIONS SAVE YOU</div>
-            <div style="font-size:24px; font-weight:bold; color:#ffb300;" id="totalSavings">$89,451</div>
+            <div style="font-size:24px; font-weight:bold; color:#ffb300;" id="totalSavings">$143,616</div>
             <div style="font-size:9px; color:#888;">fuel · insurance · per diem · ELD · load board</div>
           </div>
 
@@ -889,7 +889,7 @@
                 <span style="color:#aaa;">Q4 (Oct–Dec) — Due Jan 15</span>
                 <span style="color:#ffb300; font-weight:bold;">~$817</span>
               </div>
-              <div style="margin-top:8px; font-size:9px; color:#888;">Based on $3,268 projected 2026 tax ÷ 4 quarters. Pay via IRS Direct Pay or EFTPS.</div>
+              <div style="margin-top:8px; font-size:9px; color:#888;">Based on $1,059 projected 2026 tax ÷ 4 quarters. Pay via IRS Direct Pay or EFTPS.</div>
             </div>
           </div>
 
@@ -1547,15 +1547,18 @@
       }
     }
   // ===== TAX TAB =====
+  // TAX DATA v2 — Updated with real insurance from bank statements (TrueNorth, Progressive, Great West)
   const TAX_DATA = [
-    { year: 2019, gross: 1529,   fuel: 1056,  ins: 0,     maint: 0,    perDiem: 1512,  eld: 0,    totalDed: 1376,  netTax: 153,   withDed: 36,    noDed: 358,    savings: 322   },
-    { year: 2020, gross: 110597, fuel: 6829,  ins: 0,     maint: 385,  perDiem: 7560,  eld: 0,    totalDed: 14839, netTax: 95758, withDed: 28161, noDed: 33337,  savings: 5176  },
-    { year: 2021, gross: 181265, fuel: 22107, ins: 0,     maint: 2541, perDiem: 10080, eld: 0,    totalDed: 35121, netTax: 146144,withDed: 46289, noDed: 59085,  savings: 12796 },
-    { year: 2022, gross: 285791, fuel: 9856,  ins: 2400,  maint: 3321, perDiem: 12096, eld: 1308, totalDed: 24051, netTax: 261740,withDed: 92509, noDed: 103716, savings: 11207 },
-    { year: 2023, gross: 122727, fuel: 8612,  ins: 14984, maint: 1170, perDiem: 11088, eld: 1308, totalDed: 37663, netTax: 85064, withDed: 24464, noDed: 37757,  savings: 13293 },
-    { year: 2024, gross: 278082, fuel: 26214, ins: 14984, maint: 4752, perDiem: 11592, eld: 1308, totalDed: 74221, netTax: 203861,withDed: 67317, noDed: 100119, savings: 32802 },
-    { year: 2025, gross: 132164, fuel: 8012,  ins: 14984, maint: 1820, perDiem: 9072,  eld: 1308, totalDed: 30214, netTax: 101951,withDed: 30303, noDed: 41195,  savings: 10893 },
-    { year: 2026, gross: 25561,  fuel: 3012,  ins: 3746,  maint: 340,  perDiem: 3024,  eld: 365,  totalDed: 11717, netTax: 13843, withDed: 3268,  noDed: 6230,   savings: 2962  },
+    // v2: Real insurance data from bank statements (TrueNorth 2020-23, Progressive 2023-24, Great West 2025-26)
+    // Real fuel from bank txns, real maintenance, real factoring fees from RTS history
+    { year: 2019, gross: 1529,   fuel: 0,      ins: 0,      maint: 0,     perDiem: 504,   fact: 0,     totalDed: 504,    withDed: 145,   noDed: 216,    savings: 71    },
+    { year: 2020, gross: 110597, fuel: 10974,  ins: 438,    maint: 3010,  perDiem: 9072,  fact: 0,     totalDed: 24135,  withDed: 22219, noDed: 30564,  savings: 8345  },
+    { year: 2021, gross: 176777, fuel: 32168,  ins: 2249,   maint: 6241,  perDiem: 11088, fact: 0,     totalDed: 55319,  withDed: 34287, noDed: 54438,  savings: 20151 },
+    { year: 2022, gross: 285791, fuel: 12059,  ins: 2280,   maint: 14376, perDiem: 11592, fact: 0,     totalDed: 46370,  withDed: 78574, noDed: 99183,  savings: 20610 },
+    { year: 2023, gross: 122727, fuel: 25987,  ins: 9693,   maint: 3246,  perDiem: 11040, fact: 14127, totalDed: 69050,  withDed: 11676, noDed: 34439,  savings: 22763 },
+    { year: 2024, gross: 278082, fuel: 67808,  ins: 16497,  maint: 6088,  perDiem: 11040, fact: 24065, totalDed: 129478, withDed: 43681, noDed: 95009,  savings: 51328 },
+    { year: 2025, gross: 132164, fuel: 12992,  ins: 8113,   maint: 2810,  perDiem: 10488, fact: 8832,  totalDed: 48516,  withDed: 20675, noDed: 37595,  savings: 16921 },
+    { year: 2026, gross: 25561,  fuel: 4030,   ins: 3746,   maint: 2072,  perDiem: 4140,  fact: 3398,  totalDed: 18063,  withDed: 1059,  noDed: 4487,   savings: 3428  },
   ];
 
   let taxViewMode = 'with';

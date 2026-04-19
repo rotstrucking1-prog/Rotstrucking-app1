@@ -665,13 +665,16 @@
             <div style="font-size: 18px; color: #ffb300; font-weight: bold; margin-bottom: 8px;" id="rollingTotal">$0.00</div>
             <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel: <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
             <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🛣️ Tolls: <span id="tollsCost" style="color: #00ff88;">$0.00</span></div>
-            <div style="font-size: 10px; color: #aaa;">🔧 Maintenance: <span id="maintCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🔧 Maintenance: <span id="maintCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa;">⚖️ PrePass (weigh stations): <span id="prepassCost" style="color: #00ff88;">$0.00</span> <span style="color:#555; font-size:9px;">avg/mo</span></div>
           </div>
           
           <div id="sittingCosts" style="background: rgba(255, 136, 0, 0.05); border-left: 3px solid #ff8800; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
             <h3 style="color: #ff8800; font-size: 12px; margin-bottom: 8px;">🛑 TRUCK SITTING (Monthly Fixed)</h3>
             <div style="font-size: 18px; color: #ff0055; font-weight: bold; margin-bottom: 8px;" id="sittingTotal">$0.00</div>
             <div style="font-size: 12px; color: #fff; margin-bottom: 6px; font-weight: bold;">🛡️ Great West Casualty Insurance: <span id="insuranceCost" style="color: #ffb300;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">📋 123Loadboard subscription: <span id="loadboardCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">📡 Omnitracs ELD: <span id="omnitraccCost" style="color: #00ff88;">$0.00</span></div>
             <div style="font-size: 10px; color: #aaa;">💼 Other Fixed: <span id="otherFixedCost" style="color: #00ff88;">$0.00</span></div>
           </div>
           
@@ -868,12 +871,15 @@
       const fuelCost = 3200; // Based on fuel logs
       const tollsCost = 450;
       const maintCost = 680;
-      const rollingTotal = fuelCost + tollsCost + maintCost;
+      const prepassCost = 72; // PrePass weigh station bypass — variable usage-based, avg from bank data ($44–$127/mo)
+      const rollingTotal = fuelCost + tollsCost + maintCost + prepassCost;
       
       // Business sitting/fixed costs
-      const insuranceCost = 1248.64; // Monthly truck insurance — Great West Casualty (actual from bank statements, GRTWESTCAS ACH Debit)
-      const otherFixedCost = 285; // Subscriptions, permits, etc.
-      const sittingTotal = insuranceCost + otherFixedCost;
+      const insuranceCost = 1248.64; // Great West Casualty — confirmed GRTWESTCAS ACH Debit from bank
+      const loadboardCost = 79.00;   // 123Loadboard monthly subscription — confirmed from bank (123loadboard.CO)
+      const omnitraccCost = 30.45;   // Omnitracs ELD (Solera) — confirmed from bank
+      const otherFixedCost = 0;      // Any remaining fixed costs
+      const sittingTotal = insuranceCost + loadboardCost + omnitraccCost + otherFixedCost;
       
       const grandTotal = personalTotal + rollingTotal + sittingTotal;
       
@@ -891,10 +897,13 @@
       document.getElementById('fuelCost').textContent = formatMoney(fuelCost);
       document.getElementById('tollsCost').textContent = formatMoney(tollsCost);
       document.getElementById('maintCost').textContent = formatMoney(maintCost);
+      document.getElementById('prepassCost').textContent = formatMoney(prepassCost);
       
       // Update sitting section
       document.getElementById('sittingTotal').textContent = formatMoney(sittingTotal);
       document.getElementById('insuranceCost').textContent = formatMoney(insuranceCost);
+      document.getElementById('loadboardCost').textContent = formatMoney(loadboardCost);
+      document.getElementById('omnitraccCost').textContent = formatMoney(omnitraccCost);
       document.getElementById('otherFixedCost').textContent = formatMoney(otherFixedCost);
       
       // Update grand total

@@ -1052,9 +1052,8 @@
       // RPM = total needed ÷ monthly miles
       //
       // CPM = fuel + maintenance + tolls (what it costs to MOVE the truck per mile)
-      const fuelPricePerGal = 5.53;
-      const truckMPGc = 5.5;
-      const fuelCPMc = fuelPricePerGal / truckMPGc; // $1.005/mi
+      // fuelPricePerGal and truckMPG already declared above
+      const fuelCPMc = fuelPricePerGal / truckMPG; // $1.005/mi
       const weeklyMilesTarget = 3000;
       const projectedMonthlyMiles = weeklyMilesTarget * 4; // 12,000
 

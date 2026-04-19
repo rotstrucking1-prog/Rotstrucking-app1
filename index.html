@@ -1069,24 +1069,22 @@
       // CPM = fuel + maintenance + tolls (what it costs to MOVE the truck per mile)
       // fuelPricePerGal and truckMPG already declared above
       const fuelCPMc = currentFuelPriceC / truckMPG; // actual Mudflap $/mi
-      const weeklyMilesTarget = 3000;
-      const projectedMonthlyMiles = weeklyMilesTarget * 4; // 12,000
-
-      const variablePerMile = fuelCPMc + (maintCost + prepassCost + tollsCost) / projectedMonthlyMiles;
-      const truckRunningCostMonth = variablePerMile * projectedMonthlyMiles;
+      // Use REAL Omnitracs miles (avgMonthlyMiles = 5,872) — NOT the 12,000 target
+      const variablePerMile = fuelCPMc + (maintCost + prepassCost + tollsCost) / avgMonthlyMiles;
+      const truckRunningCostMonth = variablePerMile * avgMonthlyMiles;
 
       // Fixed bills = insurance + personal + loadboard + ELD (always owed)
       const fixedBills = insuranceCost + personalTotal + loadboardCost + omnitraccCost;
 
       const totalNeededMonth = truckRunningCostMonth + fixedBills;
-      const breakEvenRPM = totalNeededMonth / projectedMonthlyMiles;
+      const breakEvenRPM = totalNeededMonth / avgMonthlyMiles;
 
       document.getElementById('breakEvenRPM').textContent = '$' + breakEvenRPM.toFixed(2);
       document.getElementById('breakEvenFormula').textContent =
-        '($' + variablePerMile.toFixed(2) + ' CPM × ' + projectedMonthlyMiles.toLocaleString() +
+        '($' + variablePerMile.toFixed(2) + ' CPM × ' + avgMonthlyMiles.toLocaleString() +
         ' mi = ' + formatMoney(truckRunningCostMonth) + ' truck) + ' +
         formatMoney(fixedBills) + ' fixed bills = ' +
-        formatMoney(totalNeededMonth) + ' total ÷ ' + projectedMonthlyMiles.toLocaleString() + ' mi';
+        formatMoney(totalNeededMonth) + ' total ÷ ' + avgMonthlyMiles.toLocaleString() + ' mi';
     }
     
     // LOAD BOARD

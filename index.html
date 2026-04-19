@@ -1236,12 +1236,10 @@
       });
       
       // Check if already logged in
-      if (localStorage.getItem('rots-logged-in') === 'true') {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-      } else {
-        passwordInput.focus();
-      }
+      // Auto-login: skip login screen
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      localStorage.setItem('rots-logged-in', 'true');
     });
     
     loadDashboard();

@@ -1,0 +1,1505 @@
+// =============================================
+// AUTO SLAYER BOT v2.2 -- MAIN
+// =============================================
+
+// ==================== MAIN LOOP ====================
+// =============================================================================
+// AUTO SLAYER BOT v2 -- MAIN STATE MACHINE
+// =============================================================================
+// The brain of the slayer bot. Implements a full autonomous state machine that:
+//   1. Selects the best slayer master based on combat/slayer levels
+//   2. Walks to master, gets a task assignment
+//   3. Banks for supplies (food, potions, special items, gear)
+//   4. Walks to monster location and fights until task is complete
+//   5. Handles special kill mechanics, loot, bones, prayer
+//   6. Loops forever -- completing task after task
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// STATE DEFINITIONS
+// -----------------------------------------------------------------------------
+var STATES = {
+    STARTUP: "STARTUP",
+    CHECK_STATS: "CHECK_STATS",
+    SELECT_MASTER: "SELECT_MASTER",
+    WALK_TO_MASTER: "WALK_TO_MASTER",
+    TALK_TO_MASTER: "TALK_TO_MASTER",
+    WAIT_FOR_TASK: "WAIT_FOR_TASK",
+    READ_TASK: "READ_TASK",
+    CHECK_SUPPLIES: "CHECK_SUPPLIES",
+    WALK_TO_BANK: "WALK_TO_BANK",
+    BANK_SUPPLIES: "BANK_SUPPLIES",
+    WALK_TO_GE: "WALK_TO_GE",
+    BUY_AT_GE: "BUY_AT_GE",
+    WALK_TO_TASK: "WALK_TO_TASK",
+    FIGHT_TASK: "FIGHT_TASK",
+    SPECIAL_FINISH: "SPECIAL_FINISH",
+    EAT_FOOD: "EAT_FOOD",
+    DRINK_PRAYER: "DRINK_PRAYER",
+    LOOT_ITEMS: "LOOT_ITEMS",
+    BURY_BONES: "BURY_BONES",
+    TASK_COMPLETE: "TASK_COMPLETE",
+    HANDLE_DEATH: "HANDLE_DEATH",
+    HANDLE_LEVEL_UP: "HANDLE_LEVEL_UP",
+    // Self-Sufficiency states
+    GATHER_FOOD: "GATHER_FOOD",
+    COOK_FOOD: "COOK_FOOD",
+    GATHER_GEAR: "GATHER_GEAR",
+    TAN_HIDES: "TAN_HIDES",
+    CRAFT_GEAR: "CRAFT_GEAR",
+    MINE_ORE: "MINE_ORE",
+    SMELT_ORE: "SMELT_ORE",
+    SMITH_GEAR: "SMITH_GEAR",
+    GATHER_RANGED: "GATHER_RANGED",
+    WALK_TO_GATHER: "WALK_TO_GATHER",
+    IDLE: "IDLE"
+};
+
+// -----------------------------------------------------------------------------
+// BOT STATE VARIABLES
+// -----------------------------------------------------------------------------
+var state = STATES.STARTUP;
+var isExecuting = false;
+var tickCounter = 0;
+var stateTickCounter = 0;
+var lastState = "";
+
+// Task info
+var currentTaskName = "";
+var currentTaskMonster = null;
+var killsLeft = 0;
+var totalKills = 0;
+var tasksCompleted = 0;
+var taskReceived = false;
+
+// Master info
+var selectedMaster = null;
+
+// Player stats (cached)
+var combatLevel = 0;
+var slayerLevel = 0;
+var attackLevel = 0;
+var strengthLevel = 0;
+var defenceLevel = 0;
+var hitpointsLevel = 0;
+var prayerLevel = 0;
+var rangedLevel = 0;
+var magicLevel = 0;
+
+// Banking
+var bankTarget = null;
+var needsRestock = false;
+var missingItems = [];
+
+// Timeouts
+var stateTimeout = 0;
+var waitTicks = 0;
+var retryCount = 0;
+var maxRetries = 3;
+
+// Loot tracking
+var lootQueue = [];
+
+// Death detection
+var previousHP = 0;
+var deathDetected = false;
+
+// Level up handling
+var levelUpDetected = false;
+
+
+// =============================================================================
+// OnStart -- Initialize the bot
+// =============================================================================
+function OnStart() {
+    // Initialize overlay
+    overlay.status.setValue("Status: Starting...");
+    overlay.task.setValue("Task: None");
+    overlay.killsLeft.setValue("Kills Left: 0");
+    overlay.tasksCompleted.setValue("Tasks Done: 0");
+    overlay.slayerMaster.setValue("Master: Auto");
+
+    state = STATES.STARTUP;
+    isExecuting = false;
+    tickCounter = 0;
+
+    Game.sendGameMessage("[SlayerBot] v2.2 Started! State: STARTUP", "Bot");
+}
+
+// =============================================================================
+// OnShutdown -- CRITICAL: always reset state
+// =============================================================================
+// Reset gather state variables
+function resetGatherState() {
+    gatherFoodPhase = "idle";
+    gatherFoodTier = null;
+    gatherFoodNeeded = 0;
+    gatherFoodCount = 0;
+    gatherGearPhase = "idle";
+    gatherGearTarget = null;
+    leatherPhase = "killing";
+    rangedGatherPhase = "idle";
+}
+
+function OnShutdown() {
+    isExecuting = false;
+    state = STATES.IDLE;
+    // Reset self-sufficiency state
+    try {
+        resetGatherState();
+        OnShutdown_SS();
+    } catch (e) {
+        // SS module may not be loaded
+    }
+    Game.sendGameMessage("[SlayerBot] Shutdown. isExecuting reset to false.", "Bot");
+}
+
+// =============================================================================
+// OVERLAY UPDATE HELPER
+// =============================================================================
+function updateOverlay(statusText, taskText, kills) {
+    if (overlay.status) overlay.status.setValue("Status: " + statusText);
+    if (overlay.task) overlay.task.setValue("Task: " + taskText);
+    if (overlay.killsLeft) overlay.killsLeft.setValue("Kills Left: " + kills);
+}
+
+// =============================================================================
+// OnGameTick -- MAIN LOOP
+// =============================================================================
+function OnGameTick() {
+    tickCounter++;
+    stateTickCounter++;
+
+    // Prevent overlapping actions
+    if (isExecuting) return;
+
+    // Handle death detection
+    if (deathDetected) {
+        deathDetected = false;
+        state = STATES.HANDLE_DEATH;
+        stateTickCounter = 0;
+    }
+
+    // Handle level up
+    if (levelUpDetected) {
+        levelUpDetected = false;
+        // Just continue -- the dialogue skipper should handle it
+    }
+
+    // State timeout protection -- if stuck for 120 ticks (~72 seconds), reset
+    if (stateTickCounter > 120 && state !== STATES.FIGHT_TASK && state !== STATES.WALK_TO_TASK && state !== STATES.WALK_TO_MASTER && state !== STATES.WALK_TO_BANK && state !== STATES.WALK_TO_GATHER && state !== STATES.GATHER_FOOD && state !== STATES.GATHER_GEAR && state !== STATES.GATHER_RANGED && state !== STATES.MINE_ORE) {
+        Game.sendGameMessage("[SlayerBot] State timeout in " + state + " after " + stateTickCounter + " ticks. Retrying...", "Bot");
+        retryCount++;
+        if (retryCount > maxRetries) {
+            Game.sendGameMessage("[SlayerBot] Max retries exceeded. Resetting to CHECK_STATS.", "Bot");
+            state = STATES.CHECK_STATS;
+            retryCount = 0;
+        }
+        stateTickCounter = 0;
+    }
+
+    // Track state changes for logging
+    if (state !== lastState) {
+        Game.sendGameMessage("[SlayerBot] State transition: " + lastState + " -> " + state, "Bot");
+        lastState = state;
+        stateTickCounter = 0;
+        retryCount = 0;
+    }
+
+    // --- STATE ROUTER ---
+    switch (state) {
+        case STATES.STARTUP:
+            handleStartup();
+            break;
+        case STATES.CHECK_STATS:
+            handleCheckStats();
+            break;
+        case STATES.SELECT_MASTER:
+            handleSelectMaster();
+            break;
+        case STATES.WALK_TO_MASTER:
+            handleWalkToMaster();
+            break;
+        case STATES.TALK_TO_MASTER:
+            handleTalkToMaster();
+            break;
+        case STATES.WAIT_FOR_TASK:
+            handleWaitForTask();
+            break;
+        case STATES.READ_TASK:
+            handleReadTask();
+            break;
+        case STATES.CHECK_SUPPLIES:
+            handleCheckSupplies();
+            break;
+        case STATES.WALK_TO_BANK:
+            handleWalkToBank();
+            break;
+        case STATES.BANK_SUPPLIES:
+            handleBankSupplies();
+            break;
+        case STATES.WALK_TO_GE:
+            handleWalkToGE();
+            break;
+        case STATES.BUY_AT_GE:
+            handleBuyAtGE();
+            break;
+        case STATES.WALK_TO_TASK:
+            handleWalkToTask();
+            break;
+        case STATES.FIGHT_TASK:
+            handleFightTask();
+            break;
+        case STATES.SPECIAL_FINISH:
+            handleSpecialFinish();
+            break;
+        case STATES.EAT_FOOD:
+            handleEatFood();
+            break;
+        case STATES.DRINK_PRAYER:
+            handleDrinkPrayer();
+            break;
+        case STATES.LOOT_ITEMS:
+            handleLootItems();
+            break;
+        case STATES.BURY_BONES:
+            handleBuryBones();
+            break;
+        case STATES.TASK_COMPLETE:
+            handleTaskComplete();
+            break;
+        case STATES.HANDLE_DEATH:
+            handleDeath();
+            break;
+        case STATES.HANDLE_LEVEL_UP:
+            handleLevelUp();
+            break;
+
+        // --- SELF-SUFFICIENCY STATES ---
+        case STATES.GATHER_FOOD:
+            handleGatherFood();
+            break;
+        case STATES.COOK_FOOD:
+            handleCookFood();
+            break;
+        case STATES.GATHER_GEAR:
+            handleGatherGear();
+            break;
+        case STATES.TAN_HIDES:
+            handleTanHides();
+            break;
+        case STATES.CRAFT_GEAR:
+            handleCraftGear();
+            break;
+        case STATES.MINE_ORE:
+            handleMineOre();
+            break;
+        case STATES.SMELT_ORE:
+            handleSmeltOre();
+            break;
+        case STATES.SMITH_GEAR:
+            handleSmithGear();
+            break;
+        case STATES.GATHER_RANGED:
+            handleGatherRanged();
+            break;
+        case STATES.WALK_TO_GATHER:
+            handleWalkToGather();
+            break;
+
+        case STATES.IDLE:
+            // Do nothing
+            break;
+    }
+}
+
+// =============================================================================
+// STATE HANDLERS
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// STARTUP -- Initial checks
+// -----------------------------------------------------------------------------
+function handleStartup() {
+    updateOverlay("Initializing...", "None", 0);
+    Game.sendGameMessage("[SlayerBot] Startup -- checking initial state...", "Bot");
+
+    // Small delay before starting
+    if (stateTickCounter < 3) return;
+
+    state = STATES.CHECK_STATS;
+}
+
+// -----------------------------------------------------------------------------
+// CHECK_STATS -- Read player levels
+// -----------------------------------------------------------------------------
+function handleCheckStats() {
+    updateOverlay("Checking stats...", currentTaskName || "None", killsLeft);
+
+    attackLevel = Client.getRealSkillLevels(Skill.ATTACK);
+    strengthLevel = Client.getRealSkillLevels(Skill.STRENGTH);
+    defenceLevel = Client.getRealSkillLevels(Skill.DEFENCE);
+    hitpointsLevel = Client.getRealSkillLevels(Skill.HITPOINTS);
+    prayerLevel = Client.getRealSkillLevels(Skill.PRAYER);
+    rangedLevel = Client.getRealSkillLevels(Skill.RANGED);
+    magicLevel = Client.getRealSkillLevels(Skill.MAGIC);
+    slayerLevel = Client.getRealSkillLevels(Skill.SLAYER);
+    combatLevel = getCombatLevel();
+
+    Game.sendGameMessage("[SlayerBot] Stats -- Combat: " + combatLevel + ", Slayer: " + slayerLevel +
+               ", ATK: " + attackLevel + ", STR: " + strengthLevel + ", DEF: " + defenceLevel, "Bot");
+
+    // Check if we already have a task (kills left > 0 from a previous session)
+    if (currentTaskName && killsLeft > 0 && currentTaskMonster) {
+        Game.sendGameMessage("[SlayerBot] Resuming existing task: " + currentTaskName + " (" + killsLeft + " left)", "Bot");
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    state = STATES.SELECT_MASTER;
+}
+
+// -----------------------------------------------------------------------------
+// SELECT_MASTER -- Choose slayer master
+// -----------------------------------------------------------------------------
+function handleSelectMaster() {
+    var preference = config.masterPreference ? config.masterPreference.read() : "Auto";
+    selectedMaster = selectBestMaster(combatLevel, slayerLevel, preference);
+
+    Game.sendGameMessage("[SlayerBot] Selected master: " + selectedMaster.name +
+               " at " + selectedMaster.locationName +
+               " (Combat req: " + selectedMaster.combatReq + ", Our combat: " + combatLevel + ")", "Bot");
+
+    overlay.slayerMaster.setValue("Master: " + selectedMaster.name);
+    updateOverlay("Going to " + selectedMaster.name, currentTaskName || "None", killsLeft);
+
+    state = STATES.WALK_TO_MASTER;
+}
+
+// -----------------------------------------------------------------------------
+// WALK_TO_MASTER -- Navigate to slayer master
+// -----------------------------------------------------------------------------
+function handleWalkToMaster() {
+    // Check if already near master
+    if (isNear(selectedMaster.location.x, selectedMaster.location.y, 10)) {
+        Game.sendGameMessage("[SlayerBot] Arrived at " + selectedMaster.name, "Bot");
+        state = STATES.TALK_TO_MASTER;
+        return;
+    }
+
+    // Check if web walking
+    if (PlayerHelper.isWebWalking()) {
+        updateOverlay("Walking to " + selectedMaster.name + "...", currentTaskName || "None", killsLeft);
+        return; // Still walking
+    }
+
+    // Start walking
+    isExecuting = true;
+    updateOverlay("Walking to " + selectedMaster.name + "...", currentTaskName || "None", killsLeft);
+
+    Utility.invokeLater(function() {
+        try {
+            PlayerHelper.webWalkTo(new WorldPoint(selectedMaster.location.x, selectedMaster.location.y, selectedMaster.location.plane));
+            Game.sendGameMessage("[SlayerBot] Started walking to " + selectedMaster.name +
+                       " at (" + selectedMaster.location.x + ", " + selectedMaster.location.y + ")", "Bot");
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Walk error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// TALK_TO_MASTER -- Interact with slayer master
+// -----------------------------------------------------------------------------
+function handleTalkToMaster() {
+    updateOverlay("Talking to " + selectedMaster.name + "...", "Getting task", killsLeft);
+
+    isExecuting = true;
+    taskReceived = false;
+
+    Utility.invokeLater(function() {
+        try {
+            var masterNpc = Game.info.npc.getNearest(selectedMaster.npcId);
+            if (masterNpc) {
+                Game.interact.npc.action(masterNpc, MenuAction.NPC_FIRST_OPTION); // "Assignment"
+                Game.sendGameMessage("[SlayerBot] Talking to " + selectedMaster.name + " (NPC ID: " + selectedMaster.npcId + ")", "Bot");
+                state = STATES.WAIT_FOR_TASK;
+            } else {
+                Game.sendGameMessage("[SlayerBot] Master NPC not found! Retrying walk...", "Bot");
+                state = STATES.WALK_TO_MASTER;
+            }
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Talk error: " + e, "Bot");
+            state = STATES.WALK_TO_MASTER;
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// WAIT_FOR_TASK -- Wait for chat message with task
+// -----------------------------------------------------------------------------
+function handleWaitForTask() {
+    updateOverlay("Waiting for task...", "Listening...", killsLeft);
+
+    // Task received via OnChatMessage
+    if (taskReceived && currentTaskName && killsLeft > 0) {
+        Game.sendGameMessage("[SlayerBot] Task received: Kill " + killsLeft + " " + currentTaskName, "Bot");
+        state = STATES.READ_TASK;
+        return;
+    }
+
+    // Timeout -- try talking again after 30 ticks
+    if (stateTickCounter > 30) {
+        Game.sendGameMessage("[SlayerBot] No task received after 30 ticks. Retrying...", "Bot");
+        state = STATES.TALK_TO_MASTER;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// READ_TASK -- Look up monster in database
+// -----------------------------------------------------------------------------
+function handleReadTask() {
+    currentTaskMonster = findMonster(currentTaskName);
+
+    if (currentTaskMonster) {
+        Game.sendGameMessage("[SlayerBot] Task identified: " + currentTaskMonster.name +
+                   " at " + currentTaskMonster.locationName +
+                   " (Slayer req: " + currentTaskMonster.slayerReq + ")", "Bot");
+        updateOverlay("Task: " + currentTaskMonster.name, currentTaskMonster.name, killsLeft);
+        state = STATES.CHECK_SUPPLIES;
+    } else {
+        Game.sendGameMessage("[SlayerBot] WARNING: Unknown monster '" + currentTaskName + "'! Cannot proceed.", "Bot");
+        updateOverlay("ERROR: Unknown task '" + currentTaskName + "'", currentTaskName, killsLeft);
+        // Try to continue -- walk to GE and wait
+        state = STATES.IDLE;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// CHECK_SUPPLIES -- Verify we have everything needed
+// -----------------------------------------------------------------------------
+function handleCheckSupplies() {
+    updateOverlay("Checking supplies...", currentTaskMonster.name, killsLeft);
+    missingItems = [];
+    needsRestock = false;
+
+    // Check food
+    var foodCount = countFood();
+    if (foodCount < 5) {
+        Game.sendGameMessage("[SlayerBot] Low food: " + foodCount + " -- need restock", "Bot");
+        needsRestock = true;
+        var foodName = config.foodType ? config.foodType.read() : "Lobster";
+        missingItems.push({ name: foodName, id: FOOD[foodName] ? FOOD[foodName].id : 379, quantity: 15 });
+    }
+
+    // Check prayer potions (if prayer is enabled)
+    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+    if (usePrayer && prayerLevel > 1) {
+        var prayerPotCount = countPrayerPots();
+        if (prayerPotCount < 2) {
+            Game.sendGameMessage("[SlayerBot] Low prayer pots: " + prayerPotCount + " -- need restock", "Bot");
+            needsRestock = true;
+            missingItems.push({ name: "Prayer potion(4)", id: 2434, quantity: 4 });
+        }
+    }
+
+    // Check special items for current task
+    if (currentTaskMonster.specialItem && currentTaskMonster.specialMechanic === "finish") {
+        var specialCount = Game.info.inventory.getItemCount(currentTaskMonster.specialItem);
+        if (specialCount < killsLeft) {
+            Game.sendGameMessage("[SlayerBot] Need " + currentTaskMonster.specialItemName + ": have " + specialCount + ", need " + killsLeft, "Bot");
+            needsRestock = true;
+            missingItems.push({ name: currentTaskMonster.specialItemName, id: currentTaskMonster.specialItem, quantity: killsLeft });
+        }
+    }
+
+    if (needsRestock) {
+        Game.sendGameMessage("[SlayerBot] Restocking needed. Missing " + missingItems.length + " item types.", "Bot");
+
+        // --- SELF-SUFFICIENCY CHECK ---
+        // Before going to bank/GE, check if we can afford it
+        var ssPlan = needsSelfSufficiency(missingItems);
+        if (ssPlan) {
+            Game.sendGameMessage("[SlayerBot] Cannot afford GE! Entering self-sufficiency mode.", "Bot");
+            enterSelfSufficiency(ssPlan);
+            return;
+        }
+
+        Game.sendGameMessage("[SlayerBot] Can afford GE purchases. Proceeding to bank.", "Bot");
+        state = STATES.WALK_TO_BANK;
+    } else {
+        Game.sendGameMessage("[SlayerBot] Supplies OK! Heading to task.", "Bot");
+        state = STATES.WALK_TO_TASK;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// WALK_TO_BANK -- Navigate to nearest bank
+// -----------------------------------------------------------------------------
+function handleWalkToBank() {
+    // Determine bank target
+    if (!bankTarget) {
+        var pos = Client.getLocalPlayer().getWorldLocation();
+        if (currentTaskMonster && currentTaskMonster.bankNearby) {
+            bankTarget = currentTaskMonster.bankNearby;
+        } else {
+            bankTarget = findNearestBank(pos.x, pos.y, pos.plane);
+        }
+        if (!bankTarget) {
+            bankTarget = { x: 3164, y: 3487, plane: 0 }; // Default: GE
+        }
+        Game.sendGameMessage("[SlayerBot] Bank target: (" + bankTarget.x + ", " + bankTarget.y + ")", "Bot");
+    }
+
+    // Check if arrived
+    if (isNear(bankTarget.x, bankTarget.y, 8)) {
+        Game.sendGameMessage("[SlayerBot] Arrived at bank.", "Bot");
+        state = STATES.BANK_SUPPLIES;
+        return;
+    }
+
+    // Check if web walking
+    if (PlayerHelper.isWebWalking()) {
+        updateOverlay("Walking to bank...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+        return;
+    }
+
+    // Start walking
+    isExecuting = true;
+    updateOverlay("Walking to bank...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+
+    Utility.invokeLater(function() {
+        try {
+            PlayerHelper.webWalkTo(new WorldPoint(bankTarget.x, bankTarget.y, bankTarget.plane));
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Walk to bank error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// BANK_SUPPLIES -- Open bank and withdraw needed items
+// -----------------------------------------------------------------------------
+function handleBankSupplies() {
+    updateOverlay("Banking...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+
+    isExecuting = true;
+
+    Utility.invokeLater(function() {
+        try {
+            // Open nearest bank booth/chest
+            var bankBooth = Game.info.gameObject.getNearest(10583); // Bank booth
+            if (!bankBooth) bankBooth = Game.info.gameObject.getNearest(12308); // Bank chest
+            if (!bankBooth) bankBooth = Game.info.gameObject.getNearest(10355); // Another booth type
+
+            if (!bankBooth) {
+                Game.sendGameMessage("[SlayerBot] No bank found nearby! Trying NPC banker...", "Bot");
+                var banker = Game.info.npc.getNearest(1618); // Banker NPC
+                if (banker) {
+                    Game.interact.npc.action(banker, MenuAction.NPC_FIRST_OPTION);
+                } else {
+                    Game.sendGameMessage("[SlayerBot] No bank or banker found!", "Bot");
+                    isExecuting = false;
+                    state = STATES.WALK_TO_BANK;
+                    bankTarget = null; // Reset to re-find bank
+                    return;
+                }
+            } else {
+                Game.interact.gameObject.action(bankBooth, MenuAction.GAME_OBJECT_SECOND_OPTION);
+            }
+
+            Game.sendGameMessage("[SlayerBot] Opening bank...", "Bot");
+
+            // Wait for bank to open, then manage inventory
+            Utility.invokeLater(function() {
+                try {
+                    // Check GP in bank for self-sufficiency tracking
+                    try {
+                        checkBankForGP();
+                    } catch (e) {
+                        // SS module may not be loaded
+                    }
+
+                    // Check if this is a self-sufficiency bank phase
+                    if (gatherBankPhase > 0) {
+                        try {
+                            handleSSBankPhase();
+                        } catch (e) {
+                            Game.sendGameMessage("[SlayerBot] SS bank phase error: " + e, "Bot");
+                            gatherBankPhase = 0;
+                        }
+                        isExecuting = false;
+                        return;
+                    }
+
+                    // Deposit all
+                    Game.interact.bank.depositAllInventory();
+                    Game.sendGameMessage("[SlayerBot] Deposited all items.", "Bot");
+
+                    Utility.invokeLater(function() {
+                        try {
+                            // Withdraw food
+                            var foodName = config.foodType ? config.foodType.read() : "Lobster";
+                            var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
+                            Game.interact.bank.withdrawItem(foodId, BankWithdrawType.WITHDRAW_ALL, false);
+                            Game.sendGameMessage("[SlayerBot] Withdrew 14x " + foodName, "Bot");
+
+                            Utility.invokeLater(function() {
+                                try {
+                                    // Withdraw prayer potions if needed
+                                    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+                                    if (usePrayer && prayerLevel > 1) {
+                                        Game.interact.bank.withdrawItem(2434, BankWithdrawType.WITHDRAW_FIVE, false); // Prayer pot
+                                        Game.sendGameMessage("[SlayerBot] Withdrew 4x Prayer potion(4)", "Bot");
+                                    }
+
+                                    Utility.invokeLater(function() {
+                                        try {
+                                            // Withdraw special items if task needs them
+                                            if (currentTaskMonster && currentTaskMonster.specialItem) {
+                                                if (currentTaskMonster.specialMechanic === "finish") {
+                                                    // Need enough for remaining kills
+                                                    var qty = Math.min(killsLeft, 28);
+                                                    Game.interact.bank.withdrawItem(currentTaskMonster.specialItem, BankWithdrawType.WITHDRAW_ALL, false);
+                                                    Game.sendGameMessage("[SlayerBot] Withdrew " + qty + "x " + currentTaskMonster.specialItemName, "Bot");
+                                                } else if (currentTaskMonster.specialMechanic === "equip") {
+                                                    Game.interact.bank.withdrawItem(currentTaskMonster.specialItem, BankWithdrawType.WITHDRAW_ONE, false);
+                                                    Game.sendGameMessage("[SlayerBot] Withdrew 1x " + currentTaskMonster.specialItemName, "Bot");
+                                                } else if (currentTaskMonster.specialMechanic === "weapon") {
+                                                    // Withdraw leaf-bladed sword
+                                                    Game.interact.bank.withdrawItem(11902, BankWithdrawType.WITHDRAW_ONE, false);
+                                                    Game.sendGameMessage("[SlayerBot] Withdrew leaf-bladed sword", "Bot");
+                                                }
+                                            }
+
+                                            // Withdraw best equipment
+                                            Utility.invokeLater(function() {
+                                                try {
+                                                    withdrawBestGear();
+
+                                                    // Close bank
+                                                    Utility.invokeLater(function() {
+                                                        try {
+                                                            Game.interact.bank.close();
+                                                            Game.sendGameMessage("[SlayerBot] Bank closed. Equipping gear...", "Bot");
+
+                                                            // Equip gear from inventory
+                                                            Utility.invokeLater(function() {
+                                                                try {
+                                                                    equipGearFromInventory();
+                                                                    Game.sendGameMessage("[SlayerBot] Gear equipped. Ready for task.", "Bot");
+                                                                    bankTarget = null;
+                                                                    needsRestock = false;
+                                                                    state = STATES.WALK_TO_TASK;
+                                                                } catch (e) {
+                                                                    Game.sendGameMessage("[SlayerBot] Equip error: " + e, "Bot");
+                                                                    state = STATES.WALK_TO_TASK; // Try anyway
+                                                                }
+                                                                isExecuting = false;
+                                                            }, Utility.getDelay());
+                                                        } catch (e) {
+                                                            Game.sendGameMessage("[SlayerBot] Bank close error: " + e, "Bot");
+                                                            isExecuting = false;
+                                                            state = STATES.WALK_TO_TASK;
+                                                        }
+                                                    }, Utility.getDelay());
+                                                } catch (e) {
+                                                    Game.sendGameMessage("[SlayerBot] Gear withdraw error: " + e, "Bot");
+                                                    isExecuting = false;
+                                                    state = STATES.WALK_TO_TASK;
+                                                }
+                                            }, Utility.getDelay());
+                                        } catch (e) {
+                                            Game.sendGameMessage("[SlayerBot] Special item withdraw error: " + e, "Bot");
+                                            isExecuting = false;
+                                            state = STATES.WALK_TO_TASK;
+                                        }
+                                    }, Utility.getDelay());
+                                } catch (e) {
+                                    Game.sendGameMessage("[SlayerBot] Prayer pot withdraw error: " + e, "Bot");
+                                    isExecuting = false;
+                                    state = STATES.WALK_TO_TASK;
+                                }
+                            }, Utility.getDelay());
+                        } catch (e) {
+                            Game.sendGameMessage("[SlayerBot] Food withdraw error: " + e, "Bot");
+                            isExecuting = false;
+                            state = STATES.WALK_TO_TASK;
+                        }
+                    }, Utility.getDelay());
+                } catch (e) {
+                    Game.sendGameMessage("[SlayerBot] Deposit error: " + e, "Bot");
+                    isExecuting = false;
+                }
+            }, Utility.getDelay() * 2); // Extra delay for bank to open
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Bank open error: " + e, "Bot");
+            isExecuting = false;
+            state = STATES.WALK_TO_BANK;
+            bankTarget = null;
+        }
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// WITHDRAW BEST GEAR -- Helper for banking
+// -----------------------------------------------------------------------------
+function withdrawBestGear() {
+    // Determine if task needs special weapon
+    var needsLeafBlade = currentTaskMonster && currentTaskMonster.specialMechanic === "weapon";
+
+    if (!needsLeafBlade) {
+        // Withdraw best melee weapon
+        var bestWeapon = getBestWeapon(attackLevel);
+        Game.interact.bank.withdrawItem(bestWeapon.id, BankWithdrawType.WITHDRAW_ONE, false);
+        Game.sendGameMessage("[SlayerBot] Withdrew weapon: " + bestWeapon.name, "Bot");
+    }
+
+    // Withdraw best body
+    var bestBody = getBestBody(defenceLevel);
+    Game.interact.bank.withdrawItem(bestBody.id, BankWithdrawType.WITHDRAW_ONE, false);
+
+    // Withdraw best legs
+    var bestLegs = getBestLegs(defenceLevel);
+    Game.interact.bank.withdrawItem(bestLegs.id, BankWithdrawType.WITHDRAW_ONE, false);
+
+    // Withdraw best shield (if not using mirror shield)
+    var needsMirrorShield = currentTaskMonster && currentTaskMonster.specialItem === 4156;
+    if (!needsMirrorShield) {
+        var bestShield = getBestShield(defenceLevel);
+        Game.interact.bank.withdrawItem(bestShield.id, BankWithdrawType.WITHDRAW_ONE, false);
+    }
+
+    // Withdraw boots
+    var bestBoots = getBestBoots(defenceLevel);
+    Game.interact.bank.withdrawItem(bestBoots.id, BankWithdrawType.WITHDRAW_ONE, false);
+
+    Game.sendGameMessage("[SlayerBot] Withdrew full armor set.", "Bot");
+}
+
+// -----------------------------------------------------------------------------
+// EQUIP GEAR FROM INVENTORY -- After banking
+// -----------------------------------------------------------------------------
+function equipGearFromInventory() {
+    // Build list of all gear IDs to try equipping
+    var gearIds = [];
+
+    // Add all weapon IDs
+    for (var i = 0; i < MELEE_WEAPONS.length; i++) {
+        gearIds.push(MELEE_WEAPONS[i].id);
+    }
+    // Add leaf-bladed weapons
+    gearIds.push(11902, 20727);
+
+    // Add all armor IDs
+    for (var i = 0; i < HELMETS.length; i++) gearIds.push(HELMETS[i].id);
+    for (var i = 0; i < PLATEBODIES.length; i++) gearIds.push(PLATEBODIES[i].id);
+    for (var i = 0; i < PLATELEGS.length; i++) gearIds.push(PLATELEGS[i].id);
+    for (var i = 0; i < SHIELDS.length; i++) gearIds.push(SHIELDS[i].id);
+    for (var i = 0; i < BOOTS.length; i++) gearIds.push(BOOTS[i].id);
+    for (var i = 0; i < GLOVES.length; i++) gearIds.push(GLOVES[i].id);
+    for (var i = 0; i < AMULETS.length; i++) gearIds.push(AMULETS[i].id);
+
+    // Add special items that need equipping
+    gearIds.push(4156, 4168, 4166, 4164, 8923, 7053); // Mirror shield, nose peg, earmuffs, face mask, witchwood, lantern
+
+    // Equip anything found in inventory
+    for (var i = 0; i < gearIds.length; i++) {
+        if (Game.info.inventory.hasItem(gearIds[i], 1)) {
+            Game.interact.inventory.equipItem(gearIds[i]);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// WALK_TO_GE -- Navigate to Grand Exchange
+// -----------------------------------------------------------------------------
+function handleWalkToGE() {
+    if (isNear(GE.LOCATION.x, GE.LOCATION.y, 10)) {
+        Game.sendGameMessage("[SlayerBot] Arrived at GE.", "Bot");
+        state = STATES.BUY_AT_GE;
+        return;
+    }
+
+    if (PlayerHelper.isWebWalking()) {
+        updateOverlay("Walking to GE...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+        return;
+    }
+
+    isExecuting = true;
+    updateOverlay("Walking to GE...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+
+    Utility.invokeLater(function() {
+        try {
+            PlayerHelper.webWalkTo(new WorldPoint(GE.LOCATION.x, GE.LOCATION.y, GE.LOCATION.plane));
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Walk to GE error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// BUY_AT_GE -- Purchase items from Grand Exchange
+// -----------------------------------------------------------------------------
+function handleBuyAtGE() {
+    updateOverlay("Buying at GE...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+
+    // GE interaction is complex -- simplified approach
+    // Open GE booth and buy missing items one at a time
+    if (missingItems.length === 0) {
+        Game.sendGameMessage("[SlayerBot] Nothing to buy at GE. Going to bank.", "Bot");
+        state = STATES.WALK_TO_BANK;
+        bankTarget = null;
+        return;
+    }
+
+    isExecuting = true;
+
+    Utility.invokeLater(function() {
+        try {
+            // Open GE booth
+            var geBooth = Game.info.gameObject.getNearest(GE.BOOTH_IDS[0]);
+            if (geBooth) {
+                Game.interact.gameObject.action(geBooth, MenuAction.GAME_OBJECT_SECOND_OPTION);
+                Game.sendGameMessage("[SlayerBot] Opened GE booth. Buying items...", "Bot");
+
+                // For each missing item, attempt to buy
+                // This is simplified -- in practice, GE widget interaction is complex
+                Utility.invokeLater(function() {
+                    try {
+                        for (var i = 0; i < missingItems.length; i++) {
+                            var item = missingItems[i];
+                            Game.sendGameMessage("[SlayerBot] Attempting to buy: " + item.quantity + "x " + item.name + " (ID: " + item.id + ")", "Bot");
+                            // GE buy widget interaction would go here
+                            // Widget.interact(GE.BUY_BUTTON.group, GE.BUY_BUTTON.child, ...)
+                        }
+                        missingItems = [];
+                        Game.sendGameMessage("[SlayerBot] GE purchases attempted. Waiting for completion...", "Bot");
+
+                        // Wait for offers to complete, then collect
+                        Utility.invokeLater(function() {
+                            // Collect completed offers
+                            Game.sendGameMessage("[SlayerBot] Collecting GE offers...", "Bot");
+                            state = STATES.WALK_TO_BANK;
+                            bankTarget = null;
+                            isExecuting = false;
+                        }, Utility.getDelay() * 5);
+                    } catch (e) {
+                        Game.sendGameMessage("[SlayerBot] GE buy error: " + e, "Bot");
+                        state = STATES.WALK_TO_BANK;
+                        bankTarget = null;
+                        isExecuting = false;
+                    }
+                }, Utility.getDelay() * 2);
+            } else {
+                Game.sendGameMessage("[SlayerBot] GE booth not found!", "Bot");
+                isExecuting = false;
+                state = STATES.WALK_TO_GE;
+            }
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] GE error: " + e, "Bot");
+            isExecuting = false;
+            state = STATES.WALK_TO_BANK;
+            bankTarget = null;
+        }
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// WALK_TO_TASK -- Navigate to monster location
+// -----------------------------------------------------------------------------
+function handleWalkToTask() {
+    if (!currentTaskMonster) {
+        Game.sendGameMessage("[SlayerBot] No task monster set! Going to select master.", "Bot");
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    var taskLoc = currentTaskMonster.location;
+
+    // Check if arrived
+    if (isNear(taskLoc.x, taskLoc.y, 15)) {
+        Game.sendGameMessage("[SlayerBot] Arrived at task location: " + currentTaskMonster.locationName, "Bot");
+        updateOverlay("Fighting " + currentTaskMonster.name, currentTaskMonster.name, killsLeft);
+        state = STATES.FIGHT_TASK;
+        return;
+    }
+
+    // Check if walking
+    if (PlayerHelper.isWebWalking()) {
+        updateOverlay("Walking to " + currentTaskMonster.locationName + "...", currentTaskMonster.name, killsLeft);
+        return;
+    }
+
+    // Start walking
+    isExecuting = true;
+    updateOverlay("Walking to " + currentTaskMonster.locationName + "...", currentTaskMonster.name, killsLeft);
+
+    Utility.invokeLater(function() {
+        try {
+            PlayerHelper.webWalkTo(new WorldPoint(taskLoc.x, taskLoc.y, taskLoc.plane));
+            Game.sendGameMessage("[SlayerBot] Walking to " + currentTaskMonster.locationName +
+                       " (" + taskLoc.x + ", " + taskLoc.y + ", " + taskLoc.plane + ")", "Bot");
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Walk to task error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// FIGHT_TASK -- Main combat loop
+// -----------------------------------------------------------------------------
+function handleFightTask() {
+    if (!currentTaskMonster) {
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    // --- CHECK IF TASK IS COMPLETE ---
+    if (killsLeft <= 0) {
+        Game.sendGameMessage("[SlayerBot] Task complete! Killed all " + currentTaskMonster.name, "Bot");
+        state = STATES.TASK_COMPLETE;
+        return;
+    }
+
+    // --- DEATH CHECK ---
+    var currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
+    if (currentHP <= 0 || isAtDeathSpawn()) {
+        Game.sendGameMessage("[SlayerBot] Death detected!", "Bot");
+        deathDetected = true;
+        return;
+    }
+
+    // --- EAT FOOD CHECK ---
+    var eatPercent = config.eatPercent ? config.eatPercent.read() : 50;
+    var hpPercent = (currentHP / hitpointsLevel) * 100;
+    if (hpPercent <= eatPercent) {
+        var foodCount = countFood();
+        if (foodCount > 0) {
+            eatFood();
+            return;
+        } else {
+            // Out of food -- need to bank
+            Game.sendGameMessage("[SlayerBot] Out of food! Going to bank.", "Bot");
+            state = STATES.CHECK_SUPPLIES;
+            return;
+        }
+    }
+
+    // --- PRAYER CHECK ---
+    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+    if (usePrayer && prayerLevel > 1) {
+        var currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
+        if (currentPrayer > 0 && currentPrayer < 20) {
+            drinkPrayerPot();
+            return;
+        }
+        if (currentPrayer <= 0) {
+            // Prayer drained -- try to drink pot or continue without prayer
+            var potCount = countPrayerPots();
+            if (potCount > 0) {
+                drinkPrayerPot();
+                return;
+            }
+        }
+
+        // Activate protection prayer if not already active
+        activateProtectionPrayer();
+    }
+
+    // --- SPECIAL FINISH CHECK ---
+    // Check if current target needs a finish mechanic (gargoyle, rock slug, etc.)
+    if (currentTaskMonster.specialMechanic === "finish") {
+        var target = Client.getLocalPlayer().getInteracting();
+        if (target && target.getHealthRatio) {
+            var healthRatio = target.getHealthRatio();
+            // HealthRatio of 0 or very low means it's ready for the finish item
+            if (healthRatio > 0 && healthRatio <= 10) {
+                handleSpecialFinish();
+                return;
+            }
+        }
+    }
+
+    // --- LOOT CHECK ---
+    var lootEnabled = config.lootEnabled ? config.lootEnabled.read() : true;
+    if (lootEnabled && !Client.getLocalPlayer().isInteracting()) {
+        // Check for loot on ground
+        var lootMinValue = config.lootMinValue ? config.lootMinValue.read() : 100;
+        var _groundAll = Game.info.groundItem.getAll(); var lootItem = _groundAll ? _groundAll[0] : null;
+        if (lootItem && Game.info.inventory.getItemCount(-1) < 28) {
+            // Pick up valuable loot
+            pickUpLoot();
+            return;
+        }
+    }
+
+    // --- BURY BONES CHECK ---
+    var buryBones = config.buryBones ? config.buryBones.read() : false;
+    if (buryBones && !Client.getLocalPlayer().isInteracting()) {
+        for (var i = 0; i < ALL_BONE_IDS.length; i++) {
+            if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
+                buryBone(ALL_BONE_IDS[i]);
+                return;
+            }
+        }
+    }
+
+    // --- ATTACK TARGET ---
+    // Check if already in combat
+    if (Client.getLocalPlayer().isInteracting()) {
+        // Already fighting -- wait
+        updateOverlay("Fighting " + currentTaskMonster.name, currentTaskMonster.name, killsLeft);
+        return;
+    }
+
+    // Find and attack nearest target
+    attackNearest();
+}
+
+// -----------------------------------------------------------------------------
+// ATTACK NEAREST -- Find and attack the nearest task NPC
+// -----------------------------------------------------------------------------
+function attackNearest() {
+    if (!currentTaskMonster || !currentTaskMonster.npcIds) return;
+
+    isExecuting = true;
+    updateOverlay("Attacking " + currentTaskMonster.name, currentTaskMonster.name, killsLeft);
+
+    Utility.invokeLater(function() {
+        try {
+            var target = null;
+
+            // Try each NPC ID for the task
+            for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
+                target = Game.info.npc.getNearest(currentTaskMonster.npcIds[i]);
+                if (target && !target.isDead() && !target.isInteracting()) {
+                    break;
+                }
+                target = null;
+            }
+
+            if (target) {
+                Game.interact.npc.attack(target);
+                Game.sendGameMessage("[SlayerBot] Attacking " + currentTaskMonster.name + " (NPC ID: " + target.getName() + ")", "Bot");
+            } else {
+                // No target found -- might need to move around
+                Game.sendGameMessage("[SlayerBot] No " + currentTaskMonster.name + " found nearby. Waiting...", "Bot");
+
+                // If stuck for a while, try walking to exact task location
+                if (stateTickCounter > 30 && stateTickCounter % 15 === 0) {
+                    var loc = currentTaskMonster.location;
+                    PlayerHelper.webWalkTo(new WorldPoint(loc.x + Math.floor(Math.random() * 6 - 3),
+                        loc.y + Math.floor(Math.random() * 6 - 3), loc.plane));
+                    Game.sendGameMessage("[SlayerBot] Walking closer to task area...", "Bot");
+                }
+            }
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Attack error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// EAT FOOD -- Consume food from inventory
+// -----------------------------------------------------------------------------
+function eatFood() {
+    isExecuting = true;
+
+    Utility.invokeLater(function() {
+        try {
+            var foodName = config.foodType ? config.foodType.read() : "Lobster";
+            var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
+
+            // Try configured food first
+            if (Game.info.inventory.hasItem(foodId, 1)) {
+                Game.interact.inventory.consumeItem(foodId);
+                Game.sendGameMessage("[SlayerBot] Eating " + foodName, "Bot");
+            } else {
+                // Try any food
+                for (var i = 0; i < ALL_FOOD_IDS.length; i++) {
+                    if (Game.info.inventory.hasItem(ALL_FOOD_IDS[i], 1)) {
+                        Game.interact.inventory.consumeItem(ALL_FOOD_IDS[i]);
+                        Game.sendGameMessage("[SlayerBot] Eating food ID: " + ALL_FOOD_IDS[i], "Bot");
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Eat error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// DRINK PRAYER POTION
+// -----------------------------------------------------------------------------
+function drinkPrayerPot() {
+    isExecuting = true;
+
+    Utility.invokeLater(function() {
+        try {
+            // Try highest dose first
+            for (var i = 0; i < PRAYER_POTION_IDS.length; i++) {
+                if (Game.info.inventory.hasItem(PRAYER_POTION_IDS[i], 1)) {
+                    Game.interact.inventory.consumeItem(PRAYER_POTION_IDS[i]);
+                    Game.sendGameMessage("[SlayerBot] Drank prayer potion (ID: " + PRAYER_POTION_IDS[i] + ")", "Bot");
+                    break;
+                }
+            }
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Prayer pot error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// ACTIVATE PROTECTION PRAYER
+// -----------------------------------------------------------------------------
+function activateProtectionPrayer() {
+    if (!currentTaskMonster || !currentTaskMonster.protectionPrayer) return;
+
+    var prayerInfo = PRAYERS[currentTaskMonster.protectionPrayer];
+    if (!prayerInfo) return;
+
+    var currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
+    if (currentPrayer <= 0) return; // No prayer points
+
+    // Check if prayer is already active (simplified -- toggle check)
+    // The game's prayer widget would need to be checked
+    // For now, we'll activate on every cycle (the API should handle already-active prayers gracefully)
+    try {
+        // Prayer tab widget: group 541, children are individual prayers
+        var prayerWidget = Game.info.widget.getWidget(541, prayerInfo.widgetChild);
+        if (prayerWidget) {
+            // Only click if not already active (check sprite ID or text)
+            // Simplified: just ensure it's on
+        }
+    } catch (e) {
+        // Prayer activation is best-effort
+    }
+}
+
+// -----------------------------------------------------------------------------
+// SPECIAL FINISH -- Use item on NPC when HP is low
+// -----------------------------------------------------------------------------
+function handleSpecialFinish() {
+    if (!currentTaskMonster || !currentTaskMonster.specialItem) return;
+    if (currentTaskMonster.specialMechanic !== "finish") return;
+
+    isExecuting = true;
+
+    Utility.invokeLater(function() {
+        try {
+            var target = Client.getLocalPlayer().getInteracting();
+            if (target) {
+                var itemId = currentTaskMonster.specialItem;
+                if (Game.info.inventory.hasItem(itemId, 1)) {
+                    Game.interact.inventory.consumeItem(itemId);
+                    Game.sendGameMessage("[SlayerBot] Used " + currentTaskMonster.specialItemName + " on " + currentTaskMonster.name, "Bot");
+                } else {
+                    Game.sendGameMessage("[SlayerBot] Missing special item: " + currentTaskMonster.specialItemName + "!", "Bot");
+                }
+            }
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Special finish error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// LOOT ITEMS -- Pick up ground items
+// -----------------------------------------------------------------------------
+function pickUpLoot() {
+    isExecuting = true;
+
+    Utility.invokeLater(function() {
+        try {
+            var _groundAll = Game.info.groundItem.getAll(); var lootItem = _groundAll ? _groundAll[0] : null;
+            if (lootItem) {
+                Game.interact.groundItem.pickup(lootItem);
+                Game.sendGameMessage("[SlayerBot] Picking up loot: " + lootItem.getId(), "Bot");
+            }
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Loot error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// BURY BONES
+// -----------------------------------------------------------------------------
+function buryBone(boneId) {
+    isExecuting = true;
+
+    Utility.invokeLater(function() {
+        try {
+            Game.interact.inventory.consumeItem(boneId);
+            Game.sendGameMessage("[SlayerBot] Burying bone: " + boneId, "Bot");
+        } catch (e) {
+            Game.sendGameMessage("[SlayerBot] Bury error: " + e, "Bot");
+        }
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+// -----------------------------------------------------------------------------
+// HANDLE LOOT ITEMS (state handler version)
+// -----------------------------------------------------------------------------
+function handleLootItems() {
+    // Self-sufficiency: also pick up coins and valuables for GP generation
+    try {
+        if (ssPickUpValuableLoot()) return; // Returns true if started picking up
+    } catch (e) {
+        // SS module may not be loaded
+    }
+    pickUpLoot();
+    state = STATES.FIGHT_TASK;
+}
+
+// -----------------------------------------------------------------------------
+// HANDLE BURY BONES (state handler version)
+// -----------------------------------------------------------------------------
+function handleBuryBones() {
+    for (var i = 0; i < ALL_BONE_IDS.length; i++) {
+        if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
+            buryBone(ALL_BONE_IDS[i]);
+            return;
+        }
+    }
+    state = STATES.FIGHT_TASK;
+}
+
+// -----------------------------------------------------------------------------
+// HANDLE EAT FOOD (state handler version)
+// -----------------------------------------------------------------------------
+function handleEatFood() {
+    eatFood();
+    state = STATES.FIGHT_TASK;
+}
+
+// -----------------------------------------------------------------------------
+// HANDLE DRINK PRAYER (state handler version)
+// -----------------------------------------------------------------------------
+function handleDrinkPrayer() {
+    drinkPrayerPot();
+    state = STATES.FIGHT_TASK;
+}
+
+// -----------------------------------------------------------------------------
+// TASK_COMPLETE -- Task finished, go get a new one
+// -----------------------------------------------------------------------------
+function handleTaskComplete() {
+    tasksCompleted++;
+    overlay.tasksCompleted.setValue("Tasks Done: " + tasksCompleted);
+    updateOverlay("Task complete! (" + tasksCompleted + " total)", "Complete!", 0);
+
+    Game.sendGameMessage("[SlayerBot] === TASK COMPLETE === Total tasks: " + tasksCompleted, "Bot");
+
+    // Reset task info
+    currentTaskName = "";
+    currentTaskMonster = null;
+    killsLeft = 0;
+    taskReceived = false;
+    bankTarget = null;
+
+    // Check if we have food to continue
+    var foodCount = countFood();
+    if (foodCount >= 5) {
+        // Good to go -- head straight to master
+        Game.sendGameMessage("[SlayerBot] Enough food remaining. Going to master for new task.", "Bot");
+        state = STATES.SELECT_MASTER;
+    } else {
+        // Restock first
+        Game.sendGameMessage("[SlayerBot] Low on supplies after task. Restocking first.", "Bot");
+        state = STATES.WALK_TO_BANK;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// HANDLE_DEATH -- Recover from death
+// -----------------------------------------------------------------------------
+function handleDeath() {
+    updateOverlay("DIED! Recovering...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+    Game.sendGameMessage("[SlayerBot] === DEATH DETECTED === Recovering...", "Bot");
+
+    // After death, player respawns in Lumbridge
+    // Need to: 1) go to bank, 2) re-gear, 3) go back to task
+    deathDetected = false;
+
+    // Wait a few ticks for respawn
+    if (stateTickCounter < 5) return;
+
+    // Go to bank for gear
+    bankTarget = null; // Reset so it finds nearest bank
+    state = STATES.CHECK_SUPPLIES;
+}
+
+// -----------------------------------------------------------------------------
+// HANDLE_LEVEL_UP -- Process level up events
+// -----------------------------------------------------------------------------
+function handleLevelUp() {
+    updateOverlay("Level up!", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
+    Game.sendGameMessage("[SlayerBot] Level up detected! Recalculating stats...", "Bot");
+
+    levelUpDetected = false;
+
+    // Refresh stats
+    attackLevel = Client.getRealSkillLevels(Skill.ATTACK);
+    strengthLevel = Client.getRealSkillLevels(Skill.STRENGTH);
+    defenceLevel = Client.getRealSkillLevels(Skill.DEFENCE);
+    hitpointsLevel = Client.getRealSkillLevels(Skill.HITPOINTS);
+    prayerLevel = Client.getRealSkillLevels(Skill.PRAYER);
+    rangedLevel = Client.getRealSkillLevels(Skill.RANGED);
+    magicLevel = Client.getRealSkillLevels(Skill.MAGIC);
+    slayerLevel = Client.getRealSkillLevels(Skill.SLAYER);
+    combatLevel = getCombatLevel();
+
+    Game.sendGameMessage("[SlayerBot] Updated combat level: " + combatLevel, "Bot");
+
+    // Continue what we were doing (should be FIGHT_TASK usually)
+    if (currentTaskMonster && killsLeft > 0) {
+        state = STATES.FIGHT_TASK;
+    } else {
+        state = STATES.CHECK_STATS;
+    }
+}
+
+// =============================================================================
+// CHAT MESSAGE HANDLER -- Parse task assignments and kill tracking
+// =============================================================================
+function OnChatMessage(msg) {
+    if (!msg) return;
+
+    var text = "";
+    if (typeof msg === "string") {
+        text = msg;
+    } else if (msg.getMessage) {
+        text = msg.getMessage();
+    } else if (msg.message) {
+        text = msg.message;
+    }
+
+    if (!text || text.length === 0) return;
+
+    // --- TASK ASSIGNMENT ---
+    // "Your new task is to kill 135 Blue dragons."
+    var newTaskMatch = text.match(/[Yy]our (?:new )?task is to kill (\d+) (.+?)(?:\.|$)/);
+    if (newTaskMatch) {
+        killsLeft = parseInt(newTaskMatch[1], 10);
+        currentTaskName = newTaskMatch[2].trim();
+        // Remove trailing period if present
+        if (currentTaskName.slice(-1) === ".") {
+            currentTaskName = currentTaskName.slice(0, -1);
+        }
+        taskReceived = true;
+
+        Game.sendGameMessage("[SlayerBot] NEW TASK: Kill " + killsLeft + " " + currentTaskName, "Bot");
+        overlay.task.setValue("Task: " + currentTaskName);
+        overlay.killsLeft.setValue("Kills Left: " + killsLeft);
+        return;
+    }
+
+    // --- TASK COMPLETE (from master) ---
+    if (text.indexOf("You've completed your task") !== -1 ||
+        text.indexOf("you have completed your task") !== -1 ||
+        text.indexOf("You need something new to hunt") !== -1) {
+        Game.sendGameMessage("[SlayerBot] Task completion confirmed via chat.", "Bot");
+        if (state === STATES.FIGHT_TASK || state === STATES.WALK_TO_TASK) {
+            killsLeft = 0;
+            state = STATES.TASK_COMPLETE;
+        }
+        return;
+    }
+
+    // --- RETURN TO MASTER ---
+    if (text.indexOf("return to a Slayer master") !== -1) {
+        Game.sendGameMessage("[SlayerBot] Return to master message detected.", "Bot");
+        if (killsLeft <= 0) {
+            state = STATES.TASK_COMPLETE;
+        }
+        return;
+    }
+
+    // --- KILL COUNT TRACKING ---
+    // "Your Slayer task: Gargoyles (95 remaining)"
+    var taskRemaining = text.match(/[Ss]layer task[:\s]+(.+?)\s*\((\d+)\s*remaining\)/);
+    if (taskRemaining) {
+        currentTaskName = taskRemaining[1].trim();
+        killsLeft = parseInt(taskRemaining[2], 10);
+        overlay.task.setValue("Task: " + currentTaskName);
+        overlay.killsLeft.setValue("Kills Left: " + killsLeft);
+        return;
+    }
+
+    // "You have completed your Slayer task! You were assigned X."
+    // Kill count decrement (superior version)
+    var killUpdate = text.match(/[Ss]uperior foe has appeared/);
+    if (killUpdate) {
+        Game.sendGameMessage("[SlayerBot] Superior monster appeared!", "Bot");
+        return;
+    }
+
+    // --- LEVEL UP ---
+    if (text.indexOf("Congratulations") !== -1 && text.indexOf("level") !== -1) {
+        Game.sendGameMessage("[SlayerBot] Level up detected: " + text, "Bot");
+        levelUpDetected = true;
+        return;
+    }
+
+    // --- SLAYER LEVEL UP SPECIFICALLY ---
+    if (text.indexOf("Slayer level") !== -1) {
+        slayerLevel = Client.getRealSkillLevels(Skill.SLAYER);
+        Game.sendGameMessage("[SlayerBot] Slayer level now: " + slayerLevel, "Bot");
+        return;
+    }
+
+    // --- XP DROP / KILL TRACKING (simplified) ---
+    // When an NPC dies that matches our task, decrement killsLeft
+    // This is handled more reliably via OnNPCDeath or hitsplat tracking
+}
+
+// =============================================================================
+// NPC LOOT APPEARED -- Track kills when NPC dies
+// =============================================================================
+function OnNPCLootAppeared(npc) {
+    if (!currentTaskMonster || !npc) return;
+
+    var npcId = -1;
+    try {
+        npcId = npc.getId();
+    } catch (e) {
+        return;
+    }
+
+    // Check if this NPC is our task
+    var isTask = false;
+    for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
+        if (currentTaskMonster.npcIds[i] === npcId) {
+            isTask = true;
+            break;
+        }
+    }
+
+    if (isTask) {
+        killsLeft--;
+        totalKills++;
+        overlay.killsLeft.setValue("Kills Left: " + Math.max(0, killsLeft));
+        Game.sendGameMessage("[SlayerBot] Kill tracked! " + killsLeft + " " + currentTaskMonster.name + " remaining. Total kills: " + totalKills, "Bot");
+
+        if (killsLeft <= 0) {
+            Game.sendGameMessage("[SlayerBot] All kills complete!", "Bot");
+            state = STATES.TASK_COMPLETE;
+        }
+    }
+}

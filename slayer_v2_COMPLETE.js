@@ -2696,7 +2696,7 @@ function findMonster(taskName) {
 
     // Partial/contains match
     for (var key in MONSTER_DB) {
-        if (key.toLowerCase().includes(lowerName) || lowerName.includes(key.toLowerCase())) {
+        if (key.toLowerCase().indexOf(lowerName) !== -1 || lowerName.indexOf(key.toLowerCase()) !== -1) {
             return MONSTER_DB[key];
         }
     }
@@ -3940,7 +3940,7 @@ function shouldLevelUpFirst(foodPlan, gearPlan, levels) {
     }
 
     // Sort by smallest gap first (quickest wins)
-    plans.sort((a, b) => a.gap - b.gap);
+    plans.sort(function(a, b) { return a.gap - b.gap; });
 
     if (plans.length === 0) {
         return { shouldLevel: false, plans: [] };
@@ -4109,7 +4109,7 @@ function handleLevelFishing() {
         var fishingSpot = Game.info.npc.getNearest(spot);
         if (fishingSpot) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     fishingSpot.action(MenuAction.NPC_FIRST_OPTION);
                     Game.sendGameMessage("[SlayerBot][RI] Fishing at " + fishingSpot.getName(), "Bot");
@@ -4147,7 +4147,7 @@ function handleLevelCooking() {
         var range = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE]);
         if (range) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.inventory.consumeItem(rawFish);
                     Game.sendGameMessage("[SlayerBot][RI] Cooking raw fish: " + rawFish, "Bot");
@@ -4212,7 +4212,7 @@ function handleLevelMining() {
         var rock = Game.info.gameObject.getNearest(oreRocks);
         if (rock) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.gameObject.action(rock, MenuAction.GAME_OBJECT_FIRST_OPTION);
                     Game.sendGameMessage("[SlayerBot][RI] Mining ore", "Bot");
@@ -4235,7 +4235,7 @@ function handleLevelSmelting() {
     var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
     if (furnace && !PlayerHelper.isAnimating()) {
         isExecuting = true;
-        Utility.invokeLater(() => {
+        Utility.invokeLater(function() {
             try {
                 Game.interact.gameObject.action(furnace, MenuAction.GAME_OBJECT_FIRST_OPTION);
                 Game.sendGameMessage("[SlayerBot][RI] Smelting at furnace", "Bot");
@@ -4356,7 +4356,7 @@ function handleGatherFoodByKilling() {
                 item.getId() === SS_ITEMS.BONES ||
                 VALUABLE_LOOT_IDS.indexOf(item.getId()) !== -1) {
                 isExecuting = true;
-                Utility.invokeLater(() => {
+                Utility.invokeLater(function() {
                     try {
                         Game.interact.groundItem.pickup(item);
                     } catch(e) {}
@@ -4372,7 +4372,7 @@ function handleGatherFoodByKilling() {
         var npc = Game.info.npc.getNearest(gatherFoodTier.npcIds);
         if (npc) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.npc.attack(npc);
                     Game.sendGameMessage("[SlayerBot][RI] Attacking " + npc.getName() + " for food", "Bot");
@@ -4418,7 +4418,7 @@ function handleGatherFoodByFishing() {
         }
         if (feather) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try { Game.interact.groundItem.pickup(feather); } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4428,7 +4428,7 @@ function handleGatherFoodByFishing() {
             var chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
             if (chicken) {
                 isExecuting = true;
-                Utility.invokeLater(() => {
+                Utility.invokeLater(function() {
                     try { Game.interact.npc.attack(chicken); } catch(e) {}
                     isExecuting = false;
                 }, Utility.getDelay());
@@ -4448,7 +4448,7 @@ function handleGatherFoodByFishing() {
         var spot = Game.info.npc.getNearest(gatherFoodTier.spotIds);
         if (spot) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     // Different fishing methods use different menu actions
                     if (gatherFoodTier.fishAction === "NET") {
@@ -4516,7 +4516,7 @@ function handleCookAllRawFood() {
         var cookObj = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE, SS_OBJECTS.COOKING_FIRE]);
         if (cookObj) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     // Use raw fish on range
                     Game.interact.inventory.useItemOnObject(gatherFoodTier.rawItemId, cookObj);
@@ -4552,7 +4552,7 @@ function handleFoodBanking() {
     if (isExecuting) return;
     if (!Game.info.bank.isOpen()) {
         isExecuting = true;
-        Utility.invokeLater(() => {
+        Utility.invokeLater(function() {
             try {
                 Game.interact.bank.openNearest();
             } catch(e) {}
@@ -4562,7 +4562,7 @@ function handleFoodBanking() {
     }
     // Deposit everything, withdraw tools, go again
     isExecuting = true;
-    Utility.invokeLater(() => {
+    Utility.invokeLater(function() {
         try {
             Game.interact.bank.depositAllInventory();
             Game.sendGameMessage("[SlayerBot][RI] Deposited all — withdrawing fishing tools", "Bot");
@@ -4721,7 +4721,7 @@ function handleMineOreForGear() {
         var rock = Game.info.gameObject.getNearest(oreRocks);
         if (rock) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.gameObject.action(rock, MenuAction.GAME_OBJECT_FIRST_OPTION);
                 } catch(e) {}
@@ -4754,7 +4754,7 @@ function handleSmeltOreForGear() {
         var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
         if (furnace) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.gameObject.action(furnace, MenuAction.GAME_OBJECT_FIRST_OPTION);
                     Game.sendGameMessage("[SlayerBot][RI] Smelting ore at furnace", "Bot");
@@ -4795,7 +4795,7 @@ function handleSmithGearItem() {
         var anvil = Game.info.gameObject.getNearest(SS_OBJECTS.ANVIL);
         if (anvil) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.gameObject.action(anvil, MenuAction.GAME_OBJECT_FIRST_OPTION);
                     Game.sendGameMessage("[SlayerBot][RI] Smithing at anvil", "Bot");
@@ -4837,7 +4837,7 @@ function handleKillForGearDrops() {
             // Pick up any weapon or armor
             if (isEquipmentDrop(id)) {
                 isExecuting = true;
-                Utility.invokeLater(() => {
+                Utility.invokeLater(function() {
                     try { Game.interact.groundItem.pickup(item); } catch(e) {}
                     isExecuting = false;
                 }, Utility.getDelay());
@@ -4850,7 +4850,7 @@ function handleKillForGearDrops() {
         var npc = Game.info.npc.getNearest(targetNPCs);
         if (npc) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try { Game.interact.npc.attack(npc); } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4907,7 +4907,7 @@ function handleKillCowsForLeather() {
         for (var i = 0; i < groundItems.length; i++) {
             if (groundItems[i].getId() === SS_ITEMS.COWHIDE) {
                 isExecuting = true;
-                Utility.invokeLater(() => {
+                Utility.invokeLater(function() {
                     try { Game.interact.groundItem.pickup(groundItems[i]); } catch(e) {}
                     isExecuting = false;
                 }, Utility.getDelay());
@@ -4920,7 +4920,7 @@ function handleKillCowsForLeather() {
         var cow = Game.info.npc.getNearest(SS_NPCS.COW);
         if (cow) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try { Game.interact.npc.attack(cow); } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4945,7 +4945,7 @@ function handleTanHides() {
     var tanner = Game.info.npc.getNearest([SS_NPCS.AL_KHARID_TANNER]);
     if (tanner) {
         isExecuting = true;
-        Utility.invokeLater(() => {
+        Utility.invokeLater(function() {
             try {
                 tanner.action(MenuAction.NPC_FIRST_OPTION);
                 Game.sendGameMessage("[SlayerBot][RI] Tanning " + hideCount + " cowhides", "Bot");
@@ -4974,7 +4974,7 @@ function handleCraftLeatherArmor() {
 
     // Use needle on leather
     isExecuting = true;
-    Utility.invokeLater(() => {
+    Utility.invokeLater(function() {
         try {
             Game.interact.inventory.useItemOnItem(SS_ITEMS.NEEDLE, SS_ITEMS.LEATHER);
             Game.sendGameMessage("[SlayerBot][RI] Crafting leather armor", "Bot");
@@ -5057,7 +5057,7 @@ function handleDigMound() {
 
     // Dig at mound (spade in inventory)
     isExecuting = true;
-    Utility.invokeLater(() => {
+    Utility.invokeLater(function() {
         try {
             Game.interact.inventory.consumeItem(952); // Spade ID
             Game.sendGameMessage("[SlayerBot][RI] Digging at " + BARROWS_BROTHERS[barrowsBrother].name + "'s mound", "Bot");
@@ -5090,7 +5090,7 @@ function handleKillBrother() {
     if (npc) {
         if (!PlayerHelper.isInCombat()) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.npc.attack(npc);
                     Game.sendGameMessage("[SlayerBot][RI] Attacking " + brother.name, "Bot");
@@ -5121,7 +5121,7 @@ function handleOpenChest() {
     var chest = Game.info.gameObject.getNearest(SS_OBJECTS.BARROWS_CHEST);
     if (chest) {
         isExecuting = true;
-        Utility.invokeLater(() => {
+        Utility.invokeLater(function() {
             try {
                 Game.interact.gameObject.action(chest, MenuAction.GAME_OBJECT_FIRST_OPTION);
                 Game.sendGameMessage("[SlayerBot][RI] Opening Barrows chest! Run #" + (barrowsRunCount + 1), "Bot");
@@ -5148,7 +5148,7 @@ function handleBarrowsBanking() {
 
     if (!Game.info.bank.isOpen()) {
         isExecuting = true;
-        Utility.invokeLater(() => {
+        Utility.invokeLater(function() {
             try { Game.interact.bank.openNearest(); } catch(e) {}
             isExecuting = false;
         }, Utility.getDelay());
@@ -5157,7 +5157,7 @@ function handleBarrowsBanking() {
 
     // Deposit loot, withdraw supplies, go again
     isExecuting = true;
-    Utility.invokeLater(() => {
+    Utility.invokeLater(function() {
         try {
             Game.interact.bank.depositAllInventory();
             Game.sendGameMessage("[SlayerBot][RI] Banked Barrows loot — run " + barrowsRunCount + "/" + barrowsMaxRuns, "Bot");
@@ -5193,7 +5193,7 @@ function isNearLocation(loc, range) {
 function walkToLocation(loc) {
     if (isExecuting || PlayerHelper.isWebWalking()) return;
     isExecuting = true;
-    Utility.invokeLater(() => {
+    Utility.invokeLater(function() {
         try {
             Utility.walkTo(new WorldPoint(loc.x, loc.y, loc.z || 0));
             Game.sendGameMessage("[SlayerBot][RI] Walking to " + loc.x + "," + loc.y, "Bot");
@@ -5220,7 +5220,7 @@ function dropAllRawFish() {
     for (var i = 0; i < rawIds.length; i++) {
         if (Game.info.inventory.getItemCount(rawIds[i]) > 0) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.inventory.dropItem(rawIds[i]);
                 } catch(e) {}
@@ -5241,7 +5241,7 @@ function dropAllOres() {
     for (var i = 0; i < oreIds.length; i++) {
         if (Game.info.inventory.getItemCount(oreIds[i]) > 0) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try { Game.interact.inventory.dropItem(oreIds[i]); } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -5286,7 +5286,7 @@ function bankForTool(toolId) {
 
     if (!Game.info.bank.isOpen()) {
         isExecuting = true;
-        Utility.invokeLater(() => {
+        Utility.invokeLater(function() {
             try { Game.interact.bank.openNearest(); } catch(e) {}
             isExecuting = false;
         }, Utility.getDelay());
@@ -5294,7 +5294,7 @@ function bankForTool(toolId) {
     }
 
     isExecuting = true;
-    Utility.invokeLater(() => {
+    Utility.invokeLater(function() {
         try {
             Game.interact.bank.withdraw(toolId, 1);
             Game.sendGameMessage("[SlayerBot][RI] Withdrew tool: " + toolId, "Bot");
@@ -5312,7 +5312,7 @@ function buyFromShop(npcId, itemId, quantity) {
     var npc = Game.info.npc.getNearest([npcId]);
     if (npc) {
         isExecuting = true;
-        Utility.invokeLater(() => {
+        Utility.invokeLater(function() {
             try {
                 npc.action(MenuAction.NPC_FIRST_OPTION);  // "Trade"
                 Game.sendGameMessage("[SlayerBot][RI] Opening shop with NPC " + npcId, "Bot");
@@ -5365,7 +5365,7 @@ function ssPickUpValuableLoot() {
             if (Game.info.inventory.isFull() && item.getId() !== SS_ITEMS.COINS) continue;
 
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.groundItem.pickup(item);
                     Game.sendGameMessage("[SlayerBot][RI] Picked up valuable: " + item.getId(), "Bot");
@@ -5388,7 +5388,7 @@ function ssBuryBones() {
     for (var i = 0; i < boneIds.length; i++) {
         if (Game.info.inventory.getItemCount(boneIds[i]) > 0) {
             isExecuting = true;
-            Utility.invokeLater(() => {
+            Utility.invokeLater(function() {
                 try {
                     Game.interact.inventory.consumeItem(boneIds[i]);
                     Game.sendGameMessage("[SlayerBot][RI] Burying bones for prayer XP", "Bot");
@@ -5592,7 +5592,7 @@ function handleGatherRangedTick() {
             for (var i = 0; i < groundItems.length; i++) {
                 if (groundItems[i].getId() === SS_ITEMS.FEATHER) {
                     isExecuting = true;
-                    Utility.invokeLater(() => {
+                    Utility.invokeLater(function() {
                         try { Game.interact.groundItem.pickup(groundItems[i]); } catch(e) {}
                         isExecuting = false;
                     }, Utility.getDelay());
@@ -5604,7 +5604,7 @@ function handleGatherRangedTick() {
             var chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
             if (chicken) {
                 isExecuting = true;
-                Utility.invokeLater(() => {
+                Utility.invokeLater(function() {
                     try { Game.interact.npc.attack(chicken); } catch(e) {}
                     isExecuting = false;
                 }, Utility.getDelay());

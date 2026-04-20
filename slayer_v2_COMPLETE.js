@@ -11,7 +11,7 @@
 // DeadZone Community Package — Paste into CONFIG tab
 // ============================================================
 
-const config = {
+var config = {
     // === Food & Healing ===
     foodType: ConfigItem.createList("foodType", "Combat", "Food Type", "Type of food to use for healing", 
         ["Shrimps", "Trout", "Salmon", "Lobster", "Swordfish", "Monkfish", "Shark", "Manta Ray"], "Lobster"),
@@ -36,7 +36,7 @@ const config = {
     selfSufficiency: ConfigItem.createBoolean("selfSufficiency", "Supplies", "Self-Sufficiency Mode", "Gather resources by hand when no GP available (fish, mine, craft)", true)
 };
 
-const overlay = {
+var overlay = {
     status:         OverlayItem.create2d("status",         "Status: Initializing...",      true, 0),
     task:           OverlayItem.create2d("task",            "Task: None",                   true, 1),
     killsLeft:      OverlayItem.create2d("killsLeft",       "Kills Left: 0",                true, 2),
@@ -56,7 +56,7 @@ const overlay = {
 // ─────────────────────────────────────────────────────────────────────────────
 // SLAYER MASTERS
 // ─────────────────────────────────────────────────────────────────────────────
-const SLAYER_MASTERS = {
+var SLAYER_MASTERS = {
     TURAEL: {
         name: "Turael",
         npcId: 5913,
@@ -126,7 +126,7 @@ const SLAYER_MASTERS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // FOOD ITEMS
 // ─────────────────────────────────────────────────────────────────────────────
-const FOOD = {
+var FOOD = {
     "Shrimps": { id: 315, heal: 3 },
     "Trout": { id: 333, heal: 7 },
     "Salmon": { id: 329, heal: 9 },
@@ -137,33 +137,33 @@ const FOOD = {
     "Manta Ray": { id: 391, heal: 22 }
 };
 
-const ALL_FOOD_IDS = [315, 333, 329, 379, 373, 7946, 385, 391];
+var ALL_FOOD_IDS = [315, 333, 329, 379, 373, 7946, 385, 391];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POTIONS
 // ─────────────────────────────────────────────────────────────────────────────
-const PRAYER_POTION = { 4: 2434, 3: 139, 2: 141, 1: 143 };
-const PRAYER_POTION_IDS = [2434, 139, 141, 143];
+var PRAYER_POTION = { 4: 2434, 3: 139, 2: 141, 1: 143 };
+var PRAYER_POTION_IDS = [2434, 139, 141, 143];
 
-const SUPER_COMBAT = { 4: 12695, 3: 12697, 2: 12699, 1: 12701 };
-const SUPER_COMBAT_IDS = [12695, 12697, 12699, 12701];
+var SUPER_COMBAT = { 4: 12695, 3: 12697, 2: 12699, 1: 12701 };
+var SUPER_COMBAT_IDS = [12695, 12697, 12699, 12701];
 
-const SUPER_ATTACK = { 4: 2436, 3: 145, 2: 147, 1: 149 };
-const SUPER_STRENGTH = { 4: 2440, 3: 157, 2: 159, 1: 161 };
+var SUPER_ATTACK = { 4: 2436, 3: 145, 2: 147, 1: 149 };
+var SUPER_STRENGTH = { 4: 2440, 3: 157, 2: 159, 1: 161 };
 
-const ANTIFIRE = { 4: 2452, 3: 2454, 2: 2456, 1: 2458 };
-const ANTIFIRE_IDS = [2452, 2454, 2456, 2458];
+var ANTIFIRE = { 4: 2452, 3: 2454, 2: 2456, 1: 2458 };
+var ANTIFIRE_IDS = [2452, 2454, 2456, 2458];
 
-const EXTENDED_ANTIFIRE = { 4: 11951, 3: 11953, 2: 11955, 1: 11957 };
-const EXTENDED_ANTIFIRE_IDS = [11951, 11953, 11955, 11957];
+var EXTENDED_ANTIFIRE = { 4: 11951, 3: 11953, 2: 11955, 1: 11957 };
+var EXTENDED_ANTIFIRE_IDS = [11951, 11953, 11955, 11957];
 
-const ANTIPOISON = { 4: 2446, 3: 175, 2: 177, 1: 179 };
-const ANTIPOISON_IDS = [2446, 175, 177, 179];
+var ANTIPOISON = { 4: 2446, 3: 175, 2: 177, 1: 179 };
+var ANTIPOISON_IDS = [2446, 175, 177, 179];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPECIAL SLAYER ITEMS
 // ─────────────────────────────────────────────────────────────────────────────
-const SPECIAL_ITEMS = {
+var SPECIAL_ITEMS = {
     ROCK_HAMMER: { id: 4162, name: "Rock hammer", usedOn: ["Gargoyle"], mechanic: "finish", hpThreshold: 8, desc: "Use on gargoyle when HP <= 8" },
     BAG_OF_SALT: { id: 4161, name: "Bag of salt", usedOn: ["Rock Slug"], mechanic: "finish", hpThreshold: 5, desc: "Use on rock slug when HP <= 5" },
     ICE_COOLER: { id: 6696, name: "Ice cooler", usedOn: ["Desert Lizard", "Lizard"], mechanic: "finish", hpThreshold: 4, desc: "Use on desert lizard when HP <= 4" },
@@ -184,7 +184,7 @@ const SPECIAL_ITEMS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // BONES
 // ─────────────────────────────────────────────────────────────────────────────
-const BONES = {
+var BONES = {
     BONES: 526,
     BIG_BONES: 532,
     DRAGON_BONES: 536,
@@ -195,12 +195,12 @@ const BONES = {
     DAGANNOTH_BONES: 6729
 };
 
-const ALL_BONE_IDS = [526, 532, 536, 534, 6812, 11943, 22124, 6729];
+var ALL_BONE_IDS = [526, 532, 536, 534, 6812, 11943, 22124, 6729];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MELEE WEAPON TIERS
 // ─────────────────────────────────────────────────────────────────────────────
-const MELEE_WEAPONS = [
+var MELEE_WEAPONS = [
     { name: "Abyssal whip", id: 4151, atkReq: 70, strBonus: 82 },
     { name: "Dragon scimitar", id: 4587, atkReq: 60, strBonus: 66 },
     { name: "Leaf-bladed sword", id: 11902, atkReq: 50, strBonus: 67 },
@@ -215,7 +215,7 @@ const MELEE_WEAPONS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // ARMOR TIERS — HELMETS
 // ─────────────────────────────────────────────────────────────────────────────
-const HELMETS = [
+var HELMETS = [
     { name: "Slayer helmet (i)", id: 11865, defReq: 10 },
     { name: "Slayer helmet", id: 11864, defReq: 10 },
     { name: "Helm of neitiznot", id: 10828, defReq: 55 },
@@ -230,7 +230,7 @@ const HELMETS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // ARMOR TIERS — BODY
 // ─────────────────────────────────────────────────────────────────────────────
-const PLATEBODIES = [
+var PLATEBODIES = [
     { name: "Bandos chestplate", id: 11832, defReq: 65 },
     { name: "Dragon chainbody", id: 3140, defReq: 60 },
     { name: "Rune platebody", id: 1127, defReq: 40 },
@@ -244,7 +244,7 @@ const PLATEBODIES = [
 // ─────────────────────────────────────────────────────────────────────────────
 // ARMOR TIERS — LEGS
 // ─────────────────────────────────────────────────────────────────────────────
-const PLATELEGS = [
+var PLATELEGS = [
     { name: "Bandos tassets", id: 11834, defReq: 65 },
     { name: "Dragon platelegs", id: 4087, defReq: 60 },
     { name: "Rune platelegs", id: 1079, defReq: 40 },
@@ -258,7 +258,7 @@ const PLATELEGS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // ARMOR TIERS — SHIELDS
 // ─────────────────────────────────────────────────────────────────────────────
-const SHIELDS = [
+var SHIELDS = [
     { name: "Dragon defender", id: 12954, defReq: 60 },
     { name: "Rune defender", id: 8850, defReq: 40 },
     { name: "Rune kiteshield", id: 1201, defReq: 40 },
@@ -272,7 +272,7 @@ const SHIELDS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // BOOTS
 // ─────────────────────────────────────────────────────────────────────────────
-const BOOTS = [
+var BOOTS = [
     { name: "Dragon boots", id: 11840, defReq: 60 },
     { name: "Rune boots", id: 4131, defReq: 40 },
     { name: "Adamant boots", id: 4129, defReq: 30 },
@@ -285,7 +285,7 @@ const BOOTS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // GLOVES
 // ─────────────────────────────────────────────────────────────────────────────
-const GLOVES = [
+var GLOVES = [
     { name: "Barrows gloves", id: 7462, defReq: 40 },
     { name: "Dragon gloves", id: 7461, defReq: 40 },
     { name: "Rune gloves", id: 7460, defReq: 40 },
@@ -300,14 +300,14 @@ const GLOVES = [
 // ─────────────────────────────────────────────────────────────────────────────
 // AMULETS & CAPES
 // ─────────────────────────────────────────────────────────────────────────────
-const AMULETS = [
+var AMULETS = [
     { name: "Amuvar of fury", id: 6585, reqLevel: 1 },
     { name: "Amuvar of glory", id: 1704, reqLevel: 1 },
     { name: "Amuvar of power", id: 1731, reqLevel: 1 },
     { name: "Amuvar of strength", id: 1725, reqLevel: 1 }
 ];
 
-const CAPES = [
+var CAPES = [
     { name: "Fire cape", id: 6570, reqLevel: 1 },
     { name: "Obsidian cape", id: 6568, reqLevel: 1 },
     { name: "Ardougne cloak 4", id: 20760, reqLevel: 1 },
@@ -317,7 +317,7 @@ const CAPES = [
 // ─────────────────────────────────────────────────────────────────────────────
 // BANK LOCATIONS
 // ─────────────────────────────────────────────────────────────────────────────
-const BANKS = [
+var BANKS = [
     { name: "Grand Exchange", x: 3164, y: 3487, plane: 0 },
     { name: "Lumbridge", x: 3208, y: 3220, plane: 2 },
     { name: "Varrock West", x: 3185, y: 3436, plane: 0 },
@@ -343,7 +343,7 @@ const BANKS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // GRAND EXCHANGE
 // ─────────────────────────────────────────────────────────────────────────────
-const GE = {
+var GE = {
     BOOTH_IDS: [10061],
     CLERK_IDS: [2148, 2149],
     LOCATION: { x: 3164, y: 3487, plane: 0 },
@@ -358,12 +358,12 @@ const GE = {
 // ─────────────────────────────────────────────────────────────────────────────
 // DEATH / RESPAWN
 // ─────────────────────────────────────────────────────────────────────────────
-const DEATH_SPAWN = { x: 3222, y: 3218, plane: 0 };
+var DEATH_SPAWN = { x: 3222, y: 3218, plane: 0 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TELEPORT ITEMS (for faster travel)
 // ─────────────────────────────────────────────────────────────────────────────
-const TELEPORTS = {
+var TELEPORTS = {
     VARROCK_TAB: 8007,
     LUMBRIDGE_TAB: 8008,
     FALADOR_TAB: 8009,
@@ -380,7 +380,7 @@ const TELEPORTS = {
     RING_OF_WEALTH_5: 11980
 };
 
-const SLAYER_RING_IDS = [11866, 11867, 11868, 11869, 11870, 11871, 11872, 11873];
+var SLAYER_RING_IDS = [11866, 11867, 11868, 11869, 11870, 11871, 11872, 11873];
 
 
 // =============================================================================
@@ -390,7 +390,7 @@ const SLAYER_RING_IDS = [11866, 11867, 11868, 11869, 11870, 11871, 11872, 11873]
 // special requirements, and which masters assign them.
 // =============================================================================
 
-const MONSTER_DB = {
+var MONSTER_DB = {
 
     // ─────────────────────────────────────────────────────────────────────────
     // TURAEL TASKS (low-level, Burthorpe)
@@ -2889,7 +2889,7 @@ function isAtDeathSpawn() {
 // ─────────────────────────────────────────────────────────────────────────────
 // PRAYER CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
-const PRAYERS = {
+var PRAYERS = {
     PROTECT_FROM_MELEE: { name: "Protect from Melee", widgetChild: 19 },
     PROTECT_FROM_MISSILES: { name: "Protect from Missiles", widgetChild: 18 },
     PROTECT_FROM_MAGIC: { name: "Protect from Magic", widgetChild: 17 }
@@ -2898,7 +2898,7 @@ const PRAYERS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // MASTER TASK ASSIGNMENTS (for reference: which monsters each master assigns)
 // ─────────────────────────────────────────────────────────────────────────────
-const MASTER_TASKS = {
+var MASTER_TASKS = {
     TURAEL: ["Banshee", "Bat", "Bear", "Bird", "Cave Bug", "Cave Crawler", "Cave Slime", "Cow", "Crawling Hand", "Desert Lizard", "Dog", "Dwarf", "Ghost", "Goblin", "Icefiend", "Kalphite Worker", "Minotaur", "Monkey", "Rat", "Scorpion", "Skeleton", "Spider", "Wolf", "Zombie", "Black Bear", "Giant Bat", "Guard Dog", "Terrorbird"],
     MAZCHNA: ["Banshee", "Bat", "Bear", "Catablepon", "Cave Crawler", "Cave Slime", "Cockatrice", "Crawling Hand", "Cyclops", "Desert Lizard", "Dog", "Earth Warrior", "Flesh Crawler", "Ghost", "Ghoul", "Hill Giant", "Hobgoblin", "Ice Warrior", "Infernal Mage", "Kalphite Worker", "Killerwatt", "Mogre", "Pyrefiend", "Rock Slug", "Shade", "Vampire", "Wall Beast", "Zombie"],
     VANNAKA: ["Aberrant Spectre", "Ankou", "Banshee", "Basilisk", "Bloodveld", "Blue Dragon", "Bronze Dragon", "Cave Crawler", "Cockatrice", "Crocodile", "Cyclops", "Dagannoth", "Earth Warrior", "Elves", "Fire Giant", "Green Dragon", "Harpie Bug Swarm", "Hill Giant", "Ice Giant", "Ice Warrior", "Infernal Mage", "Jelly", "Jungle Horror", "Kalphite Worker", "Killerwatt", "Kurask", "Lesser Demon", "Mogre", "Moss Giant", "Otherworldly Being", "Pyrefiend", "Rock Slug", "Shadow Warrior", "Turoth", "Vampire", "Werewolf", "Hellhound"],
@@ -2925,7 +2925,7 @@ const MASTER_TASKS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // ITEM IDS
 // ─────────────────────────────────────────────────────────────────────────────
-const SS_ITEMS = {
+var SS_ITEMS = {
     // Currency
     COINS: 995,
 
@@ -3120,7 +3120,7 @@ const SS_ITEMS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // NPC IDS
 // ─────────────────────────────────────────────────────────────────────────────
-const SS_NPCS = {
+var SS_NPCS = {
     CHICKEN: [3667, 1017, 1018, 1019],
     COW: [2790, 2791, 2793, 2795],
     GOBLIN: [3029, 3030, 3031, 3032, 3033, 3034],
@@ -3142,7 +3142,7 @@ const SS_NPCS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // OBJECT IDS
 // ─────────────────────────────────────────────────────────────────────────────
-const SS_OBJECTS = {
+var SS_OBJECTS = {
     // Cooking
     LUMBRIDGE_RANGE: 114,      // 3211,3215,0
     COOKING_FIRE: 26185,       // Generic fire object
@@ -3170,7 +3170,7 @@ const SS_OBJECTS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // LOCATIONS (WorldPoint x, y, plane)
 // ─────────────────────────────────────────────────────────────────────────────
-const SS_LOCATIONS = {
+var SS_LOCATIONS = {
     // Gathering spots
     LUMBRIDGE_CHICKENS:         { x: 3236, y: 3295, z: 0 },
     LUMBRIDGE_COWS:             { x: 3258, y: 3265, z: 0 },
@@ -3228,7 +3228,7 @@ const SS_LOCATIONS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // VALUABLE LOOT — Always pick these up (GP generation)
 // ─────────────────────────────────────────────────────────────────────────────
-const VALUABLE_LOOT_IDS = [
+var VALUABLE_LOOT_IDS = [
     SS_ITEMS.COINS,
     SS_ITEMS.NATURE_RUNE,
     SS_ITEMS.LAW_RUNE,
@@ -3257,7 +3257,7 @@ const VALUABLE_LOOT_IDS = [
 ];
 
 // Approximate GE prices for value estimation
-const SS_PRICES = {
+var SS_PRICES = {
     995: 1,       // Coins (literal)
     561: 180,     // Nature rune
     563: 150,     // Law rune
@@ -3284,7 +3284,7 @@ const SS_PRICES = {
 // =============================================================================
 // FOOD TIERS — ALL 10 TIERS from chicken to anglerfish
 // =============================================================================
-const SS_FOOD_TIERS = [
+var SS_FOOD_TIERS = [
     {
         tier: 0,
         name: "Chicken",
@@ -3476,7 +3476,7 @@ const SS_FOOD_TIERS = [
 // =============================================================================
 // GEAR PROGRESSION — Melee weapons, armor, ranged, and magic by level
 // =============================================================================
-const SS_MELEE_WEAPONS = [
+var SS_MELEE_WEAPONS = [
     { level: 1,  itemId: SS_ITEMS.BRONZE_SWORD,    name: "Bronze sword",    smithLvl: 1,  barId: SS_ITEMS.BRONZE_BAR, bars: 1 },
     { level: 1,  itemId: SS_ITEMS.BRONZE_SCIMITAR,  name: "Bronze scimitar", smithLvl: 5,  barId: SS_ITEMS.BRONZE_BAR, bars: 2 },
     { level: 1,  itemId: SS_ITEMS.IRON_SCIMITAR,    name: "Iron scimitar",   smithLvl: 20, barId: SS_ITEMS.IRON_BAR, bars: 2 },
@@ -3488,7 +3488,7 @@ const SS_MELEE_WEAPONS = [
     { level: 70, itemId: SS_ITEMS.ABYSSAL_WHIP,      name: "Abyssal whip",    geOnly: true }
 ];
 
-const SS_MELEE_ARMOR = [
+var SS_MELEE_ARMOR = [
     { level: 1,  bodyId: SS_ITEMS.LEATHER_BODY,     legsId: SS_ITEMS.LEATHER_CHAPS,     name: "Leather",  craftable: true, craftLvl: 14 },
     { level: 1,  bodyId: SS_ITEMS.BRONZE_PLATEBODY,  legsId: SS_ITEMS.BRONZE_PLATELEGS,  name: "Bronze",   smithLvl: 18, barId: SS_ITEMS.BRONZE_BAR, bodyBars: 5, legsBars: 3 },
     { level: 1,  bodyId: SS_ITEMS.IRON_PLATEBODY,    legsId: SS_ITEMS.IRON_PLATELEGS,    name: "Iron",     smithLvl: 33, barId: SS_ITEMS.IRON_BAR, bodyBars: 5, legsBars: 3 },
@@ -3502,7 +3502,7 @@ const SS_MELEE_ARMOR = [
     { level: 70, bodyId: SS_ITEMS.VERAC_BRASSARD,     legsId: SS_ITEMS.VERAC_PLATESKIRT,  name: "Verac",    barrowsOnly: true }
 ];
 
-const SS_RANGED_WEAPONS = [
+var SS_RANGED_WEAPONS = [
     { level: 1,  itemId: SS_ITEMS.SHORTBOW,       name: "Shortbow",       ammoId: SS_ITEMS.BRONZE_ARROW },
     { level: 20, itemId: SS_ITEMS.WILLOW_SHORTBOW, name: "Willow shortbow", ammoId: SS_ITEMS.IRON_ARROW },
     { level: 30, itemId: SS_ITEMS.MAPLE_SHORTBOW,  name: "Maple shortbow", ammoId: SS_ITEMS.STEEL_ARROW },
@@ -4996,7 +4996,7 @@ var barrowsBrother = 0; // 0-5 for each brother
 var barrowsRunCount = 0;
 var barrowsMaxRuns = 10;
 
-const BARROWS_BROTHERS = [
+var BARROWS_BROTHERS = [
     { name: "Dharok",  location: { x: 3575, y: 3297, z: 0 }, npcId: 1673, prayer: "PROTECT_FROM_MELEE" },
     { name: "Guthan",  location: { x: 3577, y: 3283, z: 0 }, npcId: 1674, prayer: "PROTECT_FROM_MELEE" },
     { name: "Verac",   location: { x: 3557, y: 3298, z: 0 }, npcId: 1677, prayer: "PROTECT_FROM_MELEE" },
@@ -5664,7 +5664,7 @@ Game.sendGameMessage("[SlayerBot][RI] ══════════════
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE DEFINITIONS
 // ─────────────────────────────────────────────────────────────────────────────
-const STATES = {
+var STATES = {
     STARTUP: "STARTUP",
     CHECK_STATS: "CHECK_STATS",
     SELECT_MASTER: "SELECT_MASTER",

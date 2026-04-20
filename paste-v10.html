@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DZ Paste Helper v10</title>
+<style>
+body{font-family:Arial;background:#1a1a2e;color:#fff;padding:20px;text-align:center}
+h1{color:#0f0;font-size:28px}
+.btn{display:inline-block;margin:15px;padding:25px 50px;font-size:22px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;color:#fff}
+.config{background:#e74c3c}.util{background:#3498db}.main{background:#2ecc71}.commit{background:#f39c12}
+.status{margin-top:15px;font-size:18px;color:#0f0}
+.info{color:#aaa;font-size:14px;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>DZ Slayer Bot v10 Paste Helper</h1>
+<p style="color:#ff0;font-size:16px">v10: Fixed withdrawItem (BankWithdrawType) + webWalkTo (WorldPoint)</p>
+<div>
+<button class="btn config" onclick="copyFile('CONFIG')">Copy CONFIG</button>
+<button class="btn util" onclick="copyFile('UTILITIES')">Copy UTILITIES</button>
+<button class="btn main" onclick="copyFile('MAIN')">Copy MAIN</button>
+<button class="btn commit" onclick="copyCommit()">Copy Commit Msg</button>
+</div>
+<div id="status" class="status"></div>
+<div class="info">After copy: Switch to DZ editor tab -> Ctrl+A -> Ctrl+V</div>
+<script>
+var ts = Date.now();
+var files = {
+  CONFIG: 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/dz-bot/slayer_CONFIG.txt?t=' + ts,
+  UTILITIES: 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/dz-bot/slayer_UTILITIES.txt?t=' + ts,
+  MAIN: 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/dz-bot/slayer_MAIN.txt?t=' + ts
+};
+function copyFile(name) {
+  document.getElementById('status').innerText = 'Fetching ' + name + '...';
+  fetch(files[name]).then(function(r){return r.text()}).then(function(text){
+    var lines = text.split('\n').length;
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    document.getElementById('status').innerText = name + ' copied! (' + lines + ' lines) - Now Ctrl+A, Ctrl+V in DZ editor';
+  });
+}
+function copyCommit() {
+  var ta = document.createElement('textarea');
+  ta.value = 'slayer bot v10';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  document.getElementById('status').innerText = 'Commit message copied: "slayer bot v10"';
+}
+</script>
+</body>
+</html>

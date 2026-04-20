@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DZ Error Finder</title>
+<style>
+body { font-family: Arial; background: #1a1a2e; color: #fff; padding: 20px; text-align: center; }
+h1 { color: #ff6b6b; }
+.step { background: #16213e; padding: 20px; margin: 15px auto; border-radius: 10px; max-width: 600px; text-align: left; }
+.step h2 { color: #4ecdc4; margin-top: 0; }
+code { background: #0f3460; padding: 2px 8px; border-radius: 4px; color: #e94560; font-size: 16px; }
+.big-code { background: #0f3460; padding: 15px; border-radius: 8px; color: #e94560; font-size: 14px; word-break: break-all; margin: 10px 0; cursor: pointer; }
+.big-code:hover { background: #1a4a7a; }
+button { background: #e94560; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; margin: 10px; }
+button:hover { background: #ff6b6b; }
+.copied { background: #4ecdc4 !important; }
+</style>
+</head>
+<body>
+<h1>DZ Error Finder</h1>
+<p style="font-size:20px;">Follow these 3 steps to find the exact errors:</p>
+
+<div class="step">
+<h2>Step 1: Go to the DZ Editor tab</h2>
+<p>Make sure you're on <code>deadzone.dev/editor/597</code></p>
+</div>
+
+<div class="step">
+<h2>Step 2: Open Console</h2>
+<p>Press <code>F12</code> on your keyboard, then click the <code>Console</code> tab at the top</p>
+<p>If it says "type allow pasting" - type: <code>allow pasting</code> and press Enter</p>
+</div>
+
+<div class="step">
+<h2>Step 3: Click this button, then paste in Console</h2>
+<button id="copyBtn" onclick="copyScript()">COPY ERROR FINDER SCRIPT</button>
+<p>After copying, click in the Console area, press <code>Ctrl+V</code>, then <code>Enter</code></p>
+<p>An alert box will pop up showing ALL errors with line numbers!</p>
+<p style="color: #ff6b6b; font-weight: bold;">Screenshot the alert and send it to Brad!</p>
+</div>
+
+<div class="step">
+<h2>The script (for reference):</h2>
+<div class="big-code" onclick="copyScript()">alert(monaco.editor.getModelMarkers({}).map(function(m){return 'L'+m.startLineNumber+': '+m.message}).join('\n'))</div>
+</div>
+
+<script>
+function copyScript() {
+    var script = "alert(monaco.editor.getModelMarkers({}).map(function(m){return 'L'+m.startLineNumber+': '+m.message}).join('\\n'))";
+    navigator.clipboard.writeText(script).then(function() {
+        var btn = document.getElementById('copyBtn');
+        btn.textContent = 'COPIED!';
+        btn.className = 'copied';
+        setTimeout(function() {
+            btn.textContent = 'COPY ERROR FINDER SCRIPT';
+            btn.className = '';
+        }, 3000);
+    });
+}
+</script>
+</body>
+</html>

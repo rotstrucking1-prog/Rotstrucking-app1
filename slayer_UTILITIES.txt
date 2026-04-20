@@ -4062,7 +4062,7 @@ function handleLevelFishing() {
     }
 
     // Fish!
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var fishingSpot = Game.info.npc.getNearest(spot);
         if (fishingSpot) {
             isExecuting = true;
@@ -4100,7 +4100,7 @@ function handleLevelCooking() {
     }
 
     // Cook on range
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var range = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE]);
         if (range) {
             isExecuting = true;
@@ -4165,7 +4165,7 @@ function handleLevelMining() {
         return;
     }
 
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var rock = Game.info.gameObject.getNearest(oreRocks);
         if (rock) {
             isExecuting = true;
@@ -4190,7 +4190,7 @@ function handleLevelSmelting() {
         return;
     }
     var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
-    if (furnace && !PlayerHelper.isAnimating()) {
+    if (furnace && PlayerHelper.isPlayerIdle()) {
         isExecuting = true;
         Utility.invokeLater(function() {
             try {
@@ -4401,7 +4401,7 @@ function handleGatherFoodByFishing() {
     }
 
     // Fish!
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var spot = Game.info.npc.getNearest(gatherFoodTier.spotIds);
         if (spot) {
             isExecuting = true;
@@ -4469,14 +4469,14 @@ function handleCookAllRawFood() {
     }
 
     // Cook on range/fire
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var cookObj = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE, SS_OBJECTS.COOKING_FIRE]);
         if (cookObj) {
             isExecuting = true;
             Utility.invokeLater(function() {
                 try {
                     // Use raw fish on range
-                    Game.interact.inventory.useItemOnObject(gatherFoodTier.rawItemId, cookObj);
+                    useItemOnGameObject(gatherFoodTier.rawItemId, cookObj);
                     Game.sendGameMessage("[SlayerBot][RI] Cooking " + gatherFoodTier.name + " (" + rawCount + " raw remaining)", "Bot");
                 } catch(e) {
                     // Fallback: try clicking the range directly
@@ -4674,7 +4674,7 @@ function handleMineOreForGear() {
         return;
     }
 
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var rock = Game.info.gameObject.getNearest(oreRocks);
         if (rock) {
             isExecuting = true;
@@ -4707,7 +4707,7 @@ function handleSmeltOreForGear() {
         return;
     }
 
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
         if (furnace) {
             isExecuting = true;
@@ -4748,7 +4748,7 @@ function handleSmithGearItem() {
         return;
     }
 
-    if (!PlayerHelper.isAnimating()) {
+    if (PlayerHelper.isPlayerIdle()) {
         var anvil = Game.info.gameObject.getNearest(SS_OBJECTS.ANVIL);
         if (anvil) {
             isExecuting = true;
@@ -4933,7 +4933,7 @@ function handleCraftLeatherArmor() {
     isExecuting = true;
     Utility.invokeLater(function() {
         try {
-            Game.interact.inventory.useItemOnItem(SS_ITEMS.NEEDLE, SS_ITEMS.LEATHER);
+            useItemOnInventoryItem(SS_ITEMS.NEEDLE, SS_ITEMS.LEATHER);
             Game.sendGameMessage("[SlayerBot][RI] Crafting leather armor", "Bot");
         } catch(e) {}
         isExecuting = false;
@@ -5154,7 +5154,7 @@ function walkToLocation(loc) {
     isExecuting = true;
     Utility.invokeLater(function() {
         try {
-            Utility.walkTo(new WorldPoint(loc.x, loc.y, loc.z || 0));
+            PlayerHelper.walkTo(new WorldPoint(loc.x, loc.y, loc.z || 0));
             Game.sendGameMessage("[SlayerBot][RI] Walking to " + loc.x + "," + loc.y, "Bot");
         } catch(e) {
             Game.sendGameMessage("[SlayerBot][RI] Walk error: " + e, "Bot");
@@ -5606,4 +5606,22 @@ Game.sendGameMessage("[SlayerBot][RI]           food gathering, gear smithing, l
 Game.sendGameMessage("[SlayerBot][RI]           Barrows runs, ranged supply, GP generation", "Bot");
 Game.sendGameMessage("[SlayerBot][RI] ---------------------------------------------------", "Bot");
 
+// =============================================================================
+// HELPER FUNCTIONS -- Two-step item usage patterns (Blood Runes API pattern)
+// =============================================================================
 
+// Use an inventory item on a game object (e.g., raw food on cooking range)
+function useItemOnGameObject(itemId, gameObj) {
+    Game.interact.inventory.useItem(itemId, MenuAction.WIDGET_TARGET);
+    Utility.invokeLater(function() {
+        Game.interact.gameObject.action(gameObj, MenuAction.WIDGET_TARGET_ON_GAME_OBJECT);
+    }, 300);
+}
+
+// Use an inventory item on another inventory item (e.g., needle on leather)
+function useItemOnInventoryItem(itemId1, itemId2) {
+    Game.interact.inventory.useItem(itemId1, MenuAction.WIDGET_TARGET);
+    Utility.invokeLater(function() {
+        Game.interact.inventory.useItem(itemId2, MenuAction.WIDGET_TARGET_ON_WIDGET);
+    }, 300);
+}

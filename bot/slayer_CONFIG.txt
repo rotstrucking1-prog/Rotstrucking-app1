@@ -1,0 +1,37 @@
+// =============================================
+// AUTO SLAYER BOT v2.2 -- CONFIG
+// =============================================
+
+var config = {
+    // === Food & Healing ===
+    foodType: ConfigItem.createList("foodType", "Combat", "Food Type", "Type of food to use for healing", 
+        ["Shrimps", "Trout", "Salmon", "Lobster", "Swordfish", "Monkfish", "Shark", "Manta Ray"], "Lobster"),
+    eatPercent: ConfigItem.createInteger("eatPercent", "Combat", "Eat HP %", "HP percentage to eat food at", 50),
+
+    // === Prayer ===
+    usePrayer: ConfigItem.createBoolean("usePrayer", "Combat", "Use Protection Prayers", "Enable automatic protection prayers during combat", true),
+
+    // === Loot ===
+    lootEnabled: ConfigItem.createBoolean("lootEnabled", "Loot", "Enable Looting", "Pick up loot from killed monsters", true),
+    lootMinValue: ConfigItem.createInteger("lootMinValue", "Loot", "Min Loot Value (GP)", "Minimum GP value of items to pick up", 100),
+    buryBones: ConfigItem.createBoolean("buryBones", "Loot", "Bury Bones", "Automatically bury bones from kills for Prayer XP", false),
+
+    // === Slayer Master ===
+    masterPreference: ConfigItem.createList("masterPreference", "Slayer", "Slayer Master", "Which slayer master to use (Auto = highest available)", 
+        ["Auto", "Turael", "Mazchna", "Vannaka", "Chaeldar", "Konar", "Nieve", "Duradel"], "Auto"),
+
+    // === Grand Exchange ===
+    useGE: ConfigItem.createBoolean("useGE", "Supplies", "Use Grand Exchange", "Buy missing supplies from the Grand Exchange automatically", true),
+
+    // === Self-Sufficiency ===
+    selfSufficiency: ConfigItem.createBoolean("selfSufficiency", "Supplies", "Self-Sufficiency Mode", "Gather resources by hand when no GP available (fish, mine, craft)", true)
+};
+
+var overlay = {
+    status:         OverlayItem.create2d("status",         "Status: Initializing...",      true, 0),
+    task:           OverlayItem.create2d("task",            "Task: None",                   true, 1),
+    killsLeft:      OverlayItem.create2d("killsLeft",       "Kills Left: 0",                true, 2),
+    tasksCompleted: OverlayItem.create2d("tasksCompleted",  "Tasks Done: 0",                true, 3),
+    slayerMaster:   OverlayItem.create2d("slayerMaster",    "Master: None",                 true, 4)
+};
+

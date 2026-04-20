@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Slayer Bot - DZ Paste Helper</title>
+<style>
+body { background: #1a1a2e; color: #fff; font-family: Arial; padding: 20px; text-align: center; }
+h1 { color: #00ff88; }
+.btn { display: inline-block; margin: 20px; padding: 25px 50px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; }
+.config { background: #ffd700; color: #000; }
+.utils { background: #00bfff; color: #000; }
+.main { background: #ff6b6b; color: #fff; }
+.status { margin-top: 10px; font-size: 18px; color: #00ff88; min-height: 30px; }
+.instructions { background: #2a2a4e; padding: 20px; border-radius: 10px; margin: 20px auto; max-width: 600px; text-align: left; }
+.instructions li { margin: 10px 0; font-size: 16px; }
+textarea { width: 80%; height: 200px; background: #0d0d1a; color: #0f0; font-family: monospace; font-size: 12px; padding: 10px; border: 2px solid #333; border-radius: 5px; }
+</style>
+</head>
+<body>
+<h1>Slayer Bot - DZ Paste Helper</h1>
+<p style="font-size:18px; color:#ff6b6b">Click a button below, then go to DZ editor, click the matching tab, Ctrl+A, Ctrl+V</p>
+
+<div>
+<button class="btn config" onclick="loadAndCopy('CONFIG')">Copy CONFIG</button>
+<button class="btn utils" onclick="loadAndCopy('UTILITIES')">Copy UTILITIES</button>
+<button class="btn main" onclick="loadAndCopy('MAIN')">Copy MAIN</button>
+</div>
+<div class="status" id="status"></div>
+
+<div class="instructions">
+<h3 style="color:#ffd700">Steps:</h3>
+<ol>
+<li>Click <b>Copy CONFIG</b> button above</li>
+<li>Go to DZ Editor &rarr; click <b>CONFIG</b> tab</li>
+<li>Click inside the code area</li>
+<li><b>Ctrl+A</b> (select all) then <b>Ctrl+V</b> (paste)</li>
+<li>Repeat for <b>UTILITIES</b> and <b>MAIN</b></li>
+<li>Click <b>Commit</b> in DZ</li>
+</ol>
+</div>
+
+<h3 style="color:#aaa; margin-top: 30px;">Preview (after clicking a button):</h3>
+<textarea id="preview" readonly placeholder="Click a button to load file content here..."></textarea>
+
+<script>
+var baseUrl = 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/';
+
+function loadAndCopy(which) {
+    var status = document.getElementById('status');
+    var preview = document.getElementById('preview');
+    status.textContent = 'Loading ' + which + '...';
+    status.style.color = '#ffd700';
+    
+    var url = baseUrl + 'slayer_' + which + '.txt';
+    
+    fetch(url)
+        .then(function(resp) { return resp.text(); })
+        .then(function(text) {
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(function() {
+                status.textContent = which + ' COPIED TO CLIPBOARD! (' + text.split('\n').length + ' lines) - Now paste into DZ ' + which + ' tab';
+                status.style.color = '#00ff88';
+            }).catch(function(err) {
+                // Fallback - select textarea for manual copy
+                preview.value = text;
+                preview.select();
+                document.execCommand('copy');
+                status.textContent = which + ' COPIED! (' + text.split('\n').length + ' lines) - Now paste into DZ ' + which + ' tab';
+                status.style.color = '#00ff88';
+            });
+            preview.value = text.substring(0, 500) + '\n\n... (' + text.split('\n').length + ' total lines)';
+        })
+        .catch(function(err) {
+            status.textContent = 'ERROR loading file: ' + err;
+            status.style.color = '#ff0000';
+        });
+}
+</script>
+</body>
+</html>

@@ -422,7 +422,7 @@ function handleTalkToMaster() {
         try {
             var masterNpc = Game.info.npc.getNearest(selectedMaster.npcId);
             if (masterNpc) {
-                masterNpc.action(MenuAction.NPC_FIRST_OPTION); // "Assignment"
+                Game.interact.npc.action(masterNpc, MenuAction.NPC_FIRST_OPTION); // "Assignment"
                 Game.sendGameMessage("[SlayerBot] Talking to " + selectedMaster.name + " (NPC ID: " + selectedMaster.npcId + ")", "Bot");
                 state = STATES.WAIT_FOR_TASK;
             } else {
@@ -599,7 +599,7 @@ function handleBankSupplies() {
                 Game.sendGameMessage("[SlayerBot] No bank found nearby! Trying NPC banker...", "Bot");
                 var banker = Game.info.npc.getNearest(1618); // Banker NPC
                 if (banker) {
-                    banker.action(MenuAction.NPC_FIRST_OPTION);
+                    Game.interact.npc.action(banker, MenuAction.NPC_FIRST_OPTION);
                 } else {
                     Game.sendGameMessage("[SlayerBot] No bank or banker found!", "Bot");
                     isExecuting = false;
@@ -1086,7 +1086,7 @@ function attackNearest() {
 
             if (target) {
                 Game.interact.npc.attack(target);
-                Game.sendGameMessage("[SlayerBot] Attacking " + currentTaskMonster.name + " (NPC ID: " + target.getId() + ")", "Bot");
+                Game.sendGameMessage("[SlayerBot] Attacking " + currentTaskMonster.name + " (NPC ID: " + target.getName() + ")", "Bot");
             } else {
                 // No target found -- might need to move around
                 Game.sendGameMessage("[SlayerBot] No " + currentTaskMonster.name + " found nearby. Waiting...", "Bot");
@@ -1120,13 +1120,13 @@ function eatFood() {
 
             // Try configured food first
             if (Game.info.inventory.hasItem(foodId, 1)) {
-                Game.interact.inventory.useItem(foodId);
+                Game.interact.inventory.consumeItem(foodId);
                 Game.sendGameMessage("[SlayerBot] Eating " + foodName, "Bot");
             } else {
                 // Try any food
                 for (var i = 0; i < ALL_FOOD_IDS.length; i++) {
                     if (Game.info.inventory.hasItem(ALL_FOOD_IDS[i], 1)) {
-                        Game.interact.inventory.useItem(ALL_FOOD_IDS[i]);
+                        Game.interact.inventory.consumeItem(ALL_FOOD_IDS[i]);
                         Game.sendGameMessage("[SlayerBot] Eating food ID: " + ALL_FOOD_IDS[i], "Bot");
                         break;
                     }
@@ -1150,7 +1150,7 @@ function drinkPrayerPot() {
             // Try highest dose first
             for (var i = 0; i < PRAYER_POTION_IDS.length; i++) {
                 if (Game.info.inventory.hasItem(PRAYER_POTION_IDS[i], 1)) {
-                    Game.interact.inventory.useItem(PRAYER_POTION_IDS[i]);
+                    Game.interact.inventory.consumeItem(PRAYER_POTION_IDS[i]);
                     Game.sendGameMessage("[SlayerBot] Drank prayer potion (ID: " + PRAYER_POTION_IDS[i] + ")", "Bot");
                     break;
                 }
@@ -1204,7 +1204,7 @@ function handleSpecialFinish() {
             if (target) {
                 var itemId = currentTaskMonster.specialItem;
                 if (Game.info.inventory.hasItem(itemId, 1)) {
-                    Game.interact.inventory.actionItem(itemId, target);
+                    Game.interact.inventory.consumeItem(itemId);
                     Game.sendGameMessage("[SlayerBot] Used " + currentTaskMonster.specialItemName + " on " + currentTaskMonster.name, "Bot");
                 } else {
                     Game.sendGameMessage("[SlayerBot] Missing special item: " + currentTaskMonster.specialItemName + "!", "Bot");
@@ -1245,7 +1245,7 @@ function buryBone(boneId) {
 
     Utility.invokeLater(function() {
         try {
-            Game.interact.inventory.useItem(boneId);
+            Game.interact.inventory.consumeItem(boneId);
             Game.sendGameMessage("[SlayerBot] Burying bone: " + boneId, "Bot");
         } catch (e) {
             Game.sendGameMessage("[SlayerBot] Bury error: " + e, "Bot");

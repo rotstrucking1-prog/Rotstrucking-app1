@@ -500,18 +500,8 @@ def main():
     print("=" * 40)
     print()
     
-    # Ask for current wool count
-    try:
-        starting_wool = int(input("How many wool do you already have? (0 if none): "))
-    except:
-        starting_wool = 0
-    
     target_wool = 20
-    wool_collected = starting_wool
     
-    print(f"\n  Starting with {wool_collected} wool, need {target_wool - wool_collected} more")
-    print(f"  Target: {target_wool} wool total")
-    print()
     print("  🔴 MOVE MOUSE TO TOP-LEFT CORNER TO EMERGENCY STOP")
     print()
     
@@ -520,6 +510,22 @@ def main():
     for i in range(5, 0, -1):
         print(f"  {i}...")
         time.sleep(1)
+    
+    # Auto-detect wool in inventory instead of asking
+    print("\n  📦 Scanning inventory for existing wool...")
+    wool_collected = count_wool_in_inventory()
+    if wool_collected < 0:
+        print("  ⚠️ Couldn't scan inventory — assuming 0 wool")
+        wool_collected = 0
+    
+    print(f"  🧶 Detected {wool_collected} wool in inventory")
+    print(f"  Need {target_wool - wool_collected} more to reach {target_wool}")
+    
+    if wool_collected >= target_wool:
+        print(f"\n  ✅ Already have {wool_collected} wool! Skipping to spinning phase.")
+        # Jump straight to phase 2 message
+        print("\n  📍 NEXT: Walk to Lumbridge Castle spinning wheel")
+        return
     
     print("\n  🟢 BOT STARTED!\n")
     

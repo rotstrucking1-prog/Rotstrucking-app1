@@ -2782,7 +2782,7 @@ function isSpecialItemCovered(monster) {
 
     // Check inventory for finish/use items
     if (monster.specialMechanic === "finish") {
-        return Game.info.inventory.search(monster.specialItem) !== -1;
+        return Game.info.inventory.hasItem(monster.specialItem, 1);
     }
 
     // Check weapon requirement
@@ -2790,7 +2790,7 @@ function isSpecialItemCovered(monster) {
         var weaponIds = [11902, 20727, 11875]; // Leaf-bladed sword, axe, broad bolts
         for (var i = 0; i < weaponIds.length; i++) {
             if (Game.localPlayer.getEquipment().search(weaponIds[i]) !== -1) return true;
-            if (Game.info.inventory.search(weaponIds[i]) !== -1) return true;
+            if (Game.info.inventory.hasItem(weaponIds[i], 1)) return true;
         }
         return false;
     }
@@ -2804,7 +2804,7 @@ function isSpecialItemCovered(monster) {
 function countFood() {
     var count = 0;
     for (var i = 0; i < ALL_FOOD_IDS.length; i++) {
-        count += Game.info.inventory.count(ALL_FOOD_IDS[i]);
+        count += Game.info.inventory.getItemCount(ALL_FOOD_IDS[i]);
     }
     return count;
 }
@@ -2815,7 +2815,7 @@ function countFood() {
 function countPrayerPots() {
     var count = 0;
     for (var i = 0; i < PRAYER_POTION_IDS.length; i++) {
-        count += Game.info.inventory.count(PRAYER_POTION_IDS[i]);
+        count += Game.info.inventory.getItemCount(PRAYER_POTION_IDS[i]);
     }
     return count;
 }

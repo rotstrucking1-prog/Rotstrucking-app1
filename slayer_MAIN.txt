@@ -113,11 +113,11 @@ var levelUpDetected = false;
 // =============================================================================
 function OnStart() {
     // Initialize overlay
-    overlay.status.update("Status: Starting...");
-    overlay.task.update("Task: None");
-    overlay.killsLeft.update("Kills Left: 0");
-    overlay.tasksCompleted.update("Tasks Done: 0");
-    overlay.slayerMaster.update("Master: Auto");
+    overlay.status.setValue("Status: Starting...");
+    overlay.task.setValue("Task: None");
+    overlay.killsLeft.setValue("Kills Left: 0");
+    overlay.tasksCompleted.setValue("Tasks Done: 0");
+    overlay.slayerMaster.setValue("Master: Auto");
 
     state = STATES.STARTUP;
     isExecuting = false;
@@ -158,9 +158,9 @@ function OnShutdown() {
 // OVERLAY UPDATE HELPER
 // =============================================================================
 function updateOverlay(statusText, taskText, kills) {
-    if (overlay.status) overlay.status.update("Status: " + statusText);
-    if (overlay.task) overlay.task.update("Task: " + taskText);
-    if (overlay.killsLeft) overlay.killsLeft.update("Kills Left: " + kills);
+    if (overlay.status) overlay.status.setValue("Status: " + statusText);
+    if (overlay.task) overlay.task.setValue("Task: " + taskText);
+    if (overlay.killsLeft) overlay.killsLeft.setValue("Kills Left: " + kills);
 }
 
 // =============================================================================
@@ -370,7 +370,7 @@ function handleSelectMaster() {
                " at " + selectedMaster.locationName +
                " (Combat req: " + selectedMaster.combatReq + ", Our combat: " + combatLevel + ")", "Bot");
 
-    overlay.slayerMaster.update("Master: " + selectedMaster.name);
+    overlay.slayerMaster.setValue("Master: " + selectedMaster.name);
     updateOverlay("Going to " + selectedMaster.name, currentTaskName || "None", killsLeft);
 
     state = STATES.WALK_TO_MASTER;
@@ -507,7 +507,7 @@ function handleCheckSupplies() {
 
     // Check special items for current task
     if (currentTaskMonster.specialItem && currentTaskMonster.specialMechanic === "finish") {
-        var specialCount = Game.info.inventory.count(currentTaskMonster.specialItem);
+        var specialCount = Game.info.inventory.getItemCount(currentTaskMonster.specialItem);
         if (specialCount < killsLeft) {
             Game.sendGameMessage("[SlayerBot] Need " + currentTaskMonster.specialItemName + ": have " + specialCount + ", need " + killsLeft, "Bot");
             needsRestock = true;
@@ -636,7 +636,7 @@ function handleBankSupplies() {
                     }
 
                     // Deposit all
-                    Game.interact.bank.depositAll();
+                    Game.interact.bank.depositAllInventory();
                     Game.sendGameMessage("[SlayerBot] Deposited all items.", "Bot");
 
                     Utility.invokeLater(function() {
@@ -644,7 +644,7 @@ function handleBankSupplies() {
                             // Withdraw food
                             var foodName = config.foodType ? config.foodType.read() : "Lobster";
                             var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
-                            Game.interact.bank.withdraw(foodId, 14);
+                            Game.interact.bank.withdrawItem(foodId, 14);
                             Game.sendGameMessage("[SlayerBot] Withdrew 14x " + foodName, "Bot");
 
                             Utility.invokeLater(function() {
@@ -652,7 +652,7 @@ function handleBankSupplies() {
                                     // Withdraw prayer potions if needed
                                     var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
                                     if (usePrayer && prayerLevel > 1) {
-                                        Game.interact.bank.withdraw(2434, 4); // Prayer pot (4)
+                                        Game.interact.bank.withdrawItem(2434, 4); // Prayer pot (4)
                                         Game.sendGameMessage("[SlayerBot] Withdrew 4x Prayer potion(4)", "Bot");
                                     }
 
@@ -663,14 +663,14 @@ function handleBankSupplies() {
                                                 if (currentTaskMonster.specialMechanic === "finish") {
                                                     // Need enough for remaining kills
                                                     var qty = Math.min(killsLeft, 28);
-                                                    Game.interact.bank.withdraw(currentTaskMonster.specialItem, qty);
+                                                    Game.interact.bank.withdrawItem(currentTaskMonster.specialItem, qty);
                                                     Game.sendGameMessage("[SlayerBot] Withdrew " + qty + "x " + currentTaskMonster.specialItemName, "Bot");
                                                 } else if (currentTaskMonster.specialMechanic === "equip") {
-                                                    Game.interact.bank.withdraw(currentTaskMonster.specialItem, 1);
+                                                    Game.interact.bank.withdrawItem(currentTaskMonster.specialItem, 1);
                                                     Game.sendGameMessage("[SlayerBot] Withdrew 1x " + currentTaskMonster.specialItemName, "Bot");
                                                 } else if (currentTaskMonster.specialMechanic === "weapon") {
                                                     // Withdraw leaf-bladed sword
-                                                    Game.interact.bank.withdraw(11902, 1);
+                                                    Game.interact.bank.withdrawItem(11902, 1);
                                                     Game.sendGameMessage("[SlayerBot] Withdrew leaf-bladed sword", "Bot");
                                                 }
                                             }
@@ -754,28 +754,28 @@ function withdrawBestGear() {
     if (!needsLeafBlade) {
         // Withdraw best melee weapon
         var bestWeapon = getBestWeapon(attackLevel);
-        Game.interact.bank.withdraw(bestWeapon.id, 1);
+        Game.interact.bank.withdrawItem(bestWeapon.id, 1);
         Game.sendGameMessage("[SlayerBot] Withdrew weapon: " + bestWeapon.name, "Bot");
     }
 
     // Withdraw best body
     var bestBody = getBestBody(defenceLevel);
-    Game.interact.bank.withdraw(bestBody.id, 1);
+    Game.interact.bank.withdrawItem(bestBody.id, 1);
 
     // Withdraw best legs
     var bestLegs = getBestLegs(defenceLevel);
-    Game.interact.bank.withdraw(bestLegs.id, 1);
+    Game.interact.bank.withdrawItem(bestLegs.id, 1);
 
     // Withdraw best shield (if not using mirror shield)
     var needsMirrorShield = currentTaskMonster && currentTaskMonster.specialItem === 4156;
     if (!needsMirrorShield) {
         var bestShield = getBestShield(defenceLevel);
-        Game.interact.bank.withdraw(bestShield.id, 1);
+        Game.interact.bank.withdrawItem(bestShield.id, 1);
     }
 
     // Withdraw boots
     var bestBoots = getBestBoots(defenceLevel);
-    Game.interact.bank.withdraw(bestBoots.id, 1);
+    Game.interact.bank.withdrawItem(bestBoots.id, 1);
 
     Game.sendGameMessage("[SlayerBot] Withdrew full armor set.", "Bot");
 }
@@ -808,8 +808,8 @@ function equipGearFromInventory() {
 
     // Equip anything found in inventory
     for (var i = 0; i < gearIds.length; i++) {
-        if (Game.info.inventory.search(gearIds[i]) !== -1) {
-            Game.interact.inventory.wield(gearIds[i]);
+        if (Game.info.inventory.hasItem(gearIds[i], 1)) {
+            Game.interact.inventory.equipItem(gearIds[i]);
         }
     }
 }
@@ -1031,8 +1031,8 @@ function handleFightTask() {
     if (lootEnabled && !Game.localPlayer.isInteracting()) {
         // Check for loot on ground
         var lootMinValue = config.lootMinValue ? config.lootMinValue.read() : 100;
-        var lootItem = Game.info.groundItems.getNearest();
-        if (lootItem && Game.info.inventory.count(-1) < 28) {
+        var _groundAll = Game.info.groundItem.getAll(); var lootItem = _groundAll ? _groundAll[0] : null;
+        if (lootItem && Game.info.inventory.getItemCount(-1) < 28) {
             // Pick up valuable loot
             pickUpLoot();
             return;
@@ -1043,7 +1043,7 @@ function handleFightTask() {
     var buryBones = config.buryBones ? config.buryBones.read() : false;
     if (buryBones && !Game.localPlayer.isInteracting()) {
         for (var i = 0; i < ALL_BONE_IDS.length; i++) {
-            if (Game.info.inventory.search(ALL_BONE_IDS[i]) !== -1) {
+            if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
                 buryBone(ALL_BONE_IDS[i]);
                 return;
             }
@@ -1119,13 +1119,13 @@ function eatFood() {
             var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
 
             // Try configured food first
-            if (Game.info.inventory.search(foodId) !== -1) {
+            if (Game.info.inventory.hasItem(foodId, 1)) {
                 Game.interact.inventory.useItem(foodId);
                 Game.sendGameMessage("[SlayerBot] Eating " + foodName, "Bot");
             } else {
                 // Try any food
                 for (var i = 0; i < ALL_FOOD_IDS.length; i++) {
-                    if (Game.info.inventory.search(ALL_FOOD_IDS[i]) !== -1) {
+                    if (Game.info.inventory.hasItem(ALL_FOOD_IDS[i], 1)) {
                         Game.interact.inventory.useItem(ALL_FOOD_IDS[i]);
                         Game.sendGameMessage("[SlayerBot] Eating food ID: " + ALL_FOOD_IDS[i], "Bot");
                         break;
@@ -1149,7 +1149,7 @@ function drinkPrayerPot() {
         try {
             // Try highest dose first
             for (var i = 0; i < PRAYER_POTION_IDS.length; i++) {
-                if (Game.info.inventory.search(PRAYER_POTION_IDS[i]) !== -1) {
+                if (Game.info.inventory.hasItem(PRAYER_POTION_IDS[i], 1)) {
                     Game.interact.inventory.useItem(PRAYER_POTION_IDS[i]);
                     Game.sendGameMessage("[SlayerBot] Drank prayer potion (ID: " + PRAYER_POTION_IDS[i] + ")", "Bot");
                     break;
@@ -1203,8 +1203,8 @@ function handleSpecialFinish() {
             var target = Game.localPlayer.getInteracting();
             if (target) {
                 var itemId = currentTaskMonster.specialItem;
-                if (Game.info.inventory.search(itemId) !== -1) {
-                    Game.interact.inventory.useItemOnNPC(itemId, target);
+                if (Game.info.inventory.hasItem(itemId, 1)) {
+                    Game.interact.inventory.actionItem(itemId, target);
                     Game.sendGameMessage("[SlayerBot] Used " + currentTaskMonster.specialItemName + " on " + currentTaskMonster.name, "Bot");
                 } else {
                     Game.sendGameMessage("[SlayerBot] Missing special item: " + currentTaskMonster.specialItemName + "!", "Bot");
@@ -1225,9 +1225,9 @@ function pickUpLoot() {
 
     Utility.invokeLater(function() {
         try {
-            var lootItem = Game.info.groundItems.getNearest();
+            var _groundAll = Game.info.groundItem.getAll(); var lootItem = _groundAll ? _groundAll[0] : null;
             if (lootItem) {
-                Game.interact.groundItems.pickUp(lootItem);
+                Game.interact.groundItem.pickup(lootItem);
                 Game.sendGameMessage("[SlayerBot] Picking up loot: " + lootItem.getId(), "Bot");
             }
         } catch (e) {
@@ -1273,7 +1273,7 @@ function handleLootItems() {
 // -----------------------------------------------------------------------------
 function handleBuryBones() {
     for (var i = 0; i < ALL_BONE_IDS.length; i++) {
-        if (Game.info.inventory.search(ALL_BONE_IDS[i]) !== -1) {
+        if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
             buryBone(ALL_BONE_IDS[i]);
             return;
         }
@@ -1302,7 +1302,7 @@ function handleDrinkPrayer() {
 // -----------------------------------------------------------------------------
 function handleTaskComplete() {
     tasksCompleted++;
-    overlay.tasksCompleted.update("Tasks Done: " + tasksCompleted);
+    overlay.tasksCompleted.setValue("Tasks Done: " + tasksCompleted);
     updateOverlay("Task complete! (" + tasksCompleted + " total)", "Complete!", 0);
 
     Game.sendGameMessage("[SlayerBot] === TASK COMPLETE === Total tasks: " + tasksCompleted, "Bot");
@@ -1406,8 +1406,8 @@ function OnChatMessage(msg) {
         taskReceived = true;
 
         Game.sendGameMessage("[SlayerBot] NEW TASK: Kill " + killsLeft + " " + currentTaskName, "Bot");
-        overlay.task.update("Task: " + currentTaskName);
-        overlay.killsLeft.update("Kills Left: " + killsLeft);
+        overlay.task.setValue("Task: " + currentTaskName);
+        overlay.killsLeft.setValue("Kills Left: " + killsLeft);
         return;
     }
 
@@ -1438,8 +1438,8 @@ function OnChatMessage(msg) {
     if (taskRemaining) {
         currentTaskName = taskRemaining[1].trim();
         killsLeft = parseInt(taskRemaining[2], 10);
-        overlay.task.update("Task: " + currentTaskName);
-        overlay.killsLeft.update("Kills Left: " + killsLeft);
+        overlay.task.setValue("Task: " + currentTaskName);
+        overlay.killsLeft.setValue("Kills Left: " + killsLeft);
         return;
     }
 
@@ -1495,7 +1495,7 @@ function OnNPCLootAppeared(npc) {
     if (isTask) {
         killsLeft--;
         totalKills++;
-        overlay.killsLeft.update("Kills Left: " + Math.max(0, killsLeft));
+        overlay.killsLeft.setValue("Kills Left: " + Math.max(0, killsLeft));
         Game.sendGameMessage("[SlayerBot] Kill tracked! " + killsLeft + " " + currentTaskMonster.name + " remaining. Total kills: " + totalKills, "Bot");
 
         if (killsLeft <= 0) {

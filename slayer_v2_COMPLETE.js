@@ -301,10 +301,10 @@ const GLOVES = [
 // AMULETS & CAPES
 // ─────────────────────────────────────────────────────────────────────────────
 const AMULETS = [
-    { name: "Amulet of fury", id: 6585, reqLevel: 1 },
-    { name: "Amulet of glory", id: 1704, reqLevel: 1 },
-    { name: "Amulet of power", id: 1731, reqLevel: 1 },
-    { name: "Amulet of strength", id: 1725, reqLevel: 1 }
+    { name: "Amuvar of fury", id: 6585, reqLevel: 1 },
+    { name: "Amuvar of glory", id: 1704, reqLevel: 1 },
+    { name: "Amuvar of power", id: 1731, reqLevel: 1 },
+    { name: "Amuvar of strength", id: 1725, reqLevel: 1 }
 ];
 
 const CAPES = [
@@ -2623,18 +2623,18 @@ const MONSTER_DB = {
 // COMBAT LEVEL CALCULATOR
 // ─────────────────────────────────────────────────────────────────────────────
 function getCombatLevel() {
-    let atk = Client.getRealSkillLevels(Skill.ATTACK);
-    let str = Client.getRealSkillLevels(Skill.STRENGTH);
-    let def = Client.getRealSkillLevels(Skill.DEFENCE);
-    let hp = Client.getRealSkillLevels(Skill.HITPOINTS);
-    let pray = Client.getRealSkillLevels(Skill.PRAYER);
-    let ranged = Client.getRealSkillLevels(Skill.RANGED);
-    let magic = Client.getRealSkillLevels(Skill.MAGIC);
+    var atk = Client.getRealSkillLevels(Skill.ATTACK);
+    var str = Client.getRealSkillLevels(Skill.STRENGTH);
+    var def = Client.getRealSkillLevels(Skill.DEFENCE);
+    var hp = Client.getRealSkillLevels(Skill.HITPOINTS);
+    var pray = Client.getRealSkillLevels(Skill.PRAYER);
+    var ranged = Client.getRealSkillLevels(Skill.RANGED);
+    var magic = Client.getRealSkillLevels(Skill.MAGIC);
 
-    let base = 0.25 * (def + hp + Math.floor(pray / 2));
-    let melee = 0.325 * (atk + str);
-    let range = 0.325 * (Math.floor(ranged / 2) + ranged);
-    let mage = 0.325 * (Math.floor(magic / 2) + magic);
+    var base = 0.25 * (def + hp + Math.floor(pray / 2));
+    var melee = 0.325 * (atk + str);
+    var range = 0.325 * (Math.floor(ranged / 2) + ranged);
+    var mage = 0.325 * (Math.floor(magic / 2) + magic);
 
     return Math.floor(base + Math.max(melee, range, mage));
 }
@@ -2644,16 +2644,16 @@ function getCombatLevel() {
 // ─────────────────────────────────────────────────────────────────────────────
 function selectBestMaster(combatLevel, slayerLevel, preference) {
     if (preference && preference !== "Auto") {
-        let key = preference.toUpperCase().replace(/ /g, "_").replace("NIEVE", "NIEVE");
+        var key = preference.toUpperCase().replace(/ /g, "_").replace("NIEVE", "NIEVE");
         if (SLAYER_MASTERS[key] && combatLevel >= SLAYER_MASTERS[key].combatReq && slayerLevel >= SLAYER_MASTERS[key].slayerReq) {
             return SLAYER_MASTERS[key];
         }
     }
 
     // Auto: pick highest eligible (excluding Krystilia — wilderness)
-    let priority = ["DURADEL", "NIEVE", "KONAR", "CHAELDAR", "VANNAKA", "MAZCHNA", "TURAEL"];
-    for (let i = 0; i < priority.length; i++) {
-        let master = SLAYER_MASTERS[priority[i]];
+    var priority = ["DURADEL", "NIEVE", "KONAR", "CHAELDAR", "VANNAKA", "MAZCHNA", "TURAEL"];
+    for (var i = 0; i < priority.length; i++) {
+        var master = SLAYER_MASTERS[priority[i]];
         if (combatLevel >= master.combatReq && slayerLevel >= master.slayerReq) {
             return master;
         }
@@ -2667,43 +2667,43 @@ function selectBestMaster(combatLevel, slayerLevel, preference) {
 function findMonster(taskName) {
     if (!taskName) return null;
 
-    let name = taskName.trim();
+    var name = taskName.trim();
 
     // Direct match
     if (MONSTER_DB[name]) return MONSTER_DB[name];
 
     // Case-insensitive match
-    let lowerName = name.toLowerCase();
-    for (let key in MONSTER_DB) {
+    var lowerName = name.toLowerCase();
+    for (var key in MONSTER_DB) {
         if (key.toLowerCase() === lowerName) return MONSTER_DB[key];
     }
 
     // Strip trailing 's' (plural)
     if (lowerName.endsWith("s")) {
-        let singular = lowerName.slice(0, -1);
-        for (let key in MONSTER_DB) {
+        var singular = lowerName.slice(0, -1);
+        for (var key in MONSTER_DB) {
             if (key.toLowerCase() === singular) return MONSTER_DB[key];
         }
     }
 
     // Strip trailing 'es' (e.g., "Banshees" -> "Banshee")
     if (lowerName.endsWith("es")) {
-        let singular = lowerName.slice(0, -2);
-        for (let key in MONSTER_DB) {
+        var singular = lowerName.slice(0, -2);
+        for (var key in MONSTER_DB) {
             if (key.toLowerCase() === singular) return MONSTER_DB[key];
         }
     }
 
     // Partial/contains match
-    for (let key in MONSTER_DB) {
+    for (var key in MONSTER_DB) {
         if (key.toLowerCase().includes(lowerName) || lowerName.includes(key.toLowerCase())) {
             return MONSTER_DB[key];
         }
     }
 
     // Match against individual name field
-    for (let key in MONSTER_DB) {
-        let monsterName = MONSTER_DB[key].name.toLowerCase();
+    for (var key in MONSTER_DB) {
+        var monsterName = MONSTER_DB[key].name.toLowerCase();
         if (monsterName === lowerName || monsterName === lowerName.replace(/s$/, "")) {
             return MONSTER_DB[key];
         }
@@ -2716,15 +2716,15 @@ function findMonster(taskName) {
 // FIND NEAREST BANK
 // ─────────────────────────────────────────────────────────────────────────────
 function findNearestBank(playerX, playerY, playerPlane) {
-    let nearest = null;
-    let nearestDist = Infinity;
+    var nearest = null;
+    var nearestDist = Infinity;
 
-    for (let i = 0; i < BANKS.length; i++) {
-        let bank = BANKS[i];
+    for (var i = 0; i < BANKS.length; i++) {
+        var bank = BANKS[i];
         if (bank.plane !== playerPlane && bank.plane !== 0) continue; // Skip different planes unless ground
-        let dx = bank.x - playerX;
-        let dy = bank.y - playerY;
-        let dist = Math.sqrt(dx * dx + dy * dy);
+        var dx = bank.x - playerX;
+        var dy = bank.y - playerY;
+        var dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < nearestDist) {
             nearestDist = dist;
             nearest = bank;
@@ -2738,7 +2738,7 @@ function findNearestBank(playerX, playerY, playerPlane) {
 // GET BEST EQUIPMENT FOR LEVEL
 // ─────────────────────────────────────────────────────────────────────────────
 function getBestWeapon(attackLevel) {
-    for (let i = 0; i < MELEE_WEAPONS.length; i++) {
+    for (var i = 0; i < MELEE_WEAPONS.length; i++) {
         if (attackLevel >= MELEE_WEAPONS[i].atkReq) {
             return MELEE_WEAPONS[i];
         }
@@ -2748,7 +2748,7 @@ function getBestWeapon(attackLevel) {
 
 function getBestHelmet(defenceLevel, hasSlayerHelm) {
     if (hasSlayerHelm) return HELMETS[0]; // Slayer helm (i) first
-    for (let i = 0; i < HELMETS.length; i++) {
+    for (var i = 0; i < HELMETS.length; i++) {
         if (defenceLevel >= HELMETS[i].defReq) {
             return HELMETS[i];
         }
@@ -2757,7 +2757,7 @@ function getBestHelmet(defenceLevel, hasSlayerHelm) {
 }
 
 function getBestBody(defenceLevel) {
-    for (let i = 0; i < PLATEBODIES.length; i++) {
+    for (var i = 0; i < PLATEBODIES.length; i++) {
         if (defenceLevel >= PLATEBODIES[i].defReq) {
             return PLATEBODIES[i];
         }
@@ -2766,7 +2766,7 @@ function getBestBody(defenceLevel) {
 }
 
 function getBestLegs(defenceLevel) {
-    for (let i = 0; i < PLATELEGS.length; i++) {
+    for (var i = 0; i < PLATELEGS.length; i++) {
         if (defenceLevel >= PLATELEGS[i].defReq) {
             return PLATELEGS[i];
         }
@@ -2775,7 +2775,7 @@ function getBestLegs(defenceLevel) {
 }
 
 function getBestShield(defenceLevel) {
-    for (let i = 0; i < SHIELDS.length; i++) {
+    for (var i = 0; i < SHIELDS.length; i++) {
         if (defenceLevel >= SHIELDS[i].defReq) {
             return SHIELDS[i];
         }
@@ -2784,7 +2784,7 @@ function getBestShield(defenceLevel) {
 }
 
 function getBestBoots(defenceLevel) {
-    for (let i = 0; i < BOOTS.length; i++) {
+    for (var i = 0; i < BOOTS.length; i++) {
         if (defenceLevel >= BOOTS[i].defReq) {
             return BOOTS[i];
         }
@@ -2793,7 +2793,7 @@ function getBestBoots(defenceLevel) {
 }
 
 function getBestGloves(defenceLevel) {
-    for (let i = 0; i < GLOVES.length; i++) {
+    for (var i = 0; i < GLOVES.length; i++) {
         if (defenceLevel >= GLOVES[i].defReq) {
             return GLOVES[i];
         }
@@ -2808,11 +2808,11 @@ function isSpecialItemCovered(monster) {
     if (!monster.specialItem) return true;
 
     // Check if player has slayer helmet — covers nose peg, earmuffs, face mask
-    let hasSlayerHelm = Game.localPlayer.getEquipment().search(11864) !== -1 ||
+    var hasSlayerHelm = Game.localPlayer.getEquipment().search(11864) !== -1 ||
                         Game.localPlayer.getEquipment().search(11865) !== -1;
 
     if (hasSlayerHelm) {
-        let coveredItems = [4168, 4166, 4164]; // Nose peg, earmuffs, face mask
+        var coveredItems = [4168, 4166, 4164]; // Nose peg, earmuffs, face mask
         if (coveredItems.indexOf(monster.specialItem) !== -1) {
             return true;
         }
@@ -2830,8 +2830,8 @@ function isSpecialItemCovered(monster) {
 
     // Check weapon requirement
     if (monster.specialMechanic === "weapon") {
-        let weaponIds = [11902, 20727, 11875]; // Leaf-bladed sword, axe, broad bolts
-        for (let i = 0; i < weaponIds.length; i++) {
+        var weaponIds = [11902, 20727, 11875]; // Leaf-bladed sword, axe, broad bolts
+        for (var i = 0; i < weaponIds.length; i++) {
             if (Game.localPlayer.getEquipment().search(weaponIds[i]) !== -1) return true;
             if (Game.info.inventory.search(weaponIds[i]) !== -1) return true;
         }
@@ -2845,8 +2845,8 @@ function isSpecialItemCovered(monster) {
 // COUNT FOOD IN INVENTORY
 // ─────────────────────────────────────────────────────────────────────────────
 function countFood() {
-    let count = 0;
-    for (let i = 0; i < ALL_FOOD_IDS.length; i++) {
+    var count = 0;
+    for (var i = 0; i < ALL_FOOD_IDS.length; i++) {
         count += Game.info.inventory.count(ALL_FOOD_IDS[i]);
     }
     return count;
@@ -2856,8 +2856,8 @@ function countFood() {
 // COUNT PRAYER POTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 function countPrayerPots() {
-    let count = 0;
-    for (let i = 0; i < PRAYER_POTION_IDS.length; i++) {
+    var count = 0;
+    for (var i = 0; i < PRAYER_POTION_IDS.length; i++) {
         count += Game.info.inventory.count(PRAYER_POTION_IDS[i]);
     }
     return count;
@@ -2875,7 +2875,7 @@ function getDistance(x1, y1, x2, y2) {
 // ─────────────────────────────────────────────────────────────────────────────
 function isNear(targetX, targetY, threshold) {
     if (!threshold) threshold = 5;
-    let pos = Game.localPlayer.getPosition();
+    var pos = Game.localPlayer.getPosition();
     return getDistance(pos.x, pos.y, targetX, targetY) <= threshold;
 }
 
@@ -3522,31 +3522,31 @@ const SS_RANGED_WEAPONS = [
  * @returns {object} Full resource plan
  */
 function analyzeTaskRequirements(monsterName, taskCount, monsterData) {
-    let combatLvl = monsterData ? (monsterData.combatLevel || 0) : 0;
-    let maxHit = monsterData ? (monsterData.maxHit || 0) : 0;
+    var combatLvl = monsterData ? (monsterData.combatLevel || 0) : 0;
+    var maxHit = monsterData ? (monsterData.maxHit || 0) : 0;
 
     // Get ALL player levels
-    let levels = getAllPlayerLevels();
+    var levels = getAllPlayerLevels();
 
     // Determine difficulty tier
-    let difficulty = getMonsterDifficulty(combatLvl, maxHit);
+    var difficulty = getMonsterDifficulty(combatLvl, maxHit);
 
     // Determine food needs
-    let foodPlan = planFoodForTask(difficulty, taskCount, levels);
+    var foodPlan = planFoodForTask(difficulty, taskCount, levels);
 
     // Determine prayer needs
-    let prayerPlan = planPrayerForTask(difficulty, taskCount, levels);
+    var prayerPlan = planPrayerForTask(difficulty, taskCount, levels);
 
     // Determine gear needs
-    let gearPlan = planGearForTask(difficulty, levels);
+    var gearPlan = planGearForTask(difficulty, levels);
 
     // Determine if we should level up before attempting
-    let levelUpPlan = shouldLevelUpFirst(foodPlan, gearPlan, levels);
+    var levelUpPlan = shouldLevelUpFirst(foodPlan, gearPlan, levels);
 
     // Determine if Barrows runs are viable/needed
-    let barrowsPlan = planBarrowsIfNeeded(levels, gearPlan);
+    var barrowsPlan = planBarrowsIfNeeded(levels, gearPlan);
 
-    let plan = {
+    var plan = {
         monsterName: monsterName,
         taskCount: taskCount,
         difficulty: difficulty,
@@ -3559,13 +3559,13 @@ function analyzeTaskRequirements(monsterName, taskCount, monsterData) {
         estimatedTrips: Math.ceil(taskCount / estimateKillsPerTrip(difficulty, foodPlan.bestTier, levels))
     };
 
-    Logger.log("[SlayerBot][RI] Task Analysis: " + monsterName + " x" + taskCount);
-    Logger.log("[SlayerBot][RI]   Difficulty: " + difficulty.name + " | Food tier needed: " + difficulty.minFoodTier);
-    Logger.log("[SlayerBot][RI]   Best food available: " + foodPlan.bestTier.name + " (tier " + foodPlan.bestTier.tier + ")");
-    Logger.log("[SlayerBot][RI]   Prayer needed: " + prayerPlan.needed + " | Pots needed: " + prayerPlan.potsNeeded);
-    Logger.log("[SlayerBot][RI]   Level up first: " + levelUpPlan.shouldLevel + (levelUpPlan.shouldLevel ? " (" + levelUpPlan.skill + " to " + levelUpPlan.targetLevel + ")" : ""));
-    Logger.log("[SlayerBot][RI]   Barrows viable: " + barrowsPlan.viable + " | Should do runs: " + barrowsPlan.shouldDoRuns);
-    Logger.log("[SlayerBot][RI]   Est trips: " + plan.estimatedTrips);
+    Game.sendGameMessage("[SlayerBot][RI] Task Analysis: " + monsterName + " x" + taskCount, "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]   Difficulty: " + difficulty.name + " | Food tier needed: " + difficulty.minFoodTier, "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]   Best food available: " + foodPlan.bestTier.name + " (tier " + foodPlan.bestTier.tier + ")", "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]   Prayer needed: " + prayerPlan.needed + " | Pots needed: " + prayerPlan.potsNeeded, "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]   Level up first: " + levelUpPlan.shouldLevel + (levelUpPlan.shouldLevel ? " (" + levelUpPlan.skill + " to " + levelUpPlan.targetLevel + ")" : ""), "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]   Barrows viable: " + barrowsPlan.viable + " | Should do runs: " + barrowsPlan.shouldDoRuns, "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]   Est trips: " + plan.estimatedTrips, "Bot");
 
     return plan;
 }
@@ -3626,12 +3626,12 @@ function getMonsterDifficulty(combatLevel, maxHit) {
  * planFoodForTask — Determine the best food strategy
  */
 function planFoodForTask(difficulty, taskCount, levels) {
-    let requiredTier = difficulty.minFoodTier;
-    let bestTier = selectBestFoodTier(levels);
-    let gap = requiredTier - bestTier.tier;
+    var requiredTier = difficulty.minFoodTier;
+    var bestTier = selectBestFoodTier(levels);
+    var gap = requiredTier - bestTier.tier;
 
     // How much food do we need total?
-    let foodNeeded = Math.ceil(taskCount * difficulty.foodPerKill * 1.2); // 20% buffer
+    var foodNeeded = Math.ceil(taskCount * difficulty.foodPerKill * 1.2); // 20% buffer
 
     // If our best tier is sufficient, great
     if (gap <= 0) {
@@ -3648,8 +3648,8 @@ function planFoodForTask(difficulty, taskCount, levels) {
     // Gap is 1: just bring more lower-tier food (faster than leveling)
     if (gap === 1) {
         // Lower tier heals less, so need more food
-        let ratio = SS_FOOD_TIERS[requiredTier].healAmount / bestTier.healAmount;
-        let adjustedQuantity = Math.ceil(foodNeeded * ratio * 1.1);
+        var ratio = SS_FOOD_TIERS[requiredTier].healAmount / bestTier.healAmount;
+        var adjustedQuantity = Math.ceil(foodNeeded * ratio * 1.1);
         return {
             bestTier: bestTier,
             requiredTier: requiredTier,
@@ -3661,7 +3661,7 @@ function planFoodForTask(difficulty, taskCount, levels) {
     }
 
     // Gap is 2+: MUST level up fishing/cooking first
-    let nextViableTier = findNextViableFoodTier(levels);
+    var nextViableTier = findNextViableFoodTier(levels);
     return {
         bestTier: bestTier,
         requiredTier: requiredTier,
@@ -3679,12 +3679,12 @@ function planFoodForTask(difficulty, taskCount, levels) {
  * selectBestFoodTier — Find the HIGHEST tier food the player can fish AND cook
  */
 function selectBestFoodTier(levels) {
-    let fishLevel = levels.fishing;
-    let cookLevel = levels.cooking;
-    let bestTier = SS_FOOD_TIERS[0]; // Default: chicken (always available)
+    var fishLevel = levels.fishing;
+    var cookLevel = levels.cooking;
+    var bestTier = SS_FOOD_TIERS[0]; // Default: chicken (always available)
 
-    for (let i = SS_FOOD_TIERS.length - 1; i >= 0; i--) {
-        let tier = SS_FOOD_TIERS[i];
+    for (var i = SS_FOOD_TIERS.length - 1; i >= 0; i--) {
+        var tier = SS_FOOD_TIERS[i];
 
         // Skip quest-locked tiers if we can't verify quest completion
         if (tier.questRequired) continue;
@@ -3701,7 +3701,7 @@ function selectBestFoodTier(levels) {
         }
     }
 
-    Logger.log("[SlayerBot][RI] Best food tier for fishing " + fishLevel + " / cooking " + cookLevel + ": " + bestTier.name + " (tier " + bestTier.tier + ", heals " + bestTier.healAmount + ")");
+    Game.sendGameMessage("[SlayerBot][RI] Best food tier for fishing " + fishLevel + " / cooking " + cookLevel + ": " + bestTier.name + " (tier " + bestTier.tier + ", heals " + bestTier.healAmount + ")", "Bot");
     return bestTier;
 }
 
@@ -3709,23 +3709,23 @@ function selectBestFoodTier(levels) {
  * findNextViableFoodTier — Find the next tier UP from current that's closest to reach
  */
 function findNextViableFoodTier(levels) {
-    let fishLevel = levels.fishing;
-    let cookLevel = levels.cooking;
-    let currentBest = selectBestFoodTier(levels);
+    var fishLevel = levels.fishing;
+    var cookLevel = levels.cooking;
+    var currentBest = selectBestFoodTier(levels);
 
-    for (let i = 0; i < SS_FOOD_TIERS.length; i++) {
-        let tier = SS_FOOD_TIERS[i];
+    for (var i = 0; i < SS_FOOD_TIERS.length; i++) {
+        var tier = SS_FOOD_TIERS[i];
         if (tier.tier <= currentBest.tier) continue;
         if (tier.questRequired) continue;
 
         // This is the next tier we could reach
-        let fishGap = Math.max(0, tier.minFishLevel - fishLevel);
-        let cookGap = Math.max(0, tier.minCookLevel - cookLevel);
-        let totalGap = fishGap + cookGap;
+        var fishGap = Math.max(0, tier.minFishLevel - fishLevel);
+        var cookGap = Math.max(0, tier.minCookLevel - cookLevel);
+        var totalGap = fishGap + cookGap;
 
         // If the gap is reasonable (< 30 total levels), target this tier
         if (totalGap < 30) {
-            Logger.log("[SlayerBot][RI] Next viable food tier: " + tier.name + " (need fish " + tier.minFishLevel + ", cook " + tier.minCookLevel + ", gap: " + totalGap + " levels)");
+            Game.sendGameMessage("[SlayerBot][RI] Next viable food tier: " + tier.name + " (need fish " + tier.minFishLevel + ", cook " + tier.minCookLevel + ", gap: " + totalGap + " levels)", "Bot");
             return tier;
         }
     }
@@ -3740,7 +3740,7 @@ function findNextViableFoodTier(levels) {
 function estimateFoodPerTrip(difficulty, foodTier) {
     // Inventory has 28 slots. Reserve some for loot.
     // With prayer: bring fewer food, more prayer pots
-    let baseSlots = difficulty.prayerPotsNeeded ? 16 : (difficulty.prayerNeeded ? 20 : 24);
+    var baseSlots = difficulty.prayerPotsNeeded ? 16 : (difficulty.prayerNeeded ? 20 : 24);
     return baseSlots;
 }
 
@@ -3748,11 +3748,11 @@ function estimateFoodPerTrip(difficulty, foodTier) {
  * estimateKillsPerTrip — How many monsters we can kill per bank trip
  */
 function estimateKillsPerTrip(difficulty, foodTier, levels) {
-    let foodSlots = estimateFoodPerTrip(difficulty, foodTier);
-    let hpPerFood = foodTier.healAmount;
-    let avgDamagePerKill = difficulty.foodPerKill * 10; // rough hp damage taken per kill
+    var foodSlots = estimateFoodPerTrip(difficulty, foodTier);
+    var hpPerFood = foodTier.healAmount;
+    var avgDamagePerKill = difficulty.foodPerKill * 10; // rough hp damage taken per kill
     if (avgDamagePerKill <= 0) avgDamagePerKill = 1;
-    let totalHealable = foodSlots * hpPerFood;
+    var totalHealable = foodSlots * hpPerFood;
     return Math.max(1, Math.floor(totalHealable / avgDamagePerKill));
 }
 
@@ -3765,14 +3765,14 @@ function planPrayerForTask(difficulty, taskCount, levels) {
     }
 
     // Determine prayer type based on monster
-    let prayerToUse = "PROTECT_FROM_MELEE"; // default
+    var prayerToUse = "PROTECT_FROM_MELEE"; // default
 
     // Prayer drain rate: roughly 1 dose per 2 minutes with protect prayers
     // 1 pot = 4 doses = ~8 minutes of prayer
-    let estimatedMinutesPerKill = 0.5;
-    let totalMinutes = taskCount * estimatedMinutesPerKill;
-    let dosesNeeded = Math.ceil(totalMinutes / 2);
-    let potsNeeded = Math.ceil(dosesNeeded / 4);
+    var estimatedMinutesPerKill = 0.5;
+    var totalMinutes = taskCount * estimatedMinutesPerKill;
+    var dosesNeeded = Math.ceil(totalMinutes / 2);
+    var potsNeeded = Math.ceil(dosesNeeded / 4);
 
     // If we have high prayer, need fewer pots
     if (levels.prayer >= 70) potsNeeded = Math.ceil(potsNeeded * 0.7);
@@ -3791,9 +3791,9 @@ function planPrayerForTask(difficulty, taskCount, levels) {
 // =============================================================================
 
 function planGearForTask(difficulty, levels) {
-    let meleeWeapon = selectBestMeleeWeapon(levels);
-    let meleeArmor = selectBestMeleeArmor(levels);
-    let rangedWeapon = selectBestRangedWeapon(levels);
+    var meleeWeapon = selectBestMeleeWeapon(levels);
+    var meleeArmor = selectBestMeleeArmor(levels);
+    var rangedWeapon = selectBestRangedWeapon(levels);
 
     return {
         meleeWeapon: meleeWeapon,
@@ -3807,9 +3807,9 @@ function planGearForTask(difficulty, levels) {
 }
 
 function selectBestMeleeWeapon(levels) {
-    let best = SS_MELEE_WEAPONS[0];
-    for (let i = SS_MELEE_WEAPONS.length - 1; i >= 0; i--) {
-        let w = SS_MELEE_WEAPONS[i];
+    var best = SS_MELEE_WEAPONS[0];
+    for (var i = SS_MELEE_WEAPONS.length - 1; i >= 0; i--) {
+        var w = SS_MELEE_WEAPONS[i];
         if (levels.attack >= w.level) {
             // Can we actually OBTAIN this weapon?
             if (w.geOnly) {
@@ -3832,9 +3832,9 @@ function selectBestMeleeWeapon(levels) {
 }
 
 function selectBestMeleeArmor(levels) {
-    let best = SS_MELEE_ARMOR[0];
-    for (let i = SS_MELEE_ARMOR.length - 1; i >= 0; i--) {
-        let a = SS_MELEE_ARMOR[i];
+    var best = SS_MELEE_ARMOR[0];
+    for (var i = SS_MELEE_ARMOR.length - 1; i >= 0; i--) {
+        var a = SS_MELEE_ARMOR[i];
         if (levels.defence >= a.level) {
             if (a.barrowsOnly) {
                 best = a;
@@ -3859,8 +3859,8 @@ function selectBestMeleeArmor(levels) {
 }
 
 function selectBestRangedWeapon(levels) {
-    let best = SS_RANGED_WEAPONS[0];
-    for (let i = SS_RANGED_WEAPONS.length - 1; i >= 0; i--) {
+    var best = SS_RANGED_WEAPONS[0];
+    for (var i = SS_RANGED_WEAPONS.length - 1; i >= 0; i--) {
         if (levels.ranged >= SS_RANGED_WEAPONS[i].level) {
             best = SS_RANGED_WEAPONS[i];
             break;
@@ -3895,12 +3895,12 @@ function getBestCraftableTier(levels) {
  * Brad: "factors in if it's worth it to gain some levels to get the next best resource"
  */
 function shouldLevelUpFirst(foodPlan, gearPlan, levels) {
-    let plans = [];
+    var plans = [];
 
     // Check if we need to level fishing/cooking
     if (foodPlan.shouldLevelFishing) {
-        let fishGap = Math.max(0, (foodPlan.targetFishLevel || 0) - levels.fishing);
-        let cookGap = Math.max(0, (foodPlan.targetCookLevel || 0) - levels.cooking);
+        var fishGap = Math.max(0, (foodPlan.targetFishLevel || 0) - levels.fishing);
+        var cookGap = Math.max(0, (foodPlan.targetCookLevel || 0) - levels.cooking);
 
         if (fishGap > 0) {
             plans.push({
@@ -3926,7 +3926,7 @@ function shouldLevelUpFirst(foodPlan, gearPlan, levels) {
 
     // Check if we should level mining/smithing for better gear
     if (gearPlan.meleeArmor && gearPlan.meleeArmor.obtainMethod === "NEED_LEVELS") {
-        let target = gearPlan.meleeArmor.smithLvl;
+        var target = gearPlan.meleeArmor.smithLvl;
         if (target && target - levels.smithing <= 20) {
             plans.push({
                 skill: "smithing",
@@ -3960,13 +3960,13 @@ function shouldLevelUpFirst(foodPlan, gearPlan, levels) {
 // =============================================================================
 
 function planBarrowsIfNeeded(levels, gearPlan) {
-    let canDoBarrows = levels.attack >= 70 && levels.defence >= 70 &&
+    var canDoBarrows = levels.attack >= 70 && levels.defence >= 70 &&
                        levels.magic >= 50 && levels.prayer >= 43;
-    let hasBarrowsGear = false; // Would need to check bank
+    var hasBarrowsGear = false; // Would need to check bank
 
     // Should we do Barrows?
     // YES if: combat is 70+ AND current gear is rune or lower AND we don't already have Barrows
-    let shouldDoRuns = canDoBarrows && !hasBarrowsGear &&
+    var shouldDoRuns = canDoBarrows && !hasBarrowsGear &&
                        gearPlan.meleeArmor && gearPlan.meleeArmor.level < 70;
 
     return {
@@ -3997,8 +3997,8 @@ function startLevelingUp(plan) {
     levelingMethod = plan.method;
     levelingPhase = "walking";
 
-    Logger.log("[SlayerBot][RI] Starting level-up: " + plan.skill + " from " +
-               plan.currentLevel + " to " + plan.targetLevel + " (" + plan.reason + ")");
+    Game.sendGameMessage("[SlayerBot][RI] Starting level-up: " + plan.skill + " from " +
+               plan.currentLevel + " to " + plan.targetLevel + " (" + plan.reason + ")", "Bot");
 }
 
 /**
@@ -4008,7 +4008,7 @@ function handleLevelingTick() {
     if (isExecuting) return;
 
     // Check if we've reached target
-    let currentLevel = 1;
+    var currentLevel = 1;
     try {
         if (levelingSkill === "fishing") currentLevel = Client.getRealSkillLevels(Skill.FISHING);
         else if (levelingSkill === "cooking") currentLevel = Client.getRealSkillLevels(Skill.COOKING);
@@ -4016,11 +4016,11 @@ function handleLevelingTick() {
         else if (levelingSkill === "smithing") currentLevel = Client.getRealSkillLevels(Skill.SMITHING);
         else if (levelingSkill === "crafting") currentLevel = Client.getRealSkillLevels(Skill.CRAFTING);
     } catch(e) {
-        Logger.log("[SlayerBot][RI] Error reading skill level: " + e);
+        Game.sendGameMessage("[SlayerBot][RI] Error reading skill level: " + e, "Bot");
     }
 
     if (currentLevel >= levelingTarget) {
-        Logger.log("[SlayerBot][RI] ✅ Leveling complete! " + levelingSkill + " is now " + currentLevel);
+        Game.sendGameMessage("[SlayerBot][RI] ✅ Leveling complete! " + levelingSkill + " is now " + currentLevel, "Bot");
         levelingPhase = "idle";
         levelingSkill = null;
         return "DONE";
@@ -4034,7 +4034,7 @@ function handleLevelingTick() {
         case "smithing": return handleLevelSmelting(); break;
         case "crafting": return handleLevelCrafting(); break;
         default:
-            Logger.log("[SlayerBot][RI] Unknown leveling skill: " + levelingSkill);
+            Game.sendGameMessage("[SlayerBot][RI] Unknown leveling skill: " + levelingSkill, "Bot");
             return "DONE";
     }
 }
@@ -4045,11 +4045,11 @@ function handleLevelingTick() {
 function handleLevelFishing() {
     if (isExecuting) return;
 
-    let fishLevel = Client.getRealSkillLevels(Skill.FISHING) || 1;
+    var fishLevel = Client.getRealSkillLevels(Skill.FISHING) || 1;
 
     // Pick best spot for leveling
-    let spot = null;
-    let location = null;
+    var spot = null;
+    var location = null;
 
     if (fishLevel < 20) {
         // Net shrimps at Lumbridge Swamp
@@ -4106,15 +4106,15 @@ function handleLevelFishing() {
 
     // Fish!
     if (!PlayerHelper.isAnimating()) {
-        let fishingSpot = Game.info.npc.getNearest(spot);
+        var fishingSpot = Game.info.npc.getNearest(spot);
         if (fishingSpot) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     fishingSpot.action(MenuAction.NPC_FIRST_OPTION);
-                    Logger.log("[SlayerBot][RI] Fishing at " + fishingSpot.getName());
+                    Game.sendGameMessage("[SlayerBot][RI] Fishing at " + fishingSpot.getName(), "Bot");
                 } catch(e) {
-                    Logger.log("[SlayerBot][RI] Fish error: " + e);
+                    Game.sendGameMessage("[SlayerBot][RI] Fish error: " + e, "Bot");
                 }
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4129,7 +4129,7 @@ function handleLevelCooking() {
     if (isExecuting) return;
 
     // Check if we have raw fish in inventory
-    let rawFish = findRawFishInInventory();
+    var rawFish = findRawFishInInventory();
     if (!rawFish) {
         // No raw fish — go fish some first
         handleLevelFishing();
@@ -4144,15 +4144,15 @@ function handleLevelCooking() {
 
     // Cook on range
     if (!PlayerHelper.isAnimating()) {
-        let range = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE]);
+        var range = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE]);
         if (range) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     Game.interact.inventory.consumeItem(rawFish);
-                    Logger.log("[SlayerBot][RI] Cooking raw fish: " + rawFish);
+                    Game.sendGameMessage("[SlayerBot][RI] Cooking raw fish: " + rawFish, "Bot");
                 } catch(e) {
-                    Logger.log("[SlayerBot][RI] Cook error: " + e);
+                    Game.sendGameMessage("[SlayerBot][RI] Cook error: " + e, "Bot");
                 }
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4166,11 +4166,11 @@ function handleLevelCooking() {
 function handleLevelMining() {
     if (isExecuting) return;
 
-    let miningLevel = Client.getRealSkillLevels(Skill.MINING) || 1;
+    var miningLevel = Client.getRealSkillLevels(Skill.MINING) || 1;
 
     // Pick ore to mine
-    let oreRocks = null;
-    let mineLocation = null;
+    var oreRocks = null;
+    var mineLocation = null;
 
     if (miningLevel < 15) {
         oreRocks = SS_OBJECTS.COPPER_ROCK;
@@ -4209,15 +4209,15 @@ function handleLevelMining() {
     }
 
     if (!PlayerHelper.isAnimating()) {
-        let rock = Game.info.gameObject.getNearest(oreRocks);
+        var rock = Game.info.gameObject.getNearest(oreRocks);
         if (rock) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     Game.interact.gameObject.action(rock, MenuAction.GAME_OBJECT_FIRST_OPTION);
-                    Logger.log("[SlayerBot][RI] Mining ore");
+                    Game.sendGameMessage("[SlayerBot][RI] Mining ore", "Bot");
                 } catch(e) {
-                    Logger.log("[SlayerBot][RI] Mine error: " + e);
+                    Game.sendGameMessage("[SlayerBot][RI] Mine error: " + e, "Bot");
                 }
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4232,15 +4232,15 @@ function handleLevelSmelting() {
         walkToLocation(SS_LOCATIONS.AL_KHARID_FURNACE);
         return;
     }
-    let furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
+    var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
     if (furnace && !PlayerHelper.isAnimating()) {
         isExecuting = true;
         Utility.invokeLater(() => {
             try {
                 Game.interact.gameObject.action(furnace, MenuAction.GAME_OBJECT_FIRST_OPTION);
-                Logger.log("[SlayerBot][RI] Smelting at furnace");
+                Game.sendGameMessage("[SlayerBot][RI] Smelting at furnace", "Bot");
             } catch(e) {
-                Logger.log("[SlayerBot][RI] Smelt error: " + e);
+                Game.sendGameMessage("[SlayerBot][RI] Smelt error: " + e, "Bot");
             }
             isExecuting = false;
         }, Utility.getDelay());
@@ -4275,7 +4275,7 @@ function initFoodGathering(tier, quantity) {
     gatherFoodCount = 0;
     gatherFoodPhase = "walking_to_spot";
 
-    Logger.log("[SlayerBot][RI] Init food gathering: " + gatherFoodTier.name + " x" + gatherFoodNeeded);
+    Game.sendGameMessage("[SlayerBot][RI] Init food gathering: " + gatherFoodTier.name + " x" + gatherFoodNeeded, "Bot");
 }
 
 /**
@@ -4286,9 +4286,9 @@ function handleGatherFoodTick() {
     if (!gatherFoodTier) return;
 
     // Check if we've gathered enough cooked food
-    let cookedCount = Game.info.inventory.getItemCount(gatherFoodTier.cookedItemId);
+    var cookedCount = Game.info.inventory.getItemCount(gatherFoodTier.cookedItemId);
     if (cookedCount >= gatherFoodNeeded) {
-        Logger.log("[SlayerBot][RI] ✅ Food gathering complete! " + cookedCount + " " + gatherFoodTier.name);
+        Game.sendGameMessage("[SlayerBot][RI] ✅ Food gathering complete! " + cookedCount + " " + gatherFoodTier.name, "Bot");
         gatherFoodPhase = "done";
         return "DONE";
     }
@@ -4324,10 +4324,10 @@ function handleGatherFoodTick() {
 function handleWalkToGatherSpot() {
     if (isExecuting || PlayerHelper.isWebWalking()) return;
 
-    let loc = gatherFoodTier.gatherLocation;
+    var loc = gatherFoodTier.gatherLocation;
     if (isNearLocation(loc, 15)) {
         gatherFoodPhase = "gathering";
-        Logger.log("[SlayerBot][RI] Arrived at " + gatherFoodTier.name + " gathering spot");
+        Game.sendGameMessage("[SlayerBot][RI] Arrived at " + gatherFoodTier.name + " gathering spot", "Bot");
         return;
     }
 
@@ -4347,10 +4347,10 @@ function handleGatherFoodByKilling() {
     }
 
     // Pick up raw meat from ground first
-    let groundItems = Game.info.groundItem.getAll();
+    var groundItems = Game.info.groundItem.getAll();
     if (groundItems) {
-        for (let i = 0; i < groundItems.length; i++) {
-            let item = groundItems[i];
+        for (var i = 0; i < groundItems.length; i++) {
+            var item = groundItems[i];
             if (item.getId() === gatherFoodTier.rawItemId ||
                 item.getId() === SS_ITEMS.FEATHER ||
                 item.getId() === SS_ITEMS.BONES ||
@@ -4369,13 +4369,13 @@ function handleGatherFoodByKilling() {
 
     // Kill if not in combat
     if (!PlayerHelper.isInCombat()) {
-        let npc = Game.info.npc.getNearest(gatherFoodTier.npcIds);
+        var npc = Game.info.npc.getNearest(gatherFoodTier.npcIds);
         if (npc) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     Game.interact.npc.attack(npc);
-                    Logger.log("[SlayerBot][RI] Attacking " + npc.getName() + " for food");
+                    Game.sendGameMessage("[SlayerBot][RI] Attacking " + npc.getName() + " for food", "Bot");
                 } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4392,24 +4392,24 @@ function handleGatherFoodByFishing() {
     // Check tools
     if (gatherFoodTier.toolId && Game.info.inventory.getItemCount(gatherFoodTier.toolId) === 0) {
         // Missing tool — go buy from fishing shop
-        Logger.log("[SlayerBot][RI] Missing fishing tool: " + gatherFoodTier.toolRequired);
+        Game.sendGameMessage("[SlayerBot][RI] Missing fishing tool: " + gatherFoodTier.toolRequired, "Bot");
         gatherFoodPhase = "walking_to_spot"; // Will redirect to shop
         return;
     }
 
     // Check for feathers if fly fishing
     if (gatherFoodTier.secondaryId && Game.info.inventory.getItemCount(gatherFoodTier.secondaryId) < 10) {
-        Logger.log("[SlayerBot][RI] Need more feathers — going to kill chickens");
+        Game.sendGameMessage("[SlayerBot][RI] Need more feathers — going to kill chickens", "Bot");
         // Kill chickens for feathers
         if (!isNearLocation(SS_LOCATIONS.LUMBRIDGE_CHICKENS, 15)) {
             walkToLocation(SS_LOCATIONS.LUMBRIDGE_CHICKENS);
             return;
         }
         // Kill chickens and collect feathers
-        let feather = null;
-        let groundItems = Game.info.groundItem.getAll();
+        var feather = null;
+        var groundItems = Game.info.groundItem.getAll();
         if (groundItems) {
-            for (let i = 0; i < groundItems.length; i++) {
+            for (var i = 0; i < groundItems.length; i++) {
                 if (groundItems[i].getId() === SS_ITEMS.FEATHER) {
                     feather = groundItems[i];
                     break;
@@ -4425,7 +4425,7 @@ function handleGatherFoodByFishing() {
             return;
         }
         if (!PlayerHelper.isInCombat()) {
-            let chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
+            var chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
             if (chicken) {
                 isExecuting = true;
                 Utility.invokeLater(() => {
@@ -4445,7 +4445,7 @@ function handleGatherFoodByFishing() {
 
     // Fish!
     if (!PlayerHelper.isAnimating()) {
-        let spot = Game.info.npc.getNearest(gatherFoodTier.spotIds);
+        var spot = Game.info.npc.getNearest(gatherFoodTier.spotIds);
         if (spot) {
             isExecuting = true;
             Utility.invokeLater(() => {
@@ -4464,14 +4464,14 @@ function handleGatherFoodByFishing() {
                     } else {
                         spot.action(MenuAction.NPC_FIRST_OPTION);
                     }
-                    Logger.log("[SlayerBot][RI] Fishing " + gatherFoodTier.name);
+                    Game.sendGameMessage("[SlayerBot][RI] Fishing " + gatherFoodTier.name, "Bot");
                 } catch(e) {
-                    Logger.log("[SlayerBot][RI] Fish error: " + e);
+                    Game.sendGameMessage("[SlayerBot][RI] Fish error: " + e, "Bot");
                 }
                 isExecuting = false;
             }, Utility.getDelay());
         } else {
-            Logger.log("[SlayerBot][RI] No fishing spot found — walking closer");
+            Game.sendGameMessage("[SlayerBot][RI] No fishing spot found — walking closer", "Bot");
             walkToLocation(gatherFoodTier.gatherLocation);
         }
     }
@@ -4484,7 +4484,7 @@ function handleGatherFoodByFishing() {
 function handleWalkToCook() {
     if (isExecuting || PlayerHelper.isWebWalking()) return;
 
-    let cookLoc = gatherFoodTier.cookLocation;
+    var cookLoc = gatherFoodTier.cookLocation;
     if (isNearLocation(cookLoc, 8)) {
         gatherFoodPhase = "cooking";
         return;
@@ -4498,10 +4498,10 @@ function handleWalkToCook() {
 function handleCookAllRawFood() {
     if (isExecuting) return;
 
-    let rawCount = Game.info.inventory.getItemCount(gatherFoodTier.rawItemId);
+    var rawCount = Game.info.inventory.getItemCount(gatherFoodTier.rawItemId);
     if (rawCount === 0) {
         // Done cooking this batch — go back to gathering or bank
-        let cookedTotal = Game.info.inventory.getItemCount(gatherFoodTier.cookedItemId);
+        var cookedTotal = Game.info.inventory.getItemCount(gatherFoodTier.cookedItemId);
         if (cookedTotal >= gatherFoodNeeded) {
             gatherFoodPhase = "done";
             return;
@@ -4513,26 +4513,26 @@ function handleCookAllRawFood() {
 
     // Cook on range/fire
     if (!PlayerHelper.isAnimating()) {
-        let cookObj = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE, SS_OBJECTS.COOKING_FIRE]);
+        var cookObj = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE, SS_OBJECTS.COOKING_FIRE]);
         if (cookObj) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     // Use raw fish on range
                     Game.interact.inventory.useItemOnObject(gatherFoodTier.rawItemId, cookObj);
-                    Logger.log("[SlayerBot][RI] Cooking " + gatherFoodTier.name + " (" + rawCount + " raw remaining)");
+                    Game.sendGameMessage("[SlayerBot][RI] Cooking " + gatherFoodTier.name + " (" + rawCount + " raw remaining)", "Bot");
                 } catch(e) {
                     // Fallback: try clicking the range directly
                     try {
                         Game.interact.gameObject.action(cookObj, MenuAction.GAME_OBJECT_FIRST_OPTION);
                     } catch(e2) {
-                        Logger.log("[SlayerBot][RI] Cook error: " + e2);
+                        Game.sendGameMessage("[SlayerBot][RI] Cook error: " + e2, "Bot");
                     }
                 }
                 isExecuting = false;
             }, Utility.getDelay());
         } else {
-            Logger.log("[SlayerBot][RI] No cooking range found — walking to Lumbridge");
+            Game.sendGameMessage("[SlayerBot][RI] No cooking range found — walking to Lumbridge", "Bot");
             walkToLocation(SS_LOCATIONS.LUMBRIDGE_RANGE);
         }
     }
@@ -4540,7 +4540,7 @@ function handleCookAllRawFood() {
 
 function handleWalkToFoodBank() {
     if (isExecuting || PlayerHelper.isWebWalking()) return;
-    let bankLoc = gatherFoodTier.nearestBank || SS_LOCATIONS.LUMBRIDGE_BANK;
+    var bankLoc = gatherFoodTier.nearestBank || SS_LOCATIONS.LUMBRIDGE_BANK;
     if (isNearLocation(bankLoc, 10)) {
         gatherFoodPhase = "banking";
         return;
@@ -4565,7 +4565,7 @@ function handleFoodBanking() {
     Utility.invokeLater(() => {
         try {
             Game.interact.bank.depositAllInventory();
-            Logger.log("[SlayerBot][RI] Deposited all — withdrawing fishing tools");
+            Game.sendGameMessage("[SlayerBot][RI] Deposited all — withdrawing fishing tools", "Bot");
         } catch(e) {}
         isExecuting = false;
     }, Utility.getDelay());
@@ -4582,7 +4582,7 @@ var gatherGearTarget = null;
 function initGearGathering(gearPlan) {
     gatherGearTarget = gearPlan;
     gatherGearPhase = "decide";
-    Logger.log("[SlayerBot][RI] Init gear gathering: " + (gearPlan.meleeWeapon ? gearPlan.meleeWeapon.name : "unknown"));
+    Game.sendGameMessage("[SlayerBot][RI] Init gear gathering: " + (gearPlan.meleeWeapon ? gearPlan.meleeWeapon.name : "unknown"), "Bot");
 }
 
 function handleGatherGearTick() {
@@ -4623,30 +4623,30 @@ function handleGatherGearTick() {
 }
 
 function decideGearMethod() {
-    let levels = getAllPlayerLevels();
+    var levels = getAllPlayerLevels();
 
     // Priority: Barrows > Smithing > Crafting > Drops > Buy
     if (gatherGearTarget.meleeArmor && gatherGearTarget.meleeArmor.barrowsOnly) {
         gatherGearPhase = "barrows";
-        Logger.log("[SlayerBot][RI] Going to Barrows for gear!");
+        Game.sendGameMessage("[SlayerBot][RI] Going to Barrows for gear!", "Bot");
         return;
     }
 
     if (gatherGearTarget.canSmith && gatherGearTarget.bestSmithableTier !== "none") {
         gatherGearPhase = "mine_ore";
-        Logger.log("[SlayerBot][RI] Mining + smithing gear");
+        Game.sendGameMessage("[SlayerBot][RI] Mining + smithing gear", "Bot");
         return;
     }
 
     if (levels.crafting >= 14) {
         gatherGearPhase = "kill_cows";
-        Logger.log("[SlayerBot][RI] Crafting leather armor");
+        Game.sendGameMessage("[SlayerBot][RI] Crafting leather armor", "Bot");
         return;
     }
 
     // Kill monsters and hope for drops
     gatherGearPhase = "kill_for_drops";
-    Logger.log("[SlayerBot][RI] Killing monsters for gear drops");
+    Game.sendGameMessage("[SlayerBot][RI] Killing monsters for gear drops", "Bot");
 }
 
 // ─────────── MINING FOR GEAR ───────────
@@ -4654,11 +4654,11 @@ function decideGearMethod() {
 function handleMineOreForGear() {
     if (isExecuting) return;
 
-    let smithLevel = Client.getRealSkillLevels(Skill.SMITHING) || 1;
-    let miningLevel = Client.getRealSkillLevels(Skill.MINING) || 1;
+    var smithLevel = Client.getRealSkillLevels(Skill.SMITHING) || 1;
+    var miningLevel = Client.getRealSkillLevels(Skill.MINING) || 1;
 
     // Determine what ore to mine based on what we can smith
-    let oreRocks, oreLocation, oreId, barsNeeded;
+    var oreRocks, oreLocation, oreId, barsNeeded;
 
     if (smithLevel >= 48 && miningLevel >= 30) {
         // Steel: need iron + coal
@@ -4681,9 +4681,9 @@ function handleMineOreForGear() {
     }
 
     // Check if we have enough ore
-    let oreCount = Game.info.inventory.getItemCount(oreId);
+    var oreCount = Game.info.inventory.getItemCount(oreId);
     if (oreId === SS_ITEMS.COPPER_ORE) {
-        let tinCount = Game.info.inventory.getItemCount(SS_ITEMS.TIN_ORE);
+        var tinCount = Game.info.inventory.getItemCount(SS_ITEMS.TIN_ORE);
         if (oreCount >= barsNeeded && tinCount >= barsNeeded) {
             gatherGearPhase = "smelt_ore";
             return;
@@ -4718,7 +4718,7 @@ function handleMineOreForGear() {
     }
 
     if (!PlayerHelper.isAnimating()) {
-        let rock = Game.info.gameObject.getNearest(oreRocks);
+        var rock = Game.info.gameObject.getNearest(oreRocks);
         if (rock) {
             isExecuting = true;
             Utility.invokeLater(() => {
@@ -4740,7 +4740,7 @@ function handleSmeltOreForGear() {
     }
 
     // Check if all ore is smelted
-    let hasOre = Game.info.inventory.getItemCount(SS_ITEMS.COPPER_ORE) > 0 ||
+    var hasOre = Game.info.inventory.getItemCount(SS_ITEMS.COPPER_ORE) > 0 ||
                  Game.info.inventory.getItemCount(SS_ITEMS.TIN_ORE) > 0 ||
                  Game.info.inventory.getItemCount(SS_ITEMS.IRON_ORE) > 0 ||
                  Game.info.inventory.getItemCount(SS_ITEMS.COAL) > 0;
@@ -4751,13 +4751,13 @@ function handleSmeltOreForGear() {
     }
 
     if (!PlayerHelper.isAnimating()) {
-        let furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
+        var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
         if (furnace) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     Game.interact.gameObject.action(furnace, MenuAction.GAME_OBJECT_FIRST_OPTION);
-                    Logger.log("[SlayerBot][RI] Smelting ore at furnace");
+                    Game.sendGameMessage("[SlayerBot][RI] Smelting ore at furnace", "Bot");
                 } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4774,14 +4774,14 @@ function handleSmithGearItem() {
     }
 
     // Check if we have bars
-    let hasBars = Game.info.inventory.getItemCount(SS_ITEMS.BRONZE_BAR) > 0 ||
+    var hasBars = Game.info.inventory.getItemCount(SS_ITEMS.BRONZE_BAR) > 0 ||
                   Game.info.inventory.getItemCount(SS_ITEMS.IRON_BAR) > 0 ||
                   Game.info.inventory.getItemCount(SS_ITEMS.STEEL_BAR) > 0 ||
                   Game.info.inventory.getItemCount(SS_ITEMS.MITHRIL_BAR) > 0;
 
     if (!hasBars) {
         gatherGearPhase = "done";
-        Logger.log("[SlayerBot][RI] No more bars to smith — done");
+        Game.sendGameMessage("[SlayerBot][RI] No more bars to smith — done", "Bot");
         return;
     }
 
@@ -4792,13 +4792,13 @@ function handleSmithGearItem() {
     }
 
     if (!PlayerHelper.isAnimating()) {
-        let anvil = Game.info.gameObject.getNearest(SS_OBJECTS.ANVIL);
+        var anvil = Game.info.gameObject.getNearest(SS_OBJECTS.ANVIL);
         if (anvil) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     Game.interact.gameObject.action(anvil, MenuAction.GAME_OBJECT_FIRST_OPTION);
-                    Logger.log("[SlayerBot][RI] Smithing at anvil");
+                    Game.sendGameMessage("[SlayerBot][RI] Smithing at anvil", "Bot");
                 } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -4812,8 +4812,8 @@ function handleKillForGearDrops() {
     if (isExecuting) return;
 
     // Kill goblins (drop bronze/iron gear) or guards (drop steel gear)
-    let levels = getAllPlayerLevels();
-    let targetNPCs, targetLoc;
+    var levels = getAllPlayerLevels();
+    var targetNPCs, targetLoc;
 
     if (levels.attack < 10) {
         targetNPCs = SS_NPCS.GOBLIN;
@@ -4829,11 +4829,11 @@ function handleKillForGearDrops() {
     }
 
     // Pick up gear drops
-    let groundItems = Game.info.groundItem.getAll();
+    var groundItems = Game.info.groundItem.getAll();
     if (groundItems) {
-        for (let i = 0; i < groundItems.length; i++) {
-            let item = groundItems[i];
-            let id = item.getId();
+        for (var i = 0; i < groundItems.length; i++) {
+            var item = groundItems[i];
+            var id = item.getId();
             // Pick up any weapon or armor
             if (isEquipmentDrop(id)) {
                 isExecuting = true;
@@ -4847,7 +4847,7 @@ function handleKillForGearDrops() {
     }
 
     if (!PlayerHelper.isInCombat()) {
-        let npc = Game.info.npc.getNearest(targetNPCs);
+        var npc = Game.info.npc.getNearest(targetNPCs);
         if (npc) {
             isExecuting = true;
             Utility.invokeLater(() => {
@@ -4863,7 +4863,7 @@ function handleKillForGearDrops() {
 
 function isEquipmentDrop(itemId) {
     // Check if this item is a weapon or armor we can use
-    let equipIds = [
+    var equipIds = [
         SS_ITEMS.BRONZE_SWORD, SS_ITEMS.BRONZE_SCIMITAR,
         SS_ITEMS.IRON_SCIMITAR, SS_ITEMS.STEEL_SCIMITAR,
         SS_ITEMS.MITHRIL_SCIMITAR, SS_ITEMS.ADAMANT_SCIMITAR,
@@ -4890,7 +4890,7 @@ var leatherPhase = "killing";
 function handleKillCowsForLeather() {
     if (isExecuting) return;
 
-    let hideCount = Game.info.inventory.getItemCount(SS_ITEMS.COWHIDE);
+    var hideCount = Game.info.inventory.getItemCount(SS_ITEMS.COWHIDE);
     if (hideCount >= 10 || Game.info.inventory.isFull()) {
         gatherGearPhase = "tan_hides";
         return;
@@ -4902,9 +4902,9 @@ function handleKillCowsForLeather() {
     }
 
     // Pick up hides
-    let groundItems = Game.info.groundItem.getAll();
+    var groundItems = Game.info.groundItem.getAll();
     if (groundItems) {
-        for (let i = 0; i < groundItems.length; i++) {
+        for (var i = 0; i < groundItems.length; i++) {
             if (groundItems[i].getId() === SS_ITEMS.COWHIDE) {
                 isExecuting = true;
                 Utility.invokeLater(() => {
@@ -4917,7 +4917,7 @@ function handleKillCowsForLeather() {
     }
 
     if (!PlayerHelper.isInCombat()) {
-        let cow = Game.info.npc.getNearest(SS_NPCS.COW);
+        var cow = Game.info.npc.getNearest(SS_NPCS.COW);
         if (cow) {
             isExecuting = true;
             Utility.invokeLater(() => {
@@ -4931,7 +4931,7 @@ function handleKillCowsForLeather() {
 function handleTanHides() {
     if (isExecuting) return;
 
-    let hideCount = Game.info.inventory.getItemCount(SS_ITEMS.COWHIDE);
+    var hideCount = Game.info.inventory.getItemCount(SS_ITEMS.COWHIDE);
     if (hideCount === 0) {
         gatherGearPhase = "craft_leather";
         return;
@@ -4942,13 +4942,13 @@ function handleTanHides() {
         return;
     }
 
-    let tanner = Game.info.npc.getNearest([SS_NPCS.AL_KHARID_TANNER]);
+    var tanner = Game.info.npc.getNearest([SS_NPCS.AL_KHARID_TANNER]);
     if (tanner) {
         isExecuting = true;
         Utility.invokeLater(() => {
             try {
                 tanner.action(MenuAction.NPC_FIRST_OPTION);
-                Logger.log("[SlayerBot][RI] Tanning " + hideCount + " cowhides");
+                Game.sendGameMessage("[SlayerBot][RI] Tanning " + hideCount + " cowhides", "Bot");
             } catch(e) {}
             isExecuting = false;
         }, Utility.getDelay());
@@ -4958,10 +4958,10 @@ function handleTanHides() {
 function handleCraftLeatherArmor() {
     if (isExecuting) return;
 
-    let leatherCount = Game.info.inventory.getItemCount(SS_ITEMS.LEATHER);
+    var leatherCount = Game.info.inventory.getItemCount(SS_ITEMS.LEATHER);
     if (leatherCount === 0) {
         gatherGearPhase = "done";
-        Logger.log("[SlayerBot][RI] Leather crafting done");
+        Game.sendGameMessage("[SlayerBot][RI] Leather crafting done", "Bot");
         return;
     }
 
@@ -4977,7 +4977,7 @@ function handleCraftLeatherArmor() {
     Utility.invokeLater(() => {
         try {
             Game.interact.inventory.useItemOnItem(SS_ITEMS.NEEDLE, SS_ITEMS.LEATHER);
-            Logger.log("[SlayerBot][RI] Crafting leather armor");
+            Game.sendGameMessage("[SlayerBot][RI] Crafting leather armor", "Bot");
         } catch(e) {}
         isExecuting = false;
     }, Utility.getDelay());
@@ -5009,7 +5009,7 @@ function handleBarrowsRun() {
     if (isExecuting) return;
 
     if (barrowsRunCount >= barrowsMaxRuns) {
-        Logger.log("[SlayerBot][RI] Completed " + barrowsRunCount + " Barrows runs — checking loot");
+        Game.sendGameMessage("[SlayerBot][RI] Completed " + barrowsRunCount + " Barrows runs — checking loot", "Bot");
         gatherGearPhase = "done";
         return;
     }
@@ -5044,7 +5044,7 @@ function handleWalkToBarrows() {
         return;
     }
 
-    let brother = BARROWS_BROTHERS[barrowsBrother];
+    var brother = BARROWS_BROTHERS[barrowsBrother];
     if (isNearLocation(brother.location, 5)) {
         barrowsPhase = "dig_mound";
         return;
@@ -5060,9 +5060,9 @@ function handleDigMound() {
     Utility.invokeLater(() => {
         try {
             Game.interact.inventory.consumeItem(952); // Spade ID
-            Logger.log("[SlayerBot][RI] Digging at " + BARROWS_BROTHERS[barrowsBrother].name + "'s mound");
+            Game.sendGameMessage("[SlayerBot][RI] Digging at " + BARROWS_BROTHERS[barrowsBrother].name + "'s mound", "Bot");
         } catch(e) {
-            Logger.log("[SlayerBot][RI] Dig error: " + e);
+            Game.sendGameMessage("[SlayerBot][RI] Dig error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -5072,7 +5072,7 @@ function handleDigMound() {
 function handleKillBrother() {
     if (isExecuting) return;
 
-    let brother = BARROWS_BROTHERS[barrowsBrother];
+    var brother = BARROWS_BROTHERS[barrowsBrother];
 
     // Activate prayer
     try {
@@ -5086,14 +5086,14 @@ function handleKillBrother() {
     } catch(e) {}
 
     // Find and attack brother
-    let npc = Game.info.npc.getNearest([brother.npcId]);
+    var npc = Game.info.npc.getNearest([brother.npcId]);
     if (npc) {
         if (!PlayerHelper.isInCombat()) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     Game.interact.npc.attack(npc);
-                    Logger.log("[SlayerBot][RI] Attacking " + brother.name);
+                    Game.sendGameMessage("[SlayerBot][RI] Attacking " + brother.name, "Bot");
                 } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -5104,7 +5104,7 @@ function handleKillBrother() {
         // Brother is dead — move to next
         barrowsBrother++;
         barrowsPhase = "next_brother";
-        Logger.log("[SlayerBot][RI] " + brother.name + " defeated! (" + barrowsBrother + "/6)");
+        Game.sendGameMessage("[SlayerBot][RI] " + brother.name + " defeated! (" + barrowsBrother + "/6)", "Bot");
     }
 }
 
@@ -5118,13 +5118,13 @@ function handleOpenChest() {
     if (isExecuting) return;
 
     // Navigate to chest in tunnels and open
-    let chest = Game.info.gameObject.getNearest(SS_OBJECTS.BARROWS_CHEST);
+    var chest = Game.info.gameObject.getNearest(SS_OBJECTS.BARROWS_CHEST);
     if (chest) {
         isExecuting = true;
         Utility.invokeLater(() => {
             try {
                 Game.interact.gameObject.action(chest, MenuAction.GAME_OBJECT_FIRST_OPTION);
-                Logger.log("[SlayerBot][RI] Opening Barrows chest! Run #" + (barrowsRunCount + 1));
+                Game.sendGameMessage("[SlayerBot][RI] Opening Barrows chest! Run #" + (barrowsRunCount + 1), "Bot");
                 barrowsRunCount++;
                 barrowsBrother = 0;
                 barrowsPhase = "bank_loot";
@@ -5160,7 +5160,7 @@ function handleBarrowsBanking() {
     Utility.invokeLater(() => {
         try {
             Game.interact.bank.depositAllInventory();
-            Logger.log("[SlayerBot][RI] Banked Barrows loot — run " + barrowsRunCount + "/" + barrowsMaxRuns);
+            Game.sendGameMessage("[SlayerBot][RI] Banked Barrows loot — run " + barrowsRunCount + "/" + barrowsMaxRuns, "Bot");
         } catch(e) {}
         isExecuting = false;
     }, Utility.getDelay());
@@ -5176,11 +5176,11 @@ function handleBarrowsBanking() {
  */
 function isNearLocation(loc, range) {
     try {
-        let player = Client.getLocalPlayer();
+        var player = Client.getLocalPlayer();
         if (!player) return false;
-        let pos = player.getWorldLocation();
-        let dx = Math.abs(pos.getX() - loc.x);
-        let dy = Math.abs(pos.getY() - loc.y);
+        var pos = player.getWorldLocation();
+        var dx = Math.abs(pos.getX() - loc.x);
+        var dy = Math.abs(pos.getY() - loc.y);
         return dx <= range && dy <= range;
     } catch(e) {
         return false;
@@ -5196,9 +5196,9 @@ function walkToLocation(loc) {
     Utility.invokeLater(() => {
         try {
             Utility.walkTo(new WorldPoint(loc.x, loc.y, loc.z || 0));
-            Logger.log("[SlayerBot][RI] Walking to " + loc.x + "," + loc.y);
+            Game.sendGameMessage("[SlayerBot][RI] Walking to " + loc.x + "," + loc.y, "Bot");
         } catch(e) {
-            Logger.log("[SlayerBot][RI] Walk error: " + e);
+            Game.sendGameMessage("[SlayerBot][RI] Walk error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -5210,14 +5210,14 @@ function walkToLocation(loc) {
 function dropAllRawFish() {
     if (isExecuting) return;
 
-    let rawIds = [
+    var rawIds = [
         SS_ITEMS.RAW_SHRIMPS, SS_ITEMS.RAW_ANCHOVIES, SS_ITEMS.RAW_TROUT,
         SS_ITEMS.RAW_SALMON, SS_ITEMS.RAW_TUNA, SS_ITEMS.RAW_LOBSTER,
         SS_ITEMS.RAW_SWORDFISH, SS_ITEMS.RAW_MONKFISH, SS_ITEMS.RAW_SHARK,
         SS_ITEMS.RAW_ANGLERFISH, SS_ITEMS.RAW_CHICKEN, SS_ITEMS.RAW_BEEF
     ];
 
-    for (let i = 0; i < rawIds.length; i++) {
+    for (var i = 0; i < rawIds.length; i++) {
         if (Game.info.inventory.getItemCount(rawIds[i]) > 0) {
             isExecuting = true;
             Utility.invokeLater(() => {
@@ -5237,8 +5237,8 @@ function dropAllRawFish() {
 function dropAllOres() {
     if (isExecuting) return;
 
-    let oreIds = [SS_ITEMS.COPPER_ORE, SS_ITEMS.TIN_ORE, SS_ITEMS.IRON_ORE, SS_ITEMS.COAL];
-    for (let i = 0; i < oreIds.length; i++) {
+    var oreIds = [SS_ITEMS.COPPER_ORE, SS_ITEMS.TIN_ORE, SS_ITEMS.IRON_ORE, SS_ITEMS.COAL];
+    for (var i = 0; i < oreIds.length; i++) {
         if (Game.info.inventory.getItemCount(oreIds[i]) > 0) {
             isExecuting = true;
             Utility.invokeLater(() => {
@@ -5254,13 +5254,13 @@ function dropAllOres() {
  * findRawFishInInventory — Find any raw fish in inventory
  */
 function findRawFishInInventory() {
-    let rawIds = [
+    var rawIds = [
         SS_ITEMS.RAW_ANGLERFISH, SS_ITEMS.RAW_SHARK, SS_ITEMS.RAW_MONKFISH,
         SS_ITEMS.RAW_SWORDFISH, SS_ITEMS.RAW_LOBSTER, SS_ITEMS.RAW_TUNA,
         SS_ITEMS.RAW_SALMON, SS_ITEMS.RAW_TROUT, SS_ITEMS.RAW_SHRIMPS,
         SS_ITEMS.RAW_CHICKEN, SS_ITEMS.RAW_BEEF
     ];
-    for (let i = 0; i < rawIds.length; i++) {
+    for (var i = 0; i < rawIds.length; i++) {
         if (Game.info.inventory.getItemCount(rawIds[i]) > 0) return rawIds[i];
     }
     return null;
@@ -5297,7 +5297,7 @@ function bankForTool(toolId) {
     Utility.invokeLater(() => {
         try {
             Game.interact.bank.withdraw(toolId, 1);
-            Logger.log("[SlayerBot][RI] Withdrew tool: " + toolId);
+            Game.sendGameMessage("[SlayerBot][RI] Withdrew tool: " + toolId, "Bot");
         } catch(e) {}
         isExecuting = false;
     }, Utility.getDelay());
@@ -5309,13 +5309,13 @@ function bankForTool(toolId) {
 function buyFromShop(npcId, itemId, quantity) {
     if (isExecuting) return;
 
-    let npc = Game.info.npc.getNearest([npcId]);
+    var npc = Game.info.npc.getNearest([npcId]);
     if (npc) {
         isExecuting = true;
         Utility.invokeLater(() => {
             try {
                 npc.action(MenuAction.NPC_FIRST_OPTION);  // "Trade"
-                Logger.log("[SlayerBot][RI] Opening shop with NPC " + npcId);
+                Game.sendGameMessage("[SlayerBot][RI] Opening shop with NPC " + npcId, "Bot");
             } catch(e) {}
             isExecuting = false;
         }, Utility.getDelay());
@@ -5327,20 +5327,20 @@ function buyFromShop(npcId, itemId, quantity) {
  */
 function autoEatIfNeeded() {
     try {
-        let currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
-        let maxHP = Client.getRealSkillLevels(Skill.HITPOINTS);
+        var currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
+        var maxHP = Client.getRealSkillLevels(Skill.HITPOINTS);
         if (currentHP < maxHP * 0.4) {
             // Find food in inventory and eat
-            let foodIds = [
+            var foodIds = [
                 SS_ITEMS.COOKED_ANGLERFISH, SS_ITEMS.COOKED_SHARK, SS_ITEMS.COOKED_MONKFISH,
                 SS_ITEMS.COOKED_SWORDFISH, SS_ITEMS.COOKED_LOBSTER, SS_ITEMS.COOKED_TUNA,
                 SS_ITEMS.COOKED_SALMON, SS_ITEMS.COOKED_TROUT, SS_ITEMS.COOKED_SHRIMPS,
                 SS_ITEMS.COOKED_CHICKEN, SS_ITEMS.COOKED_MEAT
             ];
-            for (let i = 0; i < foodIds.length; i++) {
+            for (var i = 0; i < foodIds.length; i++) {
                 if (Game.info.inventory.getItemCount(foodIds[i]) > 0) {
                     Game.interact.inventory.consumeItem(foodIds[i]);
-                    Logger.log("[SlayerBot][RI] Eating food (HP: " + currentHP + "/" + maxHP + ")");
+                    Game.sendGameMessage("[SlayerBot][RI] Eating food (HP: " + currentHP + "/" + maxHP + ")", "Bot");
                     return true;
                 }
             }
@@ -5355,11 +5355,11 @@ function autoEatIfNeeded() {
 function ssPickUpValuableLoot() {
     if (isExecuting) return false;
 
-    let groundItems = Game.info.groundItem.getAll();
+    var groundItems = Game.info.groundItem.getAll();
     if (!groundItems) return false;
 
-    for (let i = 0; i < groundItems.length; i++) {
-        let item = groundItems[i];
+    for (var i = 0; i < groundItems.length; i++) {
+        var item = groundItems[i];
         if (VALUABLE_LOOT_IDS.indexOf(item.getId()) !== -1) {
             // Don't pick up if inventory is full (unless it's coins which stack)
             if (Game.info.inventory.isFull() && item.getId() !== SS_ITEMS.COINS) continue;
@@ -5368,7 +5368,7 @@ function ssPickUpValuableLoot() {
             Utility.invokeLater(() => {
                 try {
                     Game.interact.groundItem.pickup(item);
-                    Logger.log("[SlayerBot][RI] Picked up valuable: " + item.getId());
+                    Game.sendGameMessage("[SlayerBot][RI] Picked up valuable: " + item.getId(), "Bot");
                 } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -5384,14 +5384,14 @@ function ssPickUpValuableLoot() {
 function ssBuryBones() {
     if (isExecuting) return false;
 
-    let boneIds = [SS_ITEMS.BONES, SS_ITEMS.BIG_BONES];
-    for (let i = 0; i < boneIds.length; i++) {
+    var boneIds = [SS_ITEMS.BONES, SS_ITEMS.BIG_BONES];
+    for (var i = 0; i < boneIds.length; i++) {
         if (Game.info.inventory.getItemCount(boneIds[i]) > 0) {
             isExecuting = true;
             Utility.invokeLater(() => {
                 try {
                     Game.interact.inventory.consumeItem(boneIds[i]);
-                    Logger.log("[SlayerBot][RI] Burying bones for prayer XP");
+                    Game.sendGameMessage("[SlayerBot][RI] Burying bones for prayer XP", "Bot");
                 } catch(e) {}
                 isExecuting = false;
             }, Utility.getDelay());
@@ -5405,14 +5405,14 @@ function ssBuryBones() {
  * countAllFood — Count all cooked food in inventory
  */
 function countAllFood() {
-    let count = 0;
-    let foodIds = [
+    var count = 0;
+    var foodIds = [
         SS_ITEMS.COOKED_ANGLERFISH, SS_ITEMS.COOKED_SHARK, SS_ITEMS.COOKED_MONKFISH,
         SS_ITEMS.COOKED_SWORDFISH, SS_ITEMS.COOKED_LOBSTER, SS_ITEMS.COOKED_TUNA,
         SS_ITEMS.COOKED_SALMON, SS_ITEMS.COOKED_TROUT, SS_ITEMS.COOKED_SHRIMPS,
         SS_ITEMS.COOKED_CHICKEN, SS_ITEMS.COOKED_MEAT
     ];
-    for (let i = 0; i < foodIds.length; i++) {
+    for (var i = 0; i < foodIds.length; i++) {
         count += Game.info.inventory.getItemCount(foodIds[i]);
     }
     return count;
@@ -5441,12 +5441,12 @@ var riPhase = "analyze";    // analyze, level_up, gather_food, gather_gear, gath
 function enterResourceIntelligence(monsterName, taskCount, monsterData) {
     riPlan = analyzeTaskRequirements(monsterName, taskCount, monsterData);
     riPhase = "analyze";
-    Logger.log("[SlayerBot][RI] ═══════════════════════════════════════════");
-    Logger.log("[SlayerBot][RI]  RESOURCE INTELLIGENCE ACTIVATED");
-    Logger.log("[SlayerBot][RI]  Task: " + monsterName + " x" + taskCount);
-    Logger.log("[SlayerBot][RI]  Difficulty: " + riPlan.difficulty.name);
-    Logger.log("[SlayerBot][RI]  Strategy: " + riPlan.food.strategy);
-    Logger.log("[SlayerBot][RI] ═══════════════════════════════════════════");
+    Game.sendGameMessage("[SlayerBot][RI] ═══════════════════════════════════════════", "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]  RESOURCE INTELLIGENCE ACTIVATED", "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]  Task: " + monsterName + " x" + taskCount, "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]  Difficulty: " + riPlan.difficulty.name, "Bot");
+    Game.sendGameMessage("[SlayerBot][RI]  Strategy: " + riPlan.food.strategy, "Bot");
+    Game.sendGameMessage("[SlayerBot][RI] ═══════════════════════════════════════════", "Bot");
 
     // Route to first action
     if (riPlan.barrows.shouldDoRuns) {
@@ -5476,7 +5476,7 @@ function handleResourceIntelligenceTick() {
 
     switch(riPhase) {
         case "level_up":
-            let levelResult = handleLevelingTick();
+            var levelResult = handleLevelingTick();
             if (levelResult === "DONE") {
                 // Check if there are more skills to level
                 if (riPlan.levelUp.plans.length > 1) {
@@ -5486,15 +5486,15 @@ function handleResourceIntelligenceTick() {
                     // Move to food gathering
                     riPhase = "gather_food";
                     // Re-analyze with new levels
-                    let levels = getAllPlayerLevels();
-                    let newFoodPlan = planFoodForTask(riPlan.difficulty, riPlan.taskCount, levels);
+                    var levels = getAllPlayerLevels();
+                    var newFoodPlan = planFoodForTask(riPlan.difficulty, riPlan.taskCount, levels);
                     initFoodGathering(newFoodPlan.bestTier, newFoodPlan.foodQuantity);
                 }
             }
             break;
 
         case "gather_food":
-            let foodResult = handleGatherFoodTick();
+            var foodResult = handleGatherFoodTick();
             if (foodResult === "DONE") {
                 // Check if we need gear too
                 if (riPlan.gear.meleeArmor && riPlan.gear.meleeArmor.obtainMethod !== "GE") {
@@ -5507,7 +5507,7 @@ function handleResourceIntelligenceTick() {
             break;
 
         case "gather_gear":
-            let gearResult = handleGatherGearTick();
+            var gearResult = handleGatherGearTick();
             if (gearResult === "DONE") {
                 riPhase = "done";
             }
@@ -5522,7 +5522,7 @@ function handleResourceIntelligenceTick() {
             break;
 
         case "done":
-            Logger.log("[SlayerBot][RI] ✅ All resources gathered — returning to slayer task!");
+            Game.sendGameMessage("[SlayerBot][RI] ✅ All resources gathered — returning to slayer task!", "Bot");
             return "DONE";
     }
 }
@@ -5532,12 +5532,12 @@ function handleResourceIntelligenceTick() {
  * Called between trips to decide if we need to re-enter RI
  */
 function quickCheckSupplies(monsterData) {
-    let foodCount = countAllFood();
-    let difficulty = getMonsterDifficulty(monsterData.combatLevel || 0, monsterData.maxHit || 0);
-    let neededPerTrip = estimateFoodPerTrip(difficulty, selectBestFoodTier(getAllPlayerLevels()));
+    var foodCount = countAllFood();
+    var difficulty = getMonsterDifficulty(monsterData.combatLevel || 0, monsterData.maxHit || 0);
+    var neededPerTrip = estimateFoodPerTrip(difficulty, selectBestFoodTier(getAllPlayerLevels()));
 
     if (foodCount < neededPerTrip) {
-        Logger.log("[SlayerBot][RI] Low on food (" + foodCount + "/" + neededPerTrip + ") — entering resource gathering");
+        Game.sendGameMessage("[SlayerBot][RI] Low on food (" + foodCount + "/" + neededPerTrip + ") — entering resource gathering", "Bot");
         return false;
     }
     return true;
@@ -5551,21 +5551,21 @@ var rangedGatherPhase = "idle";
 
 function initRangedGathering(quantity) {
     rangedGatherPhase = "check";
-    Logger.log("[SlayerBot][RI] Init ranged supply gathering (" + quantity + " arrows/bolts)");
+    Game.sendGameMessage("[SlayerBot][RI] Init ranged supply gathering (" + quantity + " arrows/bolts)", "Bot");
 }
 
 function handleGatherRangedTick() {
     if (isExecuting) return;
 
-    let levels = getAllPlayerLevels();
+    var levels = getAllPlayerLevels();
 
     // Determine best arrow type
-    let bestRanged = selectBestRangedWeapon(levels);
-    let ammoId = bestRanged.ammoId;
-    let ammoCount = Game.info.inventory.getItemCount(ammoId);
+    var bestRanged = selectBestRangedWeapon(levels);
+    var ammoId = bestRanged.ammoId;
+    var ammoCount = Game.info.inventory.getItemCount(ammoId);
 
     if (ammoCount >= 100) {
-        Logger.log("[SlayerBot][RI] Have " + ammoCount + " ammo — sufficient");
+        Game.sendGameMessage("[SlayerBot][RI] Have " + ammoCount + " ammo — sufficient", "Bot");
         return "DONE";
     }
 
@@ -5587,9 +5587,9 @@ function handleGatherRangedTick() {
             return;
         }
         // Collect feathers
-        let groundItems = Game.info.groundItem.getAll();
+        var groundItems = Game.info.groundItem.getAll();
         if (groundItems) {
-            for (let i = 0; i < groundItems.length; i++) {
+            for (var i = 0; i < groundItems.length; i++) {
                 if (groundItems[i].getId() === SS_ITEMS.FEATHER) {
                     isExecuting = true;
                     Utility.invokeLater(() => {
@@ -5601,7 +5601,7 @@ function handleGatherRangedTick() {
             }
         }
         if (!PlayerHelper.isInCombat()) {
-            let chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
+            var chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
             if (chicken) {
                 isExecuting = true;
                 Utility.invokeLater(() => {
@@ -5629,23 +5629,23 @@ function OnShutdown_SS() {
     barrowsBrother = 0;
     barrowsRunCount = 0;
     rangedGatherPhase = "idle";
-    Logger.log("[SlayerBot][RI] Resource Intelligence Engine shutdown. All states reset.");
+    Game.sendGameMessage("[SlayerBot][RI] Resource Intelligence Engine shutdown. All states reset.", "Bot");
 }
 
 // =============================================================================
 // MODULE LOADED
 // =============================================================================
-Logger.log("[SlayerBot][RI] ═══════════════════════════════════════════════════");
-Logger.log("[SlayerBot][RI]  RESOURCE INTELLIGENCE ENGINE v2.2 LOADED");
-Logger.log("[SlayerBot][RI]  " + SS_FOOD_TIERS.length + " food tiers (chicken → anglerfish)");
-Logger.log("[SlayerBot][RI]  " + SS_MELEE_WEAPONS.length + " melee weapons, " + SS_MELEE_ARMOR.length + " armor sets");
-Logger.log("[SlayerBot][RI]  " + SS_RANGED_WEAPONS.length + " ranged weapons");
-Logger.log("[SlayerBot][RI]  " + VALUABLE_LOOT_IDS.length + " valuable loot types tracked");
-Logger.log("[SlayerBot][RI]  Barrows: " + BARROWS_BROTHERS.length + " brothers mapped");
-Logger.log("[SlayerBot][RI]  Features: Task analysis, level-up decisions, tier selection,");
-Logger.log("[SlayerBot][RI]           food gathering, gear smithing, leather crafting,");
-Logger.log("[SlayerBot][RI]           Barrows runs, ranged supply, GP generation");
-Logger.log("[SlayerBot][RI] ═══════════════════════════════════════════════════");
+Game.sendGameMessage("[SlayerBot][RI] ═══════════════════════════════════════════════════", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]  RESOURCE INTELLIGENCE ENGINE v2.2 LOADED", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]  " + SS_FOOD_TIERS.length + " food tiers (chicken → anglerfish)", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]  " + SS_MELEE_WEAPONS.length + " melee weapons, " + SS_MELEE_ARMOR.length + " armor sets", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]  " + SS_RANGED_WEAPONS.length + " ranged weapons", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]  " + VALUABLE_LOOT_IDS.length + " valuable loot types tracked", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]  Barrows: " + BARROWS_BROTHERS.length + " brothers mapped", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]  Features: Task analysis, level-up decisions, tier selection,", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]           food gathering, gear smithing, leather crafting,", "Bot");
+Game.sendGameMessage("[SlayerBot][RI]           Barrows runs, ranged supply, GP generation", "Bot");
+Game.sendGameMessage("[SlayerBot][RI] ═══════════════════════════════════════════════════", "Bot");
 
 
 // ==================== MAIN LOOP ====================
@@ -5704,105 +5704,64 @@ const STATES = {
 // ─────────────────────────────────────────────────────────────────────────────
 // BOT STATE VARIABLES
 // ─────────────────────────────────────────────────────────────────────────────
-let state = STATES.STARTUP;
-let isExecuting = false;
-let tickCounter = 0;
-let stateTickCounter = 0;
-let lastState = "";
+var state = STATES.STARTUP;
+var isExecuting = false;
+var tickCounter = 0;
+var stateTickCounter = 0;
+var lastState = "";
 
 // Task info
-let currentTaskName = "";
-let currentTaskMonster = null;
-let killsLeft = 0;
-let totalKills = 0;
-let tasksCompleted = 0;
-let taskReceived = false;
+var currentTaskName = "";
+var currentTaskMonster = null;
+var killsLeft = 0;
+var totalKills = 0;
+var tasksCompleted = 0;
+var taskReceived = false;
 
 // Master info
-let selectedMaster = null;
+var selectedMaster = null;
 
 // Player stats (cached)
-let combatLevel = 0;
-let slayerLevel = 0;
-let attackLevel = 0;
-let strengthLevel = 0;
-let defenceLevel = 0;
-let hitpointsLevel = 0;
-let prayerLevel = 0;
-let rangedLevel = 0;
-let magicLevel = 0;
+var combatLevel = 0;
+var slayerLevel = 0;
+var attackLevel = 0;
+var strengthLevel = 0;
+var defenceLevel = 0;
+var hitpointsLevel = 0;
+var prayerLevel = 0;
+var rangedLevel = 0;
+var magicLevel = 0;
 
 // Banking
-let bankTarget = null;
-let needsRestock = false;
-let missingItems = [];
+var bankTarget = null;
+var needsRestock = false;
+var missingItems = [];
 
 // Timeouts
-let stateTimeout = 0;
-let waitTicks = 0;
-let retryCount = 0;
-let maxRetries = 3;
+var stateTimeout = 0;
+var waitTicks = 0;
+var retryCount = 0;
+var maxRetries = 3;
 
 // Loot tracking
-let lootQueue = [];
+var lootQueue = [];
 
 // Death detection
-let previousHP = 0;
-let deathDetected = false;
+var previousHP = 0;
+var deathDetected = false;
 
 // Level up handling
-let levelUpDetected = false;
+var levelUpDetected = false;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OVERLAY REFERENCES
-// ─────────────────────────────────────────────────────────────────────────────
-let overlay = {
-    status: null,
-    task: null,
-    killsLeft: null,
-    tasksCompleted: null,
-    slayerMaster: null
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CONFIGURATION REFERENCES
-// ─────────────────────────────────────────────────────────────────────────────
-let config = {
-    foodType: null,
-    eatPercent: null,
-    usePrayer: null,
-    lootEnabled: null,
-    lootMinValue: null,
-    buryBones: null,
-    masterPreference: null,
-    useGE: null,
-    selfSufficiency: null
-};
 
 // =============================================================================
 // OnStart — Initialize the bot
 // =============================================================================
 function OnStart() {
-    // Bind config items
-    config.foodType = Config.foodType;
-    config.eatPercent = Config.eatPercent;
-    config.usePrayer = Config.usePrayer;
-    config.lootEnabled = Config.lootEnabled;
-    config.lootMinValue = Config.lootMinValue;
-    config.buryBones = Config.buryBones;
-    config.masterPreference = Config.masterPreference;
-    config.useGE = Config.useGE;
-    config.selfSufficiency = Config.selfSufficiency;
-
-    // Bind overlay items
-    overlay.status = Overlay.status;
-    overlay.task = Overlay.task;
-    overlay.killsLeft = Overlay.killsLeft;
-    overlay.tasksCompleted = Overlay.tasksCompleted;
-    overlay.slayerMaster = Overlay.slayerMaster;
-
     // Initialize overlay
-    updateOverlay("Starting...", "None", 0);
+    overlay.status.update("Status: Starting...");
+    overlay.task.update("Task: None");
+    overlay.killsLeft.update("Kills Left: 0");
     overlay.tasksCompleted.update("Tasks Done: 0");
     overlay.slayerMaster.update("Master: Auto");
 
@@ -5810,12 +5769,24 @@ function OnStart() {
     isExecuting = false;
     tickCounter = 0;
 
-    Logger.log("[SlayerBot] v2 Started! State: STARTUP");
+    Game.sendGameMessage("[SlayerBot] v2.2 Started! State: STARTUP", "Bot");
 }
 
 // =============================================================================
 // OnShutdown — CRITICAL: always reset state
 // =============================================================================
+// Reset gather state variables
+function resetGatherState() {
+    gatherFoodPhase = "idle";
+    gatherFoodTier = null;
+    gatherFoodNeeded = 0;
+    gatherFoodCount = 0;
+    gatherGearPhase = "idle";
+    gatherGearTarget = null;
+    leatherPhase = "killing";
+    rangedGatherPhase = "idle";
+}
+
 function OnShutdown() {
     isExecuting = false;
     state = STATES.IDLE;
@@ -5826,7 +5797,7 @@ function OnShutdown() {
     } catch (e) {
         // SS module may not be loaded
     }
-    Logger.log("[SlayerBot] Shutdown. isExecuting reset to false.");
+    Game.sendGameMessage("[SlayerBot] Shutdown. isExecuting reset to false.", "Bot");
 }
 
 // =============================================================================
@@ -5863,10 +5834,10 @@ function OnGameTick() {
 
     // State timeout protection — if stuck for 120 ticks (~72 seconds), reset
     if (stateTickCounter > 120 && state !== STATES.FIGHT_TASK && state !== STATES.WALK_TO_TASK && state !== STATES.WALK_TO_MASTER && state !== STATES.WALK_TO_BANK && state !== STATES.WALK_TO_GATHER && state !== STATES.GATHER_FOOD && state !== STATES.GATHER_GEAR && state !== STATES.GATHER_RANGED && state !== STATES.MINE_ORE) {
-        Logger.log("[SlayerBot] State timeout in " + state + " after " + stateTickCounter + " ticks. Retrying...");
+        Game.sendGameMessage("[SlayerBot] State timeout in " + state + " after " + stateTickCounter + " ticks. Retrying...", "Bot");
         retryCount++;
         if (retryCount > maxRetries) {
-            Logger.log("[SlayerBot] Max retries exceeded. Resetting to CHECK_STATS.");
+            Game.sendGameMessage("[SlayerBot] Max retries exceeded. Resetting to CHECK_STATS.", "Bot");
             state = STATES.CHECK_STATS;
             retryCount = 0;
         }
@@ -5875,7 +5846,7 @@ function OnGameTick() {
 
     // Track state changes for logging
     if (state !== lastState) {
-        Logger.log("[SlayerBot] State transition: " + lastState + " -> " + state);
+        Game.sendGameMessage("[SlayerBot] State transition: " + lastState + " -> " + state, "Bot");
         lastState = state;
         stateTickCounter = 0;
         retryCount = 0;
@@ -5997,7 +5968,7 @@ function OnGameTick() {
 // ─────────────────────────────────────────────────────────────────────────────
 function handleStartup() {
     updateOverlay("Initializing...", "None", 0);
-    Logger.log("[SlayerBot] Startup — checking initial state...");
+    Game.sendGameMessage("[SlayerBot] Startup — checking initial state...", "Bot");
 
     // Small delay before starting
     if (stateTickCounter < 3) return;
@@ -6021,12 +5992,12 @@ function handleCheckStats() {
     slayerLevel = Client.getRealSkillLevels(Skill.SLAYER);
     combatLevel = getCombatLevel();
 
-    Logger.log("[SlayerBot] Stats — Combat: " + combatLevel + ", Slayer: " + slayerLevel +
-               ", ATK: " + attackLevel + ", STR: " + strengthLevel + ", DEF: " + defenceLevel);
+    Game.sendGameMessage("[SlayerBot] Stats — Combat: " + combatLevel + ", Slayer: " + slayerLevel +
+               ", ATK: " + attackLevel + ", STR: " + strengthLevel + ", DEF: " + defenceLevel, "Bot");
 
     // Check if we already have a task (kills left > 0 from a previous session)
     if (currentTaskName && killsLeft > 0 && currentTaskMonster) {
-        Logger.log("[SlayerBot] Resuming existing task: " + currentTaskName + " (" + killsLeft + " left)");
+        Game.sendGameMessage("[SlayerBot] Resuming existing task: " + currentTaskName + " (" + killsLeft + " left)", "Bot");
         state = STATES.CHECK_SUPPLIES;
         return;
     }
@@ -6038,12 +6009,12 @@ function handleCheckStats() {
 // SELECT_MASTER — Choose slayer master
 // ─────────────────────────────────────────────────────────────────────────────
 function handleSelectMaster() {
-    let preference = config.masterPreference ? config.masterPreference.read() : "Auto";
+    var preference = config.masterPreference ? config.masterPreference.read() : "Auto";
     selectedMaster = selectBestMaster(combatLevel, slayerLevel, preference);
 
-    Logger.log("[SlayerBot] Selected master: " + selectedMaster.name +
+    Game.sendGameMessage("[SlayerBot] Selected master: " + selectedMaster.name +
                " at " + selectedMaster.locationName +
-               " (Combat req: " + selectedMaster.combatReq + ", Our combat: " + combatLevel + ")");
+               " (Combat req: " + selectedMaster.combatReq + ", Our combat: " + combatLevel + ")", "Bot");
 
     overlay.slayerMaster.update("Master: " + selectedMaster.name);
     updateOverlay("Going to " + selectedMaster.name, currentTaskName || "None", killsLeft);
@@ -6057,7 +6028,7 @@ function handleSelectMaster() {
 function handleWalkToMaster() {
     // Check if already near master
     if (isNear(selectedMaster.location.x, selectedMaster.location.y, 10)) {
-        Logger.log("[SlayerBot] Arrived at " + selectedMaster.name);
+        Game.sendGameMessage("[SlayerBot] Arrived at " + selectedMaster.name, "Bot");
         state = STATES.TALK_TO_MASTER;
         return;
     }
@@ -6075,10 +6046,10 @@ function handleWalkToMaster() {
     Utility.invokeLater(function() {
         try {
             PlayerHelper.webWalkTo(selectedMaster.location.x, selectedMaster.location.y, selectedMaster.location.plane);
-            Logger.log("[SlayerBot] Started walking to " + selectedMaster.name +
-                       " at (" + selectedMaster.location.x + ", " + selectedMaster.location.y + ")");
+            Game.sendGameMessage("[SlayerBot] Started walking to " + selectedMaster.name +
+                       " at (" + selectedMaster.location.x + ", " + selectedMaster.location.y + ")", "Bot");
         } catch (e) {
-            Logger.log("[SlayerBot] Walk error: " + e);
+            Game.sendGameMessage("[SlayerBot] Walk error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6095,17 +6066,17 @@ function handleTalkToMaster() {
 
     Utility.invokeLater(function() {
         try {
-            let masterNpc = Game.info.npc.getNearest(selectedMaster.npcId);
+            var masterNpc = Game.info.npc.getNearest(selectedMaster.npcId);
             if (masterNpc) {
                 masterNpc.action(MenuAction.NPC_FIRST_OPTION); // "Assignment"
-                Logger.log("[SlayerBot] Talking to " + selectedMaster.name + " (NPC ID: " + selectedMaster.npcId + ")");
+                Game.sendGameMessage("[SlayerBot] Talking to " + selectedMaster.name + " (NPC ID: " + selectedMaster.npcId + ")", "Bot");
                 state = STATES.WAIT_FOR_TASK;
             } else {
-                Logger.log("[SlayerBot] Master NPC not found! Retrying walk...");
+                Game.sendGameMessage("[SlayerBot] Master NPC not found! Retrying walk...", "Bot");
                 state = STATES.WALK_TO_MASTER;
             }
         } catch (e) {
-            Logger.log("[SlayerBot] Talk error: " + e);
+            Game.sendGameMessage("[SlayerBot] Talk error: " + e, "Bot");
             state = STATES.WALK_TO_MASTER;
         }
         isExecuting = false;
@@ -6120,14 +6091,14 @@ function handleWaitForTask() {
 
     // Task received via OnChatMessage
     if (taskReceived && currentTaskName && killsLeft > 0) {
-        Logger.log("[SlayerBot] Task received: Kill " + killsLeft + " " + currentTaskName);
+        Game.sendGameMessage("[SlayerBot] Task received: Kill " + killsLeft + " " + currentTaskName, "Bot");
         state = STATES.READ_TASK;
         return;
     }
 
     // Timeout — try talking again after 30 ticks
     if (stateTickCounter > 30) {
-        Logger.log("[SlayerBot] No task received after 30 ticks. Retrying...");
+        Game.sendGameMessage("[SlayerBot] No task received after 30 ticks. Retrying...", "Bot");
         state = STATES.TALK_TO_MASTER;
     }
 }
@@ -6139,13 +6110,13 @@ function handleReadTask() {
     currentTaskMonster = findMonster(currentTaskName);
 
     if (currentTaskMonster) {
-        Logger.log("[SlayerBot] Task identified: " + currentTaskMonster.name +
+        Game.sendGameMessage("[SlayerBot] Task identified: " + currentTaskMonster.name +
                    " at " + currentTaskMonster.locationName +
-                   " (Slayer req: " + currentTaskMonster.slayerReq + ")");
+                   " (Slayer req: " + currentTaskMonster.slayerReq + ")", "Bot");
         updateOverlay("Task: " + currentTaskMonster.name, currentTaskMonster.name, killsLeft);
         state = STATES.CHECK_SUPPLIES;
     } else {
-        Logger.log("[SlayerBot] WARNING: Unknown monster '" + currentTaskName + "'! Cannot proceed.");
+        Game.sendGameMessage("[SlayerBot] WARNING: Unknown monster '" + currentTaskName + "'! Cannot proceed.", "Bot");
         updateOverlay("ERROR: Unknown task '" + currentTaskName + "'", currentTaskName, killsLeft);
         // Try to continue — walk to GE and wait
         state = STATES.IDLE;
@@ -6161,20 +6132,20 @@ function handleCheckSupplies() {
     needsRestock = false;
 
     // Check food
-    let foodCount = countFood();
+    var foodCount = countFood();
     if (foodCount < 5) {
-        Logger.log("[SlayerBot] Low food: " + foodCount + " — need restock");
+        Game.sendGameMessage("[SlayerBot] Low food: " + foodCount + " — need restock", "Bot");
         needsRestock = true;
-        let foodName = config.foodType ? config.foodType.read() : "Lobster";
+        var foodName = config.foodType ? config.foodType.read() : "Lobster";
         missingItems.push({ name: foodName, id: FOOD[foodName] ? FOOD[foodName].id : 379, quantity: 15 });
     }
 
     // Check prayer potions (if prayer is enabled)
-    let usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
     if (usePrayer && prayerLevel > 1) {
-        let prayerPotCount = countPrayerPots();
+        var prayerPotCount = countPrayerPots();
         if (prayerPotCount < 2) {
-            Logger.log("[SlayerBot] Low prayer pots: " + prayerPotCount + " — need restock");
+            Game.sendGameMessage("[SlayerBot] Low prayer pots: " + prayerPotCount + " — need restock", "Bot");
             needsRestock = true;
             missingItems.push({ name: "Prayer potion(4)", id: 2434, quantity: 4 });
         }
@@ -6182,30 +6153,30 @@ function handleCheckSupplies() {
 
     // Check special items for current task
     if (currentTaskMonster.specialItem && currentTaskMonster.specialMechanic === "finish") {
-        let specialCount = Game.info.inventory.count(currentTaskMonster.specialItem);
+        var specialCount = Game.info.inventory.count(currentTaskMonster.specialItem);
         if (specialCount < killsLeft) {
-            Logger.log("[SlayerBot] Need " + currentTaskMonster.specialItemName + ": have " + specialCount + ", need " + killsLeft);
+            Game.sendGameMessage("[SlayerBot] Need " + currentTaskMonster.specialItemName + ": have " + specialCount + ", need " + killsLeft, "Bot");
             needsRestock = true;
             missingItems.push({ name: currentTaskMonster.specialItemName, id: currentTaskMonster.specialItem, quantity: killsLeft });
         }
     }
 
     if (needsRestock) {
-        Logger.log("[SlayerBot] Restocking needed. Missing " + missingItems.length + " item types.");
+        Game.sendGameMessage("[SlayerBot] Restocking needed. Missing " + missingItems.length + " item types.", "Bot");
 
         // ─── SELF-SUFFICIENCY CHECK ───
         // Before going to bank/GE, check if we can afford it
-        let ssPlan = needsSelfSufficiency(missingItems);
+        var ssPlan = needsSelfSufficiency(missingItems);
         if (ssPlan) {
-            Logger.log("[SlayerBot] Cannot afford GE! Entering self-sufficiency mode.");
+            Game.sendGameMessage("[SlayerBot] Cannot afford GE! Entering self-sufficiency mode.", "Bot");
             enterSelfSufficiency(ssPlan);
             return;
         }
 
-        Logger.log("[SlayerBot] Can afford GE purchases. Proceeding to bank.");
+        Game.sendGameMessage("[SlayerBot] Can afford GE purchases. Proceeding to bank.", "Bot");
         state = STATES.WALK_TO_BANK;
     } else {
-        Logger.log("[SlayerBot] Supplies OK! Heading to task.");
+        Game.sendGameMessage("[SlayerBot] Supplies OK! Heading to task.", "Bot");
         state = STATES.WALK_TO_TASK;
     }
 }
@@ -6216,7 +6187,7 @@ function handleCheckSupplies() {
 function handleWalkToBank() {
     // Determine bank target
     if (!bankTarget) {
-        let pos = Game.localPlayer.getPosition();
+        var pos = Game.localPlayer.getPosition();
         if (currentTaskMonster && currentTaskMonster.bankNearby) {
             bankTarget = currentTaskMonster.bankNearby;
         } else {
@@ -6225,12 +6196,12 @@ function handleWalkToBank() {
         if (!bankTarget) {
             bankTarget = { x: 3164, y: 3487, plane: 0 }; // Default: GE
         }
-        Logger.log("[SlayerBot] Bank target: (" + bankTarget.x + ", " + bankTarget.y + ")");
+        Game.sendGameMessage("[SlayerBot] Bank target: (" + bankTarget.x + ", " + bankTarget.y + ")", "Bot");
     }
 
     // Check if arrived
     if (isNear(bankTarget.x, bankTarget.y, 8)) {
-        Logger.log("[SlayerBot] Arrived at bank.");
+        Game.sendGameMessage("[SlayerBot] Arrived at bank.", "Bot");
         state = STATES.BANK_SUPPLIES;
         return;
     }
@@ -6249,7 +6220,7 @@ function handleWalkToBank() {
         try {
             PlayerHelper.webWalkTo(bankTarget.x, bankTarget.y, bankTarget.plane);
         } catch (e) {
-            Logger.log("[SlayerBot] Walk to bank error: " + e);
+            Game.sendGameMessage("[SlayerBot] Walk to bank error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6266,17 +6237,17 @@ function handleBankSupplies() {
     Utility.invokeLater(function() {
         try {
             // Open nearest bank booth/chest
-            let bankBooth = Game.info.gameObject.getNearest(10583); // Bank booth
+            var bankBooth = Game.info.gameObject.getNearest(10583); // Bank booth
             if (!bankBooth) bankBooth = Game.info.gameObject.getNearest(12308); // Bank chest
             if (!bankBooth) bankBooth = Game.info.gameObject.getNearest(10355); // Another booth type
 
             if (!bankBooth) {
-                Logger.log("[SlayerBot] No bank found nearby! Trying NPC banker...");
-                let banker = Game.info.npc.getNearest(1618); // Banker NPC
+                Game.sendGameMessage("[SlayerBot] No bank found nearby! Trying NPC banker...", "Bot");
+                var banker = Game.info.npc.getNearest(1618); // Banker NPC
                 if (banker) {
                     banker.action(MenuAction.NPC_FIRST_OPTION);
                 } else {
-                    Logger.log("[SlayerBot] No bank or banker found!");
+                    Game.sendGameMessage("[SlayerBot] No bank or banker found!", "Bot");
                     isExecuting = false;
                     state = STATES.WALK_TO_BANK;
                     bankTarget = null; // Reset to re-find bank
@@ -6286,7 +6257,7 @@ function handleBankSupplies() {
                 Game.interact.gameObject.action(bankBooth, MenuAction.GAME_OBJECT_SECOND_OPTION);
             }
 
-            Logger.log("[SlayerBot] Opening bank...");
+            Game.sendGameMessage("[SlayerBot] Opening bank...", "Bot");
 
             // Wait for bank to open, then manage inventory
             Utility.invokeLater(function() {
@@ -6303,7 +6274,7 @@ function handleBankSupplies() {
                         try {
                             handleSSBankPhase();
                         } catch (e) {
-                            Logger.log("[SlayerBot] SS bank phase error: " + e);
+                            Game.sendGameMessage("[SlayerBot] SS bank phase error: " + e, "Bot");
                             gatherBankPhase = 0;
                         }
                         isExecuting = false;
@@ -6312,23 +6283,23 @@ function handleBankSupplies() {
 
                     // Deposit all
                     Game.interact.bank.depositAll();
-                    Logger.log("[SlayerBot] Deposited all items.");
+                    Game.sendGameMessage("[SlayerBot] Deposited all items.", "Bot");
 
                     Utility.invokeLater(function() {
                         try {
                             // Withdraw food
-                            let foodName = config.foodType ? config.foodType.read() : "Lobster";
-                            let foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
+                            var foodName = config.foodType ? config.foodType.read() : "Lobster";
+                            var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
                             Game.interact.bank.withdraw(foodId, 14);
-                            Logger.log("[SlayerBot] Withdrew 14x " + foodName);
+                            Game.sendGameMessage("[SlayerBot] Withdrew 14x " + foodName, "Bot");
 
                             Utility.invokeLater(function() {
                                 try {
                                     // Withdraw prayer potions if needed
-                                    let usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+                                    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
                                     if (usePrayer && prayerLevel > 1) {
                                         Game.interact.bank.withdraw(2434, 4); // Prayer pot (4)
-                                        Logger.log("[SlayerBot] Withdrew 4x Prayer potion(4)");
+                                        Game.sendGameMessage("[SlayerBot] Withdrew 4x Prayer potion(4)", "Bot");
                                     }
 
                                     Utility.invokeLater(function() {
@@ -6337,16 +6308,16 @@ function handleBankSupplies() {
                                             if (currentTaskMonster && currentTaskMonster.specialItem) {
                                                 if (currentTaskMonster.specialMechanic === "finish") {
                                                     // Need enough for remaining kills
-                                                    let qty = Math.min(killsLeft, 28);
+                                                    var qty = Math.min(killsLeft, 28);
                                                     Game.interact.bank.withdraw(currentTaskMonster.specialItem, qty);
-                                                    Logger.log("[SlayerBot] Withdrew " + qty + "x " + currentTaskMonster.specialItemName);
+                                                    Game.sendGameMessage("[SlayerBot] Withdrew " + qty + "x " + currentTaskMonster.specialItemName, "Bot");
                                                 } else if (currentTaskMonster.specialMechanic === "equip") {
                                                     Game.interact.bank.withdraw(currentTaskMonster.specialItem, 1);
-                                                    Logger.log("[SlayerBot] Withdrew 1x " + currentTaskMonster.specialItemName);
+                                                    Game.sendGameMessage("[SlayerBot] Withdrew 1x " + currentTaskMonster.specialItemName, "Bot");
                                                 } else if (currentTaskMonster.specialMechanic === "weapon") {
                                                     // Withdraw leaf-bladed sword
                                                     Game.interact.bank.withdraw(11902, 1);
-                                                    Logger.log("[SlayerBot] Withdrew leaf-bladed sword");
+                                                    Game.sendGameMessage("[SlayerBot] Withdrew leaf-bladed sword", "Bot");
                                                 }
                                             }
 
@@ -6359,59 +6330,59 @@ function handleBankSupplies() {
                                                     Utility.invokeLater(function() {
                                                         try {
                                                             Game.interact.bank.close();
-                                                            Logger.log("[SlayerBot] Bank closed. Equipping gear...");
+                                                            Game.sendGameMessage("[SlayerBot] Bank closed. Equipping gear...", "Bot");
 
                                                             // Equip gear from inventory
                                                             Utility.invokeLater(function() {
                                                                 try {
                                                                     equipGearFromInventory();
-                                                                    Logger.log("[SlayerBot] Gear equipped. Ready for task.");
+                                                                    Game.sendGameMessage("[SlayerBot] Gear equipped. Ready for task.", "Bot");
                                                                     bankTarget = null;
                                                                     needsRestock = false;
                                                                     state = STATES.WALK_TO_TASK;
                                                                 } catch (e) {
-                                                                    Logger.log("[SlayerBot] Equip error: " + e);
+                                                                    Game.sendGameMessage("[SlayerBot] Equip error: " + e, "Bot");
                                                                     state = STATES.WALK_TO_TASK; // Try anyway
                                                                 }
                                                                 isExecuting = false;
                                                             }, Utility.getDelay());
                                                         } catch (e) {
-                                                            Logger.log("[SlayerBot] Bank close error: " + e);
+                                                            Game.sendGameMessage("[SlayerBot] Bank close error: " + e, "Bot");
                                                             isExecuting = false;
                                                             state = STATES.WALK_TO_TASK;
                                                         }
                                                     }, Utility.getDelay());
                                                 } catch (e) {
-                                                    Logger.log("[SlayerBot] Gear withdraw error: " + e);
+                                                    Game.sendGameMessage("[SlayerBot] Gear withdraw error: " + e, "Bot");
                                                     isExecuting = false;
                                                     state = STATES.WALK_TO_TASK;
                                                 }
                                             }, Utility.getDelay());
                                         } catch (e) {
-                                            Logger.log("[SlayerBot] Special item withdraw error: " + e);
+                                            Game.sendGameMessage("[SlayerBot] Special item withdraw error: " + e, "Bot");
                                             isExecuting = false;
                                             state = STATES.WALK_TO_TASK;
                                         }
                                     }, Utility.getDelay());
                                 } catch (e) {
-                                    Logger.log("[SlayerBot] Prayer pot withdraw error: " + e);
+                                    Game.sendGameMessage("[SlayerBot] Prayer pot withdraw error: " + e, "Bot");
                                     isExecuting = false;
                                     state = STATES.WALK_TO_TASK;
                                 }
                             }, Utility.getDelay());
                         } catch (e) {
-                            Logger.log("[SlayerBot] Food withdraw error: " + e);
+                            Game.sendGameMessage("[SlayerBot] Food withdraw error: " + e, "Bot");
                             isExecuting = false;
                             state = STATES.WALK_TO_TASK;
                         }
                     }, Utility.getDelay());
                 } catch (e) {
-                    Logger.log("[SlayerBot] Deposit error: " + e);
+                    Game.sendGameMessage("[SlayerBot] Deposit error: " + e, "Bot");
                     isExecuting = false;
                 }
             }, Utility.getDelay() * 2); // Extra delay for bank to open
         } catch (e) {
-            Logger.log("[SlayerBot] Bank open error: " + e);
+            Game.sendGameMessage("[SlayerBot] Bank open error: " + e, "Bot");
             isExecuting = false;
             state = STATES.WALK_TO_BANK;
             bankTarget = null;
@@ -6424,35 +6395,35 @@ function handleBankSupplies() {
 // ─────────────────────────────────────────────────────────────────────────────
 function withdrawBestGear() {
     // Determine if task needs special weapon
-    let needsLeafBlade = currentTaskMonster && currentTaskMonster.specialMechanic === "weapon";
+    var needsLeafBlade = currentTaskMonster && currentTaskMonster.specialMechanic === "weapon";
 
     if (!needsLeafBlade) {
         // Withdraw best melee weapon
-        let bestWeapon = getBestWeapon(attackLevel);
+        var bestWeapon = getBestWeapon(attackLevel);
         Game.interact.bank.withdraw(bestWeapon.id, 1);
-        Logger.log("[SlayerBot] Withdrew weapon: " + bestWeapon.name);
+        Game.sendGameMessage("[SlayerBot] Withdrew weapon: " + bestWeapon.name, "Bot");
     }
 
     // Withdraw best body
-    let bestBody = getBestBody(defenceLevel);
+    var bestBody = getBestBody(defenceLevel);
     Game.interact.bank.withdraw(bestBody.id, 1);
 
     // Withdraw best legs
-    let bestLegs = getBestLegs(defenceLevel);
+    var bestLegs = getBestLegs(defenceLevel);
     Game.interact.bank.withdraw(bestLegs.id, 1);
 
     // Withdraw best shield (if not using mirror shield)
-    let needsMirrorShield = currentTaskMonster && currentTaskMonster.specialItem === 4156;
+    var needsMirrorShield = currentTaskMonster && currentTaskMonster.specialItem === 4156;
     if (!needsMirrorShield) {
-        let bestShield = getBestShield(defenceLevel);
+        var bestShield = getBestShield(defenceLevel);
         Game.interact.bank.withdraw(bestShield.id, 1);
     }
 
     // Withdraw boots
-    let bestBoots = getBestBoots(defenceLevel);
+    var bestBoots = getBestBoots(defenceLevel);
     Game.interact.bank.withdraw(bestBoots.id, 1);
 
-    Logger.log("[SlayerBot] Withdrew full armor set.");
+    Game.sendGameMessage("[SlayerBot] Withdrew full armor set.", "Bot");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -6460,29 +6431,29 @@ function withdrawBestGear() {
 // ─────────────────────────────────────────────────────────────────────────────
 function equipGearFromInventory() {
     // Build list of all gear IDs to try equipping
-    let gearIds = [];
+    var gearIds = [];
 
     // Add all weapon IDs
-    for (let i = 0; i < MELEE_WEAPONS.length; i++) {
+    for (var i = 0; i < MELEE_WEAPONS.length; i++) {
         gearIds.push(MELEE_WEAPONS[i].id);
     }
     // Add leaf-bladed weapons
     gearIds.push(11902, 20727);
 
     // Add all armor IDs
-    for (let i = 0; i < HELMETS.length; i++) gearIds.push(HELMETS[i].id);
-    for (let i = 0; i < PLATEBODIES.length; i++) gearIds.push(PLATEBODIES[i].id);
-    for (let i = 0; i < PLATELEGS.length; i++) gearIds.push(PLATELEGS[i].id);
-    for (let i = 0; i < SHIELDS.length; i++) gearIds.push(SHIELDS[i].id);
-    for (let i = 0; i < BOOTS.length; i++) gearIds.push(BOOTS[i].id);
-    for (let i = 0; i < GLOVES.length; i++) gearIds.push(GLOVES[i].id);
-    for (let i = 0; i < AMULETS.length; i++) gearIds.push(AMULETS[i].id);
+    for (var i = 0; i < HELMETS.length; i++) gearIds.push(HELMETS[i].id);
+    for (var i = 0; i < PLATEBODIES.length; i++) gearIds.push(PLATEBODIES[i].id);
+    for (var i = 0; i < PLATELEGS.length; i++) gearIds.push(PLATELEGS[i].id);
+    for (var i = 0; i < SHIELDS.length; i++) gearIds.push(SHIELDS[i].id);
+    for (var i = 0; i < BOOTS.length; i++) gearIds.push(BOOTS[i].id);
+    for (var i = 0; i < GLOVES.length; i++) gearIds.push(GLOVES[i].id);
+    for (var i = 0; i < AMULETS.length; i++) gearIds.push(AMULETS[i].id);
 
     // Add special items that need equipping
     gearIds.push(4156, 4168, 4166, 4164, 8923, 7053); // Mirror shield, nose peg, earmuffs, face mask, witchwood, lantern
 
     // Equip anything found in inventory
-    for (let i = 0; i < gearIds.length; i++) {
+    for (var i = 0; i < gearIds.length; i++) {
         if (Game.info.inventory.search(gearIds[i]) !== -1) {
             Game.interact.inventory.wield(gearIds[i]);
         }
@@ -6494,7 +6465,7 @@ function equipGearFromInventory() {
 // ─────────────────────────────────────────────────────────────────────────────
 function handleWalkToGE() {
     if (isNear(GE.LOCATION.x, GE.LOCATION.y, 10)) {
-        Logger.log("[SlayerBot] Arrived at GE.");
+        Game.sendGameMessage("[SlayerBot] Arrived at GE.", "Bot");
         state = STATES.BUY_AT_GE;
         return;
     }
@@ -6511,7 +6482,7 @@ function handleWalkToGE() {
         try {
             PlayerHelper.webWalkTo(GE.LOCATION.x, GE.LOCATION.y, GE.LOCATION.plane);
         } catch (e) {
-            Logger.log("[SlayerBot] Walk to GE error: " + e);
+            Game.sendGameMessage("[SlayerBot] Walk to GE error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6526,7 +6497,7 @@ function handleBuyAtGE() {
     // GE interaction is complex — simplified approach
     // Open GE booth and buy missing items one at a time
     if (missingItems.length === 0) {
-        Logger.log("[SlayerBot] Nothing to buy at GE. Going to bank.");
+        Game.sendGameMessage("[SlayerBot] Nothing to buy at GE. Going to bank.", "Bot");
         state = STATES.WALK_TO_BANK;
         bankTarget = null;
         return;
@@ -6537,46 +6508,46 @@ function handleBuyAtGE() {
     Utility.invokeLater(function() {
         try {
             // Open GE booth
-            let geBooth = Game.info.gameObject.getNearest(GE.BOOTH_IDS[0]);
+            var geBooth = Game.info.gameObject.getNearest(GE.BOOTH_IDS[0]);
             if (geBooth) {
                 Game.interact.gameObject.action(geBooth, MenuAction.GAME_OBJECT_SECOND_OPTION);
-                Logger.log("[SlayerBot] Opened GE booth. Buying items...");
+                Game.sendGameMessage("[SlayerBot] Opened GE booth. Buying items...", "Bot");
 
                 // For each missing item, attempt to buy
                 // This is simplified — in practice, GE widget interaction is complex
                 Utility.invokeLater(function() {
                     try {
-                        for (let i = 0; i < missingItems.length; i++) {
-                            let item = missingItems[i];
-                            Logger.log("[SlayerBot] Attempting to buy: " + item.quantity + "x " + item.name + " (ID: " + item.id + ")");
+                        for (var i = 0; i < missingItems.length; i++) {
+                            var item = missingItems[i];
+                            Game.sendGameMessage("[SlayerBot] Attempting to buy: " + item.quantity + "x " + item.name + " (ID: " + item.id + ")", "Bot");
                             // GE buy widget interaction would go here
                             // Widget.interact(GE.BUY_BUTTON.group, GE.BUY_BUTTON.child, ...)
                         }
                         missingItems = [];
-                        Logger.log("[SlayerBot] GE purchases attempted. Waiting for completion...");
+                        Game.sendGameMessage("[SlayerBot] GE purchases attempted. Waiting for completion...", "Bot");
 
                         // Wait for offers to complete, then collect
                         Utility.invokeLater(function() {
                             // Collect completed offers
-                            Logger.log("[SlayerBot] Collecting GE offers...");
+                            Game.sendGameMessage("[SlayerBot] Collecting GE offers...", "Bot");
                             state = STATES.WALK_TO_BANK;
                             bankTarget = null;
                             isExecuting = false;
                         }, Utility.getDelay() * 5);
                     } catch (e) {
-                        Logger.log("[SlayerBot] GE buy error: " + e);
+                        Game.sendGameMessage("[SlayerBot] GE buy error: " + e, "Bot");
                         state = STATES.WALK_TO_BANK;
                         bankTarget = null;
                         isExecuting = false;
                     }
                 }, Utility.getDelay() * 2);
             } else {
-                Logger.log("[SlayerBot] GE booth not found!");
+                Game.sendGameMessage("[SlayerBot] GE booth not found!", "Bot");
                 isExecuting = false;
                 state = STATES.WALK_TO_GE;
             }
         } catch (e) {
-            Logger.log("[SlayerBot] GE error: " + e);
+            Game.sendGameMessage("[SlayerBot] GE error: " + e, "Bot");
             isExecuting = false;
             state = STATES.WALK_TO_BANK;
             bankTarget = null;
@@ -6589,16 +6560,16 @@ function handleBuyAtGE() {
 // ─────────────────────────────────────────────────────────────────────────────
 function handleWalkToTask() {
     if (!currentTaskMonster) {
-        Logger.log("[SlayerBot] No task monster set! Going to select master.");
+        Game.sendGameMessage("[SlayerBot] No task monster set! Going to select master.", "Bot");
         state = STATES.SELECT_MASTER;
         return;
     }
 
-    let taskLoc = currentTaskMonster.location;
+    var taskLoc = currentTaskMonster.location;
 
     // Check if arrived
     if (isNear(taskLoc.x, taskLoc.y, 15)) {
-        Logger.log("[SlayerBot] Arrived at task location: " + currentTaskMonster.locationName);
+        Game.sendGameMessage("[SlayerBot] Arrived at task location: " + currentTaskMonster.locationName, "Bot");
         updateOverlay("Fighting " + currentTaskMonster.name, currentTaskMonster.name, killsLeft);
         state = STATES.FIGHT_TASK;
         return;
@@ -6617,10 +6588,10 @@ function handleWalkToTask() {
     Utility.invokeLater(function() {
         try {
             PlayerHelper.webWalkTo(taskLoc.x, taskLoc.y, taskLoc.plane);
-            Logger.log("[SlayerBot] Walking to " + currentTaskMonster.locationName +
-                       " (" + taskLoc.x + ", " + taskLoc.y + ", " + taskLoc.plane + ")");
+            Game.sendGameMessage("[SlayerBot] Walking to " + currentTaskMonster.locationName +
+                       " (" + taskLoc.x + ", " + taskLoc.y + ", " + taskLoc.plane + ")", "Bot");
         } catch (e) {
-            Logger.log("[SlayerBot] Walk to task error: " + e);
+            Game.sendGameMessage("[SlayerBot] Walk to task error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6637,46 +6608,46 @@ function handleFightTask() {
 
     // ─── CHECK IF TASK IS COMPLETE ───
     if (killsLeft <= 0) {
-        Logger.log("[SlayerBot] Task complete! Killed all " + currentTaskMonster.name);
+        Game.sendGameMessage("[SlayerBot] Task complete! Killed all " + currentTaskMonster.name, "Bot");
         state = STATES.TASK_COMPLETE;
         return;
     }
 
     // ─── DEATH CHECK ───
-    let currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
+    var currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
     if (currentHP <= 0 || isAtDeathSpawn()) {
-        Logger.log("[SlayerBot] Death detected!");
+        Game.sendGameMessage("[SlayerBot] Death detected!", "Bot");
         deathDetected = true;
         return;
     }
 
     // ─── EAT FOOD CHECK ───
-    let eatPercent = config.eatPercent ? config.eatPercent.read() : 50;
-    let hpPercent = (currentHP / hitpointsLevel) * 100;
+    var eatPercent = config.eatPercent ? config.eatPercent.read() : 50;
+    var hpPercent = (currentHP / hitpointsLevel) * 100;
     if (hpPercent <= eatPercent) {
-        let foodCount = countFood();
+        var foodCount = countFood();
         if (foodCount > 0) {
             eatFood();
             return;
         } else {
             // Out of food — need to bank
-            Logger.log("[SlayerBot] Out of food! Going to bank.");
+            Game.sendGameMessage("[SlayerBot] Out of food! Going to bank.", "Bot");
             state = STATES.CHECK_SUPPLIES;
             return;
         }
     }
 
     // ─── PRAYER CHECK ───
-    let usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
     if (usePrayer && prayerLevel > 1) {
-        let currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
+        var currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
         if (currentPrayer > 0 && currentPrayer < 20) {
             drinkPrayerPot();
             return;
         }
         if (currentPrayer <= 0) {
             // Prayer drained — try to drink pot or continue without prayer
-            let potCount = countPrayerPots();
+            var potCount = countPrayerPots();
             if (potCount > 0) {
                 drinkPrayerPot();
                 return;
@@ -6690,9 +6661,9 @@ function handleFightTask() {
     // ─── SPECIAL FINISH CHECK ───
     // Check if current target needs a finish mechanic (gargoyle, rock slug, etc.)
     if (currentTaskMonster.specialMechanic === "finish") {
-        let target = Game.localPlayer.getInteracting();
+        var target = Game.localPlayer.getInteracting();
         if (target && target.getHealthRatio) {
-            let healthRatio = target.getHealthRatio();
+            var healthRatio = target.getHealthRatio();
             // HealthRatio of 0 or very low means it's ready for the finish item
             if (healthRatio > 0 && healthRatio <= 10) {
                 handleSpecialFinish();
@@ -6702,11 +6673,11 @@ function handleFightTask() {
     }
 
     // ─── LOOT CHECK ───
-    let lootEnabled = config.lootEnabled ? config.lootEnabled.read() : true;
+    var lootEnabled = config.lootEnabled ? config.lootEnabled.read() : true;
     if (lootEnabled && !Game.localPlayer.isInteracting()) {
         // Check for loot on ground
-        let lootMinValue = config.lootMinValue ? config.lootMinValue.read() : 100;
-        let lootItem = Game.info.groundItems.getNearest();
+        var lootMinValue = config.lootMinValue ? config.lootMinValue.read() : 100;
+        var lootItem = Game.info.groundItems.getNearest();
         if (lootItem && Game.info.inventory.count(-1) < 28) {
             // Pick up valuable loot
             pickUpLoot();
@@ -6715,9 +6686,9 @@ function handleFightTask() {
     }
 
     // ─── BURY BONES CHECK ───
-    let buryBones = config.buryBones ? config.buryBones.read() : false;
+    var buryBones = config.buryBones ? config.buryBones.read() : false;
     if (buryBones && !Game.localPlayer.isInteracting()) {
-        for (let i = 0; i < ALL_BONE_IDS.length; i++) {
+        for (var i = 0; i < ALL_BONE_IDS.length; i++) {
             if (Game.info.inventory.search(ALL_BONE_IDS[i]) !== -1) {
                 buryBone(ALL_BONE_IDS[i]);
                 return;
@@ -6748,10 +6719,10 @@ function attackNearest() {
 
     Utility.invokeLater(function() {
         try {
-            let target = null;
+            var target = null;
 
             // Try each NPC ID for the task
-            for (let i = 0; i < currentTaskMonster.npcIds.length; i++) {
+            for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
                 target = Game.info.npc.getNearest(currentTaskMonster.npcIds[i]);
                 if (target && !target.isDead() && !target.isInteracting()) {
                     break;
@@ -6761,22 +6732,22 @@ function attackNearest() {
 
             if (target) {
                 Game.interact.npc.attack(target);
-                Logger.log("[SlayerBot] Attacking " + currentTaskMonster.name + " (NPC ID: " + target.getId() + ")");
+                Game.sendGameMessage("[SlayerBot] Attacking " + currentTaskMonster.name + " (NPC ID: " + target.getId() + ")", "Bot");
             } else {
                 // No target found — might need to move around
-                Logger.log("[SlayerBot] No " + currentTaskMonster.name + " found nearby. Waiting...");
+                Game.sendGameMessage("[SlayerBot] No " + currentTaskMonster.name + " found nearby. Waiting...", "Bot");
 
                 // If stuck for a while, try walking to exact task location
                 if (stateTickCounter > 30 && stateTickCounter % 15 === 0) {
-                    let loc = currentTaskMonster.location;
+                    var loc = currentTaskMonster.location;
                     PlayerHelper.webWalkTo(loc.x + Math.floor(Math.random() * 6 - 3),
                                            loc.y + Math.floor(Math.random() * 6 - 3),
                                            loc.plane);
-                    Logger.log("[SlayerBot] Walking closer to task area...");
+                    Game.sendGameMessage("[SlayerBot] Walking closer to task area...", "Bot");
                 }
             }
         } catch (e) {
-            Logger.log("[SlayerBot] Attack error: " + e);
+            Game.sendGameMessage("[SlayerBot] Attack error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6790,25 +6761,25 @@ function eatFood() {
 
     Utility.invokeLater(function() {
         try {
-            let foodName = config.foodType ? config.foodType.read() : "Lobster";
-            let foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
+            var foodName = config.foodType ? config.foodType.read() : "Lobster";
+            var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
 
             // Try configured food first
             if (Game.info.inventory.search(foodId) !== -1) {
                 Game.interact.inventory.useItem(foodId);
-                Logger.log("[SlayerBot] Eating " + foodName);
+                Game.sendGameMessage("[SlayerBot] Eating " + foodName, "Bot");
             } else {
                 // Try any food
-                for (let i = 0; i < ALL_FOOD_IDS.length; i++) {
+                for (var i = 0; i < ALL_FOOD_IDS.length; i++) {
                     if (Game.info.inventory.search(ALL_FOOD_IDS[i]) !== -1) {
                         Game.interact.inventory.useItem(ALL_FOOD_IDS[i]);
-                        Logger.log("[SlayerBot] Eating food ID: " + ALL_FOOD_IDS[i]);
+                        Game.sendGameMessage("[SlayerBot] Eating food ID: " + ALL_FOOD_IDS[i], "Bot");
                         break;
                     }
                 }
             }
         } catch (e) {
-            Logger.log("[SlayerBot] Eat error: " + e);
+            Game.sendGameMessage("[SlayerBot] Eat error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6823,15 +6794,15 @@ function drinkPrayerPot() {
     Utility.invokeLater(function() {
         try {
             // Try highest dose first
-            for (let i = 0; i < PRAYER_POTION_IDS.length; i++) {
+            for (var i = 0; i < PRAYER_POTION_IDS.length; i++) {
                 if (Game.info.inventory.search(PRAYER_POTION_IDS[i]) !== -1) {
                     Game.interact.inventory.useItem(PRAYER_POTION_IDS[i]);
-                    Logger.log("[SlayerBot] Drank prayer potion (ID: " + PRAYER_POTION_IDS[i] + ")");
+                    Game.sendGameMessage("[SlayerBot] Drank prayer potion (ID: " + PRAYER_POTION_IDS[i] + ")", "Bot");
                     break;
                 }
             }
         } catch (e) {
-            Logger.log("[SlayerBot] Prayer pot error: " + e);
+            Game.sendGameMessage("[SlayerBot] Prayer pot error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6843,10 +6814,10 @@ function drinkPrayerPot() {
 function activateProtectionPrayer() {
     if (!currentTaskMonster || !currentTaskMonster.protectionPrayer) return;
 
-    let prayerInfo = PRAYERS[currentTaskMonster.protectionPrayer];
+    var prayerInfo = PRAYERS[currentTaskMonster.protectionPrayer];
     if (!prayerInfo) return;
 
-    let currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
+    var currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
     if (currentPrayer <= 0) return; // No prayer points
 
     // Check if prayer is already active (simplified — toggle check)
@@ -6854,7 +6825,7 @@ function activateProtectionPrayer() {
     // For now, we'll activate on every cycle (the API should handle already-active prayers gracefully)
     try {
         // Prayer tab widget: group 541, children are individual prayers
-        let prayerWidget = Client.getWidget(541, prayerInfo.widgetChild);
+        var prayerWidget = Client.getWidget(541, prayerInfo.widgetChild);
         if (prayerWidget) {
             // Only click if not already active (check sprite ID or text)
             // Simplified: just ensure it's on
@@ -6875,18 +6846,18 @@ function handleSpecialFinish() {
 
     Utility.invokeLater(function() {
         try {
-            let target = Game.localPlayer.getInteracting();
+            var target = Game.localPlayer.getInteracting();
             if (target) {
-                let itemId = currentTaskMonster.specialItem;
+                var itemId = currentTaskMonster.specialItem;
                 if (Game.info.inventory.search(itemId) !== -1) {
                     Game.interact.inventory.useItemOnNPC(itemId, target);
-                    Logger.log("[SlayerBot] Used " + currentTaskMonster.specialItemName + " on " + currentTaskMonster.name);
+                    Game.sendGameMessage("[SlayerBot] Used " + currentTaskMonster.specialItemName + " on " + currentTaskMonster.name, "Bot");
                 } else {
-                    Logger.log("[SlayerBot] Missing special item: " + currentTaskMonster.specialItemName + "!");
+                    Game.sendGameMessage("[SlayerBot] Missing special item: " + currentTaskMonster.specialItemName + "!", "Bot");
                 }
             }
         } catch (e) {
-            Logger.log("[SlayerBot] Special finish error: " + e);
+            Game.sendGameMessage("[SlayerBot] Special finish error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6900,13 +6871,13 @@ function pickUpLoot() {
 
     Utility.invokeLater(function() {
         try {
-            let lootItem = Game.info.groundItems.getNearest();
+            var lootItem = Game.info.groundItems.getNearest();
             if (lootItem) {
                 Game.interact.groundItems.pickUp(lootItem);
-                Logger.log("[SlayerBot] Picking up loot: " + lootItem.getId());
+                Game.sendGameMessage("[SlayerBot] Picking up loot: " + lootItem.getId(), "Bot");
             }
         } catch (e) {
-            Logger.log("[SlayerBot] Loot error: " + e);
+            Game.sendGameMessage("[SlayerBot] Loot error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6921,9 +6892,9 @@ function buryBone(boneId) {
     Utility.invokeLater(function() {
         try {
             Game.interact.inventory.useItem(boneId);
-            Logger.log("[SlayerBot] Burying bone: " + boneId);
+            Game.sendGameMessage("[SlayerBot] Burying bone: " + boneId, "Bot");
         } catch (e) {
-            Logger.log("[SlayerBot] Bury error: " + e);
+            Game.sendGameMessage("[SlayerBot] Bury error: " + e, "Bot");
         }
         isExecuting = false;
     }, Utility.getDelay());
@@ -6947,7 +6918,7 @@ function handleLootItems() {
 // HANDLE BURY BONES (state handler version)
 // ─────────────────────────────────────────────────────────────────────────────
 function handleBuryBones() {
-    for (let i = 0; i < ALL_BONE_IDS.length; i++) {
+    for (var i = 0; i < ALL_BONE_IDS.length; i++) {
         if (Game.info.inventory.search(ALL_BONE_IDS[i]) !== -1) {
             buryBone(ALL_BONE_IDS[i]);
             return;
@@ -6980,7 +6951,7 @@ function handleTaskComplete() {
     overlay.tasksCompleted.update("Tasks Done: " + tasksCompleted);
     updateOverlay("Task complete! (" + tasksCompleted + " total)", "Complete!", 0);
 
-    Logger.log("[SlayerBot] === TASK COMPLETE === Total tasks: " + tasksCompleted);
+    Game.sendGameMessage("[SlayerBot] === TASK COMPLETE === Total tasks: " + tasksCompleted, "Bot");
 
     // Reset task info
     currentTaskName = "";
@@ -6990,14 +6961,14 @@ function handleTaskComplete() {
     bankTarget = null;
 
     // Check if we have food to continue
-    let foodCount = countFood();
+    var foodCount = countFood();
     if (foodCount >= 5) {
         // Good to go — head straight to master
-        Logger.log("[SlayerBot] Enough food remaining. Going to master for new task.");
+        Game.sendGameMessage("[SlayerBot] Enough food remaining. Going to master for new task.", "Bot");
         state = STATES.SELECT_MASTER;
     } else {
         // Restock first
-        Logger.log("[SlayerBot] Low on supplies after task. Restocking first.");
+        Game.sendGameMessage("[SlayerBot] Low on supplies after task. Restocking first.", "Bot");
         state = STATES.WALK_TO_BANK;
     }
 }
@@ -7007,7 +6978,7 @@ function handleTaskComplete() {
 // ─────────────────────────────────────────────────────────────────────────────
 function handleDeath() {
     updateOverlay("DIED! Recovering...", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
-    Logger.log("[SlayerBot] === DEATH DETECTED === Recovering...");
+    Game.sendGameMessage("[SlayerBot] === DEATH DETECTED === Recovering...", "Bot");
 
     // After death, player respawns in Lumbridge
     // Need to: 1) go to bank, 2) re-gear, 3) go back to task
@@ -7026,7 +6997,7 @@ function handleDeath() {
 // ─────────────────────────────────────────────────────────────────────────────
 function handleLevelUp() {
     updateOverlay("Level up!", currentTaskMonster ? currentTaskMonster.name : "None", killsLeft);
-    Logger.log("[SlayerBot] Level up detected! Recalculating stats...");
+    Game.sendGameMessage("[SlayerBot] Level up detected! Recalculating stats...", "Bot");
 
     levelUpDetected = false;
 
@@ -7041,7 +7012,7 @@ function handleLevelUp() {
     slayerLevel = Client.getRealSkillLevels(Skill.SLAYER);
     combatLevel = getCombatLevel();
 
-    Logger.log("[SlayerBot] Updated combat level: " + combatLevel);
+    Game.sendGameMessage("[SlayerBot] Updated combat level: " + combatLevel, "Bot");
 
     // Continue what we were doing (should be FIGHT_TASK usually)
     if (currentTaskMonster && killsLeft > 0) {
@@ -7057,7 +7028,7 @@ function handleLevelUp() {
 function OnChatMessage(msg) {
     if (!msg) return;
 
-    let text = "";
+    var text = "";
     if (typeof msg === "string") {
         text = msg;
     } else if (msg.getMessage) {
@@ -7070,7 +7041,7 @@ function OnChatMessage(msg) {
 
     // ─── TASK ASSIGNMENT ───
     // "Your new task is to kill 135 Blue dragons."
-    let newTaskMatch = text.match(/[Yy]our (?:new )?task is to kill (\d+) (.+?)(?:\.|$)/);
+    var newTaskMatch = text.match(/[Yy]our (?:new )?task is to kill (\d+) (.+?)(?:\.|$)/);
     if (newTaskMatch) {
         killsLeft = parseInt(newTaskMatch[1], 10);
         currentTaskName = newTaskMatch[2].trim();
@@ -7080,7 +7051,7 @@ function OnChatMessage(msg) {
         }
         taskReceived = true;
 
-        Logger.log("[SlayerBot] NEW TASK: Kill " + killsLeft + " " + currentTaskName);
+        Game.sendGameMessage("[SlayerBot] NEW TASK: Kill " + killsLeft + " " + currentTaskName, "Bot");
         overlay.task.update("Task: " + currentTaskName);
         overlay.killsLeft.update("Kills Left: " + killsLeft);
         return;
@@ -7090,7 +7061,7 @@ function OnChatMessage(msg) {
     if (text.indexOf("You've completed your task") !== -1 ||
         text.indexOf("you have completed your task") !== -1 ||
         text.indexOf("You need something new to hunt") !== -1) {
-        Logger.log("[SlayerBot] Task completion confirmed via chat.");
+        Game.sendGameMessage("[SlayerBot] Task completion confirmed via chat.", "Bot");
         if (state === STATES.FIGHT_TASK || state === STATES.WALK_TO_TASK) {
             killsLeft = 0;
             state = STATES.TASK_COMPLETE;
@@ -7100,7 +7071,7 @@ function OnChatMessage(msg) {
 
     // ─── RETURN TO MASTER ───
     if (text.indexOf("return to a Slayer master") !== -1) {
-        Logger.log("[SlayerBot] Return to master message detected.");
+        Game.sendGameMessage("[SlayerBot] Return to master message detected.", "Bot");
         if (killsLeft <= 0) {
             state = STATES.TASK_COMPLETE;
         }
@@ -7109,7 +7080,7 @@ function OnChatMessage(msg) {
 
     // ─── KILL COUNT TRACKING ───
     // "Your Slayer task: Gargoyles (95 remaining)"
-    let taskRemaining = text.match(/[Ss]layer task[:\s]+(.+?)\s*\((\d+)\s*remaining\)/);
+    var taskRemaining = text.match(/[Ss]layer task[:\s]+(.+?)\s*\((\d+)\s*remaining\)/);
     if (taskRemaining) {
         currentTaskName = taskRemaining[1].trim();
         killsLeft = parseInt(taskRemaining[2], 10);
@@ -7120,15 +7091,15 @@ function OnChatMessage(msg) {
 
     // "You have completed your Slayer task! You were assigned X."
     // Kill count decrement (superior version)
-    let killUpdate = text.match(/[Ss]uperior foe has appeared/);
+    var killUpdate = text.match(/[Ss]uperior foe has appeared/);
     if (killUpdate) {
-        Logger.log("[SlayerBot] Superior monster appeared!");
+        Game.sendGameMessage("[SlayerBot] Superior monster appeared!", "Bot");
         return;
     }
 
     // ─── LEVEL UP ───
     if (text.indexOf("Congratulations") !== -1 && text.indexOf("level") !== -1) {
-        Logger.log("[SlayerBot] Level up detected: " + text);
+        Game.sendGameMessage("[SlayerBot] Level up detected: " + text, "Bot");
         levelUpDetected = true;
         return;
     }
@@ -7136,7 +7107,7 @@ function OnChatMessage(msg) {
     // ─── SLAYER LEVEL UP SPECIFICALLY ───
     if (text.indexOf("Slayer level") !== -1) {
         slayerLevel = Client.getRealSkillLevels(Skill.SLAYER);
-        Logger.log("[SlayerBot] Slayer level now: " + slayerLevel);
+        Game.sendGameMessage("[SlayerBot] Slayer level now: " + slayerLevel, "Bot");
         return;
     }
 
@@ -7151,7 +7122,7 @@ function OnChatMessage(msg) {
 function OnNPCLootAppeared(npc) {
     if (!currentTaskMonster || !npc) return;
 
-    let npcId = -1;
+    var npcId = -1;
     try {
         npcId = npc.getId();
     } catch (e) {
@@ -7159,8 +7130,8 @@ function OnNPCLootAppeared(npc) {
     }
 
     // Check if this NPC is our task
-    let isTask = false;
-    for (let i = 0; i < currentTaskMonster.npcIds.length; i++) {
+    var isTask = false;
+    for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
         if (currentTaskMonster.npcIds[i] === npcId) {
             isTask = true;
             break;
@@ -7171,31 +7142,11 @@ function OnNPCLootAppeared(npc) {
         killsLeft--;
         totalKills++;
         overlay.killsLeft.update("Kills Left: " + Math.max(0, killsLeft));
-        Logger.log("[SlayerBot] Kill tracked! " + killsLeft + " " + currentTaskMonster.name + " remaining. Total kills: " + totalKills);
+        Game.sendGameMessage("[SlayerBot] Kill tracked! " + killsLeft + " " + currentTaskMonster.name + " remaining. Total kills: " + totalKills, "Bot");
 
         if (killsLeft <= 0) {
-            Logger.log("[SlayerBot] All kills complete!");
+            Game.sendGameMessage("[SlayerBot] All kills complete!", "Bot");
             state = STATES.TASK_COMPLETE;
         }
     }
 }
-
-// =============================================================================
-// BONE IDS for burying
-// =============================================================================
-let ALL_BONE_IDS = [526, 528, 530, 532, 534, 536, 2859, 3183, 4834, 6812, 11943]; // Regular, big, baby dragon, bat, etc.
-
-// =============================================================================
-// ALL FOOD IDS (for fallback eating)
-// =============================================================================
-let ALL_FOOD_IDS = [315, 333, 329, 379, 373, 7946, 385, 391, 1891, 6705, 1893, 6883, 7060];
-
-// =============================================================================
-// PRAYER POTION IDS (4 dose -> 1 dose)
-// =============================================================================
-let PRAYER_POTION_IDS = [2434, 139, 141, 143];
-
-// =============================================================================
-// SUPER COMBAT POTION IDS
-// =============================================================================
-let SUPER_COMBAT_IDS = [12695, 12697, 12699, 12701];

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Slayer Bot v6 - Paste Helper</title>
+<style>
+body{font-family:Arial;background:#1a1a2e;color:#fff;padding:20px;text-align:center}
+h1{color:#e94560;font-size:28px}
+h2{color:#4ecdc4}
+.version{color:#ff6b6b;font-size:14px}
+button{background:#e94560;color:white;border:none;padding:20px 40px;font-size:20px;border-radius:10px;cursor:pointer;margin:10px;min-width:300px}
+button:hover{background:#ff6b6b}
+.copied{background:#4ecdc4!important}
+.loading{background:#666!important}
+.step{background:#16213e;padding:15px;margin:10px auto;border-radius:10px;max-width:700px;text-align:left}
+.warning{color:#ff6b6b;font-weight:bold}
+.count{color:#aaa;font-size:14px}
+#status{color:#4ecdc4;font-size:16px;margin:10px}
+</style>
+</head>
+<body>
+<h1>Slayer Bot v6 - DZ Paste Helper</h1>
+<p class="version">v6: ALL API methods corrected to match DZ documentation</p>
+<p class="warning">For each tab: Ctrl+A in DZ editor first, THEN Ctrl+V</p>
+<div id="status">Loading code files...</div>
+
+<div class="step">
+<h2>Step 1: CONFIG Tab (37 lines)</h2>
+<button id="btnConfig" onclick="copyCode('config','btnConfig')" disabled>Loading...</button>
+<p>Switch to CONFIG tab -> Ctrl+A -> Ctrl+V</p>
+</div>
+
+<div class="step">
+<h2>Step 2: UTILITIES Tab (5,607 lines)</h2>
+<button id="btnUtils" onclick="copyCode('utilities','btnUtils')" disabled>Loading...</button>
+<p>Switch to UTILITIES tab -> Ctrl+A -> Ctrl+V</p>
+</div>
+
+<div class="step">
+<h2>Step 3: MAIN Tab (1,506 lines)</h2>
+<button id="btnMain" onclick="copyCode('main','btnMain')" disabled>Loading...</button>
+<p>Switch to MAIN tab -> Ctrl+A -> Ctrl+V</p>
+</div>
+
+<div class="step">
+<h2>Step 4: Commit!</h2>
+<p>Click Commit -> Type "slayer bot v6" -> Submit</p>
+<p class="warning">Should show 0 errors!</p>
+</div>
+
+<script>
+var BASE = 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/';
+var codes = {};
+var loaded = 0;
+
+function load(name, file, btnId, label) {
+    fetch(BASE + file + '?t=' + Date.now())
+    .then(function(r) { return r.text(); })
+    .then(function(text) {
+        codes[name] = text;
+        loaded++;
+        var btn = document.getElementById(btnId);
+        btn.textContent = 'Copy ' + label + ' Code';
+        btn.disabled = false;
+        if (loaded === 3) {
+            document.getElementById('status').textContent = 'All files loaded! Ready to copy.';
+            document.getElementById('status').style.color = '#4ecdc4';
+        }
+    })
+    .catch(function(err) {
+        document.getElementById(btnId).textContent = 'LOAD FAILED - Refresh page';
+        document.getElementById('status').textContent = 'Error loading: ' + err.message;
+        document.getElementById('status').style.color = '#ff6b6b';
+    });
+}
+
+load('config', 'slayer_CONFIG.txt', 'btnConfig', 'CONFIG');
+load('utilities', 'slayer_UTILITIES.txt', 'btnUtils', 'UTILITIES');
+load('main', 'slayer_MAIN.txt', 'btnMain', 'MAIN');
+
+function copyCode(which, btnId) {
+    if (!codes[which]) return;
+    navigator.clipboard.writeText(codes[which]).then(function() {
+        var btn = document.getElementById(btnId);
+        var orig = btn.textContent;
+        btn.textContent = 'COPIED!';
+        btn.className = 'copied';
+        setTimeout(function() { btn.className = ''; btn.textContent = orig; }, 3000);
+    });
+}
+</script>
+</body>
+</html>

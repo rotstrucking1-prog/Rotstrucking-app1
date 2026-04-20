@@ -2,114 +2,76 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Slayer Bot v7 - Paste Helper</title>
+<title>Slayer Bot v8 - Paste Helper</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;background:#1a1a2e;color:#fff;padding:20px;text-align:center}
-h1{color:#e94560;font-size:28px}
-h2{color:#4ecdc4}
-.version{color:#ff6b6b;font-size:14px}
-button{background:#e94560;color:white;border:none;padding:20px 40px;font-size:20px;border-radius:10px;cursor:pointer;margin:10px;min-width:300px}
-button:hover{background:#ff6b6b}
-.copied{background:#4ecdc4!important}
-.loading{background:#666!important}
-.step{background:#16213e;padding:15px;margin:10px auto;border-radius:10px;max-width:700px;text-align:left}
-.warning{color:#ff6b6b;font-weight:bold}
-.count{color:#aaa;font-size:14px}
-#status{color:#4ecdc4;font-size:16px;margin:10px}
+body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; margin: 0; }
+h1 { color: #e94560; text-align: center; }
+.version { text-align: center; color: #0f3460; background: #e94560; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 20px; margin: 10px auto; max-width: 300px; }
+.btn { display: block; width: 90%; max-width: 500px; margin: 15px auto; padding: 20px; font-size: 22px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; text-align: center; }
+.btn-config { background: #16213e; color: #e94560; border: 3px solid #e94560; }
+.btn-util { background: #0f3460; color: #00d2ff; border: 3px solid #00d2ff; }
+.btn-main { background: #533483; color: #e94560; border: 3px solid #e94560; }
+.btn-commit { background: #e94560; color: white; border: 3px solid white; margin-top: 30px; }
+.btn:active { transform: scale(0.95); }
+.status { text-align: center; padding: 10px; font-size: 18px; color: #0f0; margin: 5px; }
+.info { text-align: center; color: #888; font-size: 14px; margin: 5px; }
+.error { color: #f00; }
 </style>
 </head>
 <body>
-<h1>Slayer Bot v7 - DZ Paste Helper</h1>
-<p class="version">v7: Fixed 16 more wrong API calls (Game.localPlayer, Client.getWidget, Game.interact.prayer, getPosition, getEquipment.search)</p>
-<p class="warning">For each tab: Ctrl+A in DZ editor first, THEN Ctrl+V</p>
-<div id="status">Loading code files...</div>
+<h1>SLAYER BOT PASTE HELPER</h1>
+<div class="version">VERSION 8</div>
+<div class="info">Fetches v8 code directly from GitHub (cache-busted)</div>
 
-<div class="step">
-<h2>Step 1: CONFIG Tab (37 lines)</h2>
-<button id="btnConfig" onclick="copyCode('config','btnConfig')" disabled>Loading...</button>
-<p>Switch to CONFIG tab -> Ctrl+A -> Ctrl+V</p>
-</div>
+<button class="btn btn-config" onclick="copyFile('CONFIG')">Copy CONFIG (38 lines)</button>
+<div id="status-CONFIG" class="status"></div>
 
-<div class="step">
-<h2>Step 2: UTILITIES Tab (5,609 lines)</h2>
-<button id="btnUtils" onclick="copyCode('utilities','btnUtils')" disabled>Loading...</button>
-<p>Switch to UTILITIES tab -> Ctrl+A -> Ctrl+V</p>
-</div>
+<button class="btn btn-util" onclick="copyFile('UTILITIES')">Copy UTILITIES (5,628 lines)</button>
+<div id="status-UTILITIES" class="status"></div>
 
-<div class="step">
-<h2>Step 3: MAIN Tab (1,506 lines)</h2>
-<button id="btnMain" onclick="copyCode('main','btnMain')" disabled>Loading...</button>
-<p>Switch to MAIN tab -> Ctrl+A -> Ctrl+V</p>
-</div>
+<button class="btn btn-main" onclick="copyFile('MAIN')">Copy MAIN (1,507 lines)</button>
+<div id="status-MAIN" class="status"></div>
 
-<div class="step">
-<h2>Step 4: Commit!</h2>
-<button id="btnCommit" onclick="copyCommit()" style="background:#4ecdc4;color:#1a1a2e;font-weight:bold">Copy Commit Message</button>
-<p>Click Commit in DZ -> Click in message field -> Ctrl+V -> Click green Commit button</p>
-<p class="warning">Should show 0 errors!</p>
-</div>
-
-<div class="step" id="previewBox" style="display:none">
-<h2>Preview (last copied)</h2>
-<pre id="preview" style="background:#0d0d1a;padding:10px;border-radius:5px;max-height:200px;overflow:auto;font-size:12px;text-align:left;white-space:pre-wrap"></pre>
-<p class="count" id="lineCount"></p>
-</div>
+<button class="btn btn-commit" onclick="copyCommit()">Copy Commit Message</button>
+<div id="status-commit" class="status"></div>
 
 <script>
-var BASE = 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/';
-var codes = {};
-var loaded = 0;
+var timestamp = Date.now();
+var baseUrl = 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/';
+var files = {
+    'CONFIG': 'slayer_CONFIG.txt',
+    'UTILITIES': 'slayer_UTILITIES.txt',
+    'MAIN': 'slayer_MAIN.txt'
+};
 
-function load(name, file, btnId, label) {
-    fetch(BASE + file + '?t=' + Date.now())
-    .then(function(r) { return r.text(); })
-    .then(function(text) {
-        codes[name] = text;
-        loaded++;
-        var btn = document.getElementById(btnId);
-        btn.textContent = 'Copy ' + label + ' Code';
-        btn.disabled = false;
-        if (loaded === 3) {
-            document.getElementById('status').textContent = 'All files loaded! Ready to copy.';
-            document.getElementById('status').style.color = '#4ecdc4';
-        }
-    })
-    .catch(function(err) {
-        document.getElementById(btnId).textContent = 'LOAD FAILED - Refresh page';
-        document.getElementById('status').textContent = 'Error loading: ' + err.message;
-        document.getElementById('status').style.color = '#ff6b6b';
-    });
-}
-
-load('config', 'slayer_CONFIG.txt', 'btnConfig', 'CONFIG');
-load('utilities', 'slayer_UTILITIES.txt', 'btnUtils', 'UTILITIES');
-load('main', 'slayer_MAIN.txt', 'btnMain', 'MAIN');
-
-function copyCode(which, btnId) {
-    if (!codes[which]) return;
-    navigator.clipboard.writeText(codes[which]).then(function() {
-        var btn = document.getElementById(btnId);
-        var orig = btn.textContent;
-        var lines = codes[which].split('\n').length;
-        btn.textContent = which.toUpperCase() + ' COPIED TO CLIPBOARD! (' + lines + ' lines)';
-        btn.className = 'copied';
-        document.getElementById('previewBox').style.display = 'block';
-        document.getElementById('preview').textContent = codes[which].substring(0, 500) + '\n...';
-        document.getElementById('lineCount').textContent = lines + ' lines total';
-        setTimeout(function() { btn.className = ''; btn.textContent = orig; }, 5000);
-    });
+function copyFile(tab) {
+    var statusEl = document.getElementById('status-' + tab);
+    statusEl.textContent = 'Fetching ' + tab + '...';
+    statusEl.className = 'status';
+    
+    fetch(baseUrl + files[tab] + '?v=8&t=' + timestamp + '&r=' + Math.random())
+        .then(function(r) { return r.text(); })
+        .then(function(text) {
+            return navigator.clipboard.writeText(text).then(function() {
+                var lines = text.split('\n').length;
+                statusEl.textContent = tab + ' COPIED! (' + lines + ' lines) - Now paste in DZ with Ctrl+A, Ctrl+V';
+                statusEl.className = 'status';
+            });
+        })
+        .catch(function(err) {
+            statusEl.textContent = 'ERROR: ' + err;
+            statusEl.className = 'status error';
+        });
 }
 
 function copyCommit() {
-    navigator.clipboard.writeText('slayer bot v7').then(function() {
-        var btn = document.getElementById('btnCommit');
-        btn.textContent = 'COMMIT MESSAGE COPIED! ("slayer bot v7")';
-        btn.className = 'copied';
-        btn.style.background = '#4ecdc4';
-        document.getElementById('previewBox').style.display = 'block';
-        document.getElementById('preview').textContent = 'slayer bot v6';
-        document.getElementById('lineCount').textContent = 'Paste this into the commit message field';
-        setTimeout(function() { btn.className = ''; btn.textContent = 'Copy Commit Message'; btn.style.background = '#4ecdc4'; }, 5000);
+    var statusEl = document.getElementById('status-commit');
+    navigator.clipboard.writeText('slayer bot v8').then(function() {
+        statusEl.textContent = '"slayer bot v8" COPIED! Paste in DZ commit field with Ctrl+V';
+    }).catch(function(err) {
+        statusEl.textContent = 'ERROR: ' + err;
+        statusEl.className = 'status error';
     });
 }
 </script>

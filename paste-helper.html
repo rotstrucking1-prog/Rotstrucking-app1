@@ -1,78 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Slayer Bot v8 - Paste Helper</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DZ Paste Helper v9</title>
 <style>
-body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; margin: 0; }
-h1 { color: #e94560; text-align: center; }
-.version { text-align: center; color: #0f3460; background: #e94560; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 20px; margin: 10px auto; max-width: 300px; }
-.btn { display: block; width: 90%; max-width: 500px; margin: 15px auto; padding: 20px; font-size: 22px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; text-align: center; }
-.btn-config { background: #16213e; color: #e94560; border: 3px solid #e94560; }
-.btn-util { background: #0f3460; color: #00d2ff; border: 3px solid #00d2ff; }
-.btn-main { background: #533483; color: #e94560; border: 3px solid #e94560; }
-.btn-commit { background: #e94560; color: white; border: 3px solid white; margin-top: 30px; }
-.btn:active { transform: scale(0.95); }
-.status { text-align: center; padding: 10px; font-size: 18px; color: #0f0; margin: 5px; }
-.info { text-align: center; color: #888; font-size: 14px; margin: 5px; }
-.error { color: #f00; }
+body { background: #1a1a2e; color: #eee; font-family: monospace; text-align: center; padding: 20px; }
+h1 { color: #0f0; font-size: 28px; }
+h2 { color: #ff0; }
+.btn { display: inline-block; margin: 10px; padding: 15px 30px; font-size: 18px; cursor: pointer; border: 2px solid; border-radius: 8px; font-weight: bold; }
+.config-btn { background: #2196F3; color: white; border-color: #1565C0; }
+.util-btn { background: #FF9800; color: white; border-color: #E65100; }
+.main-btn { background: #4CAF50; color: white; border-color: #2E7D32; }
+.commit-btn { background: #f44336; color: white; border-color: #b71c1c; }
+.status { margin: 10px; padding: 10px; font-size: 16px; }
+.ok { color: #0f0; }
+.err { color: #f00; }
+#preview { background: #0d0d1a; border: 1px solid #333; padding: 10px; margin: 10px auto; max-width: 800px; text-align: left; max-height: 200px; overflow-y: auto; font-size: 12px; white-space: pre; }
 </style>
 </head>
 <body>
-<h1>SLAYER BOT PASTE HELPER</h1>
-<div class="version">VERSION 8</div>
-<div class="info">Fetches v8 code directly from GitHub (cache-busted)</div>
-
-<button class="btn btn-config" onclick="copyFile('CONFIG')">Copy CONFIG (38 lines)</button>
-<div id="status-CONFIG" class="status"></div>
-
-<button class="btn btn-util" onclick="copyFile('UTILITIES')">Copy UTILITIES (5,628 lines)</button>
-<div id="status-UTILITIES" class="status"></div>
-
-<button class="btn btn-main" onclick="copyFile('MAIN')">Copy MAIN (1,507 lines)</button>
-<div id="status-MAIN" class="status"></div>
-
-<button class="btn btn-commit" onclick="copyCommit()">Copy Commit Message</button>
-<div id="status-commit" class="status"></div>
-
+<h1>SLAYER BOT v9 PASTE HELPER</h1>
+<h2>VERSION 9 -- 17 TypeScript Fixes</h2>
+<p>Click a button to copy that file to clipboard, then go to DZ editor tab and Ctrl+A, Ctrl+V</p>
+<div>
+<button class="btn config-btn" onclick="copyFile('config')">Copy CONFIG (38 lines)</button>
+<button class="btn util-btn" onclick="copyFile('utilities')">Copy UTILITIES (~5628 lines)</button>
+<button class="btn main-btn" onclick="copyFile('main')">Copy MAIN (~1507 lines)</button>
+</div>
+<div>
+<button class="btn commit-btn" onclick="copyCommit()">Copy Commit Message</button>
+</div>
+<div id="status" class="status"></div>
+<div id="preview"></div>
 <script>
-var timestamp = Date.now();
-var baseUrl = 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/';
-var files = {
-    'CONFIG': 'slayer_CONFIG.txt',
-    'UTILITIES': 'slayer_UTILITIES.txt',
-    'MAIN': 'slayer_MAIN.txt'
+var ts = Date.now();
+var urls = {
+config: 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/slayer_CONFIG.txt?v=9&t=' + ts,
+utilities: 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/slayer_UTILITIES.txt?v=9&t=' + ts,
+main: 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/slayer_MAIN.txt?v=9&t=' + ts
 };
-
-function copyFile(tab) {
-    var statusEl = document.getElementById('status-' + tab);
-    statusEl.textContent = 'Fetching ' + tab + '...';
-    statusEl.className = 'status';
-    
-    fetch(baseUrl + files[tab] + '?v=8&t=' + timestamp + '&r=' + Math.random())
-        .then(function(r) { return r.text(); })
-        .then(function(text) {
-            return navigator.clipboard.writeText(text).then(function() {
-                var lines = text.split('\n').length;
-                statusEl.textContent = tab + ' COPIED! (' + lines + ' lines) - Now paste in DZ with Ctrl+A, Ctrl+V';
-                statusEl.className = 'status';
-            });
-        })
-        .catch(function(err) {
-            statusEl.textContent = 'ERROR: ' + err;
-            statusEl.className = 'status error';
-        });
+function copyFile(name) {
+var el = document.getElementById('status');
+el.innerHTML = '<span>Fetching ' + name.toUpperCase() + '...</span>';
+fetch(urls[name], {cache: 'no-store'}).then(function(r) { return r.text(); }).then(function(text) {
+var lines = text.split('\n').length;
+return navigator.clipboard.writeText(text).then(function() {
+el.innerHTML = '<span class="ok">' + name.toUpperCase() + ' COPIED! (' + lines + ' lines)</span>';
+document.getElementById('preview').textContent = text.substring(0, 500) + '\n...\n[' + lines + ' total lines]';
+});
+}).catch(function(e) {
+el.innerHTML = '<span class="err">ERROR: ' + e + '</span>';
+});
 }
-
 function copyCommit() {
-    var statusEl = document.getElementById('status-commit');
-    navigator.clipboard.writeText('slayer bot v8').then(function() {
-        statusEl.textContent = '"slayer bot v8" COPIED! Paste in DZ commit field with Ctrl+V';
-    }).catch(function(err) {
-        statusEl.textContent = 'ERROR: ' + err;
-        statusEl.className = 'status error';
-    });
+navigator.clipboard.writeText('slayer bot v9').then(function() {
+document.getElementById('status').innerHTML = '<span class="ok">COMMIT MESSAGE COPIED: "slayer bot v9"</span>';
+});
 }
 </script>
 </body>

@@ -541,7 +541,7 @@ function handleCheckSupplies() {
 function handleWalkToBank() {
     // Determine bank target
     if (!bankTarget) {
-        var pos = Game.localPlayer.getPosition();
+        var pos = Client.getLocalPlayer().getWorldLocation();
         if (currentTaskMonster && currentTaskMonster.bankNearby) {
             bankTarget = currentTaskMonster.bankNearby;
         } else {
@@ -1015,7 +1015,7 @@ function handleFightTask() {
     // --- SPECIAL FINISH CHECK ---
     // Check if current target needs a finish mechanic (gargoyle, rock slug, etc.)
     if (currentTaskMonster.specialMechanic === "finish") {
-        var target = Game.localPlayer.getInteracting();
+        var target = Client.getLocalPlayer().getInteracting();
         if (target && target.getHealthRatio) {
             var healthRatio = target.getHealthRatio();
             // HealthRatio of 0 or very low means it's ready for the finish item
@@ -1028,7 +1028,7 @@ function handleFightTask() {
 
     // --- LOOT CHECK ---
     var lootEnabled = config.lootEnabled ? config.lootEnabled.read() : true;
-    if (lootEnabled && !Game.localPlayer.isInteracting()) {
+    if (lootEnabled && !Client.getLocalPlayer().isInteracting()) {
         // Check for loot on ground
         var lootMinValue = config.lootMinValue ? config.lootMinValue.read() : 100;
         var _groundAll = Game.info.groundItem.getAll(); var lootItem = _groundAll ? _groundAll[0] : null;
@@ -1041,7 +1041,7 @@ function handleFightTask() {
 
     // --- BURY BONES CHECK ---
     var buryBones = config.buryBones ? config.buryBones.read() : false;
-    if (buryBones && !Game.localPlayer.isInteracting()) {
+    if (buryBones && !Client.getLocalPlayer().isInteracting()) {
         for (var i = 0; i < ALL_BONE_IDS.length; i++) {
             if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
                 buryBone(ALL_BONE_IDS[i]);
@@ -1052,7 +1052,7 @@ function handleFightTask() {
 
     // --- ATTACK TARGET ---
     // Check if already in combat
-    if (Game.localPlayer.isInteracting()) {
+    if (Client.getLocalPlayer().isInteracting()) {
         // Already fighting -- wait
         updateOverlay("Fighting " + currentTaskMonster.name, currentTaskMonster.name, killsLeft);
         return;
@@ -1179,7 +1179,7 @@ function activateProtectionPrayer() {
     // For now, we'll activate on every cycle (the API should handle already-active prayers gracefully)
     try {
         // Prayer tab widget: group 541, children are individual prayers
-        var prayerWidget = Client.getWidget(541, prayerInfo.widgetChild);
+        var prayerWidget = Game.info.widget.getWidget(541, prayerInfo.widgetChild);
         if (prayerWidget) {
             // Only click if not already active (check sprite ID or text)
             // Simplified: just ensure it's on
@@ -1200,7 +1200,7 @@ function handleSpecialFinish() {
 
     Utility.invokeLater(function() {
         try {
-            var target = Game.localPlayer.getInteracting();
+            var target = Client.getLocalPlayer().getInteracting();
             if (target) {
                 var itemId = currentTaskMonster.specialItem;
                 if (Game.info.inventory.hasItem(itemId, 1)) {

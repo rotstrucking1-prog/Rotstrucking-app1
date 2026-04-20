@@ -2765,8 +2765,8 @@ function isSpecialItemCovered(monster) {
     if (!monster.specialItem) return true;
 
     // Check if player has slayer helmet -- covers nose peg, earmuffs, face mask
-    var hasSlayerHelm = Game.localPlayer.getEquipment().search(11864) !== -1 ||
-                        Game.localPlayer.getEquipment().search(11865) !== -1;
+    var hasSlayerHelm = Game.info.equipment.hasItem(11864) ||
+                        Game.info.equipment.hasItem(11865);
 
     if (hasSlayerHelm) {
         var coveredItems = [4168, 4166, 4164]; // Nose peg, earmuffs, face mask
@@ -2777,7 +2777,7 @@ function isSpecialItemCovered(monster) {
 
     // Check equipment
     if (monster.specialMechanic === "equip") {
-        return Game.localPlayer.getEquipment().search(monster.specialItem) !== -1;
+        return Game.info.equipment.hasItem(monster.specialItem);
     }
 
     // Check inventory for finish/use items
@@ -2789,7 +2789,7 @@ function isSpecialItemCovered(monster) {
     if (monster.specialMechanic === "weapon") {
         var weaponIds = [11902, 20727, 11875]; // Leaf-bladed sword, axe, broad bolts
         for (var i = 0; i < weaponIds.length; i++) {
-            if (Game.localPlayer.getEquipment().search(weaponIds[i]) !== -1) return true;
+            if (Game.info.equipment.hasItem(weaponIds[i])) return true;
             if (Game.info.inventory.hasItem(weaponIds[i], 1)) return true;
         }
         return false;
@@ -2832,7 +2832,7 @@ function getDistance(x1, y1, x2, y2) {
 // -----------------------------------------------------------------------------
 function isNear(targetX, targetY, threshold) {
     if (!threshold) threshold = 5;
-    var pos = Game.localPlayer.getPosition();
+    var pos = Client.getLocalPlayer().getWorldLocation();
     return getDistance(pos.x, pos.y, targetX, targetY) <= threshold;
 }
 
@@ -5034,11 +5034,11 @@ function handleKillBrother() {
     // Activate prayer
     try {
         if (brother.prayer === "PROTECT_FROM_MELEE") {
-            Game.interact.prayer.activate(Prayer.PROTECT_FROM_MELEE);
+            PlayerHelper.activatePrayer(Prayer.PROTECT_FROM_MELEE);
         } else if (brother.prayer === "PROTECT_FROM_MISSILES") {
-            Game.interact.prayer.activate(Prayer.PROTECT_FROM_MISSILES);
+            PlayerHelper.activatePrayer(Prayer.PROTECT_FROM_MISSILES);
         } else if (brother.prayer === "PROTECT_FROM_MAGIC") {
-            Game.interact.prayer.activate(Prayer.PROTECT_FROM_MAGIC);
+            PlayerHelper.activatePrayer(Prayer.PROTECT_FROM_MAGIC);
         }
     } catch(e) {}
 
@@ -5067,7 +5067,9 @@ function handleKillBrother() {
 
 function handleNextBrother() {
     // Turn off prayer to conserve
-    try { Game.interact.prayer.deactivateAll(); } catch(e) {}
+    try { PlayerHelper.disablePrayer(Prayer.PROTECT_FROM_MELEE); } catch(e) {}
+    try { PlayerHelper.disablePrayer(Prayer.PROTECT_FROM_MISSILES); } catch(e) {}
+    try { PlayerHelper.disablePrayer(Prayer.PROTECT_FROM_MAGIC); } catch(e) {}
     barrowsPhase = "walk_to_barrows";
 }
 
@@ -5253,7 +5255,7 @@ function bankForTool(toolId) {
     isExecuting = true;
     Utility.invokeLater(function() {
         try {
-            Game.interact.bank.withdraw(toolId, 1);
+            Game.interact.bank.withdrawItem(toolId, 1);
             Game.sendGameMessage("[SlayerBot][RI] Withdrew tool: " + toolId, "Bot");
         } catch(e) {}
         isExecuting = false;

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlayerBot v21 Paste Helper - MAIN ONLY</title>
+<style>
+body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; max-width: 900px; margin: 0 auto; padding: 20px; }
+h1 { color: #00ff88; text-align: center; }
+h2 { color: #ff6b6b; }
+.status { padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 16px; text-align: center; }
+.loading { background: #2d2d44; border: 2px solid #ffd700; }
+.success { background: #1a3a1a; border: 2px solid #00ff88; }
+.error { background: #3a1a1a; border: 2px solid #ff4444; }
+button { padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin: 10px 5px; font-weight: bold; }
+.copy-btn { background: #00ff88; color: #1a1a2e; }
+.copy-btn:hover { background: #00cc66; }
+.copy-btn:disabled { background: #555; color: #999; cursor: not-allowed; }
+.info { background: #2d2d44; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #00ff88; }
+.fix-list { background: #2d2d44; padding: 15px; border-radius: 8px; margin: 10px 0; }
+.fix-list li { margin: 8px 0; }
+.critical { color: #ff6b6b; font-weight: bold; }
+.new { color: #00ff88; font-weight: bold; }
+pre { background: #0d0d1a; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; max-height: 200px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<h1>SlayerBot v21 - MASTER NPC FIX</h1>
+
+<div class="info">
+<strong>PASTE MAIN TAB ONLY</strong> - UTILITIES is unchanged from v20
+</div>
+
+<h2>What v21 Fixes:</h2>
+<ul class="fix-list">
+<li class="critical">BUG: attack(masterNpc) silently fails - Turael is NOT attackable!</li>
+<li class="new">FIX: action(masterNpc, MenuAction.NPC_SECOND_OPTION) = "Assignment"</li>
+<li class="new">FIX: action(banker, MenuAction.NPC_SECOND_OPTION) = "Bank"</li>
+<li class="new">NEW: Chat parser for "still hunting" (existing task from master)</li>
+<li class="new">NEW: Chat parser for "currently assigned" (gem check)</li>
+<li class="new">NEW: Chat parser for "X more to go" (alternative format)</li>
+<li>Monster combat still uses attack() (monsters ARE attackable)</li>
+</ul>
+
+<div class="info">
+<strong>How it works now:</strong><br>
+Bot walks to Turael -> action(turael, NPC_SECOND_OPTION) = "Assignment"<br>
+If you already have a task: Turael says "still hunting X" -> bot detects it<br>
+If no task: Turael gives new task -> bot detects it<br>
+Either way: bot proceeds to fight monsters!
+</div>
+
+<div id="status" class="status loading">Loading v21 from GitHub...</div>
+
+<div style="text-align: center;">
+<button id="copyMain" class="copy-btn" disabled onclick="copyCode('main')">Copy MAIN Code</button>
+</div>
+
+<h2>Preview (first 30 lines):</h2>
+<pre id="preview">Loading...</pre>
+
+<script>
+var mainCode = '';
+var COMMIT_SHA = 'PLACEHOLDER_SHA';
+
+function loadCode() {
+    var url = 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/' + COMMIT_SHA + '/slayer_MAIN.txt';
+    var ts = Date.now();
+    
+    fetch(url + '?t=' + ts)
+        .then(function(r) { return r.text(); })
+        .then(function(txt) {
+            mainCode = txt;
+            document.getElementById('status').className = 'status success';
+            document.getElementById('status').textContent = 'v21 MAIN loaded! (' + mainCode.length + ' chars, ' + mainCode.split('\n').length + ' lines)';
+            document.getElementById('copyMain').disabled = false;
+            document.getElementById('preview').textContent = mainCode.split('\n').slice(0, 30).join('\n');
+        })
+        .catch(function(e) {
+            document.getElementById('status').className = 'status error';
+            document.getElementById('status').textContent = 'Error loading: ' + e.message;
+        });
+}
+
+function copyCode(type) {
+    var code = mainCode;
+    navigator.clipboard.writeText(code).then(function() {
+        var btn = document.getElementById('copyMain');
+        btn.textContent = 'COPIED! Now paste in DZ MAIN tab';
+        btn.style.background = '#ffd700';
+        setTimeout(function() {
+            btn.textContent = 'Copy MAIN Code';
+            btn.style.background = '#00ff88';
+        }, 3000);
+    });
+}
+
+loadCode();
+</script>
+</body>
+</html>

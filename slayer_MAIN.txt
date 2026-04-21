@@ -422,7 +422,7 @@ function handleTalkToMaster() {
         try {
             var masterNpc = Game.info.npc.getNearest([selectedMaster.npcId]);
             if (masterNpc) {
-                Game.interact.npc.attack(masterNpc); // LEFT-CLICK = "Assignment" via Menu Entry Swapper
+                Game.interact.npc.action(masterNpc, MenuAction.NPC_SECOND_OPTION); // "Assignment" = native 2nd option
                 Game.sendGameMessage("[SlayerBot] Talking to " + selectedMaster.name + " (NPC ID: " + selectedMaster.npcId + ")", "Bot");
                 state = STATES.WAIT_FOR_TASK;
             } else {
@@ -599,7 +599,7 @@ function handleBankSupplies() {
                 Game.sendGameMessage("[SlayerBot] No bank found nearby! Trying NPC banker...", "Bot");
                 var banker = Game.info.npc.getNearest([1618]); // Banker NPC
                 if (banker) {
-                    Game.interact.npc.attack(banker); // LEFT-CLICK = "Bank" via Menu Entry Swapper
+                    Game.interact.npc.action(banker, MenuAction.NPC_SECOND_OPTION); // "Bank" = native 2nd option
                 } else {
                     Game.sendGameMessage("[SlayerBot] No bank or banker found!", "Bot");
                     isExecuting = false;
@@ -1380,6 +1380,48 @@ function OnChatMessage(msg) {
         taskReceived = true;
 
         Game.sendGameMessage("[SlayerBot] NEW TASK: Kill " + killsLeft + " " + currentTaskName, "Bot");
+        overlay.task.setValue("Task: " + currentTaskName);
+        overlay.killsLeft.setValue("Kills Left: " + killsLeft);
+        return;
+    }
+
+    // --- EXISTING TASK (master says "still hunting" when asked while already assigned) ---
+    // "You're still hunting goblins; you have 42 more to go."
+    var stillHunting = text.match(/still hunting (.+?)[;,]\s*(?:you have|only)\s*(\d+)\s*more/i);
+    if (stillHunting) {
+        currentTaskName = stillHunting[1].trim();
+        killsLeft = parseInt(stillHunting[2], 10);
+        if (currentTaskName.slice(-1) === ".") currentTaskName = currentTaskName.slice(0, -1);
+        taskReceived = true;
+        Game.sendGameMessage("[SlayerBot] EXISTING TASK: Kill " + killsLeft + " " + currentTaskName, "Bot");
+        overlay.task.setValue("Task: " + currentTaskName);
+        overlay.killsLeft.setValue("Kills Left: " + killsLeft);
+        return;
+    }
+
+    // --- EXISTING TASK (gem check: "currently assigned to kill") ---
+    // "You're currently assigned to kill cows; only 15 more to go."
+    var gemCheck = text.match(/currently assigned to kill (.+?)[;,]\s*(?:you have|only)\s*(\d+)\s*more/i);
+    if (gemCheck) {
+        currentTaskName = gemCheck[1].trim();
+        killsLeft = parseInt(gemCheck[2], 10);
+        if (currentTaskName.slice(-1) === ".") currentTaskName = currentTaskName.slice(0, -1);
+        taskReceived = true;
+        Game.sendGameMessage("[SlayerBot] GEM CHECK: Kill " + killsLeft + " " + currentTaskName, "Bot");
+        overlay.task.setValue("Task: " + currentTaskName);
+        overlay.killsLeft.setValue("Kills Left: " + killsLeft);
+        return;
+    }
+
+    // --- EXISTING TASK (alternative format: "X more to go") ---
+    // "You have 42 more cows to go."
+    var moreToGo = text.match(/[Yy]ou have (\d+) more (.+?) to go/);
+    if (moreToGo) {
+        killsLeft = parseInt(moreToGo[1], 10);
+        currentTaskName = moreToGo[2].trim();
+        if (currentTaskName.slice(-1) === ".") currentTaskName = currentTaskName.slice(0, -1);
+        taskReceived = true;
+        Game.sendGameMessage("[SlayerBot] TASK UPDATE: " + killsLeft + " " + currentTaskName + " remaining", "Bot");
         overlay.task.setValue("Task: " + currentTaskName);
         overlay.killsLeft.setValue("Kills Left: " + killsLeft);
         return;

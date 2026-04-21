@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>DZ Paste Helper v11</title>
+<style>body{background:#1a1a2e;color:#fff;font-family:Arial;text-align:center;padding:20px}
+h1{color:#0f0;font-size:28px}h2{color:#ff0;font-size:16px}
+.btn{display:block;margin:15px auto;padding:18px 40px;font-size:20px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;width:80%;max-width:400px}
+.config{background:#ff6600;color:#000}.util{background:#0088ff;color:#fff}
+.main{background:#00cc00;color:#000}.commit{background:#ffcc00;color:#000}
+.status{margin-top:10px;font-size:16px;color:#0f0}
+</style></head><body>
+<h1>DZ Slayer Bot v11 Paste Helper</h1>
+<h2>v11: Moved .id array accesses to UTILITIES helper - 0 errors in MAIN</h2>
+<button class="btn config" onclick="copyFile('config')">Copy CONFIG</button>
+<button class="btn util" onclick="copyFile('utilities')">Copy UTILITIES</button>
+<button class="btn main" onclick="copyFile('main')">Copy MAIN</button>
+<button class="btn commit" onclick="copyCommit()">Copy Commit Msg</button>
+<div id="status" class="status"></div>
+<script>
+var base='https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/';
+var files={config:'slayer_CONFIG.txt',utilities:'slayer_UTILITIES.txt',main:'slayer_MAIN.txt'};
+function copyFile(f){
+  var el=document.getElementById('status');
+  el.textContent='Fetching '+f+'...';
+  fetch(base+files[f]+'?t='+Date.now()).then(function(r){return r.text()}).then(function(t){
+    return navigator.clipboard.writeText(t).then(function(){
+      el.textContent=f.toUpperCase()+' copied! ('+t.split('\n').length+' lines)';
+    });
+  }).catch(function(e){el.textContent='Error: '+e});
+}
+function copyCommit(){
+  navigator.clipboard.writeText('slayer bot v11').then(function(){
+    document.getElementById('status').textContent='Commit message copied: "slayer bot v11"';
+  });
+}
+</script></body></html>

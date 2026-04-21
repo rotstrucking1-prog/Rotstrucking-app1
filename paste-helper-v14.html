@@ -1,0 +1,29 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>DZ Slayer Bot v14</title>
+<style>body{font-family:Arial;background:#1a1a2e;color:#eee;text-align:center;padding:20px}
+.btn{padding:18px 40px;font-size:20px;margin:10px;border:none;border-radius:8px;cursor:pointer;color:#fff}
+.b1{background:#e74c3c}.b2{background:#3498db}.b3{background:#2ecc71}
+#status{margin:20px;padding:15px;border-radius:8px;font-size:18px;background:#2d2d44}
+h1{color:#f39c12}h2{color:#aaa;font-size:14px}</style></head><body>
+<h1>DZ Slayer Bot v14 Paste Helper</h1>
+<h2>v14: .read() -> .getValue() (11 fixes in MAIN)</h2>
+<button class="btn b1" onclick="copyFile('CONFIG')">Copy CONFIG</button>
+<button class="btn b2" onclick="copyFile('MAIN')">Copy MAIN</button>
+<button class="btn b3" onclick="copyFile('UTILITIES')">Copy UTILITIES</button>
+<br><br>
+<button class="btn" style="background:#9b59b6" onclick="copyCommitMsg()">Copy Commit Msg</button>
+<div id="status">Click a button to copy code</div>
+<script>
+var SHA="9e0daf70e04b806bd5960fe621a3d33612e7047c";
+var BASE="https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/"+SHA+"/";
+function copyFile(name){
+var s=document.getElementById("status");s.textContent="Fetching "+name+"...";
+fetch(BASE+"slayer_"+name+".txt?t="+Date.now()).then(function(r){return r.text()}).then(function(t){
+return navigator.clipboard.writeText(t).then(function(){
+var lines=t.split("\n").length;
+s.textContent="Copied! "+lines+" lines at "+new Date().toLocaleTimeString();
+s.style.background="#27ae60";
+})}).catch(function(e){s.textContent="Error: "+e;s.style.background="#c0392b"});}
+function copyCommitMsg(){navigator.clipboard.writeText("slayer bot v14").then(function(){
+document.getElementById("status").textContent="Copied: 'slayer bot v14'";
+document.getElementById("status").style.background="#8e44ad";});}
+</script></body></html>

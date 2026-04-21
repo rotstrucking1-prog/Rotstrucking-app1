@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Slayer Bot v20 Paste Helper</title>
+<style>
+body{font-family:monospace;background:#1e1e1e;color:#d4d4d4;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#4fc1ff;text-align:center}
+h2{color:#ce9178}
+.status{padding:15px;border-radius:8px;margin:10px 0;text-align:center;font-size:18px;font-weight:bold}
+.loading{background:#2d2d2d;color:#ffcc02}
+.ready{background:#1a3d1a;color:#4ec94e}
+.error{background:#3d1a1a;color:#ff4444}
+button{background:#0e639c;color:white;border:none;padding:12px 24px;font-size:16px;cursor:pointer;border-radius:4px;margin:5px}
+button:hover{background:#1177bb}
+.info{background:#2d2d2d;padding:15px;border-radius:8px;margin:15px 0}
+.changes{background:#1a2d1a;padding:15px;border-radius:8px;border-left:4px solid #4ec94e;margin:15px 0}
+textarea{width:100%;height:200px;background:#1e1e1e;color:#d4d4d4;border:1px solid #555;font-family:monospace;font-size:12px;padding:10px}
+</style>
+</head><body>
+<h1>Slayer Bot v20 - CORRECT NPC IDs</h1>
+
+<div class="changes">
+<h2>What Changed (v20)</h2>
+<p><strong>ROOT CAUSE FOUND:</strong> All slayer master NPC IDs were WRONG!</p>
+<table style="width:100%;border-collapse:collapse">
+<tr style="border-bottom:1px solid #555"><th style="text-align:left;padding:4px">Master</th><th style="text-align:left;padding:4px">Was (Wrong)</th><th style="text-align:left;padding:4px">Now (Wiki)</th></tr>
+<tr><td style="padding:4px">Turael</td><td style="padding:4px;color:#ff4444">5913</td><td style="padding:4px;color:#4ec94e">13618</td></tr>
+<tr><td style="padding:4px">Mazchna</td><td style="padding:4px;color:#ff4444">6797</td><td style="padding:4px;color:#4ec94e">13620</td></tr>
+<tr><td style="padding:4px">Vannaka</td><td style="padding:4px;color:#ff4444">1597</td><td style="padding:4px;color:#4ec94e">403</td></tr>
+<tr><td style="padding:4px">Chaeldar</td><td style="padding:4px;color:#ff4444">1598</td><td style="padding:4px;color:#4ec94e">404</td></tr>
+<tr><td style="padding:4px">Nieve</td><td style="padding:4px;color:#ff4444">490</td><td style="padding:4px;color:#4ec94e">6797</td></tr>
+<tr><td style="padding:4px">Duradel</td><td style="padding:4px;color:#ff4444">1599</td><td style="padding:4px;color:#4ec94e">13622</td></tr>
+</table>
+<p>Turael ID 5913 doesn't exist in game - getNearest always returned null!</p>
+<p>Also: attack(npc) with 1 arg is correct. The NPC ID was the problem all along.</p>
+</div>
+
+<div class="info">
+<strong>Instructions:</strong>
+<ol>
+<li>Click "Copy UTILITIES" → switch to DZ UTILITIES tab → Ctrl+A → Ctrl+V → Commit</li>
+<li>Click "Copy MAIN" → switch to DZ MAIN tab → Ctrl+A → Ctrl+V → Commit</li>
+<li>Start the bot!</li>
+</ol>
+<p><strong>Only UTILITIES changed</strong> (NPC IDs are in UTILITIES). MAIN has a minor optimization.</p>
+</div>
+
+<div id="status" class="status loading">Loading code from GitHub...</div>
+
+<div style="text-align:center;margin:20px 0">
+<button id="copyUtil" onclick="copyCode('util')" disabled>Copy UTILITIES</button>
+<button id="copyMain" onclick="copyCode('main')" disabled>Copy MAIN</button>
+</div>
+
+<h2>Preview (first 30 lines)</h2>
+<div><strong>UTILITIES:</strong></div>
+<textarea id="utilPreview" readonly></textarea>
+<div style="margin-top:10px"><strong>MAIN:</strong></div>
+<textarea id="mainPreview" readonly></textarea>
+
+<script>
+var utilCode = '', mainCode = '';
+var SHA = '8ba937ab1358491d2edc74bcc2ecac5b4ec3cd1e';
+
+function fetchCode() {
+  var base = 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/' + SHA + '/';
+  var loaded = 0;
+  
+  fetch(base + 'slayer_UTILITIES.txt').then(function(r){return r.text()}).then(function(t){
+    utilCode = t;
+    document.getElementById('utilPreview').value = t.split('\n').slice(0,30).join('\n');
+    loaded++;
+    if(loaded===2) ready();
+  }).catch(function(e){
+    document.getElementById('status').className='status error';
+    document.getElementById('status').textContent='Error loading UTILITIES: '+e;
+  });
+  
+  fetch(base + 'slayer_MAIN.txt').then(function(r){return r.text()}).then(function(t){
+    mainCode = t;
+    document.getElementById('mainPreview').value = t.split('\n').slice(0,30).join('\n');
+    loaded++;
+    if(loaded===2) ready();
+  }).catch(function(e){
+    document.getElementById('status').className='status error';
+    document.getElementById('status').textContent='Error loading MAIN: '+e;
+  });
+}
+
+function ready() {
+  document.getElementById('status').className='status ready';
+  document.getElementById('status').textContent='v20 Ready! UTILITIES: '+utilCode.split('\n').length+' lines, MAIN: '+mainCode.split('\n').length+' lines';
+  document.getElementById('copyUtil').disabled=false;
+  document.getElementById('copyMain').disabled=false;
+}
+
+function copyCode(which) {
+  var code = which==='util' ? utilCode : mainCode;
+  navigator.clipboard.writeText(code).then(function(){
+    var btn = document.getElementById(which==='util'?'copyUtil':'copyMain');
+    btn.textContent = 'Copied!';
+    btn.style.background = '#4ec94e';
+    setTimeout(function(){
+      btn.textContent = which==='util'?'Copy UTILITIES':'Copy MAIN';
+      btn.style.background = '#0e639c';
+    }, 2000);
+  });
+}
+
+fetchCode();
+</script>
+</body></html>

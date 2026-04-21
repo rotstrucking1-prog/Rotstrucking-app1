@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>DZ Slayer Bot v12 Paste Helper</title>
+<style>body{background:#1a1a2e;color:#eee;font-family:Arial;text-align:center;padding:20px}
+h1{color:#0f0}h2{color:#ff0}p{color:#aaa}
+button{padding:15px 40px;font-size:18px;margin:10px;cursor:pointer;border:none;border-radius:8px}
+.config{background:#e74c3c;color:#fff}.util{background:#3498db;color:#fff}
+.main{background:#2ecc71;color:#fff}.commit{background:#9b59b6;color:#fff}
+.status{color:#0f0;font-size:14px;margin-top:5px}
+</style></head><body>
+<h1>DZ Slayer Bot v12 Paste Helper</h1>
+<h2>v12: Fixed ALL UTILITIES TypeScript errors (dbLookup + hardcoded IDs + no unreachable breaks)</h2>
+<p>CONFIG: 37 lines | UTILITIES: 5634 lines | MAIN: 1486 lines</p>
+<p><b>Fixes: dbLookup() for bracket access, MONSTER_DB + SLAYER_MASTERS wrapped, 70 hardcoded equipment IDs, no break after return</b></p>
+<hr>
+<div>
+<button class="config" onclick="copyFile('config')">Copy CONFIG (37 lines)</button>
+<div id="config-status" class="status"></div>
+</div>
+<div>
+<button class="util" onclick="copyFile('utilities')">Copy UTILITIES (5634 lines)</button>
+<div id="utilities-status" class="status"></div>
+</div>
+<div>
+<button class="main" onclick="copyFile('main')">Copy MAIN (1486 lines)</button>
+<div id="main-status" class="status"></div>
+</div>
+<hr>
+<div>
+<button class="commit" onclick="copyCommit()">Copy Commit Msg</button>
+<div id="commit-status" class="status"></div>
+</div>
+<script>
+var BASE = "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/bot/";
+var FILES = {config:"slayer_CONFIG.txt",utilities:"slayer_UTILITIES.txt",main:"slayer_MAIN.txt"};
+function copyFile(t){
+  var el = document.getElementById(t+"-status");
+  el.textContent = "Loading...";
+  fetch(BASE + FILES[t] + "?t=" + Date.now())
+  .then(function(r){return r.text()})
+  .then(function(txt){
+    var lines = txt.split("\n").length;
+    return navigator.clipboard.writeText(txt).then(function(){
+      el.textContent = "Copied! " + lines + " lines at " + new Date().toLocaleTimeString();
+    });
+  })
+  .catch(function(e){el.textContent = "Error: " + e;});
+}
+function copyCommit(){
+  navigator.clipboard.writeText("slayer bot v12").then(function(){
+    document.getElementById("commit-status").textContent = "Copied: 'slayer bot v12'";
+  });
+}
+</script></body></html>

@@ -420,7 +420,7 @@ function handleTalkToMaster() {
 
     Utility.invokeLater(function() {
         try {
-            var masterNpc = Game.info.npc.getNearest(selectedMaster.npcId);
+            var masterNpc = Game.info.npc.getNearest([selectedMaster.npcId]);
             if (masterNpc) {
                 Game.interact.npc.attack(masterNpc); // LEFT-CLICK = "Assignment" via Menu Entry Swapper
                 Game.sendGameMessage("[SlayerBot] Talking to " + selectedMaster.name + " (NPC ID: " + selectedMaster.npcId + ")", "Bot");
@@ -591,9 +591,9 @@ function handleBankSupplies() {
     Utility.invokeLater(function() {
         try {
             // Open nearest bank booth/chest
-            var bankBooth = Game.info.gameObject.getNearest(10583); // Bank booth
-            if (!bankBooth) bankBooth = Game.info.gameObject.getNearest(12308); // Bank chest
-            if (!bankBooth) bankBooth = Game.info.gameObject.getNearest(10355); // Another booth type
+            var bankBooth = Game.info.gameObject.getNearest([10583]); // Bank booth
+            if (!bankBooth) bankBooth = Game.info.gameObject.getNearest([12308]); // Bank chest
+            if (!bankBooth) bankBooth = Game.info.gameObject.getNearest([10355]); // Another booth type
 
             if (!bankBooth) {
                 Game.sendGameMessage("[SlayerBot] No bank found nearby! Trying NPC banker...", "Bot");
@@ -843,7 +843,7 @@ function handleBuyAtGE() {
     Utility.invokeLater(function() {
         try {
             // Open GE booth
-            var geBooth = Game.info.gameObject.getNearest(GE.BOOTH_IDS[0]);
+            var geBooth = Game.info.gameObject.getNearest([GE.BOOTH_IDS[0]]);
             if (geBooth) {
                 Game.interact.gameObject.action(geBooth, MenuAction.GAME_OBJECT_SECOND_OPTION);
                 Game.sendGameMessage("[SlayerBot] Opened GE booth. Buying items...", "Bot");
@@ -1058,7 +1058,7 @@ function attackNearest() {
 
             // Try each NPC ID for the task
             for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
-                target = Game.info.npc.getNearest(currentTaskMonster.npcIds[i]);
+                target = Game.info.npc.getNearest([currentTaskMonster.npcIds[i]]);
                 if (target && !target.isDead() && !target.isInteracting()) {
                     break;
                 }

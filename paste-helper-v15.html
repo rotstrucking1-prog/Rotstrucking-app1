@@ -1,0 +1,35 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>DZ Paste v15</title>
+<style>body{font-family:Arial;background:#1a1a2e;color:#fff;text-align:center;padding:40px}
+h1{color:#0f0}h2{color:#aaa}
+button{padding:20px 40px;margin:10px;font-size:18px;border-radius:12px;border:none;cursor:pointer;font-weight:bold}
+.config{background:#2196f3;color:#fff}.util{background:#ff9800;color:#fff}.main{background:#4caf50;color:#fff}.commit{background:#9c27b0;color:#fff}
+#status{margin:20px;padding:15px;border-radius:8px;font-size:16px;background:#333}</style></head>
+<body><h1>DZ Slayer Bot v15 Paste Helper</h1>
+<h2>v15: Fixed isNear() arrival detection (pos.getX/getY) + findNearestBank</h2>
+<button class="config" onclick="copyFile('config')">Copy CONFIG</button>
+<button class="util" onclick="copyFile('utilities')">Copy UTILITIES</button>
+<button class="main" onclick="copyFile('main')">Copy MAIN</button>
+<button class="commit" onclick="copyCommit()">Copy Commit Msg</button>
+<div id="status">Click a button to copy</div>
+<script>
+var SHA = "2c598f63c30fd6233a3c9829c25b3db4c8de4650";
+var BASE = "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/" + SHA + "/";
+var FILES = {config:"slayer_CONFIG.txt",utilities:"slayer_UTILITIES.txt",main:"slayer_MAIN.txt"};
+function copyFile(key) {
+  var el = document.getElementById("status");
+  el.textContent = "Fetching " + key + "...";
+  fetch(BASE + FILES[key] + "?t=" + Date.now()).then(function(r){return r.text()}).then(function(t){
+    return navigator.clipboard.writeText(t).then(function(){
+      var lines = t.split("\n").length;
+      el.textContent = "Copied! " + lines + " lines at " + new Date().toLocaleTimeString();
+      el.style.background = "#1b5e20";
+    });
+  }).catch(function(e){el.textContent="Error: "+e;el.style.background="#b71c1c"});
+}
+function copyCommit(){
+  navigator.clipboard.writeText("slayer bot v15").then(function(){
+    document.getElementById("status").textContent="Copied: 'slayer bot v15'";
+    document.getElementById("status").style.background="#4a148c";
+  });
+}
+</script></body></html>

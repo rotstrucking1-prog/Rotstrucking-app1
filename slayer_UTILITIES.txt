@@ -4070,7 +4070,7 @@ function handleLevelFishing() {
             isExecuting = true;
             Utility.invokeLater(function() {
                 try {
-                    Game.interact.npc.action(fishingSpot, MenuAction.NPC_FIRST_OPTION);
+                    Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, spot);
                     Game.sendGameMessage("[SlayerBot][RI] Fishing at " + fishingSpot.getName(), "Bot");
                 } catch(e) {
                     Game.sendGameMessage("[SlayerBot][RI] Fish error: " + e, "Bot");
@@ -4411,17 +4411,17 @@ function handleGatherFoodByFishing() {
                 try {
                     // Different fishing methods use different menu actions
                     if (gatherFoodTier.fishAction === "NET") {
-                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION);
+                        Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, gatherFoodTier.spotIds);
                     } else if (gatherFoodTier.fishAction === "FLY") {
-                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION);
+                        Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, gatherFoodTier.spotIds);
                     } else if (gatherFoodTier.fishAction === "CAGE") {
-                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION);
+                        Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, gatherFoodTier.spotIds);
                     } else if (gatherFoodTier.fishAction === "HARPOON") {
-                        Game.interact.npc.action(spot, MenuAction.NPC_SECOND_OPTION);
+                        Game.interact.npc.nearest(MenuAction.NPC_SECOND_OPTION, gatherFoodTier.spotIds);
                     } else if (gatherFoodTier.fishAction === "ROD") {
-                        Game.interact.npc.action(spot, MenuAction.NPC_SECOND_OPTION);
+                        Game.interact.npc.nearest(MenuAction.NPC_SECOND_OPTION, gatherFoodTier.spotIds);
                     } else {
-                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION);
+                        Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, gatherFoodTier.spotIds);
                     }
                     Game.sendGameMessage("[SlayerBot][RI] Fishing " + gatherFoodTier.name, "Bot");
                 } catch(e) {
@@ -4906,7 +4906,7 @@ function handleTanHides() {
         isExecuting = true;
         Utility.invokeLater(function() {
             try {
-                Game.interact.npc.action(tanner, MenuAction.NPC_FIRST_OPTION);
+                Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, [SS_NPCS.AL_KHARID_TANNER]);
                 Game.sendGameMessage("[SlayerBot][RI] Tanning " + hideCount + " cowhides", "Bot");
             } catch(e) {}
             isExecuting = false;
@@ -5275,7 +5275,7 @@ function buyFromShop(npcId, itemId, quantity) {
         isExecuting = true;
         Utility.invokeLater(function() {
             try {
-                Game.interact.npc.action(npc, MenuAction.NPC_FIRST_OPTION);  // "Trade"
+                Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, [npcId]);  // "Trade"
                 Game.sendGameMessage("[SlayerBot][RI] Opening shop with NPC " + npcId, "Bot");
             } catch(e) {}
             isExecuting = false;

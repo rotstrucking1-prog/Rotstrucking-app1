@@ -422,7 +422,7 @@ function handleTalkToMaster() {
         try {
             var masterNpc = Game.info.npc.getNearest(selectedMaster.npcId);
             if (masterNpc) {
-                Game.interact.npc.action(masterNpc, MenuAction.NPC_FIRST_OPTION); // "Assignment"
+                Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, selectedMaster.npcId); // "Talk-to"
                 Game.sendGameMessage("[SlayerBot] Talking to " + selectedMaster.name + " (NPC ID: " + selectedMaster.npcId + ")", "Bot");
                 state = STATES.WAIT_FOR_TASK;
             } else {
@@ -597,9 +597,9 @@ function handleBankSupplies() {
 
             if (!bankBooth) {
                 Game.sendGameMessage("[SlayerBot] No bank found nearby! Trying NPC banker...", "Bot");
-                var banker = Game.info.npc.getNearest(1618); // Banker NPC
+                var banker = Game.info.npc.getNearest([1618]); // Banker NPC
                 if (banker) {
-                    Game.interact.npc.action(banker, MenuAction.NPC_FIRST_OPTION);
+                    Game.interact.npc.nearest(MenuAction.NPC_FIRST_OPTION, [1618]);
                 } else {
                     Game.sendGameMessage("[SlayerBot] No bank or banker found!", "Bot");
                     isExecuting = false;

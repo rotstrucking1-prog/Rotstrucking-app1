@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Slayer Bot v16 - NPC Nearest Fix</title>
+<style>
+body{font-family:monospace;background:#1a1a2e;color:#0f0;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#e94560;text-align:center}
+h2{color:#0ff;border-bottom:1px solid #333;padding-bottom:5px}
+.info{background:#16213e;padding:15px;border-radius:8px;margin:10px 0;border-left:4px solid #e94560}
+textarea{width:100%;height:200px;background:#0d1117;color:#0f0;border:1px solid #333;font-family:monospace;font-size:11px;padding:8px;border-radius:4px}
+button{background:#e94560;color:#fff;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;margin:5px}
+button:hover{background:#c73650}
+.status{padding:10px;margin:5px 0;border-radius:4px;font-weight:bold}
+.ok{background:#1a4a1a;border:1px solid #0f0}
+.err{background:#4a1a1a;border:1px solid #f00;color:#f00}
+.fix{color:#ff0;margin:5px 0}
+</style></head><body>
+<h1>Slayer Bot v16 - NPC INTERACTION FIX</h1>
+<div class="info">
+<p class="fix">FIX: Game.interact.npc.action(npc,opCode) -> Game.interact.npc.nearest(opCode, npcIds)</p>
+<p class="fix">action() threw "Expected 1 argument" - nearest() is the correct DZ API pattern</p>
+<p class="fix">11 calls fixed across MAIN + UTILITIES</p>
+<p class="fix">Same pattern as Blood Runes example: nearest(MenuAction, [ids])</p>
+</div>
+
+<h2>UTILITIES (paste into DZ UTILITIES tab)</h2>
+<textarea id="util" readonly>Loading...</textarea>
+<button onclick="copyUtil()">Copy UTILITIES</button>
+<div id="utilStatus"></div>
+
+<h2>MAIN (paste into DZ MAIN tab)</h2>
+<textarea id="main" readonly>Loading...</textarea>
+<button onclick="copyMain()">Copy MAIN</button>
+<div id="mainStatus"></div>
+
+<div id="loadStatus" class="status"></div>
+
+<script>
+var REPO="rotstrucking1-prog/Rotstrucking-app1";
+var BRANCH="main";
+var utilFile="slayer_UTILITIES.txt";
+var mainFile="slayer_MAIN.txt";
+
+function fetchFile(file,elId){
+  // Use API to get latest SHA first
+  return fetch("https://api.github.com/repos/"+REPO+"/contents/"+file+"?ref="+BRANCH)
+    .then(function(r){return r.json()})
+    .then(function(j){
+      // Use the download_url with SHA to bypass cache
+      return fetch(j.download_url);
+    })
+    .then(function(r){return r.text()})
+    .then(function(t){
+      document.getElementById(elId).value=t;
+      return t;
+    });
+}
+
+Promise.all([fetchFile(utilFile,"util"),fetchFile(mainFile,"main")])
+  .then(function(){
+    document.getElementById("loadStatus").className="status ok";
+    document.getElementById("loadStatus").textContent="Both files loaded from latest commit!";
+  })
+  .catch(function(e){
+    document.getElementById("loadStatus").className="status err";
+    document.getElementById("loadStatus").textContent="Error: "+e;
+  });
+
+function copyUtil(){
+  var t=document.getElementById("util");
+  t.select();document.execCommand("copy");
+  document.getElementById("utilStatus").innerHTML='<div class="status ok">UTILITIES copied!</div>';
+}
+function copyMain(){
+  var t=document.getElementById("main");
+  t.select();document.execCommand("copy");
+  document.getElementById("mainStatus").innerHTML='<div class="status ok">MAIN copied!</div>';
+}
+</script></body></html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>V19 Paste Helper</title>
+<style>body{font-family:monospace;background:#1a1a2e;color:#0f0;padding:30px;text-align:center}
+h1{color:#ff0}h2{color:#0ff}button{font-size:20px;padding:15px 30px;margin:10px;cursor:pointer;background:#333;color:#0f0;border:2px solid #0f0}
+button:hover{background:#0f0;color:#000}pre{text-align:left;max-height:200px;overflow-y:auto;background:#000;padding:10px;font-size:10px;white-space:pre-wrap;word-break:break-all}
+.status{color:#ff0;font-size:18px}.fix{color:#f0f;font-size:16px;margin:15px 0}</style></head>
+<body>
+<h1>V19 - ARRAY BRACKETS FIX</h1>
+<div class="fix">BUG: getNearest(npcId) -- bare number, NOT array!<br>
+FIX: getNearest([npcId]) -- wrapped in brackets!<br>
+This was the "Expected 1 argument" error since v16!</div>
+<p><b>ONLY MAIN CHANGED</b> (UTILITIES unchanged from v18)</p>
+
+<h2>1. MAIN (paste into DZ MAIN tab)</h2>
+<div class="status" id="mainStatus">Loading...</div>
+<button onclick="copyMain()">COPY MAIN</button>
+<pre id="mainPreview"></pre>
+
+<h2>2. Commit message:</h2>
+<button onclick="navigator.clipboard.writeText('v19 - getNearest array brackets fix')">COPY COMMIT MSG</button>
+
+<script>
+var mainCode = '';
+var SHA = 'ca9cd9163979e66d48df4e0d1bd30c380d69a0fe';
+function loadCode(file, cb) {
+    fetch('https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/' + SHA + '/' + file)
+        .then(function(r){return r.text()})
+        .then(function(t){cb(t)})
+        .catch(function(e){cb('ERROR: ' + e)});
+}
+loadCode('slayer_MAIN.txt', function(t) {
+    mainCode = t;
+    document.getElementById('mainStatus').textContent = 'Loaded! ' + t.length + ' chars / ' + t.split('\n').length + ' lines';
+    document.getElementById('mainPreview').textContent = t.substring(0, 500) + '...';
+});
+function copyMain() {
+    navigator.clipboard.writeText(mainCode).then(function(){
+        document.getElementById('mainStatus').textContent = 'COPIED TO CLIPBOARD!';
+        document.getElementById('mainStatus').style.color = '#0f0';
+    });
+}
+</script></body></html>

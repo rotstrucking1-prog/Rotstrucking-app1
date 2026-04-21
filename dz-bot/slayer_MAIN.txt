@@ -784,27 +784,8 @@ function withdrawBestGear() {
 // EQUIP GEAR FROM INVENTORY -- After banking
 // -----------------------------------------------------------------------------
 function equipGearFromInventory() {
-    // Build list of all gear IDs to try equipping
-    var gearIds = [];
-
-    // Add all weapon IDs
-    for (var i = 0; i < MELEE_WEAPONS.length; i++) {
-        gearIds.push(MELEE_WEAPONS[i].id);
-    }
-    // Add leaf-bladed weapons
-    gearIds.push(11902, 20727);
-
-    // Add all armor IDs
-    for (var i = 0; i < HELMETS.length; i++) gearIds.push(HELMETS[i].id);
-    for (var i = 0; i < PLATEBODIES.length; i++) gearIds.push(PLATEBODIES[i].id);
-    for (var i = 0; i < PLATELEGS.length; i++) gearIds.push(PLATELEGS[i].id);
-    for (var i = 0; i < SHIELDS.length; i++) gearIds.push(SHIELDS[i].id);
-    for (var i = 0; i < BOOTS.length; i++) gearIds.push(BOOTS[i].id);
-    for (var i = 0; i < GLOVES.length; i++) gearIds.push(GLOVES[i].id);
-    for (var i = 0; i < AMULETS.length; i++) gearIds.push(AMULETS[i].id);
-
-    // Add special items that need equipping
-    gearIds.push(4156, 4168, 4166, 4164, 8923, 7053); // Mirror shield, nose peg, earmuffs, face mask, witchwood, lantern
+    // getAllEquipmentIds() is in UTILITIES -- returns flat array of all gear IDs
+    var gearIds = getAllEquipmentIds();
 
     // Equip anything found in inventory
     for (var i = 0; i < gearIds.length; i++) {

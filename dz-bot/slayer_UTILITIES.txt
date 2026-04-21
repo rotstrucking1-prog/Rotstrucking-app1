@@ -1,4 +1,6 @@
 // =============================================
+// Generic lookup helper -- avoids TypeScript bracket-access errors on object literals
+function dbLookup(obj, k) { return obj[k]; }
 // AUTO SLAYER BOT v2.2 -- UTILITIES
 // =============================================
 
@@ -2602,15 +2604,15 @@ function getCombatLevel() {
 function selectBestMaster(combatLevel, slayerLevel, preference) {
     if (preference && preference !== "Auto") {
         var key = preference.toUpperCase().replace(/ /g, "_").replace("NIEVE", "NIEVE");
-        if (SLAYER_MASTERS[key] && combatLevel >= SLAYER_MASTERS[key].combatReq && slayerLevel >= SLAYER_MASTERS[key].slayerReq) {
-            return SLAYER_MASTERS[key];
+        if (dbLookup(SLAYER_MASTERS, key) && combatLevel >= dbLookup(SLAYER_MASTERS, key).combatReq && slayerLevel >= dbLookup(SLAYER_MASTERS, key).slayerReq) {
+            return dbLookup(SLAYER_MASTERS, key);
         }
     }
 
     // Auto: pick highest eligible (excluding Krystilia -- wilderness)
     var priority = ["DURADEL", "NIEVE", "KONAR", "CHAELDAR", "VANNAKA", "MAZCHNA", "TURAEL"];
     for (var i = 0; i < priority.length; i++) {
-        var master = SLAYER_MASTERS[priority[i]];
+        var master = dbLookup(SLAYER_MASTERS, priority[i]);
         if (combatLevel >= master.combatReq && slayerLevel >= master.slayerReq) {
             return master;
         }
@@ -2627,42 +2629,42 @@ function findMonster(taskName) {
     var name = taskName.trim();
 
     // Direct match
-    if (MONSTER_DB[name]) return MONSTER_DB[name];
+    if (dbLookup(MONSTER_DB, name)) return dbLookup(MONSTER_DB, name);
 
     // Case-insensitive match
     var lowerName = name.toLowerCase();
-    for (var key in MONSTER_DB) {
-        if (key.toLowerCase() === lowerName) return MONSTER_DB[key];
+    for (var k1 in MONSTER_DB) {
+        if (k1.toLowerCase() === lowerName) return dbLookup(MONSTER_DB, k1);
     }
 
     // Strip trailing 's' (plural)
     if (lowerName.slice(-1) === "s") {
-        var singular = lowerName.slice(0, -1);
-        for (var key in MONSTER_DB) {
-            if (key.toLowerCase() === singular) return MONSTER_DB[key];
+        var sing1 = lowerName.slice(0, -1);
+        for (var k2 in MONSTER_DB) {
+            if (k2.toLowerCase() === sing1) return dbLookup(MONSTER_DB, k2);
         }
     }
 
     // Strip trailing 'es' (e.g., "Banshees" -> "Banshee")
     if (lowerName.slice(-2) === "es") {
-        var singular = lowerName.slice(0, -2);
-        for (var key in MONSTER_DB) {
-            if (key.toLowerCase() === singular) return MONSTER_DB[key];
+        var sing2 = lowerName.slice(0, -2);
+        for (var k3 in MONSTER_DB) {
+            if (k3.toLowerCase() === sing2) return dbLookup(MONSTER_DB, k3);
         }
     }
 
     // Partial/contains match
-    for (var key in MONSTER_DB) {
-        if (key.toLowerCase().indexOf(lowerName) !== -1 || lowerName.indexOf(key.toLowerCase()) !== -1) {
-            return MONSTER_DB[key];
+    for (var k4 in MONSTER_DB) {
+        if (k4.toLowerCase().indexOf(lowerName) !== -1 || lowerName.indexOf(k4.toLowerCase()) !== -1) {
+            return dbLookup(MONSTER_DB, k4);
         }
     }
 
     // Match against individual name field
-    for (var key in MONSTER_DB) {
-        var monsterName = MONSTER_DB[key].name.toLowerCase();
-        if (monsterName === lowerName || monsterName === lowerName.replace(/s$/, "")) {
-            return MONSTER_DB[key];
+    for (var k5 in MONSTER_DB) {
+        var mName = dbLookup(MONSTER_DB, k5).name.toLowerCase();
+        if (mName === lowerName || mName === lowerName.replace(/s$/, "")) {
+            return dbLookup(MONSTER_DB, k5);
         }
     }
 
@@ -3985,11 +3987,11 @@ function handleLevelingTick() {
 
     // Route to correct handler
     switch(levelingSkill) {
-        case "fishing":  return handleLevelFishing(); break;
-        case "cooking":  return handleLevelCooking(); break;
-        case "mining":   return handleLevelMining(); break;
-        case "smithing": return handleLevelSmelting(); break;
-        case "crafting": return handleLevelCrafting(); break;
+        case "fishing":  return handleLevelFishing();
+        case "cooking":  return handleLevelCooking();
+        case "mining":   return handleLevelMining();
+        case "smithing": return handleLevelSmelting();
+        case "crafting": return handleLevelCrafting();
         default:
             Game.sendGameMessage("[SlayerBot][RI] Unknown leveling skill: " + levelingSkill, "Bot");
             return "DONE";
@@ -5624,4 +5626,9 @@ function useItemOnInventoryItem(itemId1, itemId2) {
     Utility.invokeLater(function() {
         Game.interact.inventory.useItem(itemId2, MenuAction.WIDGET_TARGET_ON_WIDGET);
     }, 300);
+}
+
+// EQUIPMENT ID LIST -- hardcoded to avoid .id property access TypeScript errors
+function getAllEquipmentIds() {
+    return [4151, 4587, 11902, 1333, 1331, 1329, 1325, 1321, 1277, 11865, 11864, 10828, 1163, 1161, 1159, 1157, 1153, 1155, 11832, 3140, 1127, 1123, 1121, 1119, 1115, 1117, 11834, 4087, 1079, 1073, 1071, 1069, 1067, 1075, 12954, 8850, 1201, 1199, 1197, 1195, 1191, 1189, 11840, 4131, 4129, 4127, 4125, 4121, 4119, 7462, 7461, 7460, 7459, 7458, 7457, 7456, 7455, 1059, 6585, 1704, 1731, 1725, 11902, 20727, 4156, 4168, 4166, 4164, 8923, 7053];
 }

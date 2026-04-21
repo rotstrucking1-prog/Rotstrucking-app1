@@ -545,7 +545,7 @@ function handleWalkToBank() {
         if (currentTaskMonster && currentTaskMonster.bankNearby) {
             bankTarget = currentTaskMonster.bankNearby;
         } else {
-            bankTarget = findNearestBank(pos.x, pos.y, pos.plane);
+            bankTarget = findNearestBank(pos.getX(), pos.getY(), pos.getPlane());
         }
         if (!bankTarget) {
             bankTarget = { x: 3164, y: 3487, plane: 0 }; // Default: GE

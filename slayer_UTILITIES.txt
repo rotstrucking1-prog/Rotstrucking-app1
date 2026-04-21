@@ -2835,7 +2835,7 @@ function getDistance(x1, y1, x2, y2) {
 function isNear(targetX, targetY, threshold) {
     if (!threshold) threshold = 5;
     var pos = Client.getLocalPlayer().getWorldLocation();
-    return getDistance(pos.x, pos.y, targetX, targetY) <= threshold;
+    return getDistance(pos.getX(), pos.getY(), targetX, targetY) <= threshold;
 }
 
 // -----------------------------------------------------------------------------

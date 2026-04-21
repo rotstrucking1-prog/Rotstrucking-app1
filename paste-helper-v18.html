@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>V18 Paste Helper - attack() ONLY</title>
+<style>
+body{font-family:monospace;background:#1a1a2e;color:#0f0;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#ff0;text-align:center}
+h2{color:#0ff;border-bottom:1px solid #0ff;padding-bottom:5px}
+.info{background:#222;padding:15px;border-radius:8px;margin:10px 0;border-left:4px solid #ff0}
+textarea{width:100%;height:200px;background:#111;color:#0f0;border:1px solid #333;font-family:monospace;font-size:11px;padding:10px}
+button{background:#00cc00;color:#000;border:none;padding:12px 24px;font-size:16px;cursor:pointer;border-radius:5px;font-weight:bold;margin:5px}
+button:hover{background:#00ff00}
+.status{color:#ff0;font-weight:bold;margin:10px 0}
+</style></head><body>
+<h1>V18 - attack() ONLY (NO MORE action())</h1>
+<div class="info">
+<b>FIX:</b> ALL Game.interact.npc.action() replaced with Game.interact.npc.attack()<br>
+<b>WHY:</b> action() is BROKEN at Java runtime. attack() is the ONLY working NPC interaction.<br>
+<b>KEY:</b> attack() = LEFT-CLICK = triggers first menu option. With Menu Entry Swapper, Turael first = "Assignment"<br>
+<b>BOTH FILES CHANGED</b>
+</div>
+
+<h2>1. UTILITIES (paste into DZ UTILITIES tab)</h2>
+<div class="status" id="utilStatus">Loading...</div>
+<textarea id="utilCode" readonly>Loading...</textarea>
+<button onclick="copyUtil()">COPY UTILITIES</button>
+
+<h2>2. MAIN (paste into DZ MAIN tab)</h2>
+<div class="status" id="mainStatus">Loading...</div>
+<textarea id="mainCode" readonly>Loading...</textarea>
+<button onclick="copyMain()">COPY MAIN</button>
+
+<h2>3. Commit message:</h2>
+<p style="color:#ff0;font-size:16px;">v18 - attack() only, no more action()</p>
+
+<script>
+var SHA = "b719f33f39ae0ea20cf622467c25223ad251f6c2";
+function loadFile(name, textareaId, statusId) {
+    var el = document.getElementById(textareaId);
+    var st = document.getElementById(statusId);
+    var url = "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/" + SHA + "/" + name;
+    fetch(url)
+        .then(function(r){return r.text()})
+        .then(function(t){
+            el.value = t;
+            st.textContent = "Loaded! " + t.length + " chars / " + t.split("\n").length + " lines";
+        })
+        .catch(function(e){st.textContent="Error: "+e});
+}
+function copyUtil(){
+    document.getElementById("utilCode").select();
+    document.execCommand("copy");
+    document.getElementById("utilStatus").textContent="COPIED!";
+}
+function copyMain(){
+    document.getElementById("mainCode").select();
+    document.execCommand("copy");
+    document.getElementById("mainStatus").textContent="COPIED!";
+}
+loadFile("slayer_UTILITIES.txt", "utilCode", "utilStatus");
+loadFile("slayer_MAIN.txt", "mainCode", "mainStatus");
+</script></body></html>

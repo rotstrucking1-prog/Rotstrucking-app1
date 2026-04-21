@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>V17 Paste Helper - NPC Action Fix</title>
+<style>
+body{font-family:monospace;background:#1a1a2e;color:#0f0;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#ff0;text-align:center}
+h2{color:#0ff;border-bottom:1px solid #0ff;padding-bottom:5px}
+.info{background:#222;padding:15px;border-radius:8px;margin:10px 0;border-left:4px solid #ff0}
+textarea{width:100%;height:200px;background:#111;color:#0f0;border:1px solid #333;font-family:monospace;font-size:11px;padding:10px}
+button{background:#00cc00;color:#000;border:none;padding:12px 24px;font-size:16px;cursor:pointer;border-radius:5px;font-weight:bold;margin:5px}
+button:hover{background:#00ff00}
+.status{color:#ff0;font-weight:bold;margin:10px 0}
+</style></head><body>
+<h1>V17 - NPC ACTION FIX (1-ARG PATTERN)</h1>
+<div class="info">
+<b>FIX:</b> ALL Game.interact.npc.nearest() calls replaced with Game.interact.npc.action(npc) - 1 argument only<br>
+<b>WHY:</b> Java runtime throws "Expected 1 argument" on any 2-arg NPC interaction call<br>
+<b>BOTH FILES CHANGED:</b> UTILITIES + MAIN
+</div>
+
+<h2>1. UTILITIES (paste into DZ UTILITIES tab)</h2>
+<div class="status" id="utilStatus">Loading...</div>
+<textarea id="utilCode" readonly>Loading...</textarea>
+<button onclick="copyUtil()">COPY UTILITIES</button>
+
+<h2>2. MAIN (paste into DZ MAIN tab)</h2>
+<div class="status" id="mainStatus">Loading...</div>
+<textarea id="mainCode" readonly>Loading...</textarea>
+<button onclick="copyMain()">COPY MAIN</button>
+
+<h2>3. Commit in DZ editor</h2>
+<p>Commit message: <b>v17 - NPC action 1-arg fix</b></p>
+
+<script>
+function loadFile(path, textareaId, statusId) {
+    var el = document.getElementById(textareaId);
+    var st = document.getElementById(statusId);
+    fetch(path + '?t=' + Date.now())
+        .then(function(r){return r.text()})
+        .then(function(t){
+            el.value = t;
+            st.textContent = 'Loaded! ' + t.length + ' chars / ' + t.split('\n').length + ' lines';
+        })
+        .catch(function(e){st.textContent='Error: '+e});
+}
+function copyUtil(){
+    document.getElementById('utilCode').select();
+    document.execCommand('copy');
+    document.getElementById('utilStatus').textContent='COPIED!';
+}
+function copyMain(){
+    document.getElementById('mainCode').select();
+    document.execCommand('copy');
+    document.getElementById('mainStatus').textContent='COPIED!';
+}
+loadFile('slayer_UTILITIES.txt', 'utilCode', 'utilStatus');
+loadFile('slayer_MAIN.txt', 'mainCode', 'mainStatus');
+</script></body></html>

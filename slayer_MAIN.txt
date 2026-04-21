@@ -363,7 +363,7 @@ function handleCheckStats() {
 // SELECT_MASTER -- Choose slayer master
 // -----------------------------------------------------------------------------
 function handleSelectMaster() {
-    var preference = config.masterPreference ? config.masterPreference.read() : "Auto";
+    var preference = config.masterPreference ? config.masterPreference.getValue() : "Auto";
     selectedMaster = selectBestMaster(combatLevel, slayerLevel, preference);
 
     Game.sendGameMessage("[SlayerBot] Selected master: " + selectedMaster.name +
@@ -490,12 +490,12 @@ function handleCheckSupplies() {
     if (foodCount < 5) {
         Game.sendGameMessage("[SlayerBot] Low food: " + foodCount + " -- need restock", "Bot");
         needsRestock = true;
-        var foodName = config.foodType ? config.foodType.read() : "Lobster";
+        var foodName = config.foodType ? config.foodType.getValue() : "Lobster";
         missingItems.push({ name: foodName, id: FOOD[foodName] ? FOOD[foodName].id : 379, quantity: 15 });
     }
 
     // Check prayer potions (if prayer is enabled)
-    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+    var usePrayer = config.usePrayer ? config.usePrayer.getValue() : true;
     if (usePrayer && prayerLevel > 1) {
         var prayerPotCount = countPrayerPots();
         if (prayerPotCount < 2) {
@@ -642,7 +642,7 @@ function handleBankSupplies() {
                     Utility.invokeLater(function() {
                         try {
                             // Withdraw food
-                            var foodName = config.foodType ? config.foodType.read() : "Lobster";
+                            var foodName = config.foodType ? config.foodType.getValue() : "Lobster";
                             var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
                             Game.interact.bank.withdrawItem(foodId, BankWithdrawType.WITHDRAW_ALL, false);
                             Game.sendGameMessage("[SlayerBot] Withdrew 14x " + foodName, "Bot");
@@ -650,7 +650,7 @@ function handleBankSupplies() {
                             Utility.invokeLater(function() {
                                 try {
                                     // Withdraw prayer potions if needed
-                                    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+                                    var usePrayer = config.usePrayer ? config.usePrayer.getValue() : true;
                                     if (usePrayer && prayerLevel > 1) {
                                         Game.interact.bank.withdrawItem(2434, BankWithdrawType.WITHDRAW_FIVE, false); // Prayer pot
                                         Game.sendGameMessage("[SlayerBot] Withdrew 4x Prayer potion(4)", "Bot");
@@ -957,7 +957,7 @@ function handleFightTask() {
     }
 
     // --- EAT FOOD CHECK ---
-    var eatPercent = config.eatPercent ? config.eatPercent.read() : 50;
+    var eatPercent = config.eatPercent ? config.eatPercent.getValue() : 50;
     var hpPercent = (currentHP / hitpointsLevel) * 100;
     if (hpPercent <= eatPercent) {
         var foodCount = countFood();
@@ -973,7 +973,7 @@ function handleFightTask() {
     }
 
     // --- PRAYER CHECK ---
-    var usePrayer = config.usePrayer ? config.usePrayer.read() : true;
+    var usePrayer = config.usePrayer ? config.usePrayer.getValue() : true;
     if (usePrayer && prayerLevel > 1) {
         var currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
         if (currentPrayer > 0 && currentPrayer < 20) {
@@ -1008,10 +1008,10 @@ function handleFightTask() {
     }
 
     // --- LOOT CHECK ---
-    var lootEnabled = config.lootEnabled ? config.lootEnabled.read() : true;
+    var lootEnabled = config.lootEnabled ? config.lootEnabled.getValue() : true;
     if (lootEnabled && !Client.getLocalPlayer().isInteracting()) {
         // Check for loot on ground
-        var lootMinValue = config.lootMinValue ? config.lootMinValue.read() : 100;
+        var lootMinValue = config.lootMinValue ? config.lootMinValue.getValue() : 100;
         var _groundAll = Game.info.groundItem.getAll(); var lootItem = _groundAll ? _groundAll[0] : null;
         if (lootItem && Game.info.inventory.getItemCount(-1) < 28) {
             // Pick up valuable loot
@@ -1021,7 +1021,7 @@ function handleFightTask() {
     }
 
     // --- BURY BONES CHECK ---
-    var buryBones = config.buryBones ? config.buryBones.read() : false;
+    var buryBones = config.buryBones ? config.buryBones.getValue() : false;
     if (buryBones && !Client.getLocalPlayer().isInteracting()) {
         for (var i = 0; i < ALL_BONE_IDS.length; i++) {
             if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
@@ -1095,7 +1095,7 @@ function eatFood() {
 
     Utility.invokeLater(function() {
         try {
-            var foodName = config.foodType ? config.foodType.read() : "Lobster";
+            var foodName = config.foodType ? config.foodType.getValue() : "Lobster";
             var foodId = FOOD[foodName] ? FOOD[foodName].id : 379;
 
             // Try configured food first

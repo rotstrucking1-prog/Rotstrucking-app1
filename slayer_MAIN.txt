@@ -1056,15 +1056,9 @@ function attackNearest() {
         try {
             var target = null;
 
-            // Try each NPC ID for the task
-            for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
-                target = Game.info.npc.getNearest([currentTaskMonster.npcIds[i]]);
-                if (target && !target.isDead() && !target.isInteracting()) {
-                    break;
-                }
-                target = null;
-            }
-
+            // Pass full NPC ID array - getNearest accepts number[]
+            target = Game.info.npc.getNearest(currentTaskMonster.npcIds);
+            if (target && (target.isDead() || target.isInteracting())) { target = null; }
             if (target) {
                 Game.interact.npc.attack(target);
                 Game.sendGameMessage("[SlayerBot] Attacking " + currentTaskMonster.name + " (NPC ID: " + target.getName() + ")", "Bot");

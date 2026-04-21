@@ -18,7 +18,7 @@ function dbLookup(obj, k) { return obj[k]; }
 var SLAYER_MASTERS = {
     TURAEL: {
         name: "Turael",
-        npcId: 5913,
+        npcId: 13618,
         location: { x: 2931, y: 3536, plane: 0 },
         locationName: "Burthorpe",
         combatReq: 1,
@@ -26,7 +26,7 @@ var SLAYER_MASTERS = {
     },
     MAZCHNA: {
         name: "Mazchna",
-        npcId: 6797,
+        npcId: 13620,
         location: { x: 3512, y: 3509, plane: 0 },
         locationName: "Canifis",
         combatReq: 20,
@@ -34,7 +34,7 @@ var SLAYER_MASTERS = {
     },
     VANNAKA: {
         name: "Vannaka",
-        npcId: 1597,
+        npcId: 403,
         location: { x: 3146, y: 9913, plane: 0 },
         locationName: "Edgeville Dungeon",
         combatReq: 40,
@@ -42,7 +42,7 @@ var SLAYER_MASTERS = {
     },
     CHAELDAR: {
         name: "Chaeldar",
-        npcId: 1598,
+        npcId: 404,
         location: { x: 2445, y: 4431, plane: 0 },
         locationName: "Zanaris",
         combatReq: 70,
@@ -58,7 +58,7 @@ var SLAYER_MASTERS = {
     },
     NIEVE: {
         name: "Nieve",
-        npcId: 490,
+        npcId: 6797,
         location: { x: 2432, y: 3423, plane: 0 },
         locationName: "Tree Gnome Stronghold",
         combatReq: 85,
@@ -66,7 +66,7 @@ var SLAYER_MASTERS = {
     },
     DURADEL: {
         name: "Duradel",
-        npcId: 1599,
+        npcId: 13622,
         location: { x: 2869, y: 2982, plane: 1 },
         locationName: "Shilo Village (upstairs)",
         combatReq: 100,

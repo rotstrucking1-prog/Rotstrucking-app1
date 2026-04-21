@@ -5255,7 +5255,7 @@ function bankForTool(toolId) {
     isExecuting = true;
     Utility.invokeLater(function() {
         try {
-            Game.interact.bank.withdrawItem(toolId, 1);
+            Game.interact.bank.withdrawItem(toolId, BankWithdrawType.WITHDRAW_ONE, false);
             Game.sendGameMessage("[SlayerBot][RI] Withdrew tool: " + toolId, "Bot");
         } catch(e) {}
         isExecuting = false;
@@ -5624,4 +5624,28 @@ function useItemOnInventoryItem(itemId1, itemId2) {
     Utility.invokeLater(function() {
         Game.interact.inventory.useItem(itemId2, MenuAction.WIDGET_TARGET_ON_WIDGET);
     }, 300);
+}
+
+// -----------------------------------------------------------------------------
+// Helper: Returns flat array of ALL equipment IDs for gear equipping
+// Called from MAIN equipGearFromInventory() to avoid .id access in MAIN tab
+// -----------------------------------------------------------------------------
+function getAllEquipmentIds() {
+    var ids = [];
+    var i;
+    // Melee weapons
+    for (i = 0; i < MELEE_WEAPONS.length; i++) ids.push(MELEE_WEAPONS[i].id);
+    // Leaf-bladed weapons
+    ids.push(11902, 20727);
+    // Armor
+    for (i = 0; i < HELMETS.length; i++) ids.push(HELMETS[i].id);
+    for (i = 0; i < PLATEBODIES.length; i++) ids.push(PLATEBODIES[i].id);
+    for (i = 0; i < PLATELEGS.length; i++) ids.push(PLATELEGS[i].id);
+    for (i = 0; i < SHIELDS.length; i++) ids.push(SHIELDS[i].id);
+    for (i = 0; i < BOOTS.length; i++) ids.push(BOOTS[i].id);
+    for (i = 0; i < GLOVES.length; i++) ids.push(GLOVES[i].id);
+    for (i = 0; i < AMULETS.length; i++) ids.push(AMULETS[i].id);
+    // Special items: mirror shield, nose peg, earmuffs, face mask, witchwood icon, lantern
+    ids.push(4156, 4168, 4166, 4164, 8923, 7053);
+    return ids;
 }

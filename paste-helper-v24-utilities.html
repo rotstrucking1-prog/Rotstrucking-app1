@@ -1,4 +1,22 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>v24 UTILITIES - NPC ID Fix</title><style>body{font-family:monospace;margin:20px;background:#1e1e1e;color:#d4d4d4}h1{color:#569cd6}.btn{padding:12px 24px;font-size:16px;cursor:pointer;background:#569cd6;color:#fff;border:none;border-radius:4px;margin:5px}.btn:hover{background:#4e8cc2}#status{margin:10px 0;font-size:14px;color:#6a9955}textarea{width:100%;height:60vh;background:#252526;color:#d4d4d4;border:1px solid #3c3c3c;font-family:monospace;font-size:11px;padding:8px;resize:vertical}</style></head><body><h1>v24 UTILITIES - NPC ID Fix</h1><p>Lines: 6603 | Size: 244459 bytes</p><button class="btn" onclick="copyCode()">Copy All Code</button><button class="btn" onclick="selectAll()">Select All</button><span id="status"></span><textarea id="code" readonly>// =============================================
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DZ Paste Helper - UTILITIES</title>
+<style>
+body { font-family: monospace; background: #1a1a2e; color: #0f0; padding: 20px; }
+button { background: #00ff00; color: #000; font-size: 24px; padding: 15px 40px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; }
+button:hover { background: #00cc00; }
+#status { font-size: 18px; margin-top: 15px; }
+pre { background: #0d0d1a; padding: 10px; max-height: 300px; overflow: auto; font-size: 11px; border: 1px solid #333; }
+</style>
+</head>
+<body>
+<h1>DeadZone Paste Helper - UTILITIES</h1>
+<p>Lines: 6602 | Click Copy then switch to DZ editor tab, Ctrl+A, Ctrl+V</p>
+<button onclick="copyCode()">COPY UTILITIES CODE</button>
+<div id="status"></div>
+<pre id="code">// =============================================
 // Generic lookup helper -- avoids TypeScript bracket-access errors on object literals
 function dbLookup(obj, k) { return obj[k]; }
 // AUTO SLAYER BOT v2.2 -- UTILITIES
@@ -6600,4 +6618,23 @@ function getRandomIdleAction() {
     var idx = Math.floor(Math.random() * IDLE_ACTIONS.length);
     return IDLE_ACTIONS[idx];
 }
-</textarea><script>function copyCode(){var t=document.getElementById("code");navigator.clipboard.writeText(t.value).then(function(){document.getElementById("status").textContent="Copied!";}).catch(function(){t.select();document.execCommand("copy");document.getElementById("status").textContent="Copied (fallback)!";});}function selectAll(){document.getElementById("code").select();}</script></body></html>
+</pre>
+<script>
+var codeText = document.getElementById("code").textContent;
+function copyCode() {
+  navigator.clipboard.writeText(codeText).then(function() {
+    document.getElementById("status").innerHTML = "<span style=\"color:#0f0\">COPIED! Now switch to DZ editor -> Ctrl+A -> Ctrl+V</span>";
+  }).catch(function(e) {
+    // fallback
+    var ta = document.createElement("textarea");
+    ta.value = codeText;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    document.getElementById("status").innerHTML = "<span style=\"color:#ff0\">COPIED (fallback)! Switch to DZ editor -> Ctrl+A -> Ctrl+V</span>";
+  });
+}
+</script>
+</body>
+</html>

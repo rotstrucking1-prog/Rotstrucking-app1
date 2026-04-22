@@ -4,228 +4,175 @@
 <meta charset="utf-8">
 <title>DZ Paste Helper - CONFIG</title>
 <style>
-body { font-family: monospace; background: #1a1a2e; color: #0f0; padding: 20px; }
-button { background: #00ff00; color: #000; font-size: 24px; padding: 15px 40px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; }
+body { background: #1a1a2e; color: #0f0; font-family: monospace; padding: 20px; }
+h1 { color: #0ff; text-align: center; }
+.info { color: #ff0; text-align: center; font-size: 18px; margin: 10px 0; }
+button { background: #00aa00; color: white; border: none; padding: 15px 30px; font-size: 20px; cursor: pointer; border-radius: 8px; display: block; margin: 20px auto; }
 button:hover { background: #00cc00; }
-#status { font-size: 18px; margin-top: 15px; }
-pre { background: #0d0d1a; padding: 10px; max-height: 300px; overflow: auto; font-size: 11px; border: 1px solid #333; }
+button.copied { background: #0066cc; }
+pre { background: #0d0d1a; padding: 15px; border: 1px solid #333; border-radius: 8px; overflow-x: auto; max-height: 500px; overflow-y: auto; font-size: 11px; white-space: pre; }
 </style>
 </head>
 <body>
-<h1>DeadZone Paste Helper - CONFIG</h1>
-<p>Lines: 220 | Click Copy then switch to DZ editor tab, Ctrl+A, Ctrl+V</p>
-<button onclick="copyCode()">COPY CONFIG CODE</button>
-<div id="status"></div>
+<h1>ROTS Slayer Bot v24 - CONFIG</h1>
+<div class="info">167 lines | var config = { ... } object wrapper</div>
+<button id="copyBtn" onclick="copyCode()">COPY CONFIG CODE</button>
 <pre id="code">// ============================================================
 // DeadZone Auto Slayer Bot v24 -- CONFIG
 // Version: 24.0
 // ============================================================
 
-// ------------------------------------------------------------
-// Combat Group
-// ------------------------------------------------------------
-
-var foodType = ConfigItem.createList(
-    &quot;foodType&quot;, &quot;Combat&quot;, &quot;Food Type&quot;,
-    &quot;Type of food to eat during combat&quot;,
-    [&quot;Shrimps&quot;, &quot;Trout&quot;, &quot;Salmon&quot;, &quot;Lobster&quot;, &quot;Swordfish&quot;, &quot;Monkfish&quot;, &quot;Shark&quot;, &quot;Manta Ray&quot;],
-    &quot;Lobster&quot;
-);
-
-var eatPercent = ConfigItem.createInteger(
-    &quot;eatPercent&quot;, &quot;Combat&quot;, &quot;Eat at HP %&quot;,
-    &quot;HP percentage threshold to eat food at&quot;,
-    50
-);
-
-var usePrayer = ConfigItem.createBoolean(
-    &quot;usePrayer&quot;, &quot;Combat&quot;, &quot;Use Protection Prayers&quot;,
-    &quot;Automatically activate protection prayers based on monster attack style&quot;,
-    true
-);
-
-var useSpecialAttack = ConfigItem.createBoolean(
-    &quot;useSpecialAttack&quot;, &quot;Combat&quot;, &quot;Use Special Attack&quot;,
-    &quot;Use special attack weapon when spec energy is available&quot;,
-    true
-);
-
-var trainingFocus = ConfigItem.createList(
-    &quot;trainingFocus&quot;, &quot;Combat&quot;, &quot;Training Focus&quot;,
-    &quot;Which combat stat to prioritize when selecting attack style&quot;,
-    [&quot;Balanced&quot;, &quot;Attack&quot;, &quot;Strength&quot;, &quot;Defence&quot;],
-    &quot;Balanced&quot;
-);
-
-var attackCap = ConfigItem.createInteger(
-    &quot;attackCap&quot;, &quot;Combat&quot;, &quot;Attack Level Cap&quot;,
-    &quot;Maximum Attack level to train to (0 = no cap)&quot;,
-    0
-);
-
-var strengthCap = ConfigItem.createInteger(
-    &quot;strengthCap&quot;, &quot;Combat&quot;, &quot;Strength Level Cap&quot;,
-    &quot;Maximum Strength level to train to (0 = no cap)&quot;,
-    0
-);
-
-var defenceCap = ConfigItem.createInteger(
-    &quot;defenceCap&quot;, &quot;Combat&quot;, &quot;Defence Level Cap&quot;,
-    &quot;Maximum Defence level to train to (0 = no cap)&quot;,
-    0
-);
-
-// ------------------------------------------------------------
-// Loot Group
-// ------------------------------------------------------------
-
-var lootEnabled = ConfigItem.createBoolean(
-    &quot;lootEnabled&quot;, &quot;Loot&quot;, &quot;Pick Up Loot&quot;,
-    &quot;Enable automatic looting of monster drops&quot;,
-    true
-);
-
-var lootMinValue = ConfigItem.createInteger(
-    &quot;lootMinValue&quot;, &quot;Loot&quot;, &quot;Minimum Loot Value (GP)&quot;,
-    &quot;Only pick up items worth at least this many GP&quot;,
-    250
-);
-
-var buryBones = ConfigItem.createBoolean(
-    &quot;buryBones&quot;, &quot;Loot&quot;, &quot;Bury Bones&quot;,
-    &quot;Automatically bury bones dropped by killed monsters&quot;,
-    true
-);
-
-var collectClues = ConfigItem.createBoolean(
-    &quot;collectClues&quot;, &quot;Loot&quot;, &quot;Collect Clue Scrolls&quot;,
-    &quot;Pick up clue scrolls and bank them for later&quot;,
-    true
-);
-
-// ------------------------------------------------------------
-// Slayer Group
-// ------------------------------------------------------------
-
-var masterPreference = ConfigItem.createList(
-    &quot;masterPreference&quot;, &quot;Slayer&quot;, &quot;Slayer Master&quot;,
-    &quot;Preferred slayer master (Auto picks highest available)&quot;,
-    [&quot;Auto&quot;, &quot;Turael&quot;, &quot;Mazchna&quot;, &quot;Vannaka&quot;, &quot;Chaeldar&quot;, &quot;Konar&quot;, &quot;Nieve&quot;, &quot;Duradel&quot;],
-    &quot;Auto&quot;
-);
-
-var turaelBoosting = ConfigItem.createBoolean(
-    &quot;turaelBoosting&quot;, &quot;Slayer&quot;, &quot;Turael Boosting&quot;,
-    &quot;Complete 9 tasks at Turael then get 10th from highest master for bonus points&quot;,
-    false
-);
-
-// ------------------------------------------------------------
-// Supplies Group
-// ------------------------------------------------------------
-
-var useGE = ConfigItem.createBoolean(
-    &quot;useGE&quot;, &quot;Supplies&quot;, &quot;Use Grand Exchange&quot;,
-    &quot;Buy supplies from the Grand Exchange when needed&quot;,
-    true
-);
-
-var selfSufficiency = ConfigItem.createBoolean(
-    &quot;selfSufficiency&quot;, &quot;Supplies&quot;, &quot;Self Sufficiency Mode&quot;,
-    &quot;Gather supplies by hand when GP is insufficient to buy&quot;,
-    true
-);
-
-var minArrowStock = ConfigItem.createInteger(
-    &quot;minArrowStock&quot;, &quot;Supplies&quot;, &quot;Min Arrow Stock&quot;,
-    &quot;Minimum arrows to craft or buy before returning to slayer task&quot;,
-    1000
-);
-
-var minRuneStock = ConfigItem.createInteger(
-    &quot;minRuneStock&quot;, &quot;Supplies&quot;, &quot;Min Rune Stock&quot;,
-    &quot;Minimum runes to craft or buy before returning to slayer task&quot;,
-    1000
-);
-
-// ------------------------------------------------------------
-// Advanced Group
-// ------------------------------------------------------------
-
-var useSafespots = ConfigItem.createBoolean(
-    &quot;useSafespots&quot;, &quot;Advanced&quot;, &quot;Use Safe Spots&quot;,
-    &quot;Use known safe spots when available for ranged or magic attacks&quot;,
-    true
-);
-
-var useCannon = ConfigItem.createBoolean(
-    &quot;useCannon&quot;, &quot;Advanced&quot;, &quot;Use Dwarf Cannon&quot;,
-    &quot;Deploy dwarf multicannon in multicombat areas to speed up tasks&quot;,
-    false
-);
-
-var antifireMode = ConfigItem.createList(
-    &quot;antifireMode&quot;, &quot;Advanced&quot;, &quot;Antifire Mode&quot;,
-    &quot;Auto drinks antifire potions for dragon tasks; Always Off disables&quot;,
-    [&quot;Auto&quot;, &quot;Always Off&quot;],
-    &quot;Auto&quot;
-);
-
-// ------------------------------------------------------------
-// Schedule Group
-// ------------------------------------------------------------
-
-var enableSchedule = ConfigItem.createBoolean(
-    &quot;enableSchedule&quot;, &quot;Schedule&quot;, &quot;Enable Play Schedule&quot;,
-    &quot;Only play during set hours -- logs out outside schedule&quot;,
-    true
-);
-
-var startHour = ConfigItem.createInteger(
-    &quot;startHour&quot;, &quot;Schedule&quot;, &quot;Start Hour (0-23)&quot;,
-    &quot;Hour of day to begin playing (24h format -- 8 = 8AM, 14 = 2PM)&quot;,
-    8
-);
-
-var endHour = ConfigItem.createInteger(
-    &quot;endHour&quot;, &quot;Schedule&quot;, &quot;End Hour (0-23)&quot;,
-    &quot;Hour of day to stop playing (24h format -- 22 = 10PM)&quot;,
-    23
-);
-
-var enableBreaks = ConfigItem.createBoolean(
-    &quot;enableBreaks&quot;, &quot;Schedule&quot;, &quot;Enable Human Breaks&quot;,
-    &quot;Take random breaks to appear more human&quot;,
-    true
-);
-
-var minPlayMinutes = ConfigItem.createInteger(
-    &quot;minPlayMinutes&quot;, &quot;Schedule&quot;, &quot;Min Play Between Breaks&quot;,
-    &quot;Minimum minutes of play before taking a break&quot;,
-    25
-);
-
-var maxPlayMinutes = ConfigItem.createInteger(
-    &quot;maxPlayMinutes&quot;, &quot;Schedule&quot;, &quot;Max Play Between Breaks&quot;,
-    &quot;Maximum minutes of play before taking a break&quot;,
-    90
-);
-
-var minBreakMinutes = ConfigItem.createInteger(
-    &quot;minBreakMinutes&quot;, &quot;Schedule&quot;, &quot;Min Break Duration&quot;,
-    &quot;Shortest possible break in minutes&quot;,
-    2
-);
-
-var maxBreakMinutes = ConfigItem.createInteger(
-    &quot;maxBreakMinutes&quot;, &quot;Schedule&quot;, &quot;Max Break Duration&quot;,
-    &quot;Longest possible break in minutes&quot;,
-    15
-);
-
-// ------------------------------------------------------------
-// Overlay Items
-// ------------------------------------------------------------
+var config = {
+    foodType: ConfigItem.createList(
+        &quot;foodType&quot;, &quot;Combat&quot;, &quot;Food Type&quot;,
+        &quot;Type of food to eat during combat&quot;,
+        [&quot;Shrimps&quot;, &quot;Trout&quot;, &quot;Salmon&quot;, &quot;Lobster&quot;, &quot;Swordfish&quot;, &quot;Monkfish&quot;, &quot;Shark&quot;, &quot;Manta Ray&quot;],
+        &quot;Lobster&quot;
+    ),
+    eatPercent: ConfigItem.createInteger(
+        &quot;eatPercent&quot;, &quot;Combat&quot;, &quot;Eat at HP %&quot;,
+        &quot;HP percentage threshold to eat food at&quot;,
+        50
+    ),
+    usePrayer: ConfigItem.createBoolean(
+        &quot;usePrayer&quot;, &quot;Combat&quot;, &quot;Use Protection Prayers&quot;,
+        &quot;Automatically activate protection prayers based on monster attack style&quot;,
+        true
+    ),
+    useSpecialAttack: ConfigItem.createBoolean(
+        &quot;useSpecialAttack&quot;, &quot;Combat&quot;, &quot;Use Special Attack&quot;,
+        &quot;Use special attack weapon when spec energy is available&quot;,
+        true
+    ),
+    trainingFocus: ConfigItem.createList(
+        &quot;trainingFocus&quot;, &quot;Combat&quot;, &quot;Training Focus&quot;,
+        &quot;Which combat stat to prioritize when selecting attack style&quot;,
+        [&quot;Balanced&quot;, &quot;Attack&quot;, &quot;Strength&quot;, &quot;Defence&quot;],
+        &quot;Balanced&quot;
+    ),
+    attackCap: ConfigItem.createInteger(
+        &quot;attackCap&quot;, &quot;Combat&quot;, &quot;Attack Level Cap&quot;,
+        &quot;Maximum Attack level to train to (0 = no cap)&quot;,
+        0
+    ),
+    strengthCap: ConfigItem.createInteger(
+        &quot;strengthCap&quot;, &quot;Combat&quot;, &quot;Strength Level Cap&quot;,
+        &quot;Maximum Strength level to train to (0 = no cap)&quot;,
+        0
+    ),
+    defenceCap: ConfigItem.createInteger(
+        &quot;defenceCap&quot;, &quot;Combat&quot;, &quot;Defence Level Cap&quot;,
+        &quot;Maximum Defence level to train to (0 = no cap)&quot;,
+        0
+    ),
+    lootEnabled: ConfigItem.createBoolean(
+        &quot;lootEnabled&quot;, &quot;Loot&quot;, &quot;Pick Up Loot&quot;,
+        &quot;Enable automatic looting of monster drops&quot;,
+        true
+    ),
+    lootMinValue: ConfigItem.createInteger(
+        &quot;lootMinValue&quot;, &quot;Loot&quot;, &quot;Minimum Loot Value (GP)&quot;,
+        &quot;Only pick up items worth at least this many GP&quot;,
+        250
+    ),
+    buryBones: ConfigItem.createBoolean(
+        &quot;buryBones&quot;, &quot;Loot&quot;, &quot;Bury Bones&quot;,
+        &quot;Automatically bury bones dropped by killed monsters&quot;,
+        true
+    ),
+    collectClues: ConfigItem.createBoolean(
+        &quot;collectClues&quot;, &quot;Loot&quot;, &quot;Collect Clue Scrolls&quot;,
+        &quot;Pick up clue scrolls and bank them for later&quot;,
+        true
+    ),
+    masterPreference: ConfigItem.createList(
+        &quot;masterPreference&quot;, &quot;Slayer&quot;, &quot;Slayer Master&quot;,
+        &quot;Preferred slayer master (Auto picks highest available)&quot;,
+        [&quot;Auto&quot;, &quot;Turael&quot;, &quot;Mazchna&quot;, &quot;Vannaka&quot;, &quot;Chaeldar&quot;, &quot;Konar&quot;, &quot;Nieve&quot;, &quot;Duradel&quot;],
+        &quot;Auto&quot;
+    ),
+    turaelBoosting: ConfigItem.createBoolean(
+        &quot;turaelBoosting&quot;, &quot;Slayer&quot;, &quot;Turael Boosting&quot;,
+        &quot;Complete 9 tasks at Turael then get 10th from highest master for bonus points&quot;,
+        false
+    ),
+    useGE: ConfigItem.createBoolean(
+        &quot;useGE&quot;, &quot;Supplies&quot;, &quot;Use Grand Exchange&quot;,
+        &quot;Buy supplies from the Grand Exchange when needed&quot;,
+        true
+    ),
+    selfSufficiency: ConfigItem.createBoolean(
+        &quot;selfSufficiency&quot;, &quot;Supplies&quot;, &quot;Self Sufficiency Mode&quot;,
+        &quot;Gather supplies by hand when GP is insufficient to buy&quot;,
+        true
+    ),
+    minArrowStock: ConfigItem.createInteger(
+        &quot;minArrowStock&quot;, &quot;Supplies&quot;, &quot;Min Arrow Stock&quot;,
+        &quot;Minimum arrows to craft or buy before returning to slayer task&quot;,
+        1000
+    ),
+    minRuneStock: ConfigItem.createInteger(
+        &quot;minRuneStock&quot;, &quot;Supplies&quot;, &quot;Min Rune Stock&quot;,
+        &quot;Minimum runes to craft or buy before returning to slayer task&quot;,
+        1000
+    ),
+    useSafespots: ConfigItem.createBoolean(
+        &quot;useSafespots&quot;, &quot;Advanced&quot;, &quot;Use Safe Spots&quot;,
+        &quot;Use known safe spots when available for ranged or magic attacks&quot;,
+        true
+    ),
+    useCannon: ConfigItem.createBoolean(
+        &quot;useCannon&quot;, &quot;Advanced&quot;, &quot;Use Dwarf Cannon&quot;,
+        &quot;Deploy dwarf multicannon in multicombat areas to speed up tasks&quot;,
+        false
+    ),
+    antifireMode: ConfigItem.createList(
+        &quot;antifireMode&quot;, &quot;Advanced&quot;, &quot;Antifire Mode&quot;,
+        &quot;Auto drinks antifire potions for dragon tasks; Always Off disables&quot;,
+        [&quot;Auto&quot;, &quot;Always Off&quot;],
+        &quot;Auto&quot;
+    ),
+    enableSchedule: ConfigItem.createBoolean(
+        &quot;enableSchedule&quot;, &quot;Schedule&quot;, &quot;Enable Play Schedule&quot;,
+        &quot;Only play during set hours -- logs out outside schedule&quot;,
+        true
+    ),
+    startHour: ConfigItem.createInteger(
+        &quot;startHour&quot;, &quot;Schedule&quot;, &quot;Start Hour (0-23)&quot;,
+        &quot;Hour of day to begin playing (24h format -- 8 = 8AM, 14 = 2PM)&quot;,
+        8
+    ),
+    endHour: ConfigItem.createInteger(
+        &quot;endHour&quot;, &quot;Schedule&quot;, &quot;End Hour (0-23)&quot;,
+        &quot;Hour of day to stop playing (24h format -- 22 = 10PM)&quot;,
+        23
+    ),
+    enableBreaks: ConfigItem.createBoolean(
+        &quot;enableBreaks&quot;, &quot;Schedule&quot;, &quot;Enable Human Breaks&quot;,
+        &quot;Take random breaks to appear more human&quot;,
+        true
+    ),
+    minPlayMinutes: ConfigItem.createInteger(
+        &quot;minPlayMinutes&quot;, &quot;Schedule&quot;, &quot;Min Play Between Breaks&quot;,
+        &quot;Minimum minutes of play before taking a break&quot;,
+        25
+    ),
+    maxPlayMinutes: ConfigItem.createInteger(
+        &quot;maxPlayMinutes&quot;, &quot;Schedule&quot;, &quot;Max Play Between Breaks&quot;,
+        &quot;Maximum minutes of play before taking a break&quot;,
+        90
+    ),
+    minBreakMinutes: ConfigItem.createInteger(
+        &quot;minBreakMinutes&quot;, &quot;Schedule&quot;, &quot;Min Break Duration&quot;,
+        &quot;Shortest possible break in minutes&quot;,
+        2
+    ),
+    maxBreakMinutes: ConfigItem.createInteger(
+        &quot;maxBreakMinutes&quot;, &quot;Schedule&quot;, &quot;Max Break Duration&quot;,
+        &quot;Longest possible break in minutes&quot;,
+        15
+    )
+};
 
 var statusOverlay = OverlayItem.create2d(&quot;status&quot;, &quot;Status: Initializing...&quot;, true, 0);
 var taskOverlay = OverlayItem.create2d(&quot;task&quot;, &quot;Task: None&quot;, true, 1);
@@ -238,20 +185,19 @@ var breakOverlay = OverlayItem.create2d(&quot;breakStatus&quot;, &quot;Break: --
 var scheduleOverlay = OverlayItem.create2d(&quot;scheduleStatus&quot;, &quot;Schedule: Active&quot;, true, 8);
 </pre>
 <script>
-var codeText = document.getElementById("code").textContent;
 function copyCode() {
-  navigator.clipboard.writeText(codeText).then(function() {
-    document.getElementById("status").innerHTML = "<span style=\"color:#0f0\">COPIED! Now switch to DZ editor -> Ctrl+A -> Ctrl+V</span>";
-  }).catch(function(e) {
-    // fallback
-    var ta = document.createElement("textarea");
-    ta.value = codeText;
-    document.body.appendChild(ta);
-    ta.select();
+    var el = document.getElementById("code");
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
     document.execCommand("copy");
-    document.body.removeChild(ta);
-    document.getElementById("status").innerHTML = "<span style=\"color:#ff0\">COPIED (fallback)! Switch to DZ editor -> Ctrl+A -> Ctrl+V</span>";
-  });
+    sel.removeAllRanges();
+    var btn = document.getElementById("copyBtn");
+    btn.textContent = "COPIED!";
+    btn.className = "copied";
+    setTimeout(function() { btn.textContent = "COPY CONFIG CODE"; btn.className = ""; }, 3000);
 }
 </script>
 </body>

@@ -1,4 +1,21 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>v24 MAIN - NPC ID Fix</title><style>body{font-family:monospace;margin:20px;background:#1e1e1e;color:#d4d4d4}h1{color:#569cd6}.btn{padding:12px 24px;font-size:16px;cursor:pointer;background:#569cd6;color:#fff;border:none;border-radius:4px;margin:5px}.btn:hover{background:#4e8cc2}#status{margin:10px 0;font-size:14px;color:#6a9955}textarea{width:100%;height:60vh;background:#252526;color:#d4d4d4;border:1px solid #3c3c3c;font-family:monospace;font-size:11px;padding:8px;resize:vertical}</style></head><body><h1>v24 MAIN - NPC ID Fix</h1><p>Lines: 4457 | Size: 150727 bytes</p><button class="btn" onclick="copyCode()">Copy All Code</button><button class="btn" onclick="selectAll()">Select All</button><span id="status"></span><textarea id="code" readonly>// =============================================================================
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>v24 MAIN Paste Helper</title>
+<style>
+body{font-family:monospace;margin:20px;background:#1e1e1e;color:#d4d4d4}
+h1{color:#4ec9b0}
+.info{color:#9cdcfe;margin:10px 0}
+button{background:#0e639c;color:white;border:none;padding:12px 24px;font-size:16px;cursor:pointer;border-radius:4px;margin:5px}
+button:hover{background:#1177bb}
+textarea{width:100%%;height:400px;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;font-family:monospace;font-size:11px;padding:8px}
+.success{color:#4ec9b0;font-weight:bold;font-size:18px}
+</style></head><body>
+<h1>ROTS Slayer Bot v24 - MAIN (4457 lines)</h1>
+<p class="info">Barrows repair check: every 5 minutes (500 ticks)</p>
+<p class="info">Click "Copy All Code" then paste into DZ MAIN tab with Ctrl+A, Ctrl+V</p>
+<button onclick="copyCode()">Copy All Code</button>
+<span id="status"></span>
+<br><br>
+<textarea id="code" readonly>// =============================================================================
 // AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
 // =============================================================================
 // The brain of the slayer bot. Implements a full autonomous state machine that:
@@ -183,7 +200,7 @@ var lastBreakDurationMins = 0;
 // v24: Barrows repair tracking
 var repairPhase = &quot;walk_to_bob&quot;; // walk_to_bob, open_shop, repair_items, done
 var stateBeforeRepair = &quot;&quot;;
-var repairCheckInterval = 50; // check every 50 ticks (~30 sec)
+var repairCheckInterval = 500; // check every 500 ticks (~5 min)
 var ticksSinceRepairCheck = 0;
 
 // v24: Self-sufficiency vars (shared with UTILITIES)
@@ -4454,4 +4471,13 @@ function handleRepairBarrows() {
             break;
     }
 }
-</textarea><script>function copyCode(){var t=document.getElementById("code");navigator.clipboard.writeText(t.value).then(function(){document.getElementById("status").textContent="Copied!";}).catch(function(){t.select();document.execCommand("copy");document.getElementById("status").textContent="Copied (fallback)!";});}function selectAll(){document.getElementById("code").select();}</script></body></html>
+</textarea>
+<script>
+function copyCode(){
+var t=document.getElementById("code");
+t.select();
+document.execCommand("copy");
+document.getElementById("status").innerHTML='<span class="success">Copied!</span>';
+}
+</script>
+</body></html>

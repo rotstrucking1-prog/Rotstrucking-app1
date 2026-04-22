@@ -1,19 +1,4 @@
-<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>v24 UTILITIES - Potion/Barrows/Repair Update</title>
-<style>
-body{font-family:monospace;margin:20px;background:#1e1e1e;color:#d4d4d4}
-h1{color:#569cd6}
-.btn{padding:12px 24px;font-size:16px;cursor:pointer;background:#569cd6;color:#fff;border:none;border-radius:4px;margin:5px}
-.btn:hover{background:#4e8cc2}
-#status{margin:10px 0;font-size:14px;color:#6a9955}
-textarea{width:100%;height:60vh;background:#252526;color:#d4d4d4;border:1px solid #3c3c3c;font-family:monospace;font-size:11px;padding:8px;resize:vertical}
-</style></head><body>
-<h1>v24 UTILITIES - Potion/Barrows/Repair Update</h1>
-<p>Lines: 6603 | Size: 244596 bytes</p>
-<button class="btn" onclick="copyCode()">Copy All Code</button>
-<button class="btn" onclick="selectAll()">Select All</button>
-<span id="status"></span>
-<textarea id="code" readonly>// =============================================
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>v24 UTILITIES - NPC ID Fix</title><style>body{font-family:monospace;margin:20px;background:#1e1e1e;color:#d4d4d4}h1{color:#569cd6}.btn{padding:12px 24px;font-size:16px;cursor:pointer;background:#569cd6;color:#fff;border:none;border-radius:4px;margin:5px}.btn:hover{background:#4e8cc2}#status{margin:10px 0;font-size:14px;color:#6a9955}textarea{width:100%;height:60vh;background:#252526;color:#d4d4d4;border:1px solid #3c3c3c;font-family:monospace;font-size:11px;padding:8px;resize:vertical}</style></head><body><h1>v24 UTILITIES - NPC ID Fix</h1><p>Lines: 6603 | Size: 244459 bytes</p><button class="btn" onclick="copyCode()">Copy All Code</button><button class="btn" onclick="selectAll()">Select All</button><span id="status"></span><textarea id="code" readonly>// =============================================
 // Generic lookup helper -- avoids TypeScript bracket-access errors on object literals
 function dbLookup(obj, k) { return obj[k]; }
 // AUTO SLAYER BOT v2.2 -- UTILITIES
@@ -392,7 +377,7 @@ var MONSTER_DB = {
 
     &quot;Bat&quot;: {
         name: &quot;Bat&quot;,
-        npcIds: [412, 6283, 2824],
+        npcIds: [2827, 10888, 14042],
         location: { x: 3178, y: 9901, plane: 0 },
         locationName: &quot;Edgeville Dungeon&quot;,
         combatLevel: 6,
@@ -412,7 +397,7 @@ var MONSTER_DB = {
 
     &quot;Bear&quot;: {
         name: &quot;Bear&quot;,
-        npcIds: [106, 107, 3423, 105],
+        npcIds: [2838, 3423],
         location: { x: 2700, y: 3332, plane: 0 },
         locationName: &quot;East of Ardougne&quot;,
         combatLevel: 19,
@@ -572,7 +557,7 @@ var MONSTER_DB = {
 
     &quot;Dog&quot;: {
         name: &quot;Dog&quot;,
-        npcIds: [99, 100, 3582],
+        npcIds: [114, 7209],
         location: { x: 2930, y: 3515, plane: 0 },
         locationName: &quot;Burthorpe&quot;,
         combatLevel: 29,
@@ -612,7 +597,7 @@ var MONSTER_DB = {
 
     &quot;Ghost&quot;: {
         name: &quot;Ghost&quot;,
-        npcIds: [102, 103, 104, 491, 1698],
+        npcIds: [85, 86, 87, 88, 89, 90, 91, 92, 93],
         location: { x: 3241, y: 9911, plane: 0 },
         locationName: &quot;Varrock Sewers&quot;,
         combatLevel: 19,
@@ -652,7 +637,7 @@ var MONSTER_DB = {
 
     &quot;Icefiend&quot;: {
         name: &quot;Icefiend&quot;,
-        npcIds: [3139, 7700],
+        npcIds: [3140, 4813],
         location: { x: 3008, y: 3477, plane: 0 },
         locationName: &quot;Ice Mountain&quot;,
         combatLevel: 18,
@@ -752,7 +737,7 @@ var MONSTER_DB = {
 
     &quot;Scorpion&quot;: {
         name: &quot;Scorpion&quot;,
-        npcIds: [107, 144, 3024],
+        npcIds: [2479, 2480, 3024],
         location: { x: 3298, y: 3298, plane: 0 },
         locationName: &quot;Al Kharid Mine&quot;,
         combatLevel: 14,
@@ -812,7 +797,7 @@ var MONSTER_DB = {
 
     &quot;Wolf&quot;: {
         name: &quot;Wolf&quot;,
-        npcIds: [106, 2853, 5346, 1198, 1199],
+        npcIds: [106, 110, 2490, 2491, 3912],
         location: { x: 2857, y: 3553, plane: 0 },
         locationName: &quot;White Wolf Mountain&quot;,
         combatLevel: 25,
@@ -956,7 +941,7 @@ var MONSTER_DB = {
 
     &quot;Ghoul&quot;: {
         name: &quot;Ghoul&quot;,
-        npcIds: [289, 290, 1543],
+        npcIds: [289],
         location: { x: 3421, y: 3508, plane: 0 },
         locationName: &quot;Canifis (graveyard)&quot;,
         combatLevel: 42,
@@ -1076,7 +1061,7 @@ var MONSTER_DB = {
 
     &quot;Mogre&quot;: {
         name: &quot;Mogre&quot;,
-        npcIds: [114, 2801],
+        npcIds: [2592],
         location: { x: 2987, y: 3108, plane: 0 },
         locationName: &quot;Mudskipper Point&quot;,
         combatLevel: 32,
@@ -1136,7 +1121,7 @@ var MONSTER_DB = {
 
     &quot;Shade&quot;: {
         name: &quot;Shade&quot;,
-        npcIds: [425, 426, 427, 428, 1240, 1241],
+        npcIds: [6740, 7258],
         location: { x: 3464, y: 3574, plane: 0 },
         locationName: &quot;Mort&#x27;ton&quot;,
         combatLevel: 40,
@@ -1156,7 +1141,7 @@ var MONSTER_DB = {
 
     &quot;Vampire&quot;: {
         name: &quot;Vampire&quot;,
-        npcIds: [3138, 3139, 3140, 3141],
+        npcIds: [3137, 3234, 3237, 3707, 3708],
         location: { x: 3563, y: 3475, plane: 0 },
         locationName: &quot;Canifis&quot;,
         combatLevel: 32,
@@ -1280,7 +1265,7 @@ var MONSTER_DB = {
 
     &quot;Blue Dragon&quot;: {
         name: &quot;Blue Dragon&quot;,
-        npcIds: [55, 264, 265, 266, 8076],
+        npcIds: [265, 266, 267, 268, 269],
         location: { x: 2892, y: 9774, plane: 0 },
         locationName: &quot;Taverley Dungeon&quot;,
         combatLevel: 111,
@@ -1440,7 +1425,7 @@ var MONSTER_DB = {
 
     &quot;Jelly&quot;: {
         name: &quot;Jelly&quot;,
-        npcIds: [437, 438, 7518, 7519],
+        npcIds: [437, 438, 439, 440, 441, 442],
         location: { x: 2789, y: 9990, plane: 0 },
         locationName: &quot;Fremennik Slayer Dungeon&quot;,
         combatLevel: 78,
@@ -1460,7 +1445,7 @@ var MONSTER_DB = {
 
     &quot;Jungle Horror&quot;: {
         name: &quot;Jungle Horror&quot;,
-        npcIds: [2825, 2826, 2827],
+        npcIds: [1042, 1043, 1044, 1045, 1046],
         location: { x: 2731, y: 2732, plane: 0 },
         locationName: &quot;Mos Le&#x27;Harmless (cave)&quot;,
         combatLevel: 70,
@@ -1560,7 +1545,7 @@ var MONSTER_DB = {
 
     &quot;Turoth&quot;: {
         name: &quot;Turoth&quot;,
-        npcIds: [426, 427, 428, 429, 432, 7519],
+        npcIds: [427, 428, 429, 430],
         location: { x: 2723, y: 10003, plane: 0 },
         locationName: &quot;Fremennik Slayer Dungeon&quot;,
         combatLevel: 83,
@@ -1624,7 +1609,7 @@ var MONSTER_DB = {
 
     &quot;Black Demon&quot;: {
         name: &quot;Black Demon&quot;,
-        npcIds: [2048, 2049, 2050, 2051, 2052, 7244, 7245, 7246],
+        npcIds: [240, 2048, 2049, 2050, 2051, 2052, 7242, 7243],
         location: { x: 2857, y: 9777, plane: 0 },
         locationName: &quot;Taverley Dungeon&quot;,
         combatLevel: 172,
@@ -1644,7 +1629,7 @@ var MONSTER_DB = {
 
     &quot;Black Dragon&quot;: {
         name: &quot;Black Dragon&quot;,
-        npcIds: [54, 247, 248, 249, 250, 8084, 8085],
+        npcIds: [252, 253, 254, 255, 256, 257, 258, 259, 8084, 8085],
         location: { x: 2830, y: 9824, plane: 0 },
         locationName: &quot;Taverley Dungeon&quot;,
         combatLevel: 227,
@@ -1764,7 +1749,7 @@ var MONSTER_DB = {
 
     &quot;Gargoyle&quot;: {
         name: &quot;Gargoyle&quot;,
-        npcIds: [412, 413, 7256, 7257],
+        npcIds: [412, 413, 1543],
         location: { x: 3438, y: 3537, plane: 2 },
         locationName: &quot;Slayer Tower (top floor)&quot;,
         combatLevel: 111,
@@ -1804,7 +1789,7 @@ var MONSTER_DB = {
 
     &quot;Hellhound&quot;: {
         name: &quot;Hellhound&quot;,
-        npcIds: [135, 136, 3133, 7256, 7257],
+        npcIds: [104, 105, 3133, 7256, 7877],
         location: { x: 2867, y: 9851, plane: 0 },
         locationName: &quot;Taverley Dungeon&quot;,
         combatLevel: 122,
@@ -1944,7 +1929,7 @@ var MONSTER_DB = {
 
     &quot;Nechryael&quot;: {
         name: &quot;Nechryael&quot;,
-        npcIds: [8, 9, 10, 11, 7278, 7279],
+        npcIds: [8, 11],
         location: { x: 3438, y: 3559, plane: 2 },
         locationName: &quot;Slayer Tower (top floor)&quot;,
         combatLevel: 115,
@@ -2064,7 +2049,7 @@ var MONSTER_DB = {
 
     &quot;Troll&quot;: {
         name: &quot;Troll&quot;,
-        npcIds: [1106, 1107, 1108, 1109, 1110, 1111, 1112, 1113, 1114, 1115, 1116, 1117, 3132, 3133, 3134],
+        npcIds: [936, 937, 938, 939, 940, 941, 942, 4143],
         location: { x: 2876, y: 3587, plane: 0 },
         locationName: &quot;Death Plateau (Burthorpe)&quot;,
         combatLevel: 69,
@@ -2188,7 +2173,7 @@ var MONSTER_DB = {
 
     &quot;Adamant Dragon&quot;: {
         name: &quot;Adamant Dragon&quot;,
-        npcIds: [8030, 8031, 8032],
+        npcIds: [8030, 8090],
         location: { x: 1568, y: 5075, plane: 0 },
         locationName: &quot;Lithkren Vault&quot;,
         combatLevel: 338,
@@ -2208,7 +2193,7 @@ var MONSTER_DB = {
 
     &quot;Rune Dragon&quot;: {
         name: &quot;Rune Dragon&quot;,
-        npcIds: [8027, 8028, 8029, 8031],
+        npcIds: [8031, 8091],
         location: { x: 1568, y: 5075, plane: 0 },
         locationName: &quot;Lithkren Vault&quot;,
         combatLevel: 380,
@@ -2228,7 +2213,7 @@ var MONSTER_DB = {
 
     &quot;Hydra&quot;: {
         name: &quot;Hydra&quot;,
-        npcIds: [8609, 8610, 8611],
+        npcIds: [8609],
         location: { x: 1312, y: 10232, plane: 0 },
         locationName: &quot;Karuulm Slayer Dungeon&quot;,
         combatLevel: 194,
@@ -2248,7 +2233,7 @@ var MONSTER_DB = {
 
     &quot;Fossil Island Wyvern&quot;: {
         name: &quot;Fossil Island Wyvern&quot;,
-        npcIds: [7793, 7794, 7795, 7796],
+        npcIds: [7792, 7793, 7794, 7795],
         location: { x: 3608, y: 10278, plane: 0 },
         locationName: &quot;Fossil Island Wyvern Cave&quot;,
         combatLevel: 139,
@@ -2268,7 +2253,7 @@ var MONSTER_DB = {
 
     &quot;Greater Nechryael&quot;: {
         name: &quot;Greater Nechryael&quot;,
-        npcIds: [7278, 7279, 7280],
+        npcIds: [7278, 11240],
         location: { x: 1702, y: 10074, plane: 0 },
         locationName: &quot;Catacombs of Kourend&quot;,
         combatLevel: 200,
@@ -2288,7 +2273,7 @@ var MONSTER_DB = {
 
     &quot;Deviant Spectre&quot;: {
         name: &quot;Deviant Spectre&quot;,
-        npcIds: [7279, 7280],
+        npcIds: [7279],
         location: { x: 1701, y: 10042, plane: 0 },
         locationName: &quot;Catacombs of Kourend&quot;,
         combatLevel: 169,
@@ -2308,7 +2293,7 @@ var MONSTER_DB = {
 
     &quot;Warped Jelly&quot;: {
         name: &quot;Warped Jelly&quot;,
-        npcIds: [7518, 7519],
+        npcIds: [7277],
         location: { x: 1673, y: 10062, plane: 0 },
         locationName: &quot;Catacombs of Kourend&quot;,
         combatLevel: 112,
@@ -2328,7 +2313,7 @@ var MONSTER_DB = {
 
     &quot;Black Bear&quot;: {
         name: &quot;Black Bear&quot;,
-        npcIds: [105, 106],
+        npcIds: [2839],
         location: { x: 3286, y: 3363, plane: 0 },
         locationName: &quot;East of Varrock&quot;,
         combatLevel: 19,
@@ -2348,7 +2333,7 @@ var MONSTER_DB = {
 
     &quot;Giant Bat&quot;: {
         name: &quot;Giant Bat&quot;,
-        npcIds: [78, 3711, 4422],
+        npcIds: [2834, 6824],
         location: { x: 3240, y: 9875, plane: 0 },
         locationName: &quot;Varrock Sewers&quot;,
         combatLevel: 27,
@@ -2368,7 +2353,7 @@ var MONSTER_DB = {
 
     &quot;Guard Dog&quot;: {
         name: &quot;Guard Dog&quot;,
-        npcIds: [99, 100, 3582],
+        npcIds: [114, 7209],
         location: { x: 2774, y: 3274, plane: 0 },
         locationName: &quot;Handelmort mansion (Ardougne)&quot;,
         combatLevel: 44,
@@ -2428,7 +2413,7 @@ var MONSTER_DB = {
 
     &quot;Wyvern&quot;: {
         name: &quot;Wyvern&quot;,
-        npcIds: [465, 466, 467, 468, 7793, 7794, 7795, 7796],
+        npcIds: [465, 466, 467, 468, 7792, 7793, 7794, 7795],
         location: { x: 3058, y: 9555, plane: 0 },
         locationName: &quot;Asgarnian Ice Dungeon / Fossil Island&quot;,
         combatLevel: 140,
@@ -2448,7 +2433,7 @@ var MONSTER_DB = {
 
     &quot;Brutal Blue Dragon&quot;: {
         name: &quot;Brutal Blue Dragon&quot;,
-        npcIds: [7272, 7273, 7274],
+        npcIds: [7273, 13795],
         location: { x: 1654, y: 10092, plane: 0 },
         locationName: &quot;Catacombs of Kourend&quot;,
         combatLevel: 271,
@@ -2468,7 +2453,7 @@ var MONSTER_DB = {
 
     &quot;Brutal Black Dragon&quot;: {
         name: &quot;Brutal Black Dragon&quot;,
-        npcIds: [7274, 7275],
+        npcIds: [7275, 8092, 8093],
         location: { x: 1614, y: 10050, plane: 0 },
         locationName: &quot;Catacombs of Kourend&quot;,
         combatLevel: 318,
@@ -6615,13 +6600,4 @@ function getRandomIdleAction() {
     var idx = Math.floor(Math.random() * IDLE_ACTIONS.length);
     return IDLE_ACTIONS[idx];
 }
-</textarea>
-<script>
-function copyCode(){
-var t=document.getElementById("code");
-navigator.clipboard.writeText(t.value).then(function(){
-document.getElementById("status").textContent="Copied!";
-}).catch(function(){t.select();document.execCommand("copy");
-document.getElementById("status").textContent="Copied (fallback)!";});}
-function selectAll(){document.getElementById("code").select();}
-</script></body></html>
+</textarea><script>function copyCode(){var t=document.getElementById("code");navigator.clipboard.writeText(t.value).then(function(){document.getElementById("status").textContent="Copied!";}).catch(function(){t.select();document.execCommand("copy");document.getElementById("status").textContent="Copied (fallback)!";});}function selectAll(){document.getElementById("code").select();}</script></body></html>

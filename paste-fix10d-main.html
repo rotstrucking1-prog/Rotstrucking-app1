@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>ROTS Slayer Bot - Fix10d MAIN</title>
+<title>ROTS Slayer Bot - Fix10d MAIN (all vars declared)</title>
 <style>
 body { font-family: monospace; background: #1a1a2e; color: #0f0; margin: 20px; }
 h1 { color: #ff6; }
@@ -15,8 +15,10 @@ button:hover { background: #0c0; }
 <body>
 <h1>ROTS Auto Slayer Bot - Fix10d MAIN</h1>
 <div class="info">
+<b>Fix10b:</b> openNearest(0,true), correct withdrawItem API, setupCorrectly() check<br>
 <b>Fix10c:</b> gameTick -> tickCounter (6 places)<br>
-<b>Fix10d:</b> Added <code>var walkCooldown = 0;</code> declaration (was used in 3 gather states but never declared)
+<b>Fix10d:</b> Added 6 missing global declarations: walkCooldown, currentState, isOnBreak, gatherFoodCount, gatherGearPhase, leatherPhase<br>
+<b>Full scan:</b> Zero undeclared variables remaining
 </div>
 <p>Click "Copy" then go to DZ editor MAIN tab, press Ctrl+A then Ctrl+V</p>
 <button onclick="copyCode()">Copy MAIN Code to Clipboard</button>
@@ -161,6 +163,11 @@ var postBankState = null;  // State to transition to after closing bank
 var gatherFoodTier = null; // Current food tier being gathered (prevents log spam)
 var gatherLastClickTick = 0; // Last tick we clicked a gather spot (re-click timer)
 var walkCooldown = 0; // Walk cooldown for gather states (10-tick min between webWalkTo calls)
+var currentState = &quot;&quot;; // Current state name string for logging
+var isOnBreak = false; // Whether the bot is currently on a human-like break
+var gatherFoodCount = 0; // Number of food items gathered so far
+var gatherGearPhase = &quot;&quot;; // Phase of gear gathering (&quot;leather&quot; or &quot;metal&quot;)
+var leatherPhase = &quot;&quot;; // Phase of leather crafting (&quot;killing&quot;, &quot;tanning&quot;, etc)
 
 // Timeouts
 var stateTimeout = 0;

@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Fix9k v5 MAIN</title>
-<style>body{background:#1a1a2e;color:#e0e0e0;font-family:monospace;padding:20px;text-align:center}
-textarea{width:95%;height:300px;background:#16213e;color:#0f0;border:1px solid #0f0;font-size:11px;padding:10px}
-button{background:#0f0;color:#000;padding:15px 40px;font-size:18px;border:none;cursor:pointer;margin:10px;border-radius:5px}
-button:hover{background:#0a0}.info{color:#ff0;font-size:14px;margin:10px}</style></head>
-<body><h1>ROTS Slayer Bot v24 Fix9k v5 - MAIN</h1>
-<p class="info">Added: try-catch error wrapper + tick diagnostic. Any crash will now print to game chat.</p>
-<button onclick="copyCode()">COPY CODE</button>
-<p class="info">After copying: DZ Editor MAIN tab Ctrl+A Ctrl+V Commit</p>
-<textarea id="code" readonly>// =============================================================================
+<html><head><title>Fix9k v5 MAIN</title>
+<style>
+body{font-family:monospace;padding:20px;background:#1e1e1e;color:#d4d4d4}
+h1{color:#4ec9b0}
+textarea{width:100%;height:200px;font-family:monospace;font-size:12px;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;display:none}
+button{padding:15px 30px;font-size:18px;margin:10px;cursor:pointer;background:#4ec9b0;border:none;color:#000;border-radius:8px}
+button:hover{background:#3ba890}
+#status{color:#4ec9b0;font-size:16px;margin-top:10px}
+</style></head><body>
+<h1>ROTS Slayer Bot - Fix9k v5 - MAIN Tab</h1>
+<p>Fixes: Break infinite CHECK_GEM loop + gem attempt counter + try-catch error wrapper</p>
+<textarea id="code">// =============================================================================
 // AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
 // =============================================================================
 // The brain of the slayer bot. Implements a full autonomous state machine that:
@@ -114,6 +116,7 @@ var taskReceived = false;
 var gemCheckDone = false;
 var gemCheckTick = 0;
 var noTaskFromGem = false;
+var gemCheckAttempts = 0;
 
 // Master info
 var selectedMaster = null;
@@ -1279,8 +1282,8 @@ function handleCheckStats() {
     // Set attack style based on training focus
     setAttackStyle();
 
-    // Check gem/helm for existing task before going to master
-    state = STATES.CHECK_GEM;
+    // Go to master to get/check task
+    state = STATES.SELECT_MASTER;
 }
 
 
@@ -1293,8 +1296,17 @@ function handleCheckGem() {
         return;
     }
 
+    // If we already tried gem check 2+ times, skip to master
+    if (gemCheckAttempts &gt;= 2) {
+        botMsg(&quot;Gem check failed &quot; + gemCheckAttempts + &quot; times - skipping to master&quot;, &quot;SlayerBot&quot;);
+        gemCheckAttempts = 0;
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
     gemCheckDone = false;
     noTaskFromGem = false;
+    gemCheckAttempts++;
 
     // Check for enchanted gem (4155) in inventory or slayer helmet equipped
     var hasGem = Game.info.inventory.hasItem(4155);
@@ -1304,7 +1316,7 @@ function handleCheckGem() {
     } catch(e) {}
 
     if (hasGem) {
-        botMsg(&quot;Found enchanted gem - using it to check task...&quot;, &quot;SlayerBot&quot;);
+        botMsg(&quot;Found enchanted gem - checking task (attempt &quot; + gemCheckAttempts + &quot;)...&quot;, &quot;SlayerBot&quot;);
         isExecuting = true;
         Utility.invokeLater(function() {
             Game.interact.inventory.actionItem(4155, 3, MenuAction.CC_OP);
@@ -1313,13 +1325,11 @@ function handleCheckGem() {
         gemCheckTick = tickCounter;
         state = STATES.WAIT_GEM_RESPONSE;
     } else if (hasHelm) {
-        // Helm is equipped - we cant interact with it via inventory
-        // Just skip to master - theyll tell us if we have a task
-        botMsg(&quot;Slayer helm equipped but no gem - going to master to check&quot;, &quot;SlayerBot&quot;);
-        state = STATES.CHECK_STATS;
+        botMsg(&quot;Slayer helm equipped but no gem - going to master&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
     } else {
-        botMsg(&quot;No gem or helm found - checking stats then going to master&quot;, &quot;SlayerBot&quot;);
-        state = STATES.CHECK_STATS;
+        botMsg(&quot;No gem or helm found - going to master&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
     }
 }
 
@@ -1330,6 +1340,7 @@ function handleWaitGemResponse() {
 
     if (gemCheckDone) {
         // Chat handler set the task info
+        gemCheckAttempts = 0;
         if (currentTaskName &amp;&amp; killsLeft &gt; 0) {
             botMsg(&quot;GEM FOUND TASK: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left) - skipping master!&quot;, &quot;SlayerBot&quot;);
             updateCachedStats();
@@ -1348,8 +1359,8 @@ function handleWaitGemResponse() {
     }
 
     if (elapsed &gt; 15) {
-        botMsg(&quot;Gem check timed out after 15 ticks - going to check stats&quot;, &quot;SlayerBot&quot;);
-        state = STATES.CHECK_STATS;
+        botMsg(&quot;Gem check timed out after 15 ticks - going to master&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
     }
 }
 
@@ -5252,5 +5263,16 @@ function handleRepairBarrows() {
     }
 }
 </textarea>
-<script>function copyCode(){var t=document.getElementById("code");t.select();document.execCommand("copy");alert("Copied!");}</script>
-</body></html>
+<br>
+<button onclick="copyCode()">COPY MAIN CODE</button>
+<div id="status"></div>
+<script>
+function copyCode(){
+var t=document.getElementById("code");
+t.style.display="block";
+t.select();
+document.execCommand("copy");
+t.style.display="none";
+document.getElementById("status").textContent="COPIED! Now go to DZ > MAIN tab > Ctrl+A > Ctrl+V";
+}
+</script></body></html>

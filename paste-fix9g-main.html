@@ -6,7 +6,7 @@ button{font-size:24px;padding:15px 40px;background:#0a0;color:#fff;border:none;c
 button:hover{background:#0c0}.info{color:#ff0;font-size:16px}</style></head>
 <body>
 <h1>ROTS Slayer Bot v24 Fix9g - MAIN Tab</h1>
-<p class="info">Fixes: Nearest bank (Land's End + 12 new Zeah banks), sequential withdrawals (1 per tick), withdraw logging</p>
+<p class="info">Fixes: Stack overflow crash, bank settle delay, 2-tick withdrawal spacing, Land's End + 12 Zeah banks</p>
 <p class="info">1. Click COPY below<br>2. Switch to DeadZone editor > MAIN tab<br>3. Ctrl+A then Ctrl+V<br>4. Click Commit</p>
 <textarea id="code">// =============================================================================
 // AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
@@ -1698,15 +1698,20 @@ function handleBankSupplies() {
         bankPhase = 1;
     }
 
-    // Phase 0: Open bank
+    // Phase 0: Open bank then wait for it to settle
     if (bankPhase === 0) {
         if (!Game.info.bank.isOpen()) {
+            waitTicks = 0;
             isExecuting = true;
             Utility.invokeLater(function() {
                 Game.interact.bank.openNearest();
                 isExecuting = false;
             }, Utility.getDelay());
         } else {
+            // Bank is open - wait 2 ticks for widgets to load before doing anything
+            waitTicks++;
+            if (waitTicks &lt; 2) return;
+            Game.sendGameMessage(&quot;Bank open and settled - depositing&quot;, &quot;SlayerBot&quot;);
             bankPhase = 1;
             waitTicks = 0;
         }
@@ -1715,6 +1720,7 @@ function handleBankSupplies() {
 
     // Phase 1: Deposit all inventory
     if (bankPhase === 1) {
+        if (!Game.info.bank.isOpen()) { bankPhase = 0; waitTicks = 0; return; }
         isExecuting = true;
         Utility.invokeLater(function() {
             Game.interact.bank.depositAllInventory();
@@ -1725,8 +1731,9 @@ function handleBankSupplies() {
         return;
     }
 
-    // Phase 2: Wait for deposit to settle
+    // Phase 2: Wait for deposit to settle (3 ticks)
     if (bankPhase === 2) {
+        if (!Game.info.bank.isOpen()) { bankPhase = 0; waitTicks = 0; return; }
         waitTicks++;
         if (waitTicks &lt; 3) return;
         waitTicks = 0;
@@ -1841,7 +1848,17 @@ function handleBankSupplies() {
             return;
         }
 
-        // Process ONE item from queue per tick
+        // Check bank is still open
+        if (!Game.info.bank.isOpen()) {
+            Game.sendGameMessage(&quot;Bank closed during withdrawals! Reopening...&quot;, &quot;SlayerBot&quot;);
+            bankPhase = 0; waitTicks = 0; return;
+        }
+        // Wait 2 ticks between each withdrawal to let the previous one settle
+        waitTicks++;
+        if (waitTicks &lt; 2) return;
+        waitTicks = 0;
+
+        // Process ONE item from queue
         var item = withdrawQueue[0];
         withdrawQueue.splice(0, 1);
         Game.sendGameMessage(&quot;Withdrawing: &quot; + item.label, &quot;SlayerBot&quot;);
@@ -4344,8 +4361,15 @@ function handleLevelHerblore() {
 // =============================================================================
 // OnChatMessage -- Intercepts chat messages to detect tasks, kills, deaths
 // =============================================================================
+var insideChatHandler = false;
 function OnChatMessage(chatMsg) {
     if (!chatMsg) return;
+    if (insideChatHandler) return; // prevent recursion from sendGameMessage
+    insideChatHandler = true;
+    try { handleChatMessage(chatMsg); } catch(e) { /* swallow */ }
+    insideChatHandler = false;
+}
+function handleChatMessage(chatMsg) {
     var rawText = &quot;&quot;;
     if (typeof chatMsg === &quot;string&quot;) {
         rawText = chatMsg;

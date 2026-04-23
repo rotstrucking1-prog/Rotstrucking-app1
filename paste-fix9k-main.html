@@ -9,8 +9,8 @@ button:hover{background:#0aa}
 textarea{width:100%;height:200px;background:#111;color:#0f0;font-family:monospace;font-size:11px;display:none}
 </style></head><body>
 <h1>ROTS Slayer Bot v24 Fix9k - MAIN Tab</h1>
-<p>Anti-spam audit: 122 msg calls deduplicated, 10 bank open guards, 4 attack idle checks, 2 walk guards</p>
-<p><strong>5,241 lines | 179520 chars</strong></p>
+<p>Anti-spam audit + dead code removed + GATHER routing fixed</p>
+<p><strong>5230 lines | 179309 chars</strong></p>
 <button onclick="copyCode()">COPY CODE</button>
 <button onclick="document.getElementById('codeArea').style.display='block'">Show Code</button>
 <div id="status"></div>
@@ -2041,10 +2041,35 @@ function handleBankSupplies() {
             missingItems = [];
             postBankState = STATES.WALK_TO_TASK;
         } else {
-            // Still missing -- will GATHER after closing bank
-            botMsg(&quot;Still missing after bank: &quot; + stillMissing.join(&quot;, &quot;) + &quot; -- will gather.&quot;, &quot;SlayerBot&quot;);
+            // Still missing -- route to correct gather sub-state
+            var firstMissing = stillMissing[0];
             missingItems = stillMissing;
-            postBankState = STATES.GATHER;
+            botMsg(&quot;Still missing after bank: &quot; + stillMissing.join(&quot;, &quot;) + &quot; -- will gather &quot; + firstMissing, &quot;SlayerBot&quot;);
+
+            if (firstMissing === &quot;gem&quot;) {
+                // Gem only from slayer master, not gatherable
+                postBankState = STATES.CHECK_STATS;
+            } else if (firstMissing === &quot;food&quot;) {
+                postBankState = STATES.GATHER_FOOD;
+            } else if (firstMissing === &quot;prayer_pot&quot;) {
+                brewTarget = &quot;prayer&quot;;
+                postBankState = STATES.BREW_POTIONS;
+            } else if (firstMissing === &quot;arrows&quot;) {
+                postBankState = STATES.CRAFT_ARROWS;
+            } else if (firstMissing === &quot;runes&quot;) {
+                postBankState = STATES.CRAFT_RUNES;
+            } else if (firstMissing === &quot;cannonballs&quot;) {
+                postBankState = STATES.GATHER_CANNONBALLS;
+            } else if (firstMissing === &quot;combat_pot&quot; || firstMissing === &quot;antifire&quot; || firstMissing === &quot;antipoison&quot;) {
+                if (cfgVal(&quot;selfSufficiency&quot;, false)) {
+                    brewTarget = firstMissing;
+                    postBankState = STATES.BREW_POTIONS;
+                } else {
+                    postBankState = STATES.WALK_TO_GE;
+                }
+            } else {
+                postBankState = STATES.WALK_TO_GE;
+            }
         }
 
         bankPhase = 5;
@@ -2078,43 +2103,6 @@ function handleBankSupplies() {
         postBankState = null;
         botMsg(&quot;Bank closed. Next: &quot; + nextState, &quot;SlayerBot&quot;);
         state = nextState;
-        return;
-    }
-
-        // Still missing - GATHER them!
-        botMsg(&quot;Still need: &quot; + stillMissing.join(&quot;, &quot;) + &quot; - gathering!&quot;, &quot;SlayerBot&quot;);
-
-        var firstMissing = stillMissing[0];
-        stateBeforeInterrupt = STATES.CHECK_SUPPLIES;
-
-        // Gem can only come from bank -- if bank didnt have it, skip slayer master to buy one
-        if (firstMissing === &quot;gem&quot;) {
-            botMsg(&quot;Enchanted gem not in bank! Going to master to get one.&quot;, &quot;SlayerBot&quot;);
-            state = STATES.CHECK_STATS;
-            return;
-        }
-
-        if (firstMissing === &quot;food&quot;) {
-            state = STATES.GATHER_FOOD;
-        } else if (firstMissing === &quot;prayer_pot&quot;) {
-            brewTarget = &quot;prayer&quot;;
-            state = STATES.BREW_POTIONS;
-        } else if (firstMissing === &quot;arrows&quot;) {
-            state = STATES.CRAFT_ARROWS;
-        } else if (firstMissing === &quot;runes&quot;) {
-            state = STATES.CRAFT_RUNES;
-        } else if (firstMissing === &quot;cannonballs&quot;) {
-            state = STATES.GATHER_CANNONBALLS;
-        } else if (firstMissing === &quot;combat_pot&quot; || firstMissing === &quot;antifire&quot; || firstMissing === &quot;antipoison&quot;) {
-            if (cfgVal(&quot;selfSufficiency&quot;, false)) {
-                brewTarget = firstMissing;
-                state = STATES.BREW_POTIONS;
-            } else {
-                state = STATES.WALK_TO_GE;
-            }
-        } else {
-            state = STATES.WALK_TO_GE;
-        }
         return;
     }
 }

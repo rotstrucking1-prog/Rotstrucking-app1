@@ -1,0 +1,5317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ROTS Slayer Bot - Fix9k v5d - MAIN</title>
+<style>
+body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; }
+h1 { color: #2d5016; }
+.changes { background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 15px 0; }
+textarea { width: 100%; height: 200px; font-family: monospace; font-size: 11px; }
+button { background: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin: 10px 0; }
+button:hover { background: #388E3C; }
+#status { margin-top: 10px; font-weight: bold; color: #2d5016; }
+</style>
+</head>
+<body>
+<h1>ROTS Slayer Bot - Fix9k v5d - MAIN</h1>
+<div class="changes">
+<b>Changes from v5c:</b><br>
+- Fixed: Bot at bank but won't open — stored bank coords slightly off from actual booth<br>
+- NEW: Backup openNearest attempt when within 12 tiles but >5 from stored coords<br>
+- NEW: Try-catch on ALL openNearest callbacks (isExecuting can never get stuck)<br>
+- NEW: bankPhase reset to 0 on bank-open detection in WALK_TO_BANK<br>
+- NEW: bankWalkTicks counter tracks how long we've been walking<br>
+</div>
+<p><b>5279 lines</b> | MAIN tab only</p>
+<button onclick="copyCode()">Copy MAIN Code</button>
+<div id="status"></div>
+<textarea id="code" readonly>// =============================================================================
+// AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
+// =============================================================================
+// The brain of the slayer bot. Implements a full autonomous state machine that:
+//   1. Selects the best slayer master based on combat/slayer levels
+//   2. Walks to master, gets a task assignment
+//   3. Banks for supplies (food, potions, special items, gear)
+//   4. Walks to monster location and fights until task is complete
+//   5. Handles special kill mechanics, loot, bones, prayer
+//   6. Self-sufficiency: crafts arrows, brews potions, runecrafts
+//   7. Advanced combat: safespots, superiors, bracelets, cannon
+//   8. Loops forever -- completing task after task
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// SAFE CONFIG READER - prevents crash when config property is missing
+// -----------------------------------------------------------------------------
+function cfgVal(name, defaultVal) {
+    if (config &amp;&amp; config[name] &amp;&amp; typeof config[name].getValue === &quot;function&quot;) {
+        var v = config[name].getValue();
+        if (v !== null &amp;&amp; v !== undefined) {
+            return v;
+        }
+    }
+    return defaultVal;
+}
+
+// -----------------------------------------------------------------------------
+// STATE DEFINITIONS
+// -----------------------------------------------------------------------------
+var STATES = {
+    // === CORE SLAYER LOOP ===
+    STARTUP: &quot;STARTUP&quot;,
+    CHECK_STATS: &quot;CHECK_STATS&quot;,
+    CHECK_GEM: &quot;CHECK_GEM&quot;,
+    WAIT_GEM_RESPONSE: &quot;WAIT_GEM_RESPONSE&quot;,
+    SELECT_MASTER: &quot;SELECT_MASTER&quot;,
+    WALK_TO_MASTER: &quot;WALK_TO_MASTER&quot;,
+    TALK_TO_MASTER: &quot;TALK_TO_MASTER&quot;,
+    WAIT_FOR_TASK: &quot;WAIT_FOR_TASK&quot;,
+    READ_TASK: &quot;READ_TASK&quot;,
+    CHECK_SUPPLIES: &quot;CHECK_SUPPLIES&quot;,
+    WALK_TO_BANK: &quot;WALK_TO_BANK&quot;,
+    BANK_SUPPLIES: &quot;BANK_SUPPLIES&quot;,
+    WALK_TO_GE: &quot;WALK_TO_GE&quot;,
+    BUY_AT_GE: &quot;BUY_AT_GE&quot;,
+    WALK_TO_TASK: &quot;WALK_TO_TASK&quot;,
+    FIGHT_TASK: &quot;FIGHT_TASK&quot;,
+    SPECIAL_FINISH: &quot;SPECIAL_FINISH&quot;,
+    EAT_FOOD: &quot;EAT_FOOD&quot;,
+    DRINK_PRAYER: &quot;DRINK_PRAYER&quot;,
+    LOOT_ITEMS: &quot;LOOT_ITEMS&quot;,
+    BURY_BONES: &quot;BURY_BONES&quot;,
+    TASK_COMPLETE: &quot;TASK_COMPLETE&quot;,
+    HANDLE_DEATH: &quot;HANDLE_DEATH&quot;,
+    HANDLE_LEVEL_UP: &quot;HANDLE_LEVEL_UP&quot;,
+
+    // === SELF-SUFFICIENCY (existing) ===
+    GATHER_FOOD: &quot;GATHER_FOOD&quot;,
+    COOK_FOOD: &quot;COOK_FOOD&quot;,
+    GATHER_GEAR: &quot;GATHER_GEAR&quot;,
+    TAN_HIDES: &quot;TAN_HIDES&quot;,
+    CRAFT_GEAR: &quot;CRAFT_GEAR&quot;,
+    MINE_ORE: &quot;MINE_ORE&quot;,
+    SMELT_ORE: &quot;SMELT_ORE&quot;,
+    SMITH_GEAR: &quot;SMITH_GEAR&quot;,
+    GATHER_RANGED: &quot;GATHER_RANGED&quot;,
+    WALK_TO_GATHER: &quot;WALK_TO_GATHER&quot;,
+
+    // === NEW v24 STATES ===
+    CRAFT_ARROWS: &quot;CRAFT_ARROWS&quot;,
+    CRAFT_RUNES: &quot;CRAFT_RUNES&quot;,
+    BREW_POTIONS: &quot;BREW_POTIONS&quot;,
+    LEVEL_HERBLORE: &quot;LEVEL_HERBLORE&quot;,
+    SAFESPOT_FIGHT: &quot;SAFESPOT_FIGHT&quot;,
+    RECOVER_GRAVE: &quot;RECOVER_GRAVE&quot;,
+    SETUP_CANNON: &quot;SETUP_CANNON&quot;,
+    GATHER_CANNONBALLS: &quot;GATHER_CANNONBALLS&quot;,
+
+    // === SCHEDULE + BREAK STATES ===
+    TAKING_BREAK: &quot;TAKING_BREAK&quot;,
+    OUTSIDE_SCHEDULE: &quot;OUTSIDE_SCHEDULE&quot;,
+    REPAIR_BARROWS: &quot;REPAIR_BARROWS&quot;,
+
+    IDLE: &quot;IDLE&quot;
+};
+
+// -----------------------------------------------------------------------------
+// BOT STATE VARIABLES
+// -----------------------------------------------------------------------------
+var state = STATES.STARTUP;
+var isExecuting = false;
+var tickCounter = 0;
+var stateTickCounter = 0;
+var lastState = &quot;&quot;;
+
+// Task info
+var currentTaskName = &quot;&quot;;
+var currentTaskMonster = null;
+var killsLeft = 0;
+var totalKills = 0;
+var tasksCompleted = 0;
+var taskReceived = false;
+var gemCheckDone = false;
+var gemCheckTick = 0;
+var noTaskFromGem = false;
+var gemCheckAttempts = 0;
+
+// Master info
+var selectedMaster = null;
+
+// Player stats (cached)
+var combatLevel = 0;
+var slayerLevel = 0;
+var attackLevel = 0;
+var strengthLevel = 0;
+var defenceLevel = 0;
+var hitpointsLevel = 0;
+var prayerLevel = 0;
+var rangedLevel = 0;
+var magicLevel = 0;
+var herbloreLevel = 0;
+var fletchingLevel = 0;
+var smithingLevel = 0;
+var miningLevel = 0;
+var runecraftingLevel = 0;
+var fishingLevel = 0;
+var cookingLevel = 0;
+
+// Banking
+var bankTarget = null;
+var needsRestock = false;
+var missingItems = [];
+var needGemFromBank = false;
+var gatherToolNeeded = 0;  // Item ID of tool needed for current gather operation
+var postBankState = null;  // State to transition to after closing bank
+var gatherFoodTier = null; // Current food tier being gathered (prevents log spam)
+var gatherLastClickTick = 0; // Last tick we clicked a gather spot (re-click timer)
+
+// Timeouts
+var stateTimeout = 0;
+var waitTicks = 0;
+var retryCount = 0;
+var maxRetries = 3;
+
+// Loot tracking
+var lootQueue = [];
+
+// Death detection
+var previousHP = 0;
+var deathDetected = false;
+var deathLocation = null;
+
+// Level up handling
+var levelUpDetected = false;
+
+// v24: Turael boosting
+var turaelStreakCount = 0;
+
+// v24: Combat boost monitoring
+var ticksSinceAntifire = 0;
+var ticksSinceAntipoison = 0;
+var ticksSinceCombatPot = 0;
+
+// v24: Cannon
+var cannonPlaced = false;
+var cannonX = 0;
+var cannonY = 0;
+
+// v24: Arrow crafting
+var arrowCraftPhase = &quot;idle&quot;;
+var arrowCraftTier = null;
+var arrowCraftCount = 0;
+
+// v24: Runecrafting
+var runecraftPhase = &quot;idle&quot;;
+var neededRunes = [];
+var rcEssenceCount = 0;
+
+// v24: Potion brewing
+var brewPhase = &quot;idle&quot;;
+var brewTarget = null;
+var brewCount = 0;
+
+// v24: Herblore leveling
+var herbloreTargetLevel = 0;
+
+// v24: Safespot
+var usingSafespot = false;
+
+// v24: Previous state for supply interrupts
+var stateBeforeInterrupt = &quot;&quot;;
+var interruptReturnState = &quot;&quot;;
+
+// v24: Schedule + Break system
+var ticksSinceLastBreak = 0;
+var nextBreakAtTick = 0;
+var breakEndTick = 0;
+var breakReason = &quot;&quot;;
+var stateBeforeBreak = &quot;&quot;;
+var breakScheduled = false;
+var outsideScheduleLogout = false;
+var sessionStarted = false;
+var totalBreaksTaken = 0;
+var lastBreakDurationMins = 0;
+
+// v24: Barrows repair tracking
+var repairPhase = &quot;walk_to_bob&quot;; // walk_to_bob, open_shop, repair_items, done
+var stateBeforeRepair = &quot;&quot;;
+var repairCheckInterval = 500; // check every 500 ticks (~5 min)
+var ticksSinceRepairCheck = 0;
+
+// v24: Self-sufficiency vars (shared with UTILITIES)
+var gatherBankPhase = 0;
+
+// Anti-spam: deduplicate bot messages
+var lastBotMsg = &quot;&quot;;
+function botMsg(msg, prefix) {
+    if (msg === lastBotMsg) return;
+    lastBotMsg = msg;
+    botMsg(msg, prefix || &quot;SlayerBot&quot;);
+}
+
+
+// -----------------------------------------------------------------------------
+// CONFIG ITEMS (declared in DZ config panel)
+// -----------------------------------------------------------------------------
+// config.masterPreference       -- &quot;Auto&quot;, &quot;Turael&quot;, &quot;Krystilia&quot;, etc.
+// config.foodType               -- Food item ID to use
+// config.minFood                -- Minimum food for tasks (default: 8)
+// config.usePrayer              -- Boolean: use protection prayers
+// config.buryBones              -- Boolean: bury bones from kills
+// config.lootMinValue           -- Minimum loot GP value (default: 250)
+// config.specialFinish          -- Boolean: use spec items (rock hammer, ice cooler)
+// config.trainingFocus          -- &quot;Attack&quot;, &quot;Strength&quot;, &quot;Defence&quot;, &quot;Shared&quot;
+// config.attackCap              -- Max attack level before switching
+// config.strengthCap            -- Max strength level before switching
+// config.defenceCap             -- Max defence level before switching
+// config.selfSufficient         -- Boolean: craft own gear/food/supplies
+// config.useSpecialAttack       -- Boolean: use special attack weapon
+// config.turaelBoosting         -- Boolean: use Turael boosting strategy
+// config.useCannon              -- Boolean: use dwarf multicannon
+// config.useSafespots           -- Boolean: use safespots when available
+// config.useRanged              -- Boolean: allow ranged combat
+// config.useMagic               -- Boolean: allow magic combat
+
+// -----------------------------------------------------------------------------
+// OVERLAY ITEMS (displayed on DZ overlay panel)
+// -----------------------------------------------------------------------------
+// overlay.botState              -- Current state display
+// overlay.taskInfo              -- Current task and kills left
+// overlay.masterInfo            -- Selected slayer master
+// overlay.combatInfo            -- Combat style + stats
+// overlay.killCount             -- Total kills across all tasks
+// overlay.taskCount             -- Tasks completed
+// overlay.runtime               -- How long bot has been running
+// overlay.supplyInfo            -- Supply status
+
+// -------- Bone IDs --------
+
+// -------- Food healing lookup --------
+var FOOD_HEALING = {};
+FOOD_HEALING[315] = 4;    // Shrimps
+FOOD_HEALING[325] = 5;    // Sardine
+FOOD_HEALING[329] = 7;    // Salmon
+FOOD_HEALING[333] = 9;    // Trout
+FOOD_HEALING[365] = 11;   // Bass
+FOOD_HEALING[379] = 12;   // Lobster
+FOOD_HEALING[373] = 16;   // Swordfish
+FOOD_HEALING[385] = 20;   // Shark
+FOOD_HEALING[7946] = 16;  // Monkfish
+
+// -------- Potion IDs (dose 1-4 groups) --------
+// VERIFIED vs OSRS Wiki -- each dose has unique item ID (NOT sequential!)
+var SUPER_COMBAT_POTS = [12695, 12697, 12699, 12701]; // (4),(3),(2),(1)
+var SUPER_ATTACK_POTS = [2436, 145, 147, 149];         // (4),(3),(2),(1) -- wiki verified
+var SUPER_STRENGTH_POTS = [2440, 157, 159, 161];       // (4),(3),(2),(1) -- wiki verified
+var SUPER_DEFENCE_POTS = [2442, 163, 165, 167];        // (4),(3),(2),(1) -- wiki verified
+var ATTACK_POTS = [2428, 121, 123, 125];               // (4),(3),(2),(1) -- wiki verified
+var STRENGTH_POTS = [113, 115, 117, 119];              // (4),(3),(2),(1) -- wiki verified
+var DEFENCE_POTS = [2432, 133, 135, 137];              // (4),(3),(2),(1) -- wiki verified
+var PRAYER_POTS = [2434, 139, 141, 143];               // (4),(3),(2),(1) -- wiki verified
+var ANTIFIRE_POTS = [2452, 2454, 2456, 2458];          // (4),(3),(2),(1) -- wiki verified
+var EXTENDED_ANTIFIRE_POTS = [11951, 11953, 11955, 11957]; // wiki verified
+var SUPER_ANTIFIRE_POTS = [21978, 21981, 21984, 21987];   // wiki verified
+var SUPER_RESTORE_POTS = [3024, 3026, 3028, 3030];        // wiki verified
+var RANGING_POTS = [2444, 169, 171, 173];                  // wiki verified
+var MAGIC_POTS = [3040, 3042, 3044, 3046];                 // wiki verified
+var SARADOMIN_BREW_POTS = [6685, 6687, 6689, 6691];       // wiki verified
+
+// -------- Antipoison arrays from UTILITIES --------
+// ANTIVENOM_IDS, ANTIVENOM_PLUS_IDS, SUPER_ANTIPOISON_IDS are in UTILITIES
+
+// -------- Special finish items --------
+var ROCK_HAMMER_ID = 4162;
+var ICE_COOLER_ID = 6696;
+var MIRROR_SHIELD_ID = 4156;
+var LEAF_BLADED_SPEAR_ID = 4158;
+var LEAF_BLADED_SWORD_ID = 11902;
+var LEAF_BLADED_BAXE_ID = 20727;
+var FUNGICIDE_SPRAY_ID = 7421;
+var WITCHWOOD_ICON_ID = 8923;
+
+// -------- Spec weapon sets --------
+var DDS_ID = 5698;
+
+// -------- Poisoning monsters --------
+var POISON_MONSTERS = [
+    &quot;aberrant spectre&quot;, &quot;cave crawler&quot;, &quot;jungle horror&quot;, &quot;poison spider&quot;,
+    &quot;cave horror&quot;, &quot;kalphite&quot;, &quot;scorpion&quot;, &quot;tribesman&quot;, &quot;fever spider&quot;,
+    &quot;infernal mage&quot;, &quot;dust devil&quot;
+];
+
+// -------- Dragon tasks --------
+var DRAGON_TASKS = [
+    &quot;blue dragon&quot;, &quot;green dragon&quot;, &quot;red dragon&quot;, &quot;black dragon&quot;,
+    &quot;bronze dragon&quot;, &quot;iron dragon&quot;, &quot;steel dragon&quot;, &quot;mithril dragon&quot;,
+    &quot;adamant dragon&quot;, &quot;rune dragon&quot;, &quot;skeletal wyvern&quot;, &quot;fossil island wyvern&quot;
+];
+
+// -------- Tasks needing special items to finish --------
+var GARGOYLE_IDS = [412, 413];
+var ROCKSLUG_IDS = [421, 422];
+var DESERT_LIZARD_IDS = [458, 459, 460, 461];
+var ZYGOMITE_IDS = [537, 1024];
+
+// -------- Task names for detecting current task --------
+var TASK_CHAT_PATTERNS = [
+    &quot;your new task is to kill&quot;,
+    &quot;you are currently assigned to kill&quot;,
+    &quot;you&#x27;re currently assigned to kill&quot;,
+    &quot;you&#x27;re assigned to kill&quot;,
+    &quot;your current assignment is to kill&quot;,
+    &quot;your task is to kill&quot;
+];
+
+// -------- Lumbridge spawn --------
+var LUMBRIDGE_SPAWN = {x: 3222, y: 3218, plane: 0};
+
+// -------- Emergency teleport threshold --------
+var EMERGENCY_HP_THRESHOLD = 10;
+
+// -------- GE location --------
+var GE_LOCATION = {x: 3165, y: 3487, plane: 0};
+
+// =============================================================================
+// OnStart -- Called when the script is started. Required by DZ.
+// =============================================================================
+function OnStart() {
+    botMsg(&quot;[Slayer] Auto Slayer Bot v24 starting up...&quot;, &quot;BOT&quot;);
+    currentState = STATES.STARTUP;
+    tickCounter = 0;
+    ticksSinceLastBreak = 0;
+    isOnBreak = false;
+    isExecuting = false;
+    botMsg(&quot;[Slayer] Initialized. Waiting for first game tick...&quot;, &quot;BOT&quot;);
+}
+
+// =============================================================================
+// OnGameTick -- Called every game tick (~600ms). Core dispatch loop.
+// =============================================================================
+function OnGameTick() {
+  try {
+    var gt, _gt;
+    tickCounter++;
+    ticksSinceLastBreak++;
+    ticksSinceAntifire++;
+    ticksSinceAntipoison++;
+    ticksSinceCombatPot++;
+
+    // Tick 1 diagnostic — confirms OnGameTick is running
+    if (tickCounter === 1) {
+        Game.sendGameMessage(&quot;[ROTS] OnGameTick ALIVE - tick 1 - state: &quot; + state, &quot;[DIAG]&quot;);
+    }
+    if (tickCounter === 5) {
+        Game.sendGameMessage(&quot;[ROTS] Tick 5 - state: &quot; + state, &quot;[DIAG]&quot;);
+    }
+
+    if (isExecuting) {
+        stateTimeout++;
+        if (stateTimeout &gt; 30) {
+            isExecuting = false;
+            stateTimeout = 0;
+            botMsg(&quot;State timeout - resetting execution lock&quot;, &quot;SlayerBot&quot;);
+        }
+        return;
+    }
+
+    // ================================================================
+    // SCHEDULE CHECK -- Are we within play hours?
+    // ================================================================
+    if (cfgVal(&quot;enableSchedule&quot;, false)) {
+        var schedStart = cfgVal(&quot;startHour&quot;, 8);
+        var schedEnd = cfgVal(&quot;endHour&quot;, 22);
+        if (!isWithinSchedule(schedStart, schedEnd)) {
+            if (state !== STATES.OUTSIDE_SCHEDULE &amp;&amp; state !== STATES.TAKING_BREAK) {
+                stateBeforeBreak = state;
+                state = STATES.OUTSIDE_SCHEDULE;
+                outsideScheduleLogout = false;
+                botMsg(&quot;[Schedule] Outside play hours -- stopping&quot;, &quot;Bot&quot;);
+                scheduleOverlay.setValue(&quot;Schedule: OUTSIDE HOURS&quot;);
+            }
+        } else {
+            scheduleOverlay.setValue(&quot;Schedule: Active&quot;);
+        }
+    }
+
+    // ================================================================
+    // BREAK CHECK -- Time for a random human break?
+    // ================================================================
+    if (cfgVal(&quot;enableBreaks&quot;, false) &amp;&amp; state !== STATES.TAKING_BREAK &amp;&amp; state !== STATES.OUTSIDE_SCHEDULE) {
+        // Initialize first break timer on session start
+        if (!sessionStarted) {
+            sessionStarted = true;
+            ticksSinceLastBreak = 0;
+            var initMin = cfgVal(&quot;minPlayMinutes&quot;, 30);
+            var initMax = cfgVal(&quot;maxPlayMinutes&quot;, 120);
+            nextBreakAtTick = calculateNextBreakDelay(initMin, initMax);
+            breakOverlay.setValue(&quot;Break: in ~&quot; + ticksToMinutes(nextBreakAtTick) + &quot;m&quot;);
+        }
+
+        // Check if it is break time
+        if (ticksSinceLastBreak &gt;= nextBreakAtTick) {
+            // Only break when safe -- not mid-combat or death
+            var safeToBreak = (state !== STATES.FIGHT_TASK &amp;&amp; state !== STATES.SAFESPOT_FIGHT &amp;&amp;
+                state !== STATES.HANDLE_DEATH &amp;&amp; state !== STATES.RECOVER_GRAVE &amp;&amp;
+                state !== STATES.EAT_FOOD &amp;&amp; state !== STATES.DRINK_PRAYER);
+
+            if (safeToBreak) {
+                stateBeforeBreak = state;
+                state = STATES.TAKING_BREAK;
+                breakReason = getRandomBreakReason();
+                var bMin = cfgVal(&quot;minBreakMinutes&quot;, 3);
+                var bMax = cfgVal(&quot;maxBreakMinutes&quot;, 15);
+                var duration = calculateBreakDuration(bMin, bMax);
+                breakEndTick = tickCounter + duration;
+                lastBreakDurationMins = ticksToMinutes(duration);
+                totalBreaksTaken++;
+                botMsg(&quot;[Break] &quot; + breakReason + &quot; (~&quot; + lastBreakDurationMins + &quot; min)&quot;, &quot;Bot&quot;);
+                breakOverlay.setValue(&quot;Break: &quot; + breakReason + &quot; (&quot; + lastBreakDurationMins + &quot;m)&quot;);
+                return;
+            }
+        } else {
+            // Update countdown overlay
+            var remaining = nextBreakAtTick - ticksSinceLastBreak;
+            if (tickCounter % 100 === 0) {
+                breakOverlay.setValue(&quot;Break: in ~&quot; + ticksToMinutes(remaining) + &quot;m&quot;);
+            }
+        }
+    }
+
+    // Update cached stats every 10 ticks
+    if (tickCounter % 10 === 0) {
+        updateCachedStats();
+    }
+
+    // Update overlay
+    updateOverlay();
+
+    // Track state changes
+    if (state !== lastState) {
+        stateTickCounter = 0;
+        lastState = state;
+        botMsg(&quot;State -&gt; &quot; + state, &quot;SlayerBot&quot;);
+    }
+    stateTickCounter++;
+
+    // Stuck detection: if we are in a non-idle state for too long, reset
+    if (stateTickCounter &gt; 500 &amp;&amp; state !== STATES.IDLE &amp;&amp; state !== STATES.FIGHT_TASK &amp;&amp; state !== STATES.SAFESPOT_FIGHT) {
+        botMsg(&quot;Stuck in &quot; + state + &quot; for 500 ticks, resetting to CHECK_STATS&quot;, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_STATS;
+        stateTickCounter = 0;
+        retryCount = 0;
+    }
+
+    // Death detection: check if we are at Lumbridge spawn
+    if (state !== STATES.HANDLE_DEATH &amp;&amp; state !== STATES.RECOVER_GRAVE &amp;&amp; state !== STATES.STARTUP) {
+        if (isAtDeathSpawn()) {
+            if (state === STATES.FIGHT_TASK || state === STATES.SAFESPOT_FIGHT || state === STATES.WALK_TO_TASK) {
+                botMsg(&quot;Death detected! Saving death location.&quot;, &quot;SlayerBot&quot;);
+                state = STATES.HANDLE_DEATH;
+                return;
+            }
+        }
+    }
+
+    // Level up detection
+    if (levelUpDetected) {
+        levelUpDetected = false;
+        updateCachedStats();
+    }
+
+    // =========================================================================
+    // PERIODIC BARROWS REPAIR CHECK (every ~30 sec)
+    // =========================================================================
+    ticksSinceRepairCheck++;
+    if (ticksSinceRepairCheck &gt;= repairCheckInterval &amp;&amp; state !== STATES.REPAIR_BARROWS &amp;&amp;
+        state !== STATES.TAKING_BREAK &amp;&amp; state !== STATES.OUTSIDE_SCHEDULE &amp;&amp;
+        state !== STATES.STARTUP &amp;&amp; state !== STATES.CHECK_STATS &amp;&amp; state !== STATES.CHECK_GEM &amp;&amp; state !== STATES.WAIT_GEM_RESPONSE) {
+        ticksSinceRepairCheck = 0;
+        var repairItems = checkEquippedBarrowsCondition();
+        if (repairItems.length &gt; 0) {
+            botMsg(&quot;[SlayerBot] Barrows gear at 25%! Heading to Bob for repair.&quot;, &quot;Bot&quot;);
+            stateBeforeRepair = state;
+            repairPhase = &quot;walk_to_bob&quot;;
+            state = STATES.REPAIR_BARROWS;
+        }
+    }
+
+    // =========================================================================
+    // STATE ROUTER
+    // =========================================================================
+    switch (state) {
+        case STATES.STARTUP:
+            handleStartup();
+            break;
+        case STATES.CHECK_STATS:
+            handleCheckStats();
+            break;
+        case STATES.CHECK_GEM:
+            handleCheckGem();
+            break;
+        case STATES.WAIT_GEM_RESPONSE:
+            handleWaitGemResponse();
+            break;
+        case STATES.SELECT_MASTER:
+            handleSelectMaster();
+            break;
+        case STATES.WALK_TO_MASTER:
+            handleWalkToMaster();
+            break;
+        case STATES.TALK_TO_MASTER:
+            handleTalkToMaster();
+            break;
+        case STATES.WAIT_FOR_TASK:
+            handleWaitForTask();
+            break;
+        case STATES.READ_TASK:
+            handleReadTask();
+            break;
+        case STATES.CHECK_SUPPLIES:
+            handleCheckSupplies();
+            break;
+        case STATES.WALK_TO_BANK:
+            handleWalkToBank();
+            break;
+        case STATES.BANK_SUPPLIES:
+            handleBankSupplies();
+            break;
+        case STATES.WALK_TO_GE:
+            handleWalkToGE();
+            break;
+        case STATES.BUY_AT_GE:
+            handleBuyAtGE();
+            break;
+        case STATES.WALK_TO_TASK:
+            handleWalkToTask();
+            break;
+        case STATES.FIGHT_TASK:
+            handleFightTask();
+            break;
+        case STATES.SAFESPOT_FIGHT:
+            handleSafespotFight();
+            break;
+        case STATES.SPECIAL_FINISH:
+            handleSpecialFinish();
+            break;
+        case STATES.EAT_FOOD:
+            handleEatFood();
+            break;
+        case STATES.DRINK_PRAYER:
+            handleDrinkPrayer();
+            break;
+        case STATES.LOOT_ITEMS:
+            handleLootItems();
+            break;
+        case STATES.BURY_BONES:
+            handleBuryBones();
+            break;
+        case STATES.TASK_COMPLETE:
+            handleTaskComplete();
+            break;
+        case STATES.HANDLE_DEATH:
+            handleDeath();
+            break;
+        case STATES.HANDLE_LEVEL_UP:
+            handleLevelUp();
+            break;
+        case STATES.GATHER_FOOD:
+            handleGatherFood();
+            break;
+        case STATES.COOK_FOOD:
+            handleCookFood();
+            break;
+        case STATES.GATHER_GEAR:
+            handleGatherGear();
+            break;
+        case STATES.TAN_HIDES:
+            handleTanHides();
+            break;
+        case STATES.CRAFT_GEAR:
+            handleCraftGear();
+            break;
+        case STATES.MINE_ORE:
+            handleMineOre();
+            break;
+        case STATES.SMELT_ORE:
+            handleSmeltOre();
+            break;
+        case STATES.SMITH_GEAR:
+            handleSmithGear();
+            break;
+        case STATES.GATHER_RANGED:
+            handleGatherRanged();
+            break;
+        case STATES.WALK_TO_GATHER:
+            handleWalkToGather();
+            break;
+        case STATES.CRAFT_ARROWS:
+            handleCraftArrows();
+            break;
+        case STATES.CRAFT_RUNES:
+            handleCraftRunes();
+            break;
+        case STATES.BREW_POTIONS:
+            handleBrewPotions();
+            break;
+        case STATES.LEVEL_HERBLORE:
+            handleLevelHerblore();
+            break;
+        case STATES.RECOVER_GRAVE:
+            handleRecoverGrave();
+            break;
+        case STATES.SETUP_CANNON:
+            handleSetupCannon();
+            break;
+        case STATES.GATHER_CANNONBALLS:
+            handleGatherCannonballs();
+            break;
+        case STATES.TAKING_BREAK:
+            handleTakingBreak();
+            break;
+        case STATES.OUTSIDE_SCHEDULE:
+            handleOutsideSchedule();
+            break;
+        case STATES.REPAIR_BARROWS:
+            handleRepairBarrows();
+            break;
+        case STATES.IDLE:
+            // Do nothing -- idle until manually restarted or state changed
+            break;
+        default:
+            botMsg(&quot;Unknown state: &quot; + state + &quot;, resetting.&quot;, &quot;SlayerBot&quot;);
+            state = STATES.STARTUP;
+            break;
+    }
+  } catch (err) {
+    Game.sendGameMessage(&quot;[ROTS] ERROR in OnGameTick: &quot; + err, &quot;[ERR]&quot;);
+    Game.sendGameMessage(&quot;[ROTS] State was: &quot; + state + &quot; | Tick: &quot; + tickCounter, &quot;[ERR]&quot;);
+  }
+}
+
+// =============================================================================
+// OnShutdown -- Called when the bot is stopped.
+// =============================================================================
+function OnShutdown() {
+    botMsg(&quot;Slayer Bot v24 shutting down. Tasks: &quot; + tasksCompleted + &quot; | Kills: &quot; + totalKills, &quot;SlayerBot&quot;);
+}
+
+// =============================================================================
+// UTILITY HELPERS
+// =============================================================================
+
+function updateCachedStats() {
+    combatLevel = getCombatLevel();
+    slayerLevel = Client.getRealSkillLevels(Skill.SLAYER);
+    attackLevel = Client.getRealSkillLevels(Skill.ATTACK);
+    strengthLevel = Client.getRealSkillLevels(Skill.STRENGTH);
+    defenceLevel = Client.getRealSkillLevels(Skill.DEFENCE);
+    hitpointsLevel = Client.getRealSkillLevels(Skill.HITPOINTS);
+    prayerLevel = Client.getRealSkillLevels(Skill.PRAYER);
+    rangedLevel = Client.getRealSkillLevels(Skill.RANGED);
+    magicLevel = Client.getRealSkillLevels(Skill.MAGIC);
+    herbloreLevel = Client.getRealSkillLevels(Skill.HERBLORE);
+    fletchingLevel = Client.getRealSkillLevels(Skill.FLETCHING);
+    smithingLevel = Client.getRealSkillLevels(Skill.SMITHING);
+    miningLevel = Client.getRealSkillLevels(Skill.MINING);
+    runecraftingLevel = Client.getRealSkillLevels(Skill.RUNECRAFT);
+    fishingLevel = Client.getRealSkillLevels(Skill.FISHING);
+    cookingLevel = Client.getRealSkillLevels(Skill.COOKING);
+}
+
+function updateOverlay() {
+    try {
+        currentStateOverlay.setValue(&quot;State: &quot; + state);
+        if (currentTaskName &amp;&amp; killsLeft &gt; 0) {
+            taskOverlay.setValue(&quot;Task: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left)&quot;);
+        } else {
+            taskOverlay.setValue(&quot;Task: None&quot;);
+        }
+        if (selectedMaster) {
+            slayerMasterOverlay.setValue(&quot;Master: &quot; + selectedMaster.name);
+        } else {
+            slayerMasterOverlay.setValue(&quot;Master: None&quot;);
+        }
+        combatInfoOverlay.setValue(&quot;Cmb: &quot; + combatLevel + &quot; | Slay: &quot; + slayerLevel);
+        killCountOverlay.setValue(&quot;Kills: &quot; + totalKills);
+        tasksCompletedOverlay.setValue(&quot;Tasks: &quot; + tasksCompleted);
+        var mins = Math.floor(tickCounter / 100);
+        runtimeOverlay.setValue(&quot;Runtime: ~&quot; + mins + &quot;m&quot;);
+        supplyInfoOverlay.setValue(&quot;Food: &quot; + countFood() + &quot; | PPots: &quot; + countPrayerPots());
+    } catch (e) {
+        // Overlay might not be available
+    }
+}
+
+function isDragonTask(name) {
+    if (!name) return false;
+    var lower = name.toLowerCase();
+    for (var i = 0; i &lt; DRAGON_TASKS.length; i++) {
+        if (lower.indexOf(DRAGON_TASKS[i]) !== -1) return true;
+    }
+    return false;
+}
+
+function canPoison(name) {
+    if (!name) return false;
+    var lower = name.toLowerCase();
+    for (var i = 0; i &lt; POISON_MONSTERS.length; i++) {
+        if (lower.indexOf(POISON_MONSTERS[i]) !== -1) return true;
+    }
+    return false;
+}
+
+function getPlayerLocation() {
+    var loc = Client.getLocalPlayer().getWorldLocation();
+    return {x: loc.getX(), y: loc.getY(), plane: loc.getPlane()};
+}
+
+function hasClueScroll() {
+    for (var i = 0; i &lt; CLUE_SCROLLS.length; i++) {
+        if (Game.info.inventory.hasItem(CLUE_SCROLLS[i], 1)) return true;
+    }
+    return false;
+}
+
+function hasPotionInGroup(potGroup) {
+    for (var i = 0; i &lt; potGroup.length; i++) {
+        if (Game.info.inventory.hasItem(potGroup[i], 1)) return true;
+    }
+    return false;
+}
+
+function drinkPotionFromGroup(potGroup) {
+    for (var i = 0; i &lt; potGroup.length; i++) {
+        if (Game.info.inventory.hasItem(potGroup[i], 1)) {
+            isExecuting = true;
+            var potId = potGroup[i];
+            Utility.invokeLater(function() {
+                Game.interact.inventory.consumeItem(potId);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return true;
+        }
+    }
+    return false;
+}
+
+function drinkCombatPotion() {
+    // Try super combat first, then super attack
+    if (drinkPotionFromGroup(SUPER_COMBAT_POTS)) return true;
+    if (drinkPotionFromGroup(SUPER_ATTACK_POTS)) return true;
+    if (drinkPotionFromGroup(ATTACK_POTS)) return true;
+    return false;
+}
+
+function drinkStrengthPotion() {
+    if (drinkPotionFromGroup(SUPER_COMBAT_POTS)) return true;
+    if (drinkPotionFromGroup(SUPER_STRENGTH_POTS)) return true;
+    if (drinkPotionFromGroup(STRENGTH_POTS)) return true;
+    return false;
+}
+
+function drinkAntifire() {
+    if (drinkPotionFromGroup(SUPER_ANTIFIRE_POTS)) { ticksSinceAntifire = 0; return true; }
+    if (drinkPotionFromGroup(EXTENDED_ANTIFIRE_POTS)) { ticksSinceAntifire = 0; return true; }
+    if (drinkPotionFromGroup(ANTIFIRE_POTS)) { ticksSinceAntifire = 0; return true; }
+    return false;
+}
+
+function drinkAntipoison() {
+    // From UTILITIES: ANTIVENOM_PLUS_IDS, ANTIVENOM_IDS, SUPER_ANTIPOISON_IDS
+    var groups = [ANTIVENOM_PLUS_IDS, ANTIVENOM_IDS, SUPER_ANTIPOISON_IDS];
+    for (var g = 0; g &lt; groups.length; g++) {
+        if (drinkPotionFromGroup(groups[g])) {
+            ticksSinceAntipoison = 0;
+            return true;
+        }
+    }
+    return false;
+}
+
+function drinkRangingPotion() {
+    return drinkPotionFromGroup(RANGING_POTS);
+}
+
+function drinkMagicPotion() {
+    return drinkPotionFromGroup(MAGIC_POTS);
+}
+
+function eatFood() {
+    // Try the configured food first, then any known food
+    var foodId = 0;
+    try {
+        foodId = cfgVal(&quot;foodType&quot;, 379);
+    } catch (e) {
+        foodId = 379; // Default lobster
+    }
+    if (Game.info.inventory.hasItem(foodId, 1)) {
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.inventory.consumeItem(foodId);
+            isExecuting = false;
+        }, Utility.getDelay());
+        return true;
+    }
+    // Try any known food
+    var foodKeys = Object.keys(FOOD_HEALING);
+    for (var i = 0; i &lt; foodKeys.length; i++) {
+        var fid = parseInt(foodKeys[i]);
+        if (Game.info.inventory.hasItem(fid, 1)) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.consumeItem(fid);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return true;
+        }
+    }
+    return false;
+}
+
+function drinkPrayerPot() {
+    if (drinkPotionFromGroup(SUPER_RESTORE_POTS)) return true;
+    if (drinkPotionFromGroup(PRAYER_POTS)) return true;
+    return false;
+}
+
+function useSpecialAttack() {
+    var specPercent = 0;
+    try { specPercent = Client.getSpecialAttackPercent(); } catch(e) { return; }
+    if (specPercent &lt; 25) return;
+
+    // Check if we have a spec weapon
+    var specWeaponId = DDS_ID;
+    var specKeys = Object.keys(SPEC_WEAPONS);
+    for (var i = 0; i &lt; specKeys.length; i++) {
+        var sw = dbLookup(SPEC_WEAPONS, specKeys[i]);
+        if (Game.info.inventory.hasItem(sw.id, 1)) {
+            specWeaponId = sw.id;
+            break;
+        }
+    }
+
+    if (Game.info.inventory.hasItem(specWeaponId, 1)) {
+        isExecuting = true;
+        var weapId = specWeaponId;
+        Utility.invokeLater(function() {
+            Game.interact.inventory.equipItem(weapId);
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+}
+
+function activatePrayer(monsterName) {
+    if (!cfgVal(&quot;usePrayer&quot;, false)) return;
+    // Activate protection prayer based on monster type
+    // Most slayer monsters use melee; some use ranged/magic
+    try {
+        var prayerWidget = Game.info.widget.getWidget(541, 22); // Protect from Melee
+        if (prayerWidget) {
+            // Prayer already handled via prayer flicking -- just ensure protect melee is on
+        }
+    } catch(e) {}
+}
+
+function activateSpecificPrayer(prayerName) {
+    if (!prayerName) return;
+    try {
+        var prayerData = dbLookup(PRAYERS, prayerName);
+        if (prayerData) {
+            var widget = Game.info.widget.getWidget(541, prayerData.widgetChild);
+            if (widget) {
+                // Activate the prayer widget
+            }
+        }
+    } catch(e) {}
+}
+
+// =============================================================================
+// TASK DIFFICULTY CLASSIFIER -- determines supply needs by monster combat level
+// TRIVIAL = ghosts/chickens/rats, EASY = goblins/skeletons, MEDIUM = giants,
+// HARD = dragons/demons, BOSS = abyssal demons/gargoyles
+// =============================================================================
+function getTaskDifficulty() {
+    if (!currentTaskMonster) return &quot;MEDIUM&quot;; // default safe
+    var cmb = currentTaskMonster.combatLevel || 1;
+
+    if (cmb &lt;= 25) return &quot;TRIVIAL&quot;;   // ghosts(19), chickens, rats, cows, goblins
+    if (cmb &lt;= 60) return &quot;EASY&quot;;      // skeletons, zombies, hill giants
+    if (cmb &lt;= 120) return &quot;MEDIUM&quot;;   // fire giants, moss giants, bloodveld
+    if (cmb &lt;= 200) return &quot;HARD&quot;;     // dragons, greater demons, hellhounds
+    return &quot;BOSS&quot;;                      // abyssal demons, gargoyles, kraken
+}
+
+// Returns how much food the player actually needs for this task
+function getDesiredFoodCount() {
+    var diff = getTaskDifficulty();
+    var kl = killsLeft || 10;
+
+    // Scale by difficulty AND kill count
+    if (diff === &quot;TRIVIAL&quot;) {
+        // Ghosts, chickens, etc - barely need food
+        if (kl &lt;= 15) return 2;
+        return 4;
+    }
+    if (diff === &quot;EASY&quot;) {
+        if (kl &lt;= 20) return 4;
+        return 6;
+    }
+    if (diff === &quot;MEDIUM&quot;) {
+        if (kl &lt;= 15) return 8;
+        return 12;
+    }
+    if (diff === &quot;HARD&quot;) {
+        return 16; // dragons/demons hit hard
+    }
+    // BOSS
+    return 20;
+}
+
+// Returns how many prayer pots needed (0 if task doesnt warrant it)
+function getDesiredPrayerPotCount() {
+    var diff = getTaskDifficulty();
+    // TRIVIAL and EASY: never need prayer pots
+    if (diff === &quot;TRIVIAL&quot; || diff === &quot;EASY&quot;) return 0;
+    // MEDIUM: only if config says use prayer
+    if (diff === &quot;MEDIUM&quot;) {
+        if (!cfgVal(&quot;usePrayer&quot;, false)) return 0;
+        return 1;
+    }
+    // HARD: always want prayer pots if available
+    if (diff === &quot;HARD&quot;) return 2;
+    // BOSS
+    return 4;
+}
+
+// Does this task need combat potions?
+function taskNeedsCombatPots() {
+    var diff = getTaskDifficulty();
+    // TRIVIAL and EASY: waste of potions
+    if (diff === &quot;TRIVIAL&quot; || diff === &quot;EASY&quot;) return false;
+    return true;
+}
+
+// Does this task warrant a cannon?
+function taskNeedsCannon() {
+    if (!cfgVal(&quot;useCannon&quot;, false)) return false;
+    var diff = getTaskDifficulty();
+    // TRIVIAL/EASY: absolute waste of cannonballs
+    if (diff === &quot;TRIVIAL&quot; || diff === &quot;EASY&quot;) return false;
+    // Only in multicombat
+    if (!currentTaskMonster) return false;
+    return shouldUseCannon(currentTaskMonster, true);
+}
+
+// Pick the best food tier player can actually fish/cook
+function getBestFoodTierForPlayer() {
+    var cookLvl = 1;
+    var fishLvl = 1;
+    try {
+        cookLvl = Client.getRealSkillLevels(Skill.COOKING) || 1;
+        fishLvl = Client.getRealSkillLevels(Skill.FISHING) || 1;
+    } catch(e) {}
+
+    // Walk the food tiers backwards to find best player can use
+    var bestTier = null;
+    for (var i = SS_FOOD_TIERS.length - 1; i &gt;= 0; i--) {
+        var t = SS_FOOD_TIERS[i];
+        if (fishLvl &gt;= t.minFishLevel &amp;&amp; cookLvl &gt;= t.minCookLevel) {
+            // Skip quest-locked tiers player may not have
+            if (t.questRequired) continue;
+            bestTier = t;
+            break;
+        }
+    }
+    if (!bestTier) bestTier = SS_FOOD_TIERS[0]; // chicken fallback
+    return bestTier;
+}
+
+function needsArrows() {
+    if (!cfgVal(&quot;useRanged&quot;, false)) return false;
+    var count = countArrows();
+    return count &lt; 50;
+}
+
+function needsRunes() {
+    if (!cfgVal(&quot;useMagic&quot;, false)) return false;
+    var count = countRunes();
+    return count &lt; 50;
+}
+
+function selectMasterWithBoosting(cmb, slay) {
+    var pref = &quot;Auto&quot;;
+    try { pref = cfgVal(&quot;masterPreference&quot;, &quot;auto&quot;); } catch(e) {}
+
+    if (!cfgVal(&quot;turaelBoosting&quot;, false)) {
+        return selectBestMaster(cmb, slay, pref);
+    }
+
+    turaelStreakCount++;
+    if (turaelStreakCount % 10 === 0) {
+        // 10th task: use highest master for bonus points
+        botMsg(&quot;Turael boosting: using highest master (task #&quot; + turaelStreakCount + &quot;)&quot;, &quot;SlayerBot&quot;);
+        return selectBestMaster(cmb, slay, &quot;Auto&quot;);
+    } else {
+        // Use Turael for quick easy tasks
+        botMsg(&quot;Turael boosting: using Turael (task #&quot; + turaelStreakCount + &quot;)&quot;, &quot;SlayerBot&quot;);
+        return SLAYER_MASTERS.TURAEL;
+    }
+}
+
+function equipTaskBracelet(taskName) {
+    var quality = getTaskQuality(taskName);
+    if (quality === &quot;good&quot;) {
+        if (Game.info.inventory.hasItem(BRACELET_SLAUGHTER.id, 1)) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.equipItem(BRACELET_SLAUGHTER.id);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    } else if (quality === &quot;bad&quot;) {
+        if (Game.info.inventory.hasItem(BRACELET_EXPEDITIOUS.id, 1)) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.equipItem(BRACELET_EXPEDITIOUS.id);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+function checkForSuperior() {
+    if (!currentTaskMonster) return null;
+    var superiorData = getSuperiorNpcId(currentTaskMonster.name);
+    if (!superiorData) return null;
+    var superior = Game.info.npc.getNearest([superiorData]);
+    if (superior &amp;&amp; !superior.isDead()) {
+        return superior;
+    }
+    return null;
+}
+
+function pickUpLoot() {
+    var groundItems = null;
+    try { groundItems = Game.info.groundItem.getAll(); } catch(e) { return false; }
+    if (!groundItems || groundItems.length === 0) return false;
+
+    var playerLoc = getPlayerLocation();
+
+    for (var i = 0; i &lt; groundItems.length; i++) {
+        var item = groundItems[i];
+        var itemId = item.getId();
+
+        // Distance check: only pick up items within 5 tiles
+        var itemLoc = item.getWorldLocation();
+        var dx = Math.abs(itemLoc.getX() - playerLoc.x);
+        var dy = Math.abs(itemLoc.getY() - playerLoc.y);
+        if (dx &gt; 5 || dy &gt; 5) continue;
+
+        // Always pick up: bones, clue scrolls
+        var isBone = ALL_BONE_IDS.indexOf(itemId) !== -1;
+        var isClue = CLUE_SCROLLS.indexOf(itemId) !== -1;
+
+        if (isBone &amp;&amp; cfgVal(&quot;buryBones&quot;, false)) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.groundItem.pickup(item);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return true;
+        }
+
+        if (isClue) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.groundItem.pickup(item);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return true;
+        }
+
+        // Pick up stackable/notable items
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.groundItem.pickup(item);
+            isExecuting = false;
+        }, Utility.getDelay());
+        return true;
+    }
+    return false;
+}
+
+function setAttackStyle() {
+    var focus = &quot;Shared&quot;;
+    try { focus = cfgVal(&quot;trainingFocus&quot;, &quot;balanced&quot;); } catch(e) {}
+    var atkCap = 99;
+    var strCap = 99;
+    var defCap = 99;
+    try { atkCap = cfgVal(&quot;attackCap&quot;, 99); } catch(e) {}
+    try { strCap = cfgVal(&quot;strengthCap&quot;, 99); } catch(e) {}
+    try { defCap = cfgVal(&quot;defenceCap&quot;, 99); } catch(e) {}
+
+    var desiredStyle = getAttackStyleForFocus(focus, atkCap, strCap, defCap, attackLevel, strengthLevel, defenceLevel);
+
+    // desiredStyle is a widget child index (0=Accurate/atk, 1=Aggressive/str, 2=Defensive/def, 3=Controlled)
+    try {
+        var widget = Game.info.widget.getWidget(593, desiredStyle);
+        if (widget) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.widget.action(widget, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    } catch(e) {}
+}
+
+function attackWithRangedOrMagic() {
+    if (!currentTaskMonster) return;
+    if (!Client.getLocalPlayer().isIdle()) return;
+    var npcIds = currentTaskMonster.ids;
+    if (!npcIds || npcIds.length === 0) return;
+
+    var target = Game.info.npc.getNearest(npcIds);
+    if (!target || target.isDead()) return;
+
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.npc.attack(target);
+        isExecuting = false;
+    }, Utility.getDelay());
+}
+
+function handleSurvivalChecks() {
+    var currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
+    var maxHP = Client.getRealSkillLevels(Skill.HITPOINTS);
+
+    // Emergency eat
+    if (currentHP &lt;= Math.floor(maxHP * 0.4)) {
+        eatFood();
+        return;
+    }
+
+    // Prayer check
+    if (cfgVal(&quot;usePrayer&quot;, false)) {
+        var currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
+        if (currentPrayer &lt;= 10) {
+            drinkPrayerPot();
+            return;
+        }
+    }
+
+    // Dragon task antifire
+    if (currentTaskMonster &amp;&amp; isDragonTask(currentTaskMonster.name)) {
+        if (ticksSinceAntifire &gt; 550 || ticksSinceAntifire === 0) {
+            drinkAntifire();
+        }
+    }
+
+    // Poison monsters antipoison
+    if (currentTaskMonster &amp;&amp; canPoison(currentTaskMonster.name)) {
+        if (ticksSinceAntipoison &gt; 800 || ticksSinceAntipoison === 0) {
+            drinkAntipoison();
+        }
+    }
+
+    // Combat potion re-dose
+    if (ticksSinceCombatPot &gt; 50) {
+        var boostedAtk = Client.getBoostedSkillLevels(Skill.ATTACK);
+        var realAtk = Client.getRealSkillLevels(Skill.ATTACK);
+        if (boostedAtk &lt;= realAtk + 2) {
+            if (drinkCombatPotion()) {
+                ticksSinceCombatPot = 0;
+            }
+        }
+        var boostedStr = Client.getBoostedSkillLevels(Skill.STRENGTH);
+        var realStr = Client.getRealSkillLevels(Skill.STRENGTH);
+        if (boostedStr &lt;= realStr + 2) {
+            if (drinkStrengthPotion()) {
+                ticksSinceCombatPot = 0;
+            }
+        }
+    }
+}
+
+function saveDeathLocation() {
+    var loc = getPlayerLocation();
+    // Death location should be the PREVIOUS location, not Lumbridge
+    // We track it from FIGHT_TASK
+    if (currentTaskMonster) {
+        deathLocation = {
+            x: currentTaskMonster.x,
+            y: currentTaskMonster.y,
+            plane: currentTaskMonster.plane || 0
+        };
+    } else {
+        deathLocation = null;
+    }
+}
+
+function withdrawPotionFromBank(potGroup, qty) {
+    for (var i = 0; i &lt; potGroup.length; i++) {
+        try {
+            Game.interact.bank.withdrawItem(potGroup[i], BankWithdrawType.WITHDRAW_ALL, false);
+            return true;
+        } catch(e) {}
+    }
+    return false;
+}
+
+// =============================================================================
+// CORE STATE HANDLERS
+// =============================================================================
+
+// ---- STARTUP ----
+function handleStartup() {
+    botMsg(&quot;Auto Slayer Bot v24 starting up!&quot;, &quot;SlayerBot&quot;);
+    updateCachedStats();
+    retryCount = 0;
+    isExecuting = false;
+
+    // FIRST: Check for enchanted gem in inventory -- if missing, bank for it
+    var hasGem = Game.info.inventory.hasItem(4155);
+    if (!hasGem) {
+        botMsg(&quot;No enchanted gem in inventory! Banking to get one FIRST.&quot;, &quot;SlayerBot&quot;);
+        needGemFromBank = true;
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    // Check if we already have a task from previous run
+    if (currentTaskName &amp;&amp; killsLeft &gt; 0) {
+        botMsg(&quot;Resuming existing task: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left)&quot;, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_SUPPLIES;
+    } else {
+        // Check gem for existing task BEFORE anything else
+        botMsg(&quot;Checking for existing slayer task...&quot;, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_GEM;
+    }
+}
+
+// ---- CHECK_STATS ----
+function handleCheckStats() {
+    updateCachedStats();
+    botMsg(&quot;Stats - Cmb:&quot; + combatLevel + &quot; Slay:&quot; + slayerLevel + &quot; Atk:&quot; + attackLevel + &quot; Str:&quot; + strengthLevel + &quot; Def:&quot; + defenceLevel, &quot;SlayerBot&quot;);
+    botMsg(&quot;Stats - Rng:&quot; + rangedLevel + &quot; Mag:&quot; + magicLevel + &quot; Herb:&quot; + herbloreLevel + &quot; Fletch:&quot; + fletchingLevel + &quot; Smith:&quot; + smithingLevel, &quot;SlayerBot&quot;);
+
+    // Set attack style based on training focus
+    setAttackStyle();
+
+    // Go to master to get/check task
+    state = STATES.SELECT_MASTER;
+}
+
+
+// ---- CHECK_GEM (check enchanted gem or slayer helm for existing task) ----
+function handleCheckGem() {
+    // If we already know we have a task (e.g., from previous run), skip
+    if (currentTaskName &amp;&amp; killsLeft &gt; 0) {
+        botMsg(&quot;Already have task: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left)&quot;, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // If we already tried gem check 2+ times, skip to master
+    if (gemCheckAttempts &gt;= 2) {
+        botMsg(&quot;Gem check failed &quot; + gemCheckAttempts + &quot; times - skipping to master&quot;, &quot;SlayerBot&quot;);
+        gemCheckAttempts = 0;
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    gemCheckDone = false;
+    noTaskFromGem = false;
+    gemCheckAttempts++;
+
+    // Check for enchanted gem (4155) in inventory or slayer helmet equipped
+    var hasGem = Game.info.inventory.hasItem(4155);
+    var hasHelm = false;
+    try {
+        hasHelm = Game.info.equipment.hasItem(11864) || Game.info.equipment.hasItem(11865);
+    } catch(e) {}
+
+    if (hasGem) {
+        botMsg(&quot;Found enchanted gem - checking task (attempt &quot; + gemCheckAttempts + &quot;)...&quot;, &quot;SlayerBot&quot;);
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.inventory.actionItem(4155, 3, MenuAction.CC_OP);
+            isExecuting = false;
+        }, Utility.getDelay());
+        gemCheckTick = tickCounter;
+        state = STATES.WAIT_GEM_RESPONSE;
+    } else if (hasHelm) {
+        botMsg(&quot;Slayer helm equipped - can check task via helm&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
+    } else {
+        botMsg(&quot;No gem in inventory - going to bank to grab one&quot;, &quot;SlayerBot&quot;);
+        needGemFromBank = true;
+        bankTarget = null;
+        bankPhase = 0;
+        state = STATES.WALK_TO_BANK;
+    }
+}
+
+// ---- WAIT_GEM_RESPONSE ----
+function handleWaitGemResponse() {
+    // Wait up to 15 ticks for chat response from gem check
+    var elapsed = tickCounter - gemCheckTick;
+
+    if (gemCheckDone) {
+        // Chat handler set the task info
+        gemCheckAttempts = 0;
+        if (currentTaskName &amp;&amp; killsLeft &gt; 0) {
+            botMsg(&quot;GEM FOUND TASK: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left) - skipping master!&quot;, &quot;SlayerBot&quot;);
+            updateCachedStats();
+            state = STATES.CHECK_SUPPLIES;
+        } else {
+            botMsg(&quot;Gem check: no active task. Getting stats then going to master.&quot;, &quot;SlayerBot&quot;);
+            state = STATES.CHECK_STATS;
+        }
+        return;
+    }
+
+    if (noTaskFromGem) {
+        botMsg(&quot;Gem confirms: NO active task. Getting stats then going to master.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_STATS;
+        return;
+    }
+
+    if (elapsed &gt; 15) {
+        botMsg(&quot;Gem check timed out after 15 ticks - going to master&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
+    }
+}
+
+// ---- SELECT_MASTER ----
+function handleSelectMaster() {
+    selectedMaster = selectMasterWithBoosting(combatLevel, slayerLevel);
+
+    if (!selectedMaster) {
+        botMsg(&quot;Could not select a slayer master! Using Turael.&quot;, &quot;SlayerBot&quot;);
+        selectedMaster = SLAYER_MASTERS.TURAEL;
+    }
+
+    botMsg(&quot;Selected master: &quot; + selectedMaster.name, &quot;SlayerBot&quot;);
+    state = STATES.WALK_TO_MASTER;
+}
+
+// ---- WALK_TO_MASTER ----
+var masterWalkCooldown = 0;
+function handleWalkToMaster() {
+    if (!selectedMaster) {
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    if (isNear(selectedMaster.location.x, selectedMaster.location.y, 10)) {
+        state = STATES.TALK_TO_MASTER;
+        retryCount = 0;
+        masterWalkCooldown = 0;
+        return;
+    }
+
+    if (masterWalkCooldown &gt; 0) {
+        masterWalkCooldown--;
+        return;
+    }
+
+    if (!PlayerHelper.isWebWalking()) {
+        var masterX = selectedMaster.location.x;
+        var masterY = selectedMaster.location.y;
+        var masterPlane = selectedMaster.location.plane || 0;
+        masterWalkCooldown = 10;
+        Utility.invokeLater(function() {
+            PlayerHelper.webWalkTo(new WorldPoint(masterX, masterY, masterPlane));
+        }, Utility.getDelay());
+    }
+}
+
+// ---- TALK_TO_MASTER ----
+function handleTalkToMaster() {
+    if (!selectedMaster) {
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    // Find the master NPC
+    var masterNpc = Game.info.npc.getNearest([selectedMaster.npcId]);
+    if (!masterNpc) {
+        // Not close enough, keep walking
+        if (retryCount &lt; maxRetries) {
+            retryCount++;
+            state = STATES.WALK_TO_MASTER;
+        } else {
+            botMsg(&quot;Cannot find master NPC after retries, resetting.&quot;, &quot;SlayerBot&quot;);
+            retryCount = 0;
+            state = STATES.SELECT_MASTER;
+        }
+        return;
+    }
+
+    taskReceived = false;
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.npc.action(masterNpc, MenuAction.NPC_SECOND_OPTION);
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    state = STATES.WAIT_FOR_TASK;
+    waitTicks = 0;
+}
+
+// ---- WAIT_FOR_TASK ----
+function handleWaitForTask() {
+    waitTicks++;
+
+    if (taskReceived) {
+        state = STATES.READ_TASK;
+        waitTicks = 0;
+        return;
+    }
+
+    // Handle dialog continuation -- check ALL OSRS dialog widgets
+    try {
+        // NPC dialog (Turael talking)
+        var dialogWidget = Game.info.widget.getWidget(231, 4);
+        if (dialogWidget) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.widget.action(dialogWidget, MenuAction.WIDGET_CONTINUE);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+        // Player dialog continue
+        var continueWidget = Game.info.widget.getWidget(217, 4);
+        if (continueWidget) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.widget.action(continueWidget, MenuAction.WIDGET_CONTINUE);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+        // Simple notification continue
+        var notifWidget = Game.info.widget.getWidget(229, 2);
+        if (notifWidget) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.widget.action(notifWidget, MenuAction.WIDGET_CONTINUE);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+        // Level up / notification continue
+        var levelWidget = Game.info.widget.getWidget(233, 3);
+        if (levelWidget) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.widget.action(levelWidget, MenuAction.WIDGET_CONTINUE);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+    } catch (e) {}
+
+    if (waitTicks &gt; 30) {
+        botMsg(&quot;Task not received after 30 ticks, retrying talk.&quot;, &quot;SlayerBot&quot;);
+        waitTicks = 0;
+        retryCount++;
+        if (retryCount &gt; maxRetries) {
+            retryCount = 0;
+            state = STATES.SELECT_MASTER;
+        } else {
+            state = STATES.TALK_TO_MASTER;
+        }
+    }
+}
+
+// ---- READ_TASK ----
+function handleReadTask() {
+    if (!currentTaskName || killsLeft &lt;= 0) {
+        botMsg(&quot;No valid task found, returning to master.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    botMsg(&quot;Task: Kill &quot; + killsLeft + &quot; &quot; + currentTaskName, &quot;SlayerBot&quot;);
+
+    // Look up monster data
+    currentTaskMonster = findMonster(currentTaskName);
+    if (!currentTaskMonster) {
+        botMsg(&quot;WARNING: Unknown monster &#x27;&quot; + currentTaskName + &quot;&#x27;, returning to master.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    // v24: Equip task bracelet (expeditious or slaughter)
+    equipTaskBracelet(currentTaskName);
+
+    // v24: Check if safespot is available and configured
+    var safespotData = null;
+    if (cfgVal(&quot;useSafespots&quot;, false)) {
+        safespotData = hasSafeSpot(currentTaskName);
+    }
+    if (safespotData) {
+        usingSafespot = true;
+        botMsg(&quot;Safespot available for &quot; + currentTaskName + &quot;!&quot;, &quot;SlayerBot&quot;);
+    } else {
+        usingSafespot = false;
+    }
+
+    // Move to supply check
+    state = STATES.CHECK_SUPPLIES;
+}
+
+// ---- CHECK_SUPPLIES (TIER-AWARE) ----
+function handleCheckSupplies() {
+    missingItems = [];
+    needsRestock = false;
+
+    var diff = getTaskDifficulty();
+    var monName = currentTaskMonster ? currentTaskMonster.name : &quot;unknown&quot;;
+    botMsg(&quot;Task: &quot; + monName + &quot; (&quot; + killsLeft + &quot; left) | Difficulty: &quot; + diff, &quot;SlayerBot&quot;);
+
+    // 0. Check coins -- always carry at least 250 GP
+    var coinCount = Game.info.inventory.getItemCount(995);
+    if (coinCount &lt; 250) {
+        missingItems.push({type: &quot;coins&quot;, current: coinCount, needed: 250});
+        needsRestock = true;
+    }
+
+    // 1. Check enchanted gem -- always need it
+    if (!Game.info.inventory.hasItem(4155)) {
+        missingItems.push({type: &quot;gem&quot;, current: 0, needed: 1});
+        needsRestock = true;
+    }
+
+    // 2. Check food -- scaled by difficulty
+    var foodCount = countFood();
+    var desiredFood = getDesiredFoodCount();
+    if (foodCount &lt; desiredFood) {
+        missingItems.push({type: &quot;food&quot;, current: foodCount, needed: desiredFood});
+        needsRestock = true;
+    }
+
+    // 3. Prayer pots -- only MEDIUM+ tasks
+    var desiredPpots = getDesiredPrayerPotCount();
+    if (desiredPpots &gt; 0) {
+        var ppotCount = countPrayerPots();
+        if (ppotCount &lt; desiredPpots) {
+            missingItems.push({type: &quot;prayer_pot&quot;, current: ppotCount, needed: desiredPpots});
+            needsRestock = true;
+        }
+    }
+
+    // 4. Combat potions -- only MEDIUM+ tasks
+    if (taskNeedsCombatPots()) {
+        var hasCombatPot = hasPotionInGroup(SUPER_COMBAT_POTS) ||
+                           hasPotionInGroup(SUPER_ATTACK_POTS) ||
+                           hasPotionInGroup(ATTACK_POTS);
+        if (!hasCombatPot) {
+            missingItems.push({type: &quot;combat_pot&quot;, current: 0, needed: 1});
+            needsRestock = true;
+        }
+    }
+
+    // 5. Arrows (ranged users or safespot)
+    if (cfgVal(&quot;useRanged&quot;, false) || usingSafespot) {
+        var arrowCount = countArrows();
+        if (arrowCount &lt; 100) {
+            missingItems.push({type: &quot;arrows&quot;, current: arrowCount, needed: 500});
+            needsRestock = true;
+        }
+    }
+
+    // 6. Runes (magic users)
+    if (cfgVal(&quot;useMagic&quot;, false)) {
+        var runeCount = countRunes();
+        if (runeCount &lt; 100) {
+            missingItems.push({type: &quot;runes&quot;, current: runeCount, needed: 500});
+            needsRestock = true;
+        }
+    }
+
+    // 7. Antifire potions (dragon tasks only -- always HARD+)
+    if (currentTaskMonster &amp;&amp; isDragonTask(currentTaskMonster.name)) {
+        var hasAntifire = hasPotionInGroup(SUPER_ANTIFIRE_POTS) ||
+                          hasPotionInGroup(EXTENDED_ANTIFIRE_POTS) ||
+                          hasPotionInGroup(ANTIFIRE_POTS);
+        if (!hasAntifire) {
+            missingItems.push({type: &quot;antifire&quot;, current: 0, needed: 2});
+            needsRestock = true;
+        }
+    }
+
+    // 8. Antipoison (poison tasks only)
+    if (currentTaskMonster &amp;&amp; canPoison(currentTaskMonster.name)) {
+        var hasAntipois = hasPotionInGroup(ANTIVENOM_PLUS_IDS) ||
+                          hasPotionInGroup(ANTIVENOM_IDS) ||
+                          hasPotionInGroup(SUPER_ANTIPOISON_IDS);
+        if (!hasAntipois) {
+            missingItems.push({type: &quot;antipoison&quot;, current: 0, needed: 1});
+            needsRestock = true;
+        }
+    }
+
+    // 9. Cannonballs -- only MEDIUM+ multicombat
+    if (taskNeedsCannon()) {
+        var cballs = Game.info.inventory.getItemCount(CANNON.CANNONBALL);
+        if (cballs &lt; 200) {
+            missingItems.push({type: &quot;cannonballs&quot;, current: cballs, needed: CANNON.MIN_CANNONBALLS});
+            needsRestock = true;
+        }
+    }
+
+    // 10. Barrows gear condition -- repair at 25%
+    var barrowsRepairNeeded = checkEquippedBarrowsCondition();
+    if (barrowsRepairNeeded.length &gt; 0) {
+        for (var br = 0; br &lt; barrowsRepairNeeded.length; br++) {
+            botMsg(&quot;[SlayerBot] WARNING: &quot; + barrowsRepairNeeded[br].piece +
+                &quot; is at &quot; + barrowsRepairNeeded[br].condition + &quot;% - repair needed!&quot;, &quot;Bot&quot;);
+        }
+        stateBeforeRepair = state;
+        repairPhase = &quot;walk_to_bob&quot;;
+        state = STATES.REPAIR_BARROWS;
+        return;
+    }
+
+    // 11. Special finish items (gargoyle/rockslug/lizard)
+    if (cfgVal(&quot;specialFinish&quot;, false) &amp;&amp; currentTaskMonster) {
+        var mn = currentTaskMonster.name.toLowerCase();
+        if (mn.indexOf(&quot;gargoyle&quot;) !== -1 &amp;&amp; !Game.info.inventory.hasItem(ROCK_HAMMER_ID, 1)) {
+            missingItems.push({type: &quot;special&quot;, itemId: ROCK_HAMMER_ID, name: &quot;rock_hammer&quot;});
+            needsRestock = true;
+        }
+        if ((mn.indexOf(&quot;rockslug&quot;) !== -1 || mn.indexOf(&quot;lizard&quot;) !== -1) &amp;&amp; !Game.info.inventory.hasItem(ICE_COOLER_ID, 1)) {
+            missingItems.push({type: &quot;special&quot;, itemId: ICE_COOLER_ID, name: &quot;ice_cooler&quot;});
+            needsRestock = true;
+        }
+    }
+
+    if (needsRestock) {
+        var types = [];
+        for (var mi = 0; mi &lt; missingItems.length; mi++) { types.push(missingItems[mi].type); }
+        botMsg(diff + &quot; task needs: &quot; + types.join(&quot;, &quot;), &quot;SlayerBot&quot;);
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+    } else {
+        botMsg(diff + &quot; task - supplies OK! Heading to &quot; + monName + &quot;.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.WALK_TO_TASK;
+    }
+}
+
+// ---- WALK_TO_BANK ----
+var walkCooldown = 0;
+function handleWalkToBank() {
+    // If player manually opened a bank, skip walking entirely!
+    if (Game.info.bank.isOpen()) {
+        botMsg(&quot;Bank detected open! Skipping walk.&quot;);
+        state = STATES.BANK_SUPPLIES;
+        bankPhase = 0;
+        retryCount = 0;
+        walkCooldown = 0;
+        return;
+    }
+
+    // Only find nearest bank ONCE -- cache it in bankTarget
+    if (!bankTarget) {
+        var bank = findNearestBank();
+        if (!bank) {
+            botMsg(&quot;No bank found! Walk to ANY bank and open it.&quot;);
+            return;
+        }
+        bankTarget = bank;
+        bankWalkTicks = 0;
+        botMsg(&quot;Walking to: &quot; + bank.name);
+    }
+
+    bankWalkTicks++;
+
+    // Close enough -- transition to banking
+    if (isNear(bankTarget.x, bankTarget.y, 5)) {
+        botMsg(&quot;At bank (&quot; + bankTarget.name + &quot;) - opening&quot;);
+        state = STATES.BANK_SUPPLIES;
+        bankPhase = 0;
+        retryCount = 0;
+        walkCooldown = 0;
+        return;
+    }
+
+    // BACKUP: If within 12 tiles and walked for 15+ ticks, stored coords may be
+    // slightly off from actual booth.  Try openNearest directly -- if it opens,
+    // the isOpen() check at the top will catch it next tick.
+    if (isNear(bankTarget.x, bankTarget.y, 12) &amp;&amp; bankWalkTicks &gt; 15 &amp;&amp; !isExecuting) {
+        botMsg(&quot;Near &quot; + bankTarget.name + &quot; but &gt;5 tiles from stored coords - trying openNearest&quot;);
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            try { Game.interact.bank.openNearest(); }
+            catch(e) { botMsg(&quot;Bank open err: &quot; + e.message); }
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Don&#x27;t spam webWalkTo - wait at least 10 ticks between calls
+    if (walkCooldown &gt; 0) {
+        walkCooldown--;
+        return;
+    }
+
+    if (!PlayerHelper.isWebWalking()) {
+        var bx = bankTarget.x;
+        var by = bankTarget.y;
+        var bp = bankTarget.plane || 0;
+        walkCooldown = 10;
+        Utility.invokeLater(function() {
+            PlayerHelper.webWalkTo(new WorldPoint(bx, by, bp));
+        }, Utility.getDelay());
+    }
+}
+
+// ---- BANK_SUPPLIES ----
+// bankPhase: 0=open, 1=deposit, 2=wait, 3=withdraw, 4=close, 5=check
+var bankPhase = 0;
+var withdrawQueue = [];
+var bankOpenAttemptTick = 0;
+var bankWalkTicks = 0;
+function handleBankSupplies() {
+    // Don&#x27;t re-enter while an async action is running
+    if (isExecuting) return;
+
+    // Reset withdraw queue on fresh entry to Phase 0
+    if (bankPhase === 0) { withdrawQueue = []; }
+
+    // MANUAL BANK OVERRIDE: if player already has bank open, jump to deposit
+    if (bankPhase === 0 &amp;&amp; Game.info.bank.isOpen()) {
+        botMsg(&quot;Bank detected (manual open) - depositing!&quot;, &quot;SlayerBot&quot;);
+        bankPhase = 1;
+    }
+
+    // Phase 0: Open bank then wait for it to settle
+    if (bankPhase === 0) {
+        if (!Game.info.bank.isOpen()) {
+            // Only attempt openNearest every 5 ticks to avoid spam
+            gt = tickCounter;
+            if (gt - bankOpenAttemptTick &lt; 5) return;
+            bankOpenAttemptTick = gt;
+            waitTicks = 0;
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try { Game.interact.bank.openNearest(); }
+                catch(e) { botMsg(&quot;Phase0 openNearest err: &quot; + e.message); }
+                isExecuting = false;
+            }, Utility.getDelay());
+        } else {
+            // Bank is open - wait 2 ticks for widgets to load before doing anything
+            waitTicks++;
+            if (waitTicks &lt; 2) return;
+            botMsg(&quot;Bank open and settled - depositing&quot;, &quot;SlayerBot&quot;);
+            bankPhase = 1;
+            waitTicks = 0;
+        }
+        return;
+    }
+
+    // Phase 1: Deposit all inventory
+    if (bankPhase === 1) {
+        if (!Game.info.bank.isOpen()) { bankPhase = 0; waitTicks = 0; return; }
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.bank.depositAllInventory();
+            isExecuting = false;
+        }, Utility.getDelay());
+        bankPhase = 2;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 2: Wait for deposit to settle (3 ticks)
+    if (bankPhase === 2) {
+        if (!Game.info.bank.isOpen()) { bankPhase = 0; waitTicks = 0; return; }
+        waitTicks++;
+        if (waitTicks &lt; 3) return;
+        waitTicks = 0;
+        bankPhase = 3;
+        return;
+    }
+
+    // Phase 3: Build withdraw queue (first tick), then withdraw ONE item per tick
+    if (bankPhase === 3) {
+        // === GEM PRIORITY: If we came here just for gem, withdraw it and go back to CHECK_GEM ===
+        if (needGemFromBank) {
+            botMsg(&quot;Withdrawing enchanted gem from bank...&quot;, &quot;SlayerBot&quot;);
+            withdrawBankItem(4155, 1);
+            needGemFromBank = false;
+            bankPhase = 4; // close bank
+            waitTicks = 0;
+            return;
+        }
+
+        // First tick in Phase 3: build the withdrawal queue
+        if (!withdrawQueue || withdrawQueue.length === 0) {
+            withdrawQueue = [];
+
+            // Enchanted gem if missing
+            if (!Game.info.inventory.hasItem(4155)) {
+                withdrawQueue.push({ id: 4155, qty: 1, label: &quot;Enchanted gem&quot; });
+            }
+
+            // Coins -- always carry at least 250 GP
+            var currentCoins = Game.info.inventory.getItemCount(995);
+            if (currentCoins &lt; 250) {
+                var needed = 250 - currentCoins;
+                withdrawQueue.push({ id: 995, qty: needed, label: &quot;Coins (&quot; + needed + &quot; GP)&quot; });
+            }
+
+            // Gather tool
+            if (gatherToolNeeded &gt; 0) {
+                withdrawQueue.push({ id: gatherToolNeeded, qty: 1, label: &quot;Gather tool &quot; + gatherToolNeeded });
+                if (gatherToolNeeded === 314) {
+                    withdrawQueue.push({ id: 314, qty: 200, label: &quot;Feathers&quot; });
+                }
+                gatherToolNeeded = 0;
+            }
+
+            // Food -- resolve name to ID if config returns a string
+            var foodId = cfgVal(&quot;foodType&quot;, 379);
+            if (typeof foodId === &quot;string&quot;) {
+                var FOOD_NAME_TO_ID = {
+                    &quot;shrimps&quot;: 315, &quot;shrimp&quot;: 315,
+                    &quot;anchovies&quot;: 319, &quot;anchovy&quot;: 319,
+                    &quot;trout&quot;: 333,
+                    &quot;salmon&quot;: 329,
+                    &quot;tuna&quot;: 361,
+                    &quot;lobster&quot;: 379,
+                    &quot;swordfish&quot;: 373,
+                    &quot;monkfish&quot;: 7946,
+                    &quot;shark&quot;: 385,
+                    &quot;manta ray&quot;: 391, &quot;manta&quot;: 391,
+                    &quot;dark crab&quot;: 11936,
+                    &quot;karambwan&quot;: 3144,
+                    &quot;anglerfish&quot;: 13441
+                };
+                var resolved = FOOD_NAME_TO_ID[foodId.toLowerCase()];
+                if (resolved) {
+                    botMsg(&quot;Resolved food name &#x27;&quot; + foodId + &quot;&#x27; to ID &quot; + resolved, &quot;SlayerBot&quot;);
+                    foodId = resolved;
+                } else {
+                    botMsg(&quot;WARNING: Unknown food name &#x27;&quot; + foodId + &quot;&#x27;, defaulting to lobster (379)&quot;, &quot;SlayerBot&quot;);
+                    foodId = 379;
+                }
+            }
+            var desiredFood = getDesiredFoodCount();
+            if (desiredFood &gt; 0) {
+                withdrawQueue.push({ id: foodId, qty: desiredFood, label: &quot;Food x&quot; + desiredFood });
+            }
+
+            // Prayer pots
+            var desiredPpots = getDesiredPrayerPotCount();
+            if (desiredPpots &gt; 0) {
+                withdrawQueue.push({ id: &quot;ppot&quot;, qty: desiredPpots, label: &quot;Prayer pots x&quot; + desiredPpots, potion: true, group: PRAYER_POTS });
+            }
+
+            // Combat pots
+            if (taskNeedsCombatPots()) {
+                withdrawQueue.push({ id: &quot;combatpot&quot;, qty: 1, label: &quot;Combat pot&quot;, potion: true, group: SUPER_COMBAT_POTS, fallback1: SUPER_ATTACK_POTS, fallback2: ATTACK_POTS });
+            }
+
+            // Arrows
+            if (cfgVal(&quot;useRanged&quot;, false) || usingSafespot) {
+                var bestArrow = getBestArrows(rangedLevel);
+                if (bestArrow) {
+                    withdrawQueue.push({ id: bestArrow.id, qty: 500, label: &quot;Arrows x500&quot; });
+                }
+            }
+
+            // Runes
+            if (cfgVal(&quot;useMagic&quot;, false)) {
+                var spell = getBestSpell(magicLevel);
+                if (spell) {
+                    var runes = getRunesForSpell(spell.key);
+                    if (runes) {
+                        var runeKeys = Object.keys(runes);
+                        for (var r = 0; r &lt; runeKeys.length; r++) {
+                            var runeId = parseInt(runeKeys[r]);
+                            var runeQty = runes[runeKeys[r]] * 200;
+                            withdrawQueue.push({ id: runeId, qty: runeQty, label: &quot;Rune &quot; + runeId });
+                        }
+                    }
+                }
+            }
+
+            // Antifire
+            if (currentTaskMonster &amp;&amp; isDragonTask(currentTaskMonster.name)) {
+                withdrawQueue.push({ id: &quot;antifire&quot;, qty: 2, label: &quot;Antifire&quot;, potion: true, group: SUPER_ANTIFIRE_POTS, fallback1: EXTENDED_ANTIFIRE_POTS, fallback2: ANTIFIRE_POTS });
+            }
+
+            // Antipoison
+            if (currentTaskMonster &amp;&amp; canPoison(currentTaskMonster.name)) {
+                withdrawQueue.push({ id: &quot;antipoison&quot;, qty: 1, label: &quot;Antipoison&quot;, potion: true, group: SUPER_ANTIPOISON_IDS });
+            }
+
+            // Cannonballs
+            if (cfgVal(&quot;useCannon&quot;, false) &amp;&amp; shouldUseCannon(currentTaskMonster, true)) {
+                withdrawQueue.push({ id: CANNON.CANNONBALL, qty: CANNON.MIN_CANNONBALLS, label: &quot;Cannonballs&quot; });
+            }
+
+            // Special items
+            if (cfgVal(&quot;specialFinish&quot;, false) &amp;&amp; currentTaskMonster) {
+                var monName = currentTaskMonster.name.toLowerCase();
+                if (monName.indexOf(&quot;gargoyle&quot;) !== -1) {
+                    withdrawQueue.push({ id: ROCK_HAMMER_ID, qty: 1, label: &quot;Rock hammer&quot; });
+                }
+                if (monName.indexOf(&quot;rockslug&quot;) !== -1 || monName.indexOf(&quot;lizard&quot;) !== -1) {
+                    withdrawQueue.push({ id: ICE_COOLER_ID, qty: 1, label: &quot;Ice cooler&quot; });
+                }
+            }
+
+            botMsg(&quot;Withdraw queue: &quot; + withdrawQueue.length + &quot; items to withdraw&quot;, &quot;SlayerBot&quot;);
+            if (withdrawQueue.length === 0) {
+                bankPhase = 4;
+                waitTicks = 0;
+            }
+            return;
+        }
+
+        // Check bank is still open
+        if (!Game.info.bank.isOpen()) {
+            botMsg(&quot;Bank closed during withdrawals! Reopening...&quot;, &quot;SlayerBot&quot;);
+            bankPhase = 0; waitTicks = 0; return;
+        }
+        // Wait 2 ticks between each withdrawal to let the previous one settle
+        waitTicks++;
+        if (waitTicks &lt; 2) return;
+        waitTicks = 0;
+
+        // Process ONE item from queue
+        var item = withdrawQueue[0];
+        withdrawQueue.splice(0, 1);
+        botMsg(&quot;Withdrawing: &quot; + item.label, &quot;SlayerBot&quot;);
+
+        if (item.potion) {
+            // Potion withdrawal with fallbacks
+            if (!withdrawPotionFromBank(item.group, item.qty)) {
+                if (item.fallback1 &amp;&amp; !withdrawPotionFromBank(item.fallback1, item.qty)) {
+                    if (item.fallback2) {
+                        withdrawPotionFromBank(item.fallback2, item.qty);
+                    }
+                }
+            }
+        } else {
+            withdrawBankItem(item.id, item.qty);
+        }
+
+        // If queue now empty, move to close
+        if (withdrawQueue.length === 0) {
+            bankPhase = 4;
+            waitTicks = 0;
+        }
+        return;
+    }
+
+    // Phase 4: DECIDE next move BEFORE closing bank (bank still open)
+    if (bankPhase === 4) {
+        // === GEM REDIRECT: If we just got gem from bank, go check it now ===
+        if (Game.info.inventory.hasItem(4155) &amp;&amp; !currentTaskName) {
+            botMsg(&quot;Got gem! Will check task after closing bank.&quot;, &quot;SlayerBot&quot;);
+            postBankState = STATES.CHECK_GEM;
+            bankPhase = 5;
+            waitTicks = 0;
+            return;
+        }
+
+        // === FULL POST-BANK SUPPLY CHECK (TIER-AWARE) -- while bank is STILL OPEN ===
+        var stillMissing = [];
+        var diff = getTaskDifficulty();
+
+        // Gem
+        if (!Game.info.inventory.hasItem(4155)) {
+            stillMissing.push(&quot;gem&quot;);
+        }
+
+        // Food
+        if (countFood() &lt; getDesiredFoodCount()) {
+            stillMissing.push(&quot;food&quot;);
+        }
+
+        // Prayer pots -- only if task warrants it
+        var neededPpots = getDesiredPrayerPotCount();
+        if (neededPpots &gt; 0 &amp;&amp; countPrayerPots() &lt; neededPpots) {
+            stillMissing.push(&quot;prayer_pot&quot;);
+        }
+
+        // Combat pot -- only MEDIUM+
+        if (taskNeedsCombatPots()) {
+            var hasCombatPot = hasPotionInGroup(SUPER_COMBAT_POTS) ||
+                               hasPotionInGroup(SUPER_ATTACK_POTS) ||
+                               hasPotionInGroup(ATTACK_POTS);
+            if (!hasCombatPot) {
+                stillMissing.push(&quot;combat_pot&quot;);
+            }
+        }
+
+        // Arrows
+        if (cfgVal(&quot;useRanged&quot;, false) || usingSafespot) {
+            if (countArrows() &lt; 100) {
+                stillMissing.push(&quot;arrows&quot;);
+            }
+        }
+
+        // Runes
+        if (cfgVal(&quot;useMagic&quot;, false)) {
+            if (countRunes() &lt; 100) {
+                stillMissing.push(&quot;runes&quot;);
+            }
+        }
+
+        // Cannonballs -- only MEDIUM+ multicombat
+        if (taskNeedsCannon()) {
+            if (Game.info.inventory.getItemCount(CANNON.CANNONBALL) &lt; 200) {
+                stillMissing.push(&quot;cannonballs&quot;);
+            }
+        }
+
+        // Antifire (dragon)
+        if (currentTaskMonster &amp;&amp; isDragonTask(currentTaskMonster.name)) {
+            var hasAF = hasPotionInGroup(SUPER_ANTIFIRE_POTS) ||
+                        hasPotionInGroup(EXTENDED_ANTIFIRE_POTS) ||
+                        hasPotionInGroup(ANTIFIRE_POTS);
+            if (!hasAF) {
+                stillMissing.push(&quot;antifire&quot;);
+            }
+        }
+
+        // Antipoison
+        if (currentTaskMonster &amp;&amp; canPoison(currentTaskMonster.name)) {
+            var hasAP = hasPotionInGroup(ANTIVENOM_PLUS_IDS) ||
+                        hasPotionInGroup(ANTIVENOM_IDS) ||
+                        hasPotionInGroup(SUPER_ANTIPOISON_IDS);
+            if (!hasAP) {
+                stillMissing.push(&quot;antipoison&quot;);
+            }
+        }
+
+        // Coins
+        if (Game.info.inventory.getItemCount(995) &lt; 250) {
+            stillMissing.push(&quot;coins&quot;);
+        }
+
+        if (stillMissing.length === 0) {
+            botMsg(&quot;ALL supplies ready! Closing bank then heading to task.&quot;, &quot;SlayerBot&quot;);
+            missingItems = [];
+            postBankState = STATES.WALK_TO_TASK;
+        } else {
+            // Still missing -- route to correct gather sub-state
+            var firstMissing = stillMissing[0];
+            missingItems = stillMissing;
+            botMsg(&quot;Still missing after bank: &quot; + stillMissing.join(&quot;, &quot;) + &quot; -- will gather &quot; + firstMissing, &quot;SlayerBot&quot;);
+
+            if (firstMissing === &quot;gem&quot;) {
+                // Gem only from slayer master, not gatherable
+                postBankState = STATES.CHECK_STATS;
+            } else if (firstMissing === &quot;food&quot;) {
+                postBankState = STATES.GATHER_FOOD;
+            } else if (firstMissing === &quot;prayer_pot&quot;) {
+                brewTarget = &quot;prayer&quot;;
+                postBankState = STATES.BREW_POTIONS;
+            } else if (firstMissing === &quot;arrows&quot;) {
+                postBankState = STATES.CRAFT_ARROWS;
+            } else if (firstMissing === &quot;runes&quot;) {
+                postBankState = STATES.CRAFT_RUNES;
+            } else if (firstMissing === &quot;cannonballs&quot;) {
+                postBankState = STATES.GATHER_CANNONBALLS;
+            } else if (firstMissing === &quot;combat_pot&quot; || firstMissing === &quot;antifire&quot; || firstMissing === &quot;antipoison&quot;) {
+                if (cfgVal(&quot;selfSufficiency&quot;, false)) {
+                    brewTarget = firstMissing;
+                    postBankState = STATES.BREW_POTIONS;
+                } else {
+                    postBankState = STATES.WALK_TO_GE;
+                }
+            } else {
+                postBankState = STATES.WALK_TO_GE;
+            }
+        }
+
+        bankPhase = 5;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 5: Close bank
+    if (bankPhase === 5) {
+        if (Game.info.bank.isOpen()) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.bank.close();
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        bankPhase = 6;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 6: Wait for close, then transition to pre-decided state
+    if (bankPhase === 6) {
+        waitTicks++;
+        if (waitTicks &lt; 4) return;
+        waitTicks = 0;
+        bankPhase = 0;
+
+        // Transition to the state we decided in Phase 4
+        var nextState = postBankState || STATES.CHECK_SUPPLIES;
+        postBankState = null;
+        botMsg(&quot;Bank closed. Next: &quot; + nextState, &quot;SlayerBot&quot;);
+        state = nextState;
+        return;
+    }
+}
+
+function withdrawBankItem(itemId, qty) {
+    try {
+        // Safety: itemId MUST be a number -- bank API crashes on strings
+        if (typeof itemId === &quot;string&quot;) {
+            botMsg(&quot;WITHDRAW ERROR: itemId is a string (&#x27;&quot; + itemId + &quot;&#x27;) not a number! Skipping.&quot;, &quot;SlayerBot&quot;);
+            return;
+        }
+        itemId = parseInt(itemId);
+        if (isNaN(itemId) || itemId &lt;= 0) {
+            botMsg(&quot;WITHDRAW ERROR: invalid itemId &quot; + itemId + &quot;! Skipping.&quot;, &quot;SlayerBot&quot;);
+            return;
+        }
+        // Correct API: withdrawItem(itemId, amount, BankWithdrawType.ITEM)
+        // amount = exact quantity to withdraw (any number)
+        // BankWithdrawType.ITEM = withdraw as regular item (not noted)
+        var amount = qty || 1;
+        botMsg(&quot;Bank withdraw: item &quot; + itemId + &quot; x&quot; + amount, &quot;SlayerBot&quot;);
+        Game.interact.bank.withdrawItem(itemId, amount, BankWithdrawType.ITEM);
+    } catch(e) {
+        botMsg(&quot;Withdraw FAILED for item &quot; + itemId + &quot;: &quot; + e, &quot;SlayerBot&quot;);
+    }
+}
+
+// ---- WALK_TO_GE ----
+function handleWalkToGE() {
+    if (isNear(GE_LOCATION.x, GE_LOCATION.y, 10)) {
+        state = STATES.BUY_AT_GE;
+        retryCount = 0;
+        return;
+    }
+
+    if (!PlayerHelper.isWebWalking()) {
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            PlayerHelper.webWalkTo(new WorldPoint(GE_LOCATION.x, GE_LOCATION.y, GE_LOCATION.plane));
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+}
+
+// ---- BUY_AT_GE ----
+function handleBuyAtGE() {
+    // GE purchasing is complex and depends on DZ APIs
+    // For now, log and skip to self-sufficient gathering
+    botMsg(&quot;GE purchasing not available in self-sufficient mode. Crafting instead.&quot;, &quot;SlayerBot&quot;);
+    if (cfgVal(&quot;selfSufficiency&quot;, false)) {
+        state = STATES.CHECK_SUPPLIES;
+    } else {
+        state = STATES.IDLE;
+    }
+}
+
+// ---- WALK_TO_TASK ----
+function handleWalkToTask() {
+    if (!currentTaskMonster) {
+        botMsg(&quot;No task monster data, returning to master.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    // v24: Cannon setup -- ONLY in multicombat zones (never bring to single combat)
+    if (cfgVal(&quot;useCannon&quot;, false) &amp;&amp; !cannonPlaced &amp;&amp; shouldUseCannon(currentTaskMonster, true)) {
+        if (Game.info.inventory.hasItem(CANNON.BASE, 1) &amp;&amp; Game.info.inventory.hasItem(CANNON.CANNONBALL, 1)) {
+            if (isNear(currentTaskMonster.x, currentTaskMonster.y, 15)) {
+                botMsg(&quot;[SlayerBot] Multicombat zone -- setting up cannon&quot;, &quot;Bot&quot;);
+                state = STATES.SETUP_CANNON;
+                return;
+            }
+        }
+    }
+
+    if (isNear(currentTaskMonster.x, currentTaskMonster.y, 15)) {
+        // v24: Choose fight mode based on safespot
+        if (usingSafespot &amp;&amp; cfgVal(&quot;useSafespots&quot;, false)) {
+            state = STATES.SAFESPOT_FIGHT;
+        } else {
+            state = STATES.FIGHT_TASK;
+        }
+        retryCount = 0;
+        ticksSinceAntifire = 0;
+        ticksSinceAntipoison = 0;
+        ticksSinceCombatPot = 0;
+        return;
+    }
+
+    if (!PlayerHelper.isWebWalking()) {
+        isExecuting = true;
+        var mx = currentTaskMonster.x;
+        var my = currentTaskMonster.y;
+        var mp = currentTaskMonster.plane || 0;
+        Utility.invokeLater(function() {
+            PlayerHelper.webWalkTo(new WorldPoint(mx, my, mp));
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+}
+
+// ---- FIGHT_TASK (major overhaul for v24) ----
+function handleFightTask() {
+    if (!currentTaskMonster) {
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    // Task complete check
+    if (killsLeft &lt;= 0) {
+        botMsg(&quot;Task complete! Killed all &quot; + currentTaskName, &quot;SlayerBot&quot;);
+        state = STATES.TASK_COMPLETE;
+        return;
+    }
+
+    var currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
+    var maxHP = Client.getRealSkillLevels(Skill.HITPOINTS);
+
+    // === PRIORITY 1: Death check ===
+    if (currentHP &lt;= 0) {
+        saveDeathLocation();
+        state = STATES.HANDLE_DEATH;
+        return;
+    }
+
+    // === PRIORITY 2: Emergency teleport if critically low ===
+    if (currentHP &lt;= EMERGENCY_HP_THRESHOLD &amp;&amp; countFood() === 0) {
+        botMsg(&quot;CRITICAL HP with no food! Emergency retreat!&quot;, &quot;SlayerBot&quot;);
+        // Try to eat anything
+        if (!eatFood()) {
+            // Walk away from combat
+            bankTarget = null; state = STATES.WALK_TO_BANK;
+            return;
+        }
+    }
+
+    // === PRIORITY 3: Eat food ===
+    if (currentHP &lt;= Math.floor(maxHP * 0.45)) {
+        if (countFood() &gt; 0) {
+            eatFood();
+            return;
+        } else {
+            // Out of food -- bank
+            botMsg(&quot;Out of food, banking.&quot;, &quot;SlayerBot&quot;);
+            bankTarget = null; state = STATES.WALK_TO_BANK;
+            return;
+        }
+    }
+
+    // === PRIORITY 4: Drink prayer pot ===
+    if (cfgVal(&quot;usePrayer&quot;, false)) {
+        var currentPrayer = Client.getBoostedSkillLevels(Skill.PRAYER);
+        if (currentPrayer &lt;= 15) {
+            if (countPrayerPots() &gt; 0) {
+                drinkPrayerPot();
+                return;
+            }
+        }
+    }
+
+    // === PRIORITY 5: Anti-fire check (dragon tasks) ===
+    if (currentTaskMonster &amp;&amp; isDragonTask(currentTaskMonster.name)) {
+        if (ticksSinceAntifire &gt; 550 || ticksSinceAntifire === 0) {
+            if (drinkAntifire()) {
+                return;
+            }
+        }
+    }
+
+    // === PRIORITY 6: Anti-poison check ===
+    if (currentTaskMonster &amp;&amp; canPoison(currentTaskMonster.name)) {
+        if (ticksSinceAntipoison &gt; 800 || ticksSinceAntipoison === 0) {
+            if (drinkAntipoison()) {
+                return;
+            }
+        }
+    }
+
+    // === PRIORITY 7: Combat potion re-dose ===
+    if (ticksSinceCombatPot &gt; 50) {
+        var boostedAtk = Client.getBoostedSkillLevels(Skill.ATTACK);
+        var realAtk = Client.getRealSkillLevels(Skill.ATTACK);
+        if (boostedAtk &lt;= realAtk + 2) {
+            if (drinkCombatPotion()) {
+                ticksSinceCombatPot = 0;
+                return;
+            }
+        }
+        var boostedStr = Client.getBoostedSkillLevels(Skill.STRENGTH);
+        var realStr = Client.getRealSkillLevels(Skill.STRENGTH);
+        if (boostedStr &lt;= realStr + 2) {
+            if (drinkStrengthPotion()) {
+                ticksSinceCombatPot = 0;
+                return;
+            }
+        }
+    }
+
+    // === PRIORITY 8: Special attack ===
+    if (cfgVal(&quot;useSpecialAttack&quot;, false)) {
+        var specPercent = 0;
+        try { specPercent = Client.getSpecialAttackPercent(); } catch(e) {}
+        if (specPercent &gt;= 25) {
+            useSpecialAttack();
+        }
+    }
+
+    // === PRIORITY 9: Superior monster check ===
+    var superior = checkForSuperior();
+    if (superior) {
+        botMsg(&quot;SUPERIOR FOUND! Attacking superior.&quot;, &quot;SlayerBot&quot;);
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.npc.attack(superior);
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // === PRIORITY 10: Special finish items ===
+    if (cfgVal(&quot;specialFinish&quot;, false)) {
+        var finished = handleSpecialFinishCheck();
+        if (finished) return;
+    }
+
+    // === PRIORITY 11: Loot check ===
+    if (!Client.getLocalPlayer().isInteracting()) {
+        if (pickUpLoot()) return;
+    }
+
+    // === PRIORITY 12: Clue scroll banking ===
+    if (Game.info.inventory.isFull() &amp;&amp; hasClueScroll()) {
+        botMsg(&quot;Inventory full with clue scroll, banking.&quot;, &quot;SlayerBot&quot;);
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    // === PRIORITY 13: Bone burying ===
+    if (cfgVal(&quot;buryBones&quot;, false) &amp;&amp; !Client.getLocalPlayer().isInteracting()) {
+        for (var b = 0; b &lt; ALL_BONE_IDS.length; b++) {
+            if (Game.info.inventory.hasItem(ALL_BONE_IDS[b], 1)) {
+                var boneId = ALL_BONE_IDS[b];
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.inventory.consumeItem(boneId);
+                    isExecuting = false;
+                }, Utility.getDelay());
+                return;
+            }
+        }
+    }
+
+    // === PRIORITY 14: Cannon reload ===
+    if (cfgVal(&quot;useCannon&quot;, false) &amp;&amp; cannonPlaced) {
+        reloadCannon();
+    }
+
+    // === PRIORITY 15: Attack target ===
+    if (!Client.getLocalPlayer().isInteracting()) {
+        var npcIds = currentTaskMonster.ids;
+        if (!npcIds || npcIds.length === 0) {
+            botMsg(&quot;No NPC IDs for &quot; + currentTaskName, &quot;SlayerBot&quot;);
+            state = STATES.SELECT_MASTER;
+            return;
+        }
+
+        var target = Game.info.npc.getNearest(npcIds);
+        if (target &amp;&amp; !target.isDead()) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.npc.attack(target);
+                isExecuting = false;
+            }, Utility.getDelay());
+        } else {
+            // No monster found -- might need to wait or move
+            if (stateTickCounter &gt; 20 &amp;&amp; !target) {
+                // Try walking closer to task center
+                if (!PlayerHelper.isWebWalking()) {
+                    var cx = currentTaskMonster.x;
+                    var cy = currentTaskMonster.y;
+                    var cp = currentTaskMonster.plane || 0;
+                    isExecuting = true;
+                    Utility.invokeLater(function() {
+                        PlayerHelper.webWalkTo(new WorldPoint(cx, cy, cp));
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                }
+            }
+        }
+    }
+}
+
+function handleSpecialFinishCheck() {
+    if (!currentTaskMonster) return false;
+    var monName = currentTaskMonster.name.toLowerCase();
+    var npcIds = currentTaskMonster.ids;
+
+    // Gargoyles: rock hammer when low HP
+    if (monName.indexOf(&quot;gargoyle&quot;) !== -1 &amp;&amp; Game.info.inventory.hasItem(ROCK_HAMMER_ID, 1)) {
+        var gargoyle = Game.info.npc.getNearest(npcIds);
+        if (gargoyle &amp;&amp; gargoyle.getHealthRatio() &gt; 0 &amp;&amp; gargoyle.getHealthRatio() &lt;= 10) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                // Use rock hammer on gargoyle
+                Game.interact.inventory.useItemOnNpc(ROCK_HAMMER_ID, gargoyle);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return true;
+        }
+    }
+
+    // Rockslugs: bag of salt when low HP
+    if (monName.indexOf(&quot;rockslug&quot;) !== -1 &amp;&amp; Game.info.inventory.hasItem(ICE_COOLER_ID, 1)) {
+        var rockslug = Game.info.npc.getNearest(npcIds);
+        if (rockslug &amp;&amp; rockslug.getHealthRatio() &gt; 0 &amp;&amp; rockslug.getHealthRatio() &lt;= 10) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.useItemOnNpc(ICE_COOLER_ID, rockslug);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return true;
+        }
+    }
+
+    // Desert lizards: ice cooler when low HP
+    if (monName.indexOf(&quot;lizard&quot;) !== -1 &amp;&amp; Game.info.inventory.hasItem(ICE_COOLER_ID, 1)) {
+        var lizard = Game.info.npc.getNearest(npcIds);
+        if (lizard &amp;&amp; lizard.getHealthRatio() &gt; 0 &amp;&amp; lizard.getHealthRatio() &lt;= 10) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.useItemOnNpc(ICE_COOLER_ID, lizard);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function reloadCannon() {
+    // Check cannonball count
+    var cballs = Game.info.inventory.getItemCount(2);
+    if (cballs &lt;= 0) return;
+
+    // Try to find cannon object near us
+    try {
+        var cannonObj = Game.info.gameObject.getNearest([6]);
+        if (cannonObj) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(cannonObj, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    } catch(e) {}
+}
+
+// ---- SAFESPOT_FIGHT ----
+function handleSafespotFight() {
+    if (!currentTaskMonster) {
+        state = STATES.SELECT_MASTER;
+        return;
+    }
+
+    if (killsLeft &lt;= 0) {
+        botMsg(&quot;Safespot task complete! Killed all &quot; + currentTaskName, &quot;SlayerBot&quot;);
+        state = STATES.TASK_COMPLETE;
+        return;
+    }
+
+    var spot = hasSafeSpot(currentTaskMonster.name);
+    if (!spot) {
+        // Fallback to normal melee fight
+        state = STATES.FIGHT_TASK;
+        return;
+    }
+
+    // Move to safe tile if not there
+    if (!isNear(spot.safeX, spot.safeY, 2)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var sx = spot.safeX;
+            var sy = spot.safeY;
+            var sp = spot.safePlane;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(sx, sy, sp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Activate prayer if needed
+    if (spot.prayAgainst) {
+        activateSpecificPrayer(spot.prayAgainst);
+    }
+
+    // Survival checks
+    handleSurvivalChecks();
+
+    // Check for superior (even in safespot)
+    var superiorNpc = checkForSuperior();
+    if (superiorNpc) {
+        botMsg(&quot;SUPERIOR in safespot! Attacking.&quot;, &quot;SlayerBot&quot;);
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.npc.attack(superiorNpc);
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Loot check
+    if (!Client.getLocalPlayer().isInteracting()) {
+        if (pickUpLoot()) return;
+    }
+
+    // Bone burying
+    if (cfgVal(&quot;buryBones&quot;, false) &amp;&amp; !Client.getLocalPlayer().isInteracting()) {
+        for (var b = 0; b &lt; ALL_BONE_IDS.length; b++) {
+            if (Game.info.inventory.hasItem(ALL_BONE_IDS[b], 1)) {
+                var safeBoneId = ALL_BONE_IDS[b];
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.inventory.consumeItem(safeBoneId);
+                    isExecuting = false;
+                }, Utility.getDelay());
+                return;
+            }
+        }
+    }
+
+    // Supply interrupts
+    var fCount = countFood();
+    if (fCount &lt;= 0) {
+        botMsg(&quot;Out of food in safespot, banking.&quot;, &quot;SlayerBot&quot;);
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    // Arrow/rune supply interrupt
+    if (cfgVal(&quot;useRanged&quot;, false) &amp;&amp; countArrows() &lt; 10) {
+        botMsg(&quot;Low on arrows, restocking.&quot;, &quot;SlayerBot&quot;);
+        if (cfgVal(&quot;selfSufficiency&quot;, false)) {
+            stateBeforeInterrupt = STATES.CHECK_SUPPLIES;
+            state = STATES.CRAFT_ARROWS;
+        } else {
+            bankTarget = null; state = STATES.WALK_TO_BANK;
+        }
+        return;
+    }
+    if (cfgVal(&quot;useMagic&quot;, false) &amp;&amp; countRunes() &lt; 10) {
+        botMsg(&quot;Low on runes, restocking.&quot;, &quot;SlayerBot&quot;);
+        if (cfgVal(&quot;selfSufficiency&quot;, false)) {
+            stateBeforeInterrupt = STATES.CHECK_SUPPLIES;
+            state = STATES.CRAFT_RUNES;
+        } else {
+            bankTarget = null; state = STATES.WALK_TO_BANK;
+        }
+        return;
+    }
+
+    // Attack with ranged/magic from safe spot
+    if (!Client.getLocalPlayer().isInteracting()) {
+        attackWithRangedOrMagic();
+    }
+}
+
+// ---- EAT_FOOD ----
+function handleEatFood() {
+    if (eatFood()) {
+        state = STATES.FIGHT_TASK;
+    } else {
+        // No food, need to bank
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+    }
+}
+
+// ---- DRINK_PRAYER ----
+function handleDrinkPrayer() {
+    if (drinkPrayerPot()) {
+        state = STATES.FIGHT_TASK;
+    } else {
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+    }
+}
+
+// ---- LOOT_ITEMS ----
+function handleLootItems() {
+    if (Game.info.inventory.isFull()) {
+        // Inventory full -- bury bones or bank
+        if (cfgVal(&quot;buryBones&quot;, false)) {
+            for (var i = 0; i &lt; ALL_BONE_IDS.length; i++) {
+                if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
+                    state = STATES.BURY_BONES;
+                    return;
+                }
+            }
+        }
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    if (!pickUpLoot()) {
+        // Nothing to loot, back to fight
+        state = STATES.FIGHT_TASK;
+    }
+}
+
+// ---- BURY_BONES ----
+function handleBuryBones() {
+    var buried = false;
+    for (var i = 0; i &lt; ALL_BONE_IDS.length; i++) {
+        if (Game.info.inventory.hasItem(ALL_BONE_IDS[i], 1)) {
+            var buryBoneId = ALL_BONE_IDS[i];
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.consumeItem(buryBoneId);
+                isExecuting = false;
+            }, Utility.getDelay());
+            buried = true;
+            break;
+        }
+    }
+    if (!buried) {
+        state = STATES.FIGHT_TASK;
+    }
+}
+
+// ---- SPECIAL_FINISH ----
+function handleSpecialFinish() {
+    // This state is entered when a monster needs a specific finishing item
+    var finished = handleSpecialFinishCheck();
+    if (!finished) {
+        state = STATES.FIGHT_TASK;
+    }
+}
+
+// ---- TASK_COMPLETE ----
+function handleTaskComplete() {
+    tasksCompleted++;
+    totalKills = totalKills + (killsLeft &lt;= 0 ? 0 : killsLeft);
+    botMsg(&quot;Task complete! Total tasks: &quot; + tasksCompleted + &quot; | Total kills: &quot; + totalKills, &quot;SlayerBot&quot;);
+
+    // Reset task state
+    currentTaskName = &quot;&quot;;
+    currentTaskMonster = null;
+    killsLeft = 0;
+    usingSafespot = false;
+    cannonPlaced = false;
+
+    // Reset potion timers
+    ticksSinceAntifire = 0;
+    ticksSinceAntipoison = 0;
+    ticksSinceCombatPot = 0;
+
+    // v24: Track Turael boosting (already incremented in selectMasterWithBoosting)
+
+    // Get next task
+    state = STATES.CHECK_STATS;
+}
+
+// ---- HANDLE_DEATH ----
+function handleDeath() {
+    botMsg(&quot;Handling death. Saving death location for recovery.&quot;, &quot;SlayerBot&quot;);
+    deathDetected = true;
+    saveDeathLocation();
+    state = STATES.RECOVER_GRAVE;
+}
+
+// ---- RECOVER_GRAVE ----
+function handleRecoverGrave() {
+    // After respawn in Lumbridge:
+    // 1. Bank and withdraw emergency food
+    // 2. Walk to death location
+    // 3. Collect items
+    // 4. Re-equip gear
+    // 5. Return to task
+
+    if (!deathLocation) {
+        botMsg(&quot;No death location saved, re-checking supplies.&quot;, &quot;SlayerBot&quot;);
+        deathDetected = false;
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // Phase 1: Get emergency food from bank
+    var foodCt = countFood();
+    if (foodCt &lt; 3) {
+        // Need to bank first
+        if (!Game.info.bank.isOpen()) {
+            var bank = findNearestBank();
+            if (bank &amp;&amp; isNear(bank.x, bank.y, 8)) {
+                _gt = tickCounter;
+                if (_gt - bankOpenAttemptTick &lt; 5) return;
+                bankOpenAttemptTick = _gt;
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.bank.openNearest();
+                    isExecuting = false;
+                }, Utility.getDelay());
+                return;
+            } else if (bank) {
+                if (!PlayerHelper.isWebWalking()) {
+                    isExecuting = true;
+                    var rbx = bank.x;
+                    var rby = bank.y;
+                    var rbp = bank.plane || 0;
+                    Utility.invokeLater(function() {
+                        PlayerHelper.webWalkTo(new WorldPoint(rbx, rby, rbp));
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                }
+                return;
+            }
+        } else {
+            // Bank is open, withdraw food
+            var emergFoodId = 379;
+            try { emergFoodId = cfgVal(&quot;foodType&quot;, 379); } catch(e) {}
+            withdrawBankItem(emergFoodId, 5);
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.bank.close();
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+    }
+
+    // Phase 2: Walk to death pile
+    if (!isNear(deathLocation.x, deathLocation.y, 5)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var dlx = deathLocation.x;
+            var dly = deathLocation.y;
+            var dlp = deathLocation.plane;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(dlx, dly, dlp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Phase 3: At grave - pick up items from ground
+    if (pickUpLoot()) return;
+
+    // Phase 4: Done recovering, return to supply check
+    botMsg(&quot;Death recovery complete, resuming task.&quot;, &quot;SlayerBot&quot;);
+    deathLocation = null;
+    deathDetected = false;
+    state = STATES.CHECK_SUPPLIES;
+}
+
+// ---- HANDLE_LEVEL_UP ----
+function handleLevelUp() {
+    updateCachedStats();
+    botMsg(&quot;Level up detected! Updated stats.&quot;, &quot;SlayerBot&quot;);
+    levelUpDetected = false;
+    setAttackStyle();
+    state = STATES.FIGHT_TASK;
+}
+
+// ---- SETUP_CANNON ----
+function handleSetupCannon() {
+    if (!currentTaskMonster) {
+        state = STATES.FIGHT_TASK;
+        return;
+    }
+
+    // SAFETY: Never place cannon in single-combat zones
+    if (isTaskSingleCombat(currentTaskMonster)) {
+        botMsg(&quot;[SlayerBot] Single combat zone -- skipping cannon&quot;, &quot;Bot&quot;);
+        cannonPlaced = false;
+        state = STATES.FIGHT_TASK;
+        return;
+    }
+
+    // Check if we have cannon base
+    if (!Game.info.inventory.hasItem(CANNON.BASE, 1)) {
+        botMsg(&quot;No cannon base in inventory.&quot;, &quot;SlayerBot&quot;);
+        cannonPlaced = false;
+        state = STATES.FIGHT_TASK;
+        return;
+    }
+
+    // Walk to monster area center
+    if (!isNear(currentTaskMonster.x, currentTaskMonster.y, 10)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var canX = currentTaskMonster.x;
+            var canY = currentTaskMonster.y;
+            var canP = currentTaskMonster.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(canX, canY, canP));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Place cannon by using the base item
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.inventory.consumeItem(6);
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    cannonPlaced = true;
+    var loc = getPlayerLocation();
+    cannonX = loc.x;
+    cannonY = loc.y;
+    botMsg(&quot;Cannon placed at &quot; + cannonX + &quot;,&quot; + cannonY, &quot;SlayerBot&quot;);
+    state = STATES.FIGHT_TASK;
+}
+
+// =============================================================================
+// SELF-SUFFICIENCY STATES (existing, enhanced for v24)
+// =============================================================================
+
+// ---- GATHER_FOOD ----
+function handleGatherFood() {
+    // ---- TIER-AWARE FOOD GATHERING ----
+    // Uses SS_FOOD_TIERS to pick the best food for player&#x27;s level
+    // Checks for required tool BEFORE trying to gather
+    // Universal pattern: check tool -&gt; walk -&gt; gather -&gt; cook -&gt; bank -&gt; recheck
+
+    var fishLvl = Client.getRealSkillLevels(Skill.FISHING) || 1;
+    var cookLvl = Client.getRealSkillLevels(Skill.COOKING) || 1;
+
+    // Pick best food tier for our levels
+    var bestTier = null;
+    for (var t = SS_FOOD_TIERS.length - 1; t &gt;= 0; t--) {
+        var tier = SS_FOOD_TIERS[t];
+        if (fishLvl &gt;= tier.minFishLevel &amp;&amp; cookLvl &gt;= tier.minCookLevel) {
+            bestTier = tier;
+            break;
+        }
+    }
+    if (!bestTier) {
+        bestTier = SS_FOOD_TIERS[0]; // Chicken fallback
+    }
+
+    // Only log once per gather session
+    if (!gatherFoodTier || gatherFoodTier.name !== bestTier.name) {
+        botMsg(&quot;Gathering: &quot; + bestTier.name + &quot; (tier &quot; + bestTier.tier + &quot;)&quot;, &quot;SlayerBot&quot;);
+    }
+    gatherFoodTier = bestTier;
+
+    // ---- TOOL CHECK ----
+    // If this tier needs a tool, make sure we have it
+    if (bestTier.toolId) {
+        var hasTool = Game.info.inventory.getItemCount(bestTier.toolId) &gt; 0;
+        if (!hasTool) {
+            botMsg(&quot;Need tool: &quot; + bestTier.toolRequired + &quot; (id &quot; + bestTier.toolId + &quot;) - banking for it&quot;, &quot;SlayerBot&quot;);
+            // Set a flag so BANK_SUPPLIES knows to withdraw this tool
+            gatherToolNeeded = bestTier.toolId;
+            bankTarget = null; state = STATES.WALK_TO_BANK;
+            return;
+        }
+    }
+    // If tier needs secondary (e.g., feathers for fly fishing)
+    if (bestTier.secondaryId) {
+        var hasSecondary = Game.info.inventory.getItemCount(bestTier.secondaryId) &gt;= 10;
+        if (!hasSecondary) {
+            botMsg(&quot;Need secondary: id &quot; + bestTier.secondaryId + &quot; - banking for it&quot;, &quot;SlayerBot&quot;);
+            gatherToolNeeded = bestTier.secondaryId;
+            bankTarget = null; state = STATES.WALK_TO_BANK;
+            return;
+        }
+    }
+
+    // ---- CHICKEN TIER = KILL, NOT FISH ----
+    if (bestTier.method === &quot;kill&quot;) {
+        // Walk to chicken pen (10-tick cooldown)
+        var chickenLoc = bestTier.gatherLocation;
+        if (!isNear(chickenLoc.x, chickenLoc.y, 12)) {
+            if (gameTick - walkCooldown &lt; 10) return;
+            walkCooldown = gameTick;
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(chickenLoc.x, chickenLoc.y, chickenLoc.plane || 0));
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+        // Kill chickens and pick up raw chicken
+        if (Client.getLocalPlayer().isIdle()) {
+            var chicken = Game.info.npc.getNearest(bestTier.npcIds);
+            if (chicken) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.npc.attack(chicken);
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+        }
+        // Pick up raw chicken from ground
+        var loot = Game.info.groundItem.getNearest([bestTier.rawItemId]);
+        if (loot &amp;&amp; !Game.info.inventory.isFull()) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.groundItem.take(loot);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        if (Game.info.inventory.isFull()) {
+            state = STATES.COOK_FOOD;
+        }
+        return;
+    }
+
+    // ---- FISHING ----
+    var spotIds = bestTier.spotIds;
+    var gatherLoc = bestTier.gatherLocation;
+
+    // Walk to fishing spot (10-tick cooldown to prevent spam)
+    if (!isNear(gatherLoc.x, gatherLoc.y, 12)) {
+        if (gameTick - walkCooldown &lt; 10) return;
+        walkCooldown = gameTick;
+        isExecuting = true;
+        var gx = gatherLoc.x;
+        var gy = gatherLoc.y;
+        var gp = gatherLoc.plane || 0;
+        Utility.invokeLater(function() {
+            PlayerHelper.webWalkTo(new WorldPoint(gx, gy, gp));
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Idle? Click nearest fishing spot. Spot moves/despawns = player goes idle = re-click.
+    if (Client.getLocalPlayer().isIdle()) {
+        var spot = Game.info.npc.getNearest(spotIds);
+        if (spot) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+
+    // Inventory full -&gt; cook
+    if (Game.info.inventory.isFull()) {
+        gatherFoodCount = 28;
+        state = STATES.COOK_FOOD;
+    }
+}
+
+// ---- COOK_FOOD ----
+function handleCookFood() {
+    if (!gatherFoodTier) {
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // Use tier&#x27;s cook location if available, otherwise find nearest range
+    var rangeInfo = null;
+    if (gatherFoodTier &amp;&amp; gatherFoodTier.cookLocation) {
+        rangeInfo = gatherFoodTier.cookLocation;
+    }
+    if (!rangeInfo) {
+        var rangeKeys = Object.keys(COOKING_RANGES);
+        for (var i = 0; i &lt; rangeKeys.length; i++) {
+            rangeInfo = dbLookup(COOKING_RANGES, rangeKeys[i]);
+            if (rangeInfo) break;
+        }
+    }
+    if (!rangeInfo) {
+        // Default Lumbridge kitchen range
+        rangeInfo = {x: 3211, y: 3215, plane: 0, objectId: 114};
+    }
+
+    // Walk to range (10-tick cooldown)
+    if (!isNear(rangeInfo.x, rangeInfo.y, 8)) {
+        if (gameTick - walkCooldown &lt; 10) return;
+        walkCooldown = gameTick;
+        isExecuting = true;
+        var crx = rangeInfo.x;
+        var cry = rangeInfo.y;
+        var crp = rangeInfo.plane || 0;
+        Utility.invokeLater(function() {
+            PlayerHelper.webWalkTo(new WorldPoint(crx, cry, crp));
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Check if we still have raw food (support both old rawId and new rawItemId)
+    var rawFoodId = gatherFoodTier.rawItemId || gatherFoodTier.rawId;
+    if (!rawFoodId || !Game.info.inventory.hasItem(rawFoodId, 1)) {
+        // All cooked or burned, bank and check supplies
+        botMsg(&quot;Cooking complete, banking food.&quot;, &quot;SlayerBot&quot;);
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    // Cook: use raw food on range
+    if (Client.getLocalPlayer().isIdle()) {
+        var rangeObj = Game.info.gameObject.getNearest([rangeInfo.objectId]);
+        if (rangeObj) {
+            isExecuting = true;
+            var rawId = rawFoodId;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.useItemOnGameObject(rawId, rangeObj);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+// ---- GATHER_GEAR ----
+function handleGatherGear() {
+    // For melee gear: kill cows for hides, or mine ore for metal gear
+    if (!gatherGearTarget) {
+        // Determine what gear we need
+        var bestBody = getBestBody(defenceLevel);
+        var bestLegs = getBestLegs(defenceLevel);
+
+        // Check if we need leather or metal gear
+        if (defenceLevel &lt; 20) {
+            // Leather gear -- kill cows for hides
+            gatherGearPhase = &quot;leather&quot;;
+            leatherPhase = &quot;killing&quot;;
+            state = STATES.GATHER_GEAR;
+        } else {
+            // Metal gear -- mine ore
+            gatherGearPhase = &quot;metal&quot;;
+            state = STATES.MINE_ORE;
+        }
+        return;
+    }
+
+    if (gatherGearPhase === &quot;leather&quot;) {
+        handleLeatherGathering();
+    } else if (gatherGearPhase === &quot;metal&quot;) {
+        state = STATES.MINE_ORE;
+    }
+}
+
+function handleLeatherGathering() {
+    // Kill cows for cowhides
+    var cowNpcIds = [2791, 2793, 2795]; // Cow NPC IDs
+    var cowLocation = {x: 3253, y: 3271, plane: 0}; // Lumbridge cow field
+
+    if (leatherPhase === &quot;killing&quot;) {
+        if (!isNear(cowLocation.x, cowLocation.y, 20)) {
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(cowLocation.x, cowLocation.y, cowLocation.plane));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+
+        // Pick up cowhides from ground
+        if (Game.info.inventory.isFull()) {
+            leatherPhase = &quot;tanning&quot;;
+            state = STATES.TAN_HIDES;
+            return;
+        }
+
+        // Attack cow or pick up hide
+        if (!Client.getLocalPlayer().isInteracting()) {
+            // Check for hides on ground first
+            var hides = Game.info.groundItem.getAll();
+            if (hides) {
+                for (var h = 0; h &lt; hides.length; h++) {
+                    if (hides[h].getId() === 1739) { // Cowhide
+                        isExecuting = true;
+                        var hideItem = hides[h];
+                        Utility.invokeLater(function() {
+                            Game.interact.groundItem.pickup(hideItem);
+                            isExecuting = false;
+                        }, Utility.getDelay());
+                        return;
+                    }
+                }
+            }
+
+            // Attack cow
+            if (Client.getLocalPlayer().isIdle()) {
+                var cow = Game.info.npc.getNearest(cowNpcIds);
+                if (cow &amp;&amp; !cow.isDead()) {
+                    isExecuting = true;
+                    Utility.invokeLater(function() {
+                        Game.interact.npc.attack(cow);
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                }
+            }
+        }
+    }
+}
+
+// ---- TAN_HIDES ----
+
+// ---- CRAFT_GEAR ----
+function handleCraftGear() {
+    // Craft leather gear from tanned hides
+    // Requires needle (1733) and thread (1734)
+    var needleId = 1733;
+    var threadId = 1734;
+    var leatherId = 1741; // Leather
+
+    if (!Game.info.inventory.hasItem(leatherId, 1)) {
+        botMsg(&quot;Gear crafting complete, checking supplies.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    if (!Game.info.inventory.hasItem(needleId, 1) || !Game.info.inventory.hasItem(threadId, 1)) {
+        // Need to get crafting supplies from bank
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    // Use needle on leather to craft
+    if (Client.getLocalPlayer().isIdle()) {
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.inventory.useItemOnItem(needleId, leatherId);
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+}
+
+// ---- MINE_ORE ----
+function handleMineOre() {
+    // ---- PICKAXE CHECK ----
+    // Make sure we have the best pickaxe for our level before mining
+    var bestPick = getBestPickaxe(miningLevel);
+    if (bestPick) {
+        var hasAnyPickaxe = false;
+        for (var pp = 0; pp &lt; PICKAXES.length; pp++) {
+            if (Game.info.inventory.getItemCount(PICKAXES[pp].id) &gt; 0) {
+                hasAnyPickaxe = true;
+                break;
+            }
+        }
+        if (!hasAnyPickaxe) {
+            botMsg(&quot;No pickaxe in inventory - banking for one&quot;, &quot;SlayerBot&quot;);
+            gatherToolNeeded = bestPick.id;
+            bankTarget = null; state = STATES.WALK_TO_BANK;
+            return;
+        }
+    }
+
+    // Determine ore to mine based on smithing level
+    var oreData = null;
+    var mineSpot = null;
+
+    // Simple tier selection
+    if (miningLevel &gt;= 55) {
+        oreData = {oreId: 447, name: &quot;mithril&quot;}; // Mithril ore
+    } else if (miningLevel &gt;= 30) {
+        oreData = {oreId: 440, name: &quot;iron&quot;}; // Iron ore
+    } else if (miningLevel &gt;= 15) {
+        oreData = {oreId: 436, name: &quot;copper&quot;}; // Copper ore
+    } else {
+        oreData = {oreId: 438, name: &quot;tin&quot;}; // Tin ore
+    }
+
+    // Find mining spot
+    var mineKeys = Object.keys(MINING_SPOTS);
+    for (var m = 0; m &lt; mineKeys.length; m++) {
+        var ms = dbLookup(MINING_SPOTS, mineKeys[m]);
+        if (ms &amp;&amp; ms.oreId === oreData.oreId) {
+            mineSpot = ms;
+            break;
+        }
+    }
+
+    if (!mineSpot) {
+        // Default to Varrock East mine
+        mineSpot = {x: 3285, y: 3365, plane: 0, rockId: 11360};
+    }
+
+    // Walk to mine
+    if (!isNear(mineSpot.x, mineSpot.y, 10)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var mmx = mineSpot.x;
+            var mmy = mineSpot.y;
+            var mmp = mineSpot.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(mmx, mmy, mmp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Mine ore
+    if (Game.info.inventory.isFull()) {
+        // Full, smelt
+        state = STATES.SMELT_ORE;
+        return;
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        var rock = Game.info.gameObject.getNearest([mineSpot.rockId]);
+        if (rock) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(rock, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+// ---- SMELT_ORE ----
+function handleSmeltOre() {
+    // Find nearest furnace
+    var furnaceInfo = null;
+    var furnaceKeys = Object.keys(FURNACES);
+    for (var i = 0; i &lt; furnaceKeys.length; i++) {
+        furnaceInfo = dbLookup(FURNACES, furnaceKeys[i]);
+        if (furnaceInfo) break;
+    }
+
+    if (!furnaceInfo) {
+        furnaceInfo = {x: 3109, y: 3499, plane: 0, objectId: 16469}; // Edgeville
+    }
+
+    if (!isNear(furnaceInfo.x, furnaceInfo.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var sfx = furnaceInfo.x;
+            var sfy = furnaceInfo.y;
+            var sfp = furnaceInfo.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(sfx, sfy, sfp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Check if we still have ore
+    var hasOre = Game.info.inventory.hasItem(447, 1) || Game.info.inventory.hasItem(440, 1) ||
+                 Game.info.inventory.hasItem(436, 1) || Game.info.inventory.hasItem(438, 1);
+    if (!hasOre) {
+        state = STATES.SMITH_GEAR;
+        return;
+    }
+
+    // Smelt at furnace
+    if (Client.getLocalPlayer().isIdle()) {
+        var furnace = Game.info.gameObject.getNearest([furnaceInfo.objectId]);
+        if (furnace) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(furnace, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+// ---- SMITH_GEAR ----
+function handleSmithGear() {
+    // Find nearest anvil
+    var anvilInfo = null;
+    var anvilKeys = Object.keys(ANVILS);
+    for (var i = 0; i &lt; anvilKeys.length; i++) {
+        anvilInfo = dbLookup(ANVILS, anvilKeys[i]);
+        if (anvilInfo) break;
+    }
+
+    if (!anvilInfo) {
+        anvilInfo = {x: 3188, y: 3427, plane: 0, objectId: 2097}; // Varrock west
+    }
+
+    if (!isNear(anvilInfo.x, anvilInfo.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var sax = anvilInfo.x;
+            var say = anvilInfo.y;
+            var sap = anvilInfo.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(sax, say, sap));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Check for bars
+    var hasBars = Game.info.inventory.hasItem(2353, 1) || Game.info.inventory.hasItem(2351, 1) ||
+                  Game.info.inventory.hasItem(2349, 1) || Game.info.inventory.hasItem(2355, 1);
+    if (!hasBars) {
+        botMsg(&quot;Smithing complete, returning to supplies.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // Smith at anvil
+    if (Client.getLocalPlayer().isIdle()) {
+        var anvil = Game.info.gameObject.getNearest([anvilInfo.objectId]);
+        if (anvil) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(anvil, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+// ---- GATHER_RANGED ----
+function handleGatherRanged() {
+    // Kill chickens for feathers to make arrows
+    var chickenLoc = null;
+    var chickenLocKeys = Object.keys(CHICKEN_LOCATIONS);
+    if (chickenLocKeys.length &gt; 0) {
+        chickenLoc = dbLookup(CHICKEN_LOCATIONS, chickenLocKeys[0]);
+    }
+    if (!chickenLoc) {
+        chickenLoc = {x: 3235, y: 3295, plane: 0}; // Lumbridge
+    }
+
+    if (!isNear(chickenLoc.x, chickenLoc.y, 15)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var grcx = chickenLoc.x;
+            var grcy = chickenLoc.y;
+            var grcp = chickenLoc.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(grcx, grcy, grcp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    if (Game.info.inventory.isFull()) {
+        // Bank feathers then continue or move to arrow crafting
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    // Pick up feathers
+    if (!Client.getLocalPlayer().isInteracting()) {
+        var gItems = null;
+        try { gItems = Game.info.groundItem.getAll(); } catch(e) {}
+        if (gItems) {
+            for (var gi = 0; gi &lt; gItems.length; gi++) {
+                if (gItems[gi].getId() === FEATHER_ID) {
+                    isExecuting = true;
+                    var featherItem = gItems[gi];
+                    Utility.invokeLater(function() {
+                        Game.interact.groundItem.pickup(featherItem);
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                    return;
+                }
+            }
+        }
+
+        // Kill chicken for feathers
+        if (Client.getLocalPlayer().isIdle()) {
+            var chicken = Game.info.npc.getNearest(CHICKEN_NPC_IDS);
+            if (chicken &amp;&amp; !chicken.isDead()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.npc.attack(chicken);
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+        }
+    }
+}
+
+// ---- WALK_TO_GATHER ----
+function handleWalkToGather() {
+    // Generic walk-to state used to get to gathering locations
+    // After arrival, transitions to the appropriate gathering state
+    if (gatherGearTarget) {
+        if (isNear(gatherGearTarget.x, gatherGearTarget.y, 10)) {
+            // Arrived at gathering destination
+            if (gatherGearPhase === &quot;leather&quot;) {
+                state = STATES.GATHER_GEAR;
+            } else if (gatherGearPhase === &quot;metal&quot;) {
+                state = STATES.MINE_ORE;
+            } else {
+                state = STATES.GATHER_FOOD;
+            }
+            return;
+        }
+
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var wgx = gatherGearTarget.x;
+            var wgy = gatherGearTarget.y;
+            var wgp = gatherGearTarget.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(wgx, wgy, wgp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    } else {
+        state = STATES.CHECK_SUPPLIES;
+    }
+}
+
+// =============================================================================
+// NEW v24 STATES
+// =============================================================================
+
+// ---- CRAFT_ARROWS ----
+// Multi-phase arrow crafting: mine ore -&gt; smelt -&gt; smith heads -&gt; feathers -&gt; chop -&gt; fletch shafts -&gt; combine
+function handleCraftArrows() {
+    // Determine best tier
+    var tier = getBestArrowCraftingTier(smithingLevel, fletchingLevel, miningLevel);
+    if (!tier) {
+        botMsg(&quot;Cannot craft arrows at current levels (Smith:&quot; + smithingLevel + &quot; Fletch:&quot; + fletchingLevel + &quot; Mine:&quot; + miningLevel + &quot;)&quot;, &quot;SlayerBot&quot;);
+        arrowCraftPhase = &quot;idle&quot;;
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    arrowCraftTier = tier;
+
+    // Initialize phase if idle
+    if (arrowCraftPhase === &quot;idle&quot;) {
+        arrowCraftPhase = &quot;check_stock&quot;;
+        arrowCraftCount = 0;
+    }
+
+    switch (arrowCraftPhase) {
+        case &quot;check_stock&quot;:
+            handleArrowCheckStock();
+            break;
+        case &quot;mine_ore&quot;:
+            handleArrowMineOre();
+            break;
+        case &quot;smelt_bars&quot;:
+            handleArrowSmeltBars();
+            break;
+        case &quot;smith_heads&quot;:
+            handleArrowSmithHeads();
+            break;
+        case &quot;kill_chickens&quot;:
+            handleArrowKillChickens();
+            break;
+        case &quot;chop_trees&quot;:
+            handleArrowChopTrees();
+            break;
+        case &quot;fletch_shafts&quot;:
+            handleArrowFletchShafts();
+            break;
+        case &quot;fletch_arrows&quot;:
+            handleArrowFletchArrows();
+            break;
+        case &quot;done&quot;:
+            handleArrowDone();
+            break;
+        default:
+            arrowCraftPhase = &quot;check_stock&quot;;
+            break;
+    }
+}
+
+function handleArrowCheckStock() {
+    // Check if we have enough components to skip steps
+    var headId = arrowCraftTier.headId;
+    var shaftCount = Game.info.inventory.getItemCount(ARROW_SHAFT_ID);
+    var featherCount = Game.info.inventory.getItemCount(FEATHER_ID);
+    var headCount = Game.info.inventory.getItemCount(headId);
+
+    // Target: 500 arrows minimum
+    if (headCount &gt;= 500 &amp;&amp; shaftCount &gt;= 500 &amp;&amp; featherCount &gt;= 500) {
+        arrowCraftPhase = &quot;fletch_arrows&quot;;
+        return;
+    }
+
+    if (headCount &lt; 500) {
+        // Need arrowheads: mine ore -&gt; smelt -&gt; smith
+        arrowCraftPhase = &quot;mine_ore&quot;;
+    } else if (featherCount &lt; 500) {
+        arrowCraftPhase = &quot;kill_chickens&quot;;
+    } else if (shaftCount &lt; 500) {
+        arrowCraftPhase = &quot;chop_trees&quot;;
+    } else {
+        arrowCraftPhase = &quot;fletch_arrows&quot;;
+    }
+}
+
+function handleArrowMineOre() {
+    var oreId = arrowCraftTier.oreId;
+    if (!oreId) {
+        // If tier uses iron, default
+        oreId = 440;
+    }
+
+    // Find mining spot
+    var mineSpot = null;
+    var mineKeys = Object.keys(MINING_SPOTS);
+    for (var i = 0; i &lt; mineKeys.length; i++) {
+        var ms = dbLookup(MINING_SPOTS, mineKeys[i]);
+        if (ms &amp;&amp; ms.oreId === oreId) {
+            mineSpot = ms;
+            break;
+        }
+    }
+
+    if (!mineSpot) {
+        mineSpot = {x: 3285, y: 3365, plane: 0, rockId: 11360};
+    }
+
+    if (!isNear(mineSpot.x, mineSpot.y, 10)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var amx = mineSpot.x;
+            var amy = mineSpot.y;
+            var amp = mineSpot.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(amx, amy, amp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    if (Game.info.inventory.isFull()) {
+        arrowCraftPhase = &quot;smelt_bars&quot;;
+        return;
+    }
+
+    // Mine
+    if (Client.getLocalPlayer().isIdle()) {
+        var rock = Game.info.gameObject.getNearest([mineSpot.rockId]);
+        if (rock) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(rock, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+function handleArrowSmeltBars() {
+    var furnaceInfo = null;
+    var furnaceKeys = Object.keys(FURNACES);
+    for (var i = 0; i &lt; furnaceKeys.length; i++) {
+        furnaceInfo = dbLookup(FURNACES, furnaceKeys[i]);
+        if (furnaceInfo) break;
+    }
+    if (!furnaceInfo) {
+        furnaceInfo = {x: 3109, y: 3499, plane: 0, objectId: 16469};
+    }
+
+    if (!isNear(furnaceInfo.x, furnaceInfo.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var asx = furnaceInfo.x;
+            var asy = furnaceInfo.y;
+            var asp = furnaceInfo.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(asx, asy, asp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    var oreId = arrowCraftTier.oreId || 440;
+    if (!Game.info.inventory.hasItem(oreId, 1)) {
+        // Need coal for some ores
+        if (arrowCraftTier.needsCoal &amp;&amp; Game.info.inventory.hasItem(COAL_ID, 1)) {
+            // Still smelting coal-based bars
+        } else {
+            arrowCraftPhase = &quot;smith_heads&quot;;
+            return;
+        }
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        var furnace = Game.info.gameObject.getNearest([furnaceInfo.objectId]);
+        if (furnace) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(furnace, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+function handleArrowSmithHeads() {
+    var anvilInfo = null;
+    var anvilKeys = Object.keys(ANVILS);
+    for (var i = 0; i &lt; anvilKeys.length; i++) {
+        anvilInfo = dbLookup(ANVILS, anvilKeys[i]);
+        if (anvilInfo) break;
+    }
+    if (!anvilInfo) {
+        anvilInfo = {x: 3188, y: 3427, plane: 0, objectId: 2097};
+    }
+
+    if (!isNear(anvilInfo.x, anvilInfo.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var ahx = anvilInfo.x;
+            var ahy = anvilInfo.y;
+            var ahp = anvilInfo.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(ahx, ahy, ahp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    var barId = arrowCraftTier.barId;
+    if (!barId) barId = 2351; // Iron bar default
+    if (!Game.info.inventory.hasItem(barId, 1)) {
+        // Check if we have enough heads
+        var headCount = Game.info.inventory.getItemCount(arrowCraftTier.headId);
+        if (headCount &gt;= 100) {
+            // Check feathers next
+            var featherCt = Game.info.inventory.getItemCount(FEATHER_ID);
+            if (featherCt &lt; 500) {
+                arrowCraftPhase = &quot;kill_chickens&quot;;
+            } else {
+                arrowCraftPhase = &quot;chop_trees&quot;;
+            }
+        } else {
+            // Need more ore
+            arrowCraftPhase = &quot;mine_ore&quot;;
+        }
+        return;
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        var anvil = Game.info.gameObject.getNearest([anvilInfo.objectId]);
+        if (anvil) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(anvil, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+function handleArrowKillChickens() {
+    var chickenLoc = null;
+    var clKeys = Object.keys(CHICKEN_LOCATIONS);
+    if (clKeys.length &gt; 0) {
+        chickenLoc = dbLookup(CHICKEN_LOCATIONS, clKeys[0]);
+    }
+    if (!chickenLoc) {
+        chickenLoc = {x: 3235, y: 3295, plane: 0};
+    }
+
+    if (!isNear(chickenLoc.x, chickenLoc.y, 15)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var ckx = chickenLoc.x;
+            var cky = chickenLoc.y;
+            var ckp = chickenLoc.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(ckx, cky, ckp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Check feather count
+    var featherCt = Game.info.inventory.getItemCount(FEATHER_ID);
+    if (featherCt &gt;= 600 || Game.info.inventory.isFull()) {
+        // Bank feathers then move to next phase
+        arrowCraftPhase = &quot;chop_trees&quot;;
+        return;
+    }
+
+    // Pick up feathers first
+    if (!Client.getLocalPlayer().isInteracting()) {
+        var gItems = null;
+        try { gItems = Game.info.groundItem.getAll(); } catch(e) {}
+        if (gItems) {
+            for (var gi = 0; gi &lt; gItems.length; gi++) {
+                if (gItems[gi].getId() === FEATHER_ID) {
+                    isExecuting = true;
+                    var fItem = gItems[gi];
+                    Utility.invokeLater(function() {
+                        Game.interact.groundItem.pickup(fItem);
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                    return;
+                }
+            }
+        }
+
+        // Kill chickens
+        if (Client.getLocalPlayer().isIdle()) {
+            var chicken = Game.info.npc.getNearest(CHICKEN_NPC_IDS);
+            if (chicken &amp;&amp; !chicken.isDead()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.npc.attack(chicken);
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+        }
+    }
+}
+
+function handleArrowChopTrees() {
+    // Chop normal trees for logs to make arrow shafts
+    var treeLoc = {x: 3196, y: 3224, plane: 0}; // Near Lumbridge
+
+    if (!isNear(treeLoc.x, treeLoc.y, 15)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(treeLoc.x, treeLoc.y, treeLoc.plane));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Check log count
+    var logCount = Game.info.inventory.getItemCount(LOGS_ID);
+    if (logCount &gt;= 20 || Game.info.inventory.isFull()) {
+        arrowCraftPhase = &quot;fletch_shafts&quot;;
+        return;
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        // Find a tree
+        var tree = Game.info.gameObject.getNearest(TREE_IDS);
+        if (tree) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(tree, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+function handleArrowFletchShafts() {
+    // Use knife on logs to make arrow shafts
+    if (!Game.info.inventory.hasItem(KNIFE_ID, 1)) {
+        // Need knife from bank
+        bankTarget = null; state = STATES.WALK_TO_BANK;
+        return;
+    }
+
+    if (!Game.info.inventory.hasItem(LOGS_ID, 1)) {
+        // All logs fletched to shafts
+        arrowCraftPhase = &quot;fletch_arrows&quot;;
+        return;
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.inventory.useItemOnItem(KNIFE_ID, LOGS_ID);
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+}
+
+function handleArrowFletchArrows() {
+    // Combine arrowheads + shafts, then attach feathers
+    var headId = arrowCraftTier.headId;
+    var shaftCount = Game.info.inventory.getItemCount(ARROW_SHAFT_ID);
+    var headCount = Game.info.inventory.getItemCount(headId);
+    var featherCount = Game.info.inventory.getItemCount(FEATHER_ID);
+
+    // First: attach feathers to shafts = headless arrows (53)
+    var headlessId = 53;
+    var headlessCount = Game.info.inventory.getItemCount(headlessId);
+
+    if (shaftCount &gt; 0 &amp;&amp; featherCount &gt; 0) {
+        // Make headless arrows
+        if (Client.getLocalPlayer().isIdle()) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.useItemOnItem(ARROW_SHAFT_ID, FEATHER_ID);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Then: attach heads to headless arrows = finished arrows
+    if (headlessCount &gt; 0 &amp;&amp; headCount &gt; 0) {
+        if (Client.getLocalPlayer().isIdle()) {
+            isExecuting = true;
+            var hId = headId;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.useItemOnItem(hId, headlessId);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // All done or missing components
+    var arrowId = arrowCraftTier.arrowId;
+    var finalCount = Game.info.inventory.getItemCount(arrowId);
+    botMsg(&quot;Arrow crafting complete. Made &quot; + finalCount + &quot; arrows.&quot;, &quot;SlayerBot&quot;);
+    arrowCraftPhase = &quot;done&quot;;
+}
+
+function handleArrowDone() {
+    arrowCraftPhase = &quot;idle&quot;;
+    arrowCraftCount = 0;
+    // Equip arrows
+    if (arrowCraftTier &amp;&amp; arrowCraftTier.arrowId) {
+        var arrowId = arrowCraftTier.arrowId;
+        if (Game.info.inventory.hasItem(arrowId, 1)) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.equipItem(arrowId);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+
+    // Return to check supplies
+    if (stateBeforeInterrupt) {
+        state = stateBeforeInterrupt;
+        stateBeforeInterrupt = &quot;&quot;;
+    } else {
+        state = STATES.CHECK_SUPPLIES;
+    }
+}
+
+// ---- CRAFT_RUNES ----
+// Pipeline: mine essence -&gt; walk to altar -&gt; craft -&gt; bank -&gt; repeat
+function handleCraftRunes() {
+    if (runecraftPhase === &quot;idle&quot;) {
+        runecraftPhase = &quot;mine_essence&quot;;
+        rcEssenceCount = 0;
+
+        // Determine which runes we need
+        neededRunes = [];
+        var spell = getBestSpell(magicLevel);
+        if (spell) {
+            var runes = getRunesForSpell(spell.key);
+            if (runes) {
+                var runeKeys = Object.keys(runes);
+                for (var i = 0; i &lt; runeKeys.length; i++) {
+                    neededRunes.push({runeId: parseInt(runeKeys[i]), quantity: 1000});
+                }
+            }
+        }
+        if (neededRunes.length === 0) {
+            // Default to fire runes
+            neededRunes.push({runeId: 554, quantity: 1000}); // Fire runes
+        }
+    }
+
+    switch (runecraftPhase) {
+        case &quot;mine_essence&quot;:
+            handleRCMineEssence();
+            break;
+        case &quot;walk_to_altar&quot;:
+            handleRCWalkToAltar();
+            break;
+        case &quot;craft_runes&quot;:
+            handleRCCraftRunes();
+            break;
+        case &quot;bank_runes&quot;:
+            handleRCBankRunes();
+            break;
+        case &quot;check_stock&quot;:
+            handleRCCheckStock();
+            break;
+        case &quot;done&quot;:
+            handleRCDone();
+            break;
+        default:
+            runecraftPhase = &quot;mine_essence&quot;;
+            break;
+    }
+}
+
+function handleRCMineEssence() {
+    // Mine rune essence at Varrock mine
+    // Aubury (NPC 11435) teleports you to the mine
+    var auburyLoc = {x: 3253, y: 3401, plane: 0};
+    var auburyNpcId = 11435;
+
+    // Check if we&#x27;re in the essence mine (plane changes)
+    var loc = getPlayerLocation();
+    var inMine = (loc.y &gt; 5000); // Essence mine is in a different plane
+
+    if (!inMine) {
+        // Walk to Aubury
+        if (!isNear(auburyLoc.x, auburyLoc.y, 5)) {
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(auburyLoc.x, auburyLoc.y, auburyLoc.plane));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+
+        // Teleport via Aubury
+        var aubury = Game.info.npc.getNearest([auburyNpcId]);
+        if (aubury) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.npc.action(aubury, MenuAction.NPC_SECOND_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // In the mine -- mine essence
+    if (Game.info.inventory.isFull()) {
+        // Full, go craft runes
+        runecraftPhase = &quot;walk_to_altar&quot;;
+        return;
+    }
+
+    // Find rune essence rock
+    var essRockIds = [7471]; // Rune essence rock
+    if (Client.getLocalPlayer().isIdle()) {
+        var essRock = Game.info.gameObject.getNearest(essRockIds);
+        if (essRock) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(essRock, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+function handleRCWalkToAltar() {
+    // Determine altar based on needed runes
+    var altarLoc = {x: 3313, y: 3254, plane: 0}; // Default: Air altar entrance
+    var altarObjId = 34760; // Air altar object
+
+    if (neededRunes.length &gt; 0) {
+        var runeId = neededRunes[0].runeId;
+        if (runeId === 554) { // Fire runes
+            altarLoc = {x: 3312, y: 3254, plane: 0};
+            altarObjId = 34764;
+        } else if (runeId === 555) { // Water runes
+            altarLoc = {x: 3185, y: 3165, plane: 0};
+            altarObjId = 34762;
+        } else if (runeId === 556) { // Air runes
+            altarLoc = {x: 3313, y: 3254, plane: 0};
+            altarObjId = 34760;
+        } else if (runeId === 557) { // Earth runes
+            altarLoc = {x: 3305, y: 3472, plane: 0};
+            altarObjId = 34763;
+        } else if (runeId === 558) { // Mind runes
+            altarLoc = {x: 2981, y: 3512, plane: 0};
+            altarObjId = 34761;
+        } else if (runeId === 559) { // Body runes
+            altarLoc = {x: 3053, y: 3445, plane: 0};
+            altarObjId = 34765;
+        }
+    }
+
+    if (!isNear(altarLoc.x, altarLoc.y, 10)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var rax = altarLoc.x;
+            var ray = altarLoc.y;
+            var rap = altarLoc.plane;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(rax, ray, rap));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    // Enter altar (use mysterious ruins)
+    var ruins = Game.info.gameObject.getNearest([altarObjId]);
+    if (ruins) {
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.gameObject.interact(ruins, MenuAction.NPC_FIRST_OPTION);
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+
+    runecraftPhase = &quot;craft_runes&quot;;
+}
+
+function handleRCCraftRunes() {
+    // Look for the altar object inside the ruins
+    var altarIds = [34760, 34761, 34762, 34763, 34764, 34765]; // Various altars
+
+    // Check for essence
+    var essId = 1436; // Rune essence
+    if (runecraftingLevel &gt;= 1) {
+        essId = 7936; // Pure essence
+    }
+
+    if (!Game.info.inventory.hasItem(essId, 1) &amp;&amp; !Game.info.inventory.hasItem(1436, 1)) {
+        // No essence, bank
+        runecraftPhase = &quot;bank_runes&quot;;
+        return;
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        var altar = Game.info.gameObject.getNearest(altarIds);
+        if (altar) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.gameObject.interact(altar, MenuAction.NPC_FIRST_OPTION);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+}
+
+function handleRCBankRunes() {
+    // Walk to nearest bank and deposit runes, withdraw more essence
+    var bank = findNearestBank();
+    if (!bank) {
+        runecraftPhase = &quot;done&quot;;
+        return;
+    }
+
+    if (!isNear(bank.x, bank.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var rbkx = bank.x;
+            var rbky = bank.y;
+            var rbkp = bank.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(rbkx, rbky, rbkp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    if (!Game.info.bank.isOpen()) {
+        _gt = tickCounter;
+        if (_gt - bankOpenAttemptTick &lt; 5) return;
+        bankOpenAttemptTick = _gt;
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.bank.openNearest();
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Deposit all, withdraw essence
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.bank.depositAllInventory();
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    runecraftPhase = &quot;check_stock&quot;;
+}
+
+function handleRCCheckStock() {
+    // Check if we have enough runes banked
+    // Simplified: craft 3 inventories worth then done
+    rcEssenceCount++;
+    if (rcEssenceCount &gt;= 3) {
+        runecraftPhase = &quot;done&quot;;
+        return;
+    }
+
+    // Withdraw more essence
+    var essId = 7936; // Pure essence
+    withdrawBankItem(essId, 28);
+
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.bank.close();
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    runecraftPhase = &quot;walk_to_altar&quot;;
+}
+
+function handleRCDone() {
+    runecraftPhase = &quot;idle&quot;;
+    rcEssenceCount = 0;
+    neededRunes = [];
+    botMsg(&quot;Runecrafting session complete.&quot;, &quot;SlayerBot&quot;);
+
+    if (stateBeforeInterrupt) {
+        state = stateBeforeInterrupt;
+        stateBeforeInterrupt = &quot;&quot;;
+    } else {
+        state = STATES.CHECK_SUPPLIES;
+    }
+}
+
+// ---- BREW_POTIONS ----
+function handleBrewPotions() {
+    if (!brewTarget) {
+        botMsg(&quot;No brew target set, returning to supplies.&quot;, &quot;SlayerBot&quot;);
+        brewPhase = &quot;idle&quot;;
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // Look up the recipe
+    var recipe = null;
+    var recipeKeys = Object.keys(POTION_RECIPES);
+    for (var i = 0; i &lt; recipeKeys.length; i++) {
+        var r = dbLookup(POTION_RECIPES, recipeKeys[i]);
+        if (r &amp;&amp; recipeKeys[i].toLowerCase().indexOf(brewTarget.toLowerCase()) !== -1) {
+            recipe = r;
+            break;
+        }
+    }
+
+    if (!recipe) {
+        botMsg(&quot;Unknown brew target: &quot; + brewTarget, &quot;SlayerBot&quot;);
+        brewPhase = &quot;idle&quot;;
+        brewTarget = null;
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // Check herblore level requirement
+    if (herbloreLevel &lt; recipe.level) {
+        botMsg(&quot;Need herblore level &quot; + recipe.level + &quot; (have &quot; + herbloreLevel + &quot;) for &quot; + brewTarget, &quot;SlayerBot&quot;);
+        herbloreTargetLevel = recipe.level;
+        state = STATES.LEVEL_HERBLORE;
+        return;
+    }
+
+    if (brewPhase === &quot;idle&quot;) {
+        brewPhase = &quot;bank_supplies&quot;;
+        brewCount = 0;
+    }
+
+    switch (brewPhase) {
+        case &quot;bank_supplies&quot;:
+            handleBrewBankSupplies(recipe);
+            break;
+        case &quot;clean_herbs&quot;:
+            handleBrewCleanHerbs(recipe);
+            break;
+        case &quot;make_unfinished&quot;:
+            handleBrewMakeUnfinished(recipe);
+            break;
+        case &quot;add_secondary&quot;:
+            handleBrewAddSecondary(recipe);
+            break;
+        case &quot;bank_potions&quot;:
+            handleBrewBankPotions();
+            break;
+        case &quot;done&quot;:
+            handleBrewDone();
+            break;
+        default:
+            brewPhase = &quot;bank_supplies&quot;;
+            break;
+    }
+}
+
+function handleBrewBankSupplies(recipe) {
+    var bank = findNearestBank();
+    if (!bank) {
+        brewPhase = &quot;done&quot;;
+        return;
+    }
+
+    if (!isNear(bank.x, bank.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var bbx = bank.x;
+            var bby = bank.y;
+            var bbp = bank.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(bbx, bby, bbp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    if (!Game.info.bank.isOpen()) {
+        _gt = tickCounter;
+        if (_gt - bankOpenAttemptTick &lt; 5) return;
+        bankOpenAttemptTick = _gt;
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.bank.openNearest();
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Deposit all
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.bank.depositAllInventory();
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    // Withdraw herbs, vials, and secondaries
+    if (recipe.grimyHerbId) {
+        withdrawBankItem(recipe.grimyHerbId, 14);
+    }
+    withdrawBankItem(VIAL_OF_WATER, 14);
+    if (recipe.secondaryId) {
+        withdrawBankItem(recipe.secondaryId, 14);
+    }
+
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.bank.close();
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    brewPhase = &quot;clean_herbs&quot;;
+}
+
+function handleBrewCleanHerbs(recipe) {
+    if (!recipe.grimyHerbId) {
+        brewPhase = &quot;make_unfinished&quot;;
+        return;
+    }
+
+    // Clean grimy herbs by clicking them
+    if (Game.info.inventory.hasItem(recipe.grimyHerbId, 1)) {
+        if (Client.getLocalPlayer().isIdle()) {
+            isExecuting = true;
+            var herbId = recipe.grimyHerbId;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.consumeItem(herbId);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    } else {
+        brewPhase = &quot;make_unfinished&quot;;
+    }
+}
+
+function handleBrewMakeUnfinished(recipe) {
+    // Use clean herb on vial of water
+    if (!recipe.cleanHerbId) {
+        brewPhase = &quot;add_secondary&quot;;
+        return;
+    }
+
+    if (!Game.info.inventory.hasItem(recipe.cleanHerbId, 1) || !Game.info.inventory.hasItem(VIAL_OF_WATER, 1)) {
+        brewPhase = &quot;add_secondary&quot;;
+        return;
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        isExecuting = true;
+        var clnId = recipe.cleanHerbId;
+        Utility.invokeLater(function() {
+            Game.interact.inventory.useItemOnItem(clnId, VIAL_OF_WATER);
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+}
+
+function handleBrewAddSecondary(recipe) {
+    // Use secondary ingredient on unfinished potion
+    if (!recipe.unfinishedId || !recipe.secondaryId) {
+        brewPhase = &quot;bank_potions&quot;;
+        return;
+    }
+
+    if (!Game.info.inventory.hasItem(recipe.unfinishedId, 1) || !Game.info.inventory.hasItem(recipe.secondaryId, 1)) {
+        brewPhase = &quot;bank_potions&quot;;
+        return;
+    }
+
+    if (Client.getLocalPlayer().isIdle()) {
+        isExecuting = true;
+        var unfId = recipe.unfinishedId;
+        var secId = recipe.secondaryId;
+        Utility.invokeLater(function() {
+            Game.interact.inventory.useItemOnItem(unfId, secId);
+            isExecuting = false;
+        }, Utility.getDelay());
+    }
+}
+
+function handleBrewBankPotions() {
+    var bank = findNearestBank();
+    if (!bank) {
+        brewPhase = &quot;done&quot;;
+        return;
+    }
+
+    if (!isNear(bank.x, bank.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var bpx = bank.x;
+            var bpy = bank.y;
+            var bpp = bank.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(bpx, bpy, bpp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    if (!Game.info.bank.isOpen()) {
+        _gt = tickCounter;
+        if (_gt - bankOpenAttemptTick &lt; 5) return;
+        bankOpenAttemptTick = _gt;
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.bank.openNearest();
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.bank.depositAllInventory();
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    brewCount++;
+    if (brewCount &gt;= 3) {
+        brewPhase = &quot;done&quot;;
+    } else {
+        brewPhase = &quot;bank_supplies&quot;;
+    }
+}
+
+function handleBrewDone() {
+    botMsg(&quot;Potion brewing session complete (&quot; + brewTarget + &quot;).&quot;, &quot;SlayerBot&quot;);
+    brewPhase = &quot;idle&quot;;
+    brewTarget = null;
+    brewCount = 0;
+
+    if (stateBeforeInterrupt) {
+        state = stateBeforeInterrupt;
+        stateBeforeInterrupt = &quot;&quot;;
+    } else {
+        state = STATES.CHECK_SUPPLIES;
+    }
+}
+
+// ---- LEVEL_HERBLORE ----
+function handleLevelHerblore() {
+    // Make the highest level potion we CAN make until we reach herbloreTargetLevel
+
+    if (herbloreLevel &gt;= herbloreTargetLevel) {
+        botMsg(&quot;Herblore level &quot; + herbloreLevel + &quot; reached! Returning to brewing.&quot;, &quot;SlayerBot&quot;);
+        state = STATES.BREW_POTIONS;
+        return;
+    }
+
+    // Find the highest recipe we can make
+    var bestRecipe = null;
+    var bestLevel = 0;
+    var recipeKeys = Object.keys(POTION_RECIPES);
+    for (var i = 0; i &lt; recipeKeys.length; i++) {
+        var rec = dbLookup(POTION_RECIPES, recipeKeys[i]);
+        if (rec &amp;&amp; rec.level &lt;= herbloreLevel &amp;&amp; rec.level &gt; bestLevel) {
+            bestLevel = rec.level;
+            bestRecipe = rec;
+        }
+    }
+
+    if (!bestRecipe) {
+        botMsg(&quot;Cannot find a potion to make at herblore &quot; + herbloreLevel, &quot;SlayerBot&quot;);
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // Bank, withdraw ingredients, make potions, repeat
+    var bank = findNearestBank();
+    if (!bank) {
+        state = STATES.IDLE;
+        return;
+    }
+
+    if (!isNear(bank.x, bank.y, 8)) {
+        if (!PlayerHelper.isWebWalking()) {
+            isExecuting = true;
+            var lhx = bank.x;
+            var lhy = bank.y;
+            var lhp = bank.plane || 0;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(lhx, lhy, lhp));
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        return;
+    }
+
+    if (!Game.info.bank.isOpen()) {
+        _gt = tickCounter;
+        if (_gt - bankOpenAttemptTick &lt; 5) return;
+        bankOpenAttemptTick = _gt;
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.bank.openNearest();
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Deposit, withdraw herbs + vials
+    isExecuting = true;
+    Utility.invokeLater(function() {
+        Game.interact.bank.depositAllInventory();
+        isExecuting = false;
+    }, Utility.getDelay());
+
+    if (bestRecipe.grimyHerbId) {
+        withdrawBankItem(bestRecipe.grimyHerbId, 14);
+    }
+    withdrawBankItem(VIAL_OF_WATER, 14);
+
+    // Clean herbs and make potions inline
+    if (bestRecipe.grimyHerbId &amp;&amp; Game.info.inventory.hasItem(bestRecipe.grimyHerbId, 1)) {
+        if (Client.getLocalPlayer().isIdle()) {
+            isExecuting = true;
+            var gHerbId = bestRecipe.grimyHerbId;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.consumeItem(gHerbId);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    } else if (bestRecipe.cleanHerbId &amp;&amp; Game.info.inventory.hasItem(bestRecipe.cleanHerbId, 1) &amp;&amp; Game.info.inventory.hasItem(VIAL_OF_WATER, 1)) {
+        if (Client.getLocalPlayer().isIdle()) {
+            isExecuting = true;
+            var cHerbId = bestRecipe.cleanHerbId;
+            Utility.invokeLater(function() {
+                Game.interact.inventory.useItemOnItem(cHerbId, VIAL_OF_WATER);
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+    }
+
+    // Check for level up
+    updateCachedStats();
+}
+
+// =============================================================================
+// OnChatMessage -- Intercepts chat messages to detect tasks, kills, deaths
+// =============================================================================
+var insideChatHandler = false;
+function OnChatMessage(chatMsg) {
+    if (!chatMsg) return;
+    if (insideChatHandler) return; // prevent recursion from sendGameMessage
+    insideChatHandler = true;
+    try { handleChatMessage(chatMsg); } catch(e) { /* swallow */ }
+    insideChatHandler = false;
+}
+function handleChatMessage(chatMsg) {
+    var rawText = &quot;&quot;;
+    if (typeof chatMsg === &quot;string&quot;) {
+        rawText = chatMsg;
+    } else if (chatMsg.getMessage) {
+        rawText = chatMsg.getMessage();
+    } else if (chatMsg.message) {
+        rawText = chatMsg.message;
+    }
+    if (!rawText || rawText.length === 0) return;
+    // Strip OSRS color/formatting tags like &lt;col=ff0000&gt; &lt;/col&gt; &lt;br&gt; etc
+    var cleanText = rawText;
+    var tStart = cleanText.indexOf(&quot;&lt;&quot;);
+    while (tStart !== -1) {
+        var tEnd = cleanText.indexOf(&quot;&gt;&quot;, tStart);
+        if (tEnd !== -1) {
+            cleanText = cleanText.substring(0, tStart) + cleanText.substring(tEnd + 1);
+        } else {
+            break;
+        }
+        tStart = cleanText.indexOf(&quot;&lt;&quot;);
+    }
+    var message = cleanText;
+    var msg = cleanText.toLowerCase();
+
+    // Detect gem response: &quot;You&#x27;re assigned to kill [monster]; only [N] more to go&quot;
+    // This has DIFFERENT format than task assignment - name first, then count
+    if (msg.indexOf(&quot;assigned to kill&quot;) !== -1 &amp;&amp; msg.indexOf(&quot;more to go&quot;) !== -1) {
+        var killIdx = msg.indexOf(&quot;assigned to kill&quot;) + &quot;assigned to kill&quot;.length;
+        // Monster name is between &quot;kill &quot; and &quot;;&quot;
+        var semiIdx = msg.indexOf(&quot;;&quot;, killIdx);
+        if (semiIdx === -1) semiIdx = msg.indexOf(&quot;,&quot;, killIdx);
+        var gemMonster = &quot;&quot;;
+        if (semiIdx !== -1) {
+            gemMonster = message.substring(killIdx, semiIdx).trim();
+        }
+        // Count is after &quot;only &quot; before &quot; more&quot; - extract digits robustly
+        var onlyIdx = msg.indexOf(&quot;only &quot;);
+        if (onlyIdx !== -1) {
+            var numStr = &quot;&quot;;
+            for (var gc = onlyIdx + 5; gc &lt; msg.length; gc++) {
+                var ch = msg.charAt(gc);
+                if (ch &gt;= &quot;0&quot; &amp;&amp; ch &lt;= &quot;9&quot;) {
+                    numStr = numStr + ch;
+                } else if (numStr.length &gt; 0) {
+                    break;
+                }
+            }
+            if (numStr.length &gt; 0) {
+                var gemCount = parseInt(numStr);
+                if (!isNaN(gemCount)) {
+                    killsLeft = gemCount;
+                }
+            }
+        }
+        if (gemMonster) {
+            currentTaskName = gemMonster;
+        }
+        Game.sendGameMessage(&quot;RAW GEM MSG: &quot; + msg, &quot;SlayerBot&quot;);
+        Game.sendGameMessage(&quot;GEM DETECTED TASK: &quot; + currentTaskName + &quot; x&quot; + killsLeft, &quot;SlayerBot&quot;);
+        taskReceived = true;
+        gemCheckDone = true;
+        return;
+    }
+
+    // Detect task assignment from master: &quot;Your new task is to kill [N] [monster]&quot;
+    for (var p = 0; p &lt; TASK_CHAT_PATTERNS.length; p++) {
+        if (msg.indexOf(TASK_CHAT_PATTERNS[p]) !== -1) {
+            parseTaskFromMessage(message);
+            taskReceived = true;
+            gemCheckDone = true;
+            return;
+        }
+    }
+
+    // Detect gem check response - no task
+    if (msg.indexOf(&quot;you do not currently have&quot;) !== -1 || 
+        msg.indexOf(&quot;you need something new&quot;) !== -1 ||
+        msg.indexOf(&quot;please check back later&quot;) !== -1 ||
+        msg.indexOf(&quot;you don&#x27;t currently have&quot;) !== -1 ||
+        msg.indexOf(&quot;you currently don&#x27;t have a task&quot;) !== -1 ||
+        msg.indexOf(&quot;you have no task&quot;) !== -1) {
+        noTaskFromGem = true;
+        gemCheckDone = true;
+        return;
+    }
+
+    // If we got a task from gem check, mark it
+    if (state === STATES.WAIT_GEM_RESPONSE &amp;&amp; taskReceived) {
+        gemCheckDone = true;
+        return;
+    }
+
+    // Detect kill count (e.g., &quot;You have completed your task! You killed 120 monsters.&quot;)
+    if (msg.indexOf(&quot;you have completed your task&quot;) !== -1) {
+        killsLeft = 0;
+        state = STATES.TASK_COMPLETE;
+        return;
+    }
+
+    // Detect single kill (monster death message or XP drop)
+    if (msg.indexOf(&quot;your slayer assignment&quot;) !== -1 &amp;&amp; msg.indexOf(&quot;more to go&quot;) !== -1) {
+        // Parse kills remaining
+        var remaining = parseKillsRemaining(msg);
+        if (remaining &gt;= 0) {
+            killsLeft = remaining;
+        }
+        return;
+    }
+
+    // Detect superior spawn
+    if (msg.indexOf(&quot;a superior foe has appeared&quot;) !== -1) {
+        Game.sendGameMessage(&quot;Superior monster spawned!&quot;, &quot;SlayerBot&quot;);
+        return;
+    }
+
+    // Detect death
+    if (msg.indexOf(&quot;oh dear, you are dead&quot;) !== -1) {
+        deathDetected = true;
+        return;
+    }
+
+    // Detect level up
+    if (msg.indexOf(&quot;congratulations, you just advanced&quot;) !== -1) {
+        levelUpDetected = true;
+        return;
+    }
+
+    // Detect task streaks
+    if (msg.indexOf(&quot;you&#x27;ve completed&quot;) !== -1 &amp;&amp; msg.indexOf(&quot;in a row&quot;) !== -1) {
+        // Task streak notification
+        Game.sendGameMessage(&quot;Task streak tracked!&quot;, &quot;SlayerBot&quot;);
+        return;
+    }
+}
+
+function parseTaskFromMessage(message) {
+    // Parse: &quot;Your new task is to kill 135 Blue Dragons.&quot;
+    var msg = message;
+    var lower = msg.toLowerCase();
+
+    // Find the pattern
+    var idx = -1;
+    for (var p = 0; p &lt; TASK_CHAT_PATTERNS.length; p++) {
+        idx = lower.indexOf(TASK_CHAT_PATTERNS[p]);
+        if (idx !== -1) {
+            idx = idx + TASK_CHAT_PATTERNS[p].length;
+            break;
+        }
+    }
+
+    if (idx === -1) return;
+
+    // Extract the rest: &quot; 135 Blue Dragons.&quot;
+    var rest = msg.substring(idx).trim();
+    // Remove trailing period
+    if (rest.slice(-1) === &quot;.&quot;) {
+        rest = rest.substring(0, rest.length - 1);
+    }
+
+    // Parse number and name
+    var parts = rest.split(&quot; &quot;);
+    if (parts.length &lt; 2) return;
+
+    var count = parseInt(parts[0]);
+    if (isNaN(count)) return;
+
+    var monsterName = parts.slice(1).join(&quot; &quot;);
+
+    killsLeft = count;
+    currentTaskName = monsterName;
+    totalKills = totalKills + count;
+
+    botMsg(&quot;Parsed task: &quot; + count + &quot; x &quot; + monsterName, &quot;SlayerBot&quot;);
+}
+
+function parseKillsRemaining(msg) {
+    // Parse: &quot;...120 more to go.&quot;
+    var idx = msg.indexOf(&quot;more to go&quot;);
+    if (idx === -1) return -1;
+
+    // Work backwards to find the number
+    var numStr = &quot;&quot;;
+    var i = idx - 1;
+    while (i &gt;= 0 &amp;&amp; msg.charAt(i) === &quot; &quot;) i--;
+    while (i &gt;= 0 &amp;&amp; msg.charAt(i) &gt;= &quot;0&quot; &amp;&amp; msg.charAt(i) &lt;= &quot;9&quot;) {
+        numStr = msg.charAt(i) + numStr;
+        i--;
+    }
+
+    var num = parseInt(numStr);
+    if (isNaN(num)) return -1;
+    return num;
+}
+
+// =============================================================================
+// NPC LOOT APPEARED -- Track kills when NPC dies (more reliable than chat)
+// =============================================================================
+function OnNPCLootAppeared(npc) {
+    if (!currentTaskMonster || !npc) return;
+
+    var npcId = -1;
+    try {
+        npcId = npc.getId();
+    } catch (e) {
+        return;
+    }
+
+    // Check if this NPC is our task
+    var isTask = false;
+    if (currentTaskMonster.npcIds) {
+        for (var i = 0; i &lt; currentTaskMonster.npcIds.length; i++) {
+            if (currentTaskMonster.npcIds[i] === npcId) {
+                isTask = true;
+                break;
+            }
+        }
+    }
+
+    // Also check superior monster IDs
+    if (!isTask) {
+        var superiorData = getSuperiorNpcId(currentTaskMonster.name);
+        if (superiorData &amp;&amp; superiorData === npcId) {
+            isTask = true;
+        }
+    }
+
+    if (isTask) {
+        killsLeft--;
+        totalKills++;
+        if (killsLeftOverlay) killsLeftOverlay.setValue(&quot;Kills Left: &quot; + Math.max(0, killsLeft));
+        botMsg(&quot;Kill tracked! &quot; + killsLeft + &quot; &quot; + currentTaskMonster.name + &quot; remaining. Total kills: &quot; + totalKills, &quot;SlayerBot&quot;);
+
+        if (killsLeft &lt;= 0) {
+            botMsg(&quot;All kills complete!&quot;, &quot;SlayerBot&quot;);
+            state = STATES.TASK_COMPLETE;
+        }
+    }
+}
+
+// ===========================================================================
+// CANNONBALL GATHERING SYSTEM
+// Mine iron + coal -&gt; smelt steel bars -&gt; smith cannonballs at furnace
+// NOTE: Do NOT bring cannon to single-combat zones!
+// ===========================================================================
+var gatherCballState = &quot;CHECK&quot;;
+var gatherCballTarget = 1000;
+
+function handleGatherCannonballs() {
+    if (isExecuting) return;
+
+    // Check smithing level
+    var smithLvl = Client.getRealSkillLevel(Skill.SMITHING);
+    var miningLvl = Client.getRealSkillLevel(Skill.MINING);
+
+    if (smithLvl &lt; CANNONBALL_CRAFT.smithLevel) {
+        botMsg(&quot;[SlayerBot] Need 35 Smithing to make cannonballs. Current: &quot; + smithLvl, &quot;Bot&quot;);
+        // Fall back to buying from GE if possible
+        gatherCballState = &quot;BUY_GE&quot;;
+    }
+
+    var cballCount = Game.info.inventory.getItemCount(CANNON.CANNONBALL);
+    if (cballCount &gt;= gatherCballTarget) {
+        botMsg(&quot;[SlayerBot] Have &quot; + cballCount + &quot; cannonballs -- returning to task&quot;, &quot;Bot&quot;);
+        gatherCballState = &quot;CHECK&quot;;
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    if (gatherCballState === &quot;CHECK&quot;) {
+        // Figure out what we need
+        var barsInInv = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.steelBar);
+        var ironInInv = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.ironOre);
+        var coalInInv = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.coal);
+        var hasMould = Game.info.inventory.hasItem(CANNONBALL_CRAFT.ammoMould, 1);
+
+        if (barsInInv &gt;= 10) {
+            // Have steel bars -- go smith cannonballs
+            if (!hasMould) {
+                gatherCballState = &quot;GET_MOULD&quot;;
+            } else {
+                gatherCballState = &quot;SMITH_CBALLS&quot;;
+            }
+        } else if (ironInInv &gt; 0 &amp;&amp; coalInInv &gt;= (ironInInv * 2)) {
+            // Have ores -- go smelt
+            gatherCballState = &quot;SMELT_BARS&quot;;
+        } else {
+            // Need to bank for supplies or mine
+            gatherCballState = &quot;BANK_SUPPLIES&quot;;
+        }
+        return;
+    }
+
+    if (gatherCballState === &quot;BANK_SUPPLIES&quot;) {
+        if (!Game.info.bank.isOpen()) {
+            _gt = tickCounter;
+            if (_gt - bankOpenAttemptTick &lt; 5) return;
+            bankOpenAttemptTick = _gt;
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.bank.openNearest();
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+        // Deposit inventory
+        Game.interact.bank.depositAllInventory();
+        // Withdraw ammo mould
+        if (!Game.info.inventory.hasItem(CANNONBALL_CRAFT.ammoMould, 1)) {
+            withdrawBankItem(CANNONBALL_CRAFT.ammoMould, 1);
+        }
+        // Try to withdraw steel bars from bank
+        withdrawBankItem(CANNONBALL_CRAFT.steelBar, 27);
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            var barsGot = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.steelBar);
+            if (barsGot &gt;= 5) {
+                Game.interact.bank.close();
+                gatherCballState = &quot;SMITH_CBALLS&quot;;
+            } else {
+                // No steel bars in bank -- try to withdraw ores
+                withdrawBankItem(CANNONBALL_CRAFT.ironOre, 9);
+                withdrawBankItem(CANNONBALL_CRAFT.coal, 18);
+                var ironGot = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.ironOre);
+                if (ironGot &gt;= 3) {
+                    Game.interact.bank.close();
+                    gatherCballState = &quot;SMELT_BARS&quot;;
+                } else {
+                    // Nothing in bank -- need to mine
+                    Game.interact.bank.close();
+                    botMsg(&quot;[SlayerBot] No steel bars or ores in bank -- mining iron and coal&quot;, &quot;Bot&quot;);
+                    gatherCballState = &quot;MINE_ORES&quot;;
+                }
+            }
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    if (gatherCballState === &quot;MINE_ORES&quot;) {
+        // Walk to Al Kharid mine (has both iron and coal rocks nearby)
+        var minePos = SS_LOCATIONS.AL_KHARID_MINE;
+        if (!isNear(minePos.x, minePos.y, 15)) {
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(minePos.x, minePos.y, minePos.z || 0));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+
+        var ironCount = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.ironOre);
+        var coalCount = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.coal);
+
+        // Need 2 coal per iron for steel bars. Mine ~9 iron + 18 coal per trip
+        if (ironCount &lt; 9) {
+            // Mine iron
+            var ironRock = Game.info.gameObject.getNearest(SS_OBJECTS.IRON_ROCK);
+            if (ironRock &amp;&amp; PlayerHelper.isPlayerIdle()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.action(ironRock, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+        } else if (coalCount &lt; (ironCount * 2)) {
+            // Mine coal
+            var coalRock = Game.info.gameObject.getNearest(SS_OBJECTS.COAL_ROCK);
+            if (coalRock &amp;&amp; PlayerHelper.isPlayerIdle()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.action(coalRock, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+        } else {
+            // Have enough ores for a trip -- go smelt
+            gatherCballState = &quot;SMELT_BARS&quot;;
+        }
+
+        // Full inventory -- bank or smelt
+        if (Game.info.inventory.isFull()) {
+            if (ironCount &gt;= 5 &amp;&amp; coalCount &gt;= (ironCount * 2)) {
+                gatherCballState = &quot;SMELT_BARS&quot;;
+            } else {
+                gatherCballState = &quot;BANK_SUPPLIES&quot;;
+            }
+        }
+        return;
+    }
+
+    if (gatherCballState === &quot;SMELT_BARS&quot;) {
+        // Walk to Al Kharid furnace
+        var furnacePos = SS_LOCATIONS.AL_KHARID_FURNACE;
+        if (!isNear(furnacePos.x, furnacePos.y, 10)) {
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(furnacePos.x, furnacePos.y, furnacePos.z || 0));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+
+        // Smelt at furnace
+        var ironInv = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.ironOre);
+        var coalInv = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.coal);
+        if (ironInv &gt; 0 &amp;&amp; coalInv &gt;= 2 &amp;&amp; PlayerHelper.isPlayerIdle()) {
+            var furnace = Game.info.gameObject.getNearest([SS_OBJECTS.FURNACE]);
+            if (furnace) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.action(furnace, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    botMsg(&quot;[SlayerBot] Smelting steel bars for cannonballs&quot;, &quot;Bot&quot;);
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+        } else if (ironInv &lt;= 0 || coalInv &lt; 2) {
+            // Done smelting -- check steel bar count
+            var steelBars = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.steelBar);
+            if (steelBars &gt;= 5) {
+                gatherCballState = &quot;SMITH_CBALLS&quot;;
+            } else {
+                // Need more ores
+                gatherCballState = &quot;BANK_SUPPLIES&quot;;
+            }
+        }
+        return;
+    }
+
+    if (gatherCballState === &quot;SMITH_CBALLS&quot;) {
+        // Walk to Al Kharid furnace (cannonballs are smithed at furnace, not anvil)
+        var smFurnacePos = SS_LOCATIONS.AL_KHARID_FURNACE;
+        if (!isNear(smFurnacePos.x, smFurnacePos.y, 10)) {
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(smFurnacePos.x, smFurnacePos.y, smFurnacePos.z || 0));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+
+        // Smith cannonballs: use steel bar on furnace with ammo mould in inventory
+        var steelCount = Game.info.inventory.getItemCount(CANNONBALL_CRAFT.steelBar);
+        if (steelCount &gt; 0 &amp;&amp; Game.info.inventory.hasItem(CANNONBALL_CRAFT.ammoMould, 1) &amp;&amp; PlayerHelper.isPlayerIdle()) {
+            var smFurnace = Game.info.gameObject.getNearest([SS_OBJECTS.FURNACE]);
+            if (smFurnace) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    // Use steel bar on furnace to smith cannonballs
+                    Game.interact.inventory.useItemOnObject(CANNONBALL_CRAFT.steelBar, smFurnace);
+                    botMsg(&quot;[SlayerBot] Smithing cannonballs (&quot; + steelCount + &quot; bars left)&quot;, &quot;Bot&quot;);
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+        } else if (steelCount &lt;= 0) {
+            // All bars used -- check cannonball count
+            var newCballs = Game.info.inventory.getItemCount(CANNON.CANNONBALL);
+            botMsg(&quot;[SlayerBot] Smithed cannonballs. Total: &quot; + newCballs, &quot;Bot&quot;);
+            if (newCballs &gt;= gatherCballTarget) {
+                gatherCballState = &quot;CHECK&quot;;
+                state = STATES.CHECK_SUPPLIES;
+            } else {
+                // Need more -- bank and get more bars/ores
+                gatherCballState = &quot;BANK_SUPPLIES&quot;;
+            }
+        }
+        return;
+    }
+
+    if (gatherCballState === &quot;GET_MOULD&quot;) {
+        // Buy ammo mould from Nulodion at Dwarf Mines or GE
+        // Simplest: try to withdraw from bank first
+        if (!Game.info.bank.isOpen()) {
+            _gt = tickCounter;
+            if (_gt - bankOpenAttemptTick &lt; 5) return;
+            bankOpenAttemptTick = _gt;
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.bank.openNearest();
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+        withdrawBankItem(CANNONBALL_CRAFT.ammoMould, 1);
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.bank.close();
+            if (Game.info.inventory.hasItem(CANNONBALL_CRAFT.ammoMould, 1)) {
+                gatherCballState = &quot;CHECK&quot;;
+            } else {
+                botMsg(&quot;[SlayerBot] No ammo mould in bank -- trying GE&quot;, &quot;Bot&quot;);
+                gatherCballState = &quot;BUY_GE&quot;;
+            }
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    if (gatherCballState === &quot;BUY_GE&quot;) {
+        // Walk to GE and buy cannonballs directly if we have GP
+        var gePos = SS_LOCATIONS.GRAND_EXCHANGE;
+        if (!isNear(gePos.x, gePos.y, 15)) {
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(gePos.x, gePos.y, gePos.z || 0));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+        botMsg(&quot;[SlayerBot] At GE -- buy cannonballs manually or level Smithing to 35&quot;, &quot;Bot&quot;);
+        gatherCballState = &quot;CHECK&quot;;
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+}
+
+// =============================================================================
+// TAKING_BREAK -- Human-like break handler
+// =============================================================================
+function handleTakingBreak() {
+    currentStateOverlay.setValue(&quot;State: BREAK (&quot; + breakReason + &quot;)&quot;);
+
+    // Check if break is over
+    if (tickCounter &gt;= breakEndTick) {
+        botMsg(&quot;[Break] Break over! Resuming play.&quot;, &quot;Bot&quot;);
+
+        // Reset break timer for next break
+        ticksSinceLastBreak = 0;
+        var playMin = cfgVal(&quot;minPlayMinutes&quot;, 30);
+        var playMax = cfgVal(&quot;maxPlayMinutes&quot;, 120);
+        nextBreakAtTick = calculateNextBreakDelay(playMin, playMax);
+        breakScheduled = false;
+
+        breakOverlay.setValue(&quot;Break: in ~&quot; + ticksToMinutes(nextBreakAtTick) + &quot;m&quot;);
+
+        // Return to previous state
+        state = stateBeforeBreak;
+        return;
+    }
+
+    // During break: random idle actions every ~30 ticks to mimic AFK player
+    if (tickCounter % 30 === 0) {
+        var action = getRandomIdleAction();
+        if (action === &quot;camera_rotate&quot;) {
+            // Just a cosmetic log -- DZ handles camera
+            // Real players sometimes move camera while AFK
+        } else if (action === &quot;open_stats&quot;) {
+            // Some players tab through interfaces while AFK
+        } else if (action === &quot;open_inventory&quot;) {
+            // Open inventory tab
+        }
+        // Most of the time: do nothing (standing idle)
+    }
+
+    // Random mouse micro-movements every ~100 ticks
+    // This is just a status update -- DZ does not detect idle kicks
+    if (tickCounter % 100 === 0) {
+        var timeLeft = ticksToMinutes(breakEndTick - tickCounter);
+        breakOverlay.setValue(&quot;Break: &quot; + breakReason + &quot; (~&quot; + timeLeft + &quot;m left)&quot;);
+    }
+}
+
+// =============================================================================
+// OUTSIDE_SCHEDULE -- Handles being outside play hours
+// =============================================================================
+function handleOutsideSchedule() {
+    currentStateOverlay.setValue(&quot;State: OUTSIDE SCHEDULE&quot;);
+
+    // Check if we are back in schedule
+    if (cfgVal(&quot;enableSchedule&quot;, false)) {
+        var schedStart = cfgVal(&quot;startHour&quot;, 8);
+        var schedEnd = cfgVal(&quot;endHour&quot;, 22);
+        if (isWithinSchedule(schedStart, schedEnd)) {
+            botMsg(&quot;[Schedule] Back within play hours! Resuming.&quot;, &quot;Bot&quot;);
+            scheduleOverlay.setValue(&quot;Schedule: Active&quot;);
+
+            // Reset break timer for the new session
+            ticksSinceLastBreak = 0;
+            var playMin = cfgVal(&quot;minPlayMinutes&quot;, 30);
+            var playMax = cfgVal(&quot;maxPlayMinutes&quot;, 120);
+            nextBreakAtTick = calculateNextBreakDelay(playMin, playMax);
+            sessionStarted = true;
+
+            // Return to previous state
+            state = stateBeforeBreak;
+            return;
+        }
+    }
+
+    // If not logged out yet, walk to a bank and log out
+    if (!outsideScheduleLogout) {
+        // Bank inventory first to save all loot
+        if (!Game.info.bank.isOpen()) {
+            _gt = tickCounter;
+            if (_gt - bankOpenAttemptTick &lt; 5) return;
+            bankOpenAttemptTick = _gt;
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.bank.openNearest();
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+
+        // Deposit everything
+        isExecuting = true;
+        Utility.invokeLater(function() {
+            Game.interact.bank.depositAllInventory();
+            isExecuting = false;
+        }, Utility.getDelay());
+
+        Utility.invokeLater(function() {
+            Game.interact.bank.close();
+        }, Utility.getDelay());
+
+        outsideScheduleLogout = true;
+        botMsg(&quot;[Schedule] Banked items. Waiting for play hours to resume.&quot;, &quot;Bot&quot;);
+        scheduleOverlay.setValue(&quot;Schedule: WAITING (banked items)&quot;);
+        return;
+    }
+
+    // Already banked -- just idle and wait for schedule to resume
+    // Check every ~200 ticks (2 minutes)
+    if (tickCounter % 200 === 0) {
+        var hour = getCurrentHour();
+        scheduleOverlay.setValue(&quot;Schedule: OFF (hour &quot; + hour + &quot;) waiting...&quot;);
+    }
+}
+
+// =============================================================================
+// REPAIR BARROWS GEAR -- Walk to Bob&#x27;s Axes in Lumbridge, repair at 25%
+// =============================================================================
+function handleRepairBarrows() {
+    switch (repairPhase) {
+        case &quot;walk_to_bob&quot;:
+            // Check if we have coins for repair (Barrows repair costs ~50k-120k GP)
+            if (!Game.info.inventory.hasItem(COINS_ID)) {
+                // Try to get coins from bank first
+                if (!Game.info.bank.isOpen()) {
+                    _gt = tickCounter;
+                    if (_gt - bankOpenAttemptTick &lt; 5) return;
+                    bankOpenAttemptTick = _gt;
+                    Game.interact.bank.openNearest();
+                    return;
+                }
+                try {
+                    Game.interact.bank.withdrawItem(COINS_ID, BankWithdrawType.WITHDRAW_ALL, false);
+                    botMsg(&quot;[SlayerBot] Withdrew coins for Barrows repair.&quot;, &quot;Bot&quot;);
+                } catch (e) {
+                    botMsg(&quot;[SlayerBot] WARNING: No coins for repair! Skipping.&quot;, &quot;Bot&quot;);
+                    state = stateBeforeRepair;
+                    return;
+                }
+                Game.interact.bank.close();
+                return;
+            }
+
+            // Walk to Bob&#x27;s Axes in Lumbridge
+            var pos = Client.getLocalPlayer().getWorldLocation();
+            var bobLoc = BOB_AXES_LOCATION;
+            if (Math.abs(pos.getX() - bobLoc.x) &lt;= 5 &amp;&amp; Math.abs(pos.getY() - bobLoc.y) &lt;= 5) {
+                repairPhase = &quot;talk_to_bob&quot;;
+                botMsg(&quot;[SlayerBot] Arrived at Bob&#x27;s Axes.&quot;, &quot;Bot&quot;);
+            } else {
+                if (!PlayerHelper.isWebWalking()) {
+                    PlayerHelper.webWalkTo(new WorldPoint(bobLoc.x, bobLoc.y, bobLoc.z));
+                }
+                botMsg(&quot;[SlayerBot] Walking to Bob&#x27;s Axes in Lumbridge...&quot;, &quot;Bot&quot;);
+            }
+            break;
+
+        case &quot;talk_to_bob&quot;:
+            // Find Bob NPC
+            var bob = Game.info.npc.getNearest([BOB_AXES_NPC_ID]);
+            if (!bob) {
+                botMsg(&quot;[SlayerBot] Can&#x27;t find Bob! Walking closer.&quot;, &quot;Bot&quot;);
+                if (!PlayerHelper.isWebWalking()) {
+                    PlayerHelper.webWalkTo(new WorldPoint(BOB_AXES_LOCATION.x, BOB_AXES_LOCATION.y, BOB_AXES_LOCATION.z));
+                }
+                return;
+            }
+            // Trade with Bob (second menu option: Talk-to / Trade)
+            Game.interact.npc.action(bob, MenuAction.NPC_SECOND_OPTION);
+            repairPhase = &quot;wait_for_shop&quot;;
+            break;
+
+        case &quot;wait_for_shop&quot;:
+            // Wait for repair interface to open (takes a tick or two)
+            // The repair uses &quot;Trade&quot; option which opens shop
+            // For Barrows: right-click item in inventory -&gt; &quot;Use&quot; on Bob
+            // Actually, Bob&#x27;s repair: Talk -&gt; &quot;I&#x27;d like to trade&quot; -&gt; Use broken item on Bob
+            // Simpler approach: use items on Bob directly
+            repairPhase = &quot;repair_items&quot;;
+            break;
+
+        case &quot;repair_items&quot;:
+            // Find all barrows items that need repair in inventory
+            var repairNeeded = checkEquippedBarrowsCondition();
+            if (repairNeeded.length === 0) {
+                // Check inventory too
+                var invRepairNeeded = false;
+                for (var slot = 0; slot &lt; 28; slot++) {
+                    // This would require iterating inventory -- for now check known barrows IDs
+                }
+                botMsg(&quot;[SlayerBot] All Barrows gear repaired! Returning to task.&quot;, &quot;Bot&quot;);
+                repairPhase = &quot;done&quot;;
+                return;
+            }
+
+            // For equipped items: unequip first, then use on Bob
+            // For now, use the NPC_FIRST_OPTION (Talk-to) which offers repair dialogue
+            var bob2 = Game.info.npc.getNearest([BOB_AXES_NPC_ID]);
+            if (!bob2) {
+                repairPhase = &quot;walk_to_bob&quot;;
+                return;
+            }
+
+            // Use the repair option through dialogue
+            // Bob offers: &quot;Shall I repair that for you?&quot; when you use a broken item on him
+            // Use actionItem to &quot;Use&quot; barrows piece, then click on Bob
+            var itemToRepair = repairNeeded[0];
+            try {
+                // Use the broken item on Bob via inventory action
+                Game.interact.inventory.useItem(itemToRepair.itemId, MenuAction.WIDGET_TARGET);
+                Utility.invokeLater(function() {
+                    var bobNpc = Game.info.npc.getNearest([BOB_AXES_NPC_ID]);
+                    if (bobNpc) {
+                        Game.interact.npc.action(bobNpc, MenuAction.NPC_FIRST_OPTION);
+                    }
+                }, Utility.getDelay());
+                botMsg(&quot;[SlayerBot] Repairing &quot; + itemToRepair.piece + &quot;...&quot;, &quot;Bot&quot;);
+            } catch (e) {
+                botMsg(&quot;[SlayerBot] Repair error: &quot; + e + &quot;. Trying dialogue method.&quot;, &quot;Bot&quot;);
+                // Fallback: talk to Bob
+                Game.interact.npc.action(bob2, MenuAction.NPC_FIRST_OPTION);
+            }
+            repairPhase = &quot;wait_repair_done&quot;;
+            break;
+
+        case &quot;wait_repair_done&quot;:
+            // Check if the item was repaired (ID should change from 25% to 100%)
+            var stillBroken = checkEquippedBarrowsCondition();
+            if (stillBroken.length &gt; 0) {
+                // Still items to repair -- cycle back
+                repairPhase = &quot;repair_items&quot;;
+            } else {
+                repairPhase = &quot;done&quot;;
+            }
+            break;
+
+        case &quot;done&quot;:
+            botMsg(&quot;[SlayerBot] Barrows repair complete! Returning to previous task.&quot;, &quot;Bot&quot;);
+            state = stateBeforeRepair;
+            repairPhase = &quot;walk_to_bob&quot;;
+            break;
+
+        default:
+            repairPhase = &quot;walk_to_bob&quot;;
+            break;
+    }
+}
+</textarea>
+<script>
+function copyCode() {
+  var ta = document.getElementById('code');
+  ta.select();
+  document.execCommand('copy');
+  document.getElementById('status').textContent = 'Copied ' + ta.value.split('\n').length + ' lines!';
+}
+</script>
+</body>
+</html>

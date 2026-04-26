@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>DZ Code Injector</title>
+<style>
+body{background:#1a1a2e;color:#0f0;font-family:monospace;text-align:center;padding:40px}
+h1{color:#0f0;font-size:28px}
+.btn{background:#0a0;color:#000;border:none;padding:20px 40px;font-size:20px;cursor:pointer;margin:20px;border-radius:8px;font-weight:bold}
+.btn:hover{background:#0f0}
+.status{color:#ff0;font-size:18px;margin:10px}
+p{color:#aaa;font-size:14px}
+</style></head><body>
+<h1>DZ Code Injector - Fix10i</h1>
+<p>Click a button to copy the inject command, then paste into DZ DevTools console (F12)</p>
+
+<button class="btn" id="utilBtn" onclick="copyUtil()">COPY UTILITIES INJECT COMMAND</button>
+<div class="status" id="utilStatus"></div>
+
+<button class="btn" id="mainBtn" onclick="copyMain()">COPY MAIN INJECT COMMAND</button>
+<div class="status" id="mainStatus"></div>
+
+<hr style="border-color:#333;margin:30px">
+<p><b>Instructions:</b></p>
+<p>1. Click the button above to copy the inject command</p>
+<p>2. Switch to the DeadZone editor tab</p>
+<p>3. Make sure you are on the correct tab (UTILITIES or MAIN)</p>
+<p>4. Press F12 to open DevTools</p>
+<p>5. Click in the Console tab</p>
+<p>6. Type: allow pasting (then press Enter)</p>
+<p>7. Press Ctrl+V to paste the command</p>
+<p>8. Press Enter to run it</p>
+
+<script>
+function copyUtil() {
+  var cmd = "fetch('https://rotstrucking1-prog.github.io/Rotstrucking-app1/slayer_UTILITIES.txt').then(function(r){return r.text()}).then(function(code){var eds=monaco.editor.getEditors();var ed=eds[eds.length-1];ed.getModel().setValue(code);console.log('UTILITIES injected! Lines: '+code.split(String.fromCharCode(10)).length)})";
+  navigator.clipboard.writeText(cmd).then(function(){
+    document.getElementById('utilStatus').textContent = 'COPIED! Now paste into DZ DevTools console';
+  });
+}
+function copyMain() {
+  var cmd = "fetch('https://rotstrucking1-prog.github.io/Rotstrucking-app1/slayer_MAIN.txt').then(function(r){return r.text()}).then(function(code){var eds=monaco.editor.getEditors();var ed=eds[eds.length-1];ed.getModel().setValue(code);console.log('MAIN injected! Lines: '+code.split(String.fromCharCode(10)).length)})";
+  navigator.clipboard.writeText(cmd).then(function(){
+    document.getElementById('mainStatus').textContent = 'COPIED! Now paste into DZ DevTools console';
+  });
+}
+</script>
+</body></html>

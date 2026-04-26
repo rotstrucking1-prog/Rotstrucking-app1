@@ -294,9 +294,24 @@ var BANKS = [
     { name: "Shilo Village", x: 2852, y: 2954, plane: 0 },
     { name: "Zanaris", x: 2383, y: 4458, plane: 0 },
     { name: "Tree Gnome Stronghold", x: 2445, y: 3416, plane: 1 },
-    { name: "Burthorpe", x: 2889, y: 3536, plane: 0 },
     { name: "Nardah", x: 3428, y: 2892, plane: 0 },
-    { name: "Mount Karuulm", x: 1322, y: 3826, plane: 0 }
+    { name: "Mount Karuulm", x: 1322, y: 3826, plane: 0 },
+    { name: "Rogues Den", x: 3043, y: 4973, plane: 1 },
+    { name: "Castle Wars", x: 2443, y: 3083, plane: 0 },
+    { name: "Lletya", x: 2353, y: 3163, plane: 0 },
+    { name: "Pest Control", x: 2667, y: 2653, plane: 0 },
+    { name: "Lands End", x: 1512, y: 3421, plane: 0 },
+    { name: "Hosidius", x: 1749, y: 3599, plane: 0 },
+    { name: "Woodcutting Guild", x: 1591, y: 3479, plane: 0 },
+    { name: "Farming Guild", x: 1253, y: 3741, plane: 0 },
+    { name: "Shayzien", x: 1504, y: 3615, plane: 0 },
+    { name: "Port Piscarilius", x: 1803, y: 3789, plane: 0 },
+    { name: "Arceuus", x: 1624, y: 3745, plane: 0 },
+    { name: "Lovakengj", x: 1526, y: 3739, plane: 0 },
+    { name: "Wintertodt", x: 1640, y: 3944, plane: 0 },
+    { name: "Ferox Enclave", x: 3130, y: 3631, plane: 0 },
+    { name: "Crafting Guild", x: 2934, y: 3281, plane: 0 },
+    { name: "Blast Mine", x: 1502, y: 3857, plane: 0 }
 ];
 
 // -----------------------------------------------------------------------------
@@ -377,7 +392,7 @@ var MONSTER_DB = {
 
     "Bat": {
         name: "Bat",
-        npcIds: [412, 6283, 2824],
+        npcIds: [2827, 10888, 14042],
         location: { x: 3178, y: 9901, plane: 0 },
         locationName: "Edgeville Dungeon",
         combatLevel: 6,
@@ -397,7 +412,7 @@ var MONSTER_DB = {
 
     "Bear": {
         name: "Bear",
-        npcIds: [106, 107, 3423, 105],
+        npcIds: [2838, 3423],
         location: { x: 2700, y: 3332, plane: 0 },
         locationName: "East of Ardougne",
         combatLevel: 19,
@@ -497,7 +512,7 @@ var MONSTER_DB = {
 
     "Cow": {
         name: "Cow",
-        npcIds: [2790, 2791, 2793, 2794, 397],
+        npcIds: [2790, 2791, 2793, 2795, 5842],
         location: { x: 3253, y: 3270, plane: 0 },
         locationName: "Lumbridge cow field",
         combatLevel: 2,
@@ -557,7 +572,7 @@ var MONSTER_DB = {
 
     "Dog": {
         name: "Dog",
-        npcIds: [99, 100, 3582],
+        npcIds: [114, 7209],
         location: { x: 2930, y: 3515, plane: 0 },
         locationName: "Burthorpe",
         combatLevel: 29,
@@ -597,7 +612,7 @@ var MONSTER_DB = {
 
     "Ghost": {
         name: "Ghost",
-        npcIds: [102, 103, 104, 491, 1698],
+        npcIds: [85, 86, 87, 88, 89, 90, 91, 92, 93],
         location: { x: 3241, y: 9911, plane: 0 },
         locationName: "Varrock Sewers",
         combatLevel: 19,
@@ -617,7 +632,7 @@ var MONSTER_DB = {
 
     "Goblin": {
         name: "Goblin",
-        npcIds: [3029, 3030, 3031, 3032, 3033, 3034, 655, 656],
+        npcIds: [3028, 3029, 3030, 3031, 3032, 3033, 3034, 3035, 3036, 3037],
         location: { x: 3244, y: 3243, plane: 0 },
         locationName: "Lumbridge",
         combatLevel: 5,
@@ -637,7 +652,7 @@ var MONSTER_DB = {
 
     "Icefiend": {
         name: "Icefiend",
-        npcIds: [3139, 7700],
+        npcIds: [3140, 4813],
         location: { x: 3008, y: 3477, plane: 0 },
         locationName: "Ice Mountain",
         combatLevel: 18,
@@ -737,7 +752,7 @@ var MONSTER_DB = {
 
     "Scorpion": {
         name: "Scorpion",
-        npcIds: [107, 144, 3024],
+        npcIds: [2479, 2480, 3024],
         location: { x: 3298, y: 3298, plane: 0 },
         locationName: "Al Kharid Mine",
         combatLevel: 14,
@@ -797,7 +812,7 @@ var MONSTER_DB = {
 
     "Wolf": {
         name: "Wolf",
-        npcIds: [106, 2853, 5346, 1198, 1199],
+        npcIds: [106, 110, 2490, 2491, 3912],
         location: { x: 2857, y: 3553, plane: 0 },
         locationName: "White Wolf Mountain",
         combatLevel: 25,
@@ -941,7 +956,7 @@ var MONSTER_DB = {
 
     "Ghoul": {
         name: "Ghoul",
-        npcIds: [289, 290, 1543],
+        npcIds: [289],
         location: { x: 3421, y: 3508, plane: 0 },
         locationName: "Canifis (graveyard)",
         combatLevel: 42,
@@ -1061,7 +1076,7 @@ var MONSTER_DB = {
 
     "Mogre": {
         name: "Mogre",
-        npcIds: [114, 2801],
+        npcIds: [2592],
         location: { x: 2987, y: 3108, plane: 0 },
         locationName: "Mudskipper Point",
         combatLevel: 32,
@@ -1121,7 +1136,7 @@ var MONSTER_DB = {
 
     "Shade": {
         name: "Shade",
-        npcIds: [425, 426, 427, 428, 1240, 1241],
+        npcIds: [6740, 7258],
         location: { x: 3464, y: 3574, plane: 0 },
         locationName: "Mort'ton",
         combatLevel: 40,
@@ -1141,7 +1156,7 @@ var MONSTER_DB = {
 
     "Vampire": {
         name: "Vampire",
-        npcIds: [3138, 3139, 3140, 3141],
+        npcIds: [3137, 3234, 3237, 3707, 3708],
         location: { x: 3563, y: 3475, plane: 0 },
         locationName: "Canifis",
         combatLevel: 32,
@@ -1265,7 +1280,7 @@ var MONSTER_DB = {
 
     "Blue Dragon": {
         name: "Blue Dragon",
-        npcIds: [55, 264, 265, 266, 8076],
+        npcIds: [265, 266, 267, 268, 269],
         location: { x: 2892, y: 9774, plane: 0 },
         locationName: "Taverley Dungeon",
         combatLevel: 111,
@@ -1425,7 +1440,7 @@ var MONSTER_DB = {
 
     "Jelly": {
         name: "Jelly",
-        npcIds: [437, 438, 7518, 7519],
+        npcIds: [437, 438, 439, 440, 441, 442],
         location: { x: 2789, y: 9990, plane: 0 },
         locationName: "Fremennik Slayer Dungeon",
         combatLevel: 78,
@@ -1445,7 +1460,7 @@ var MONSTER_DB = {
 
     "Jungle Horror": {
         name: "Jungle Horror",
-        npcIds: [2825, 2826, 2827],
+        npcIds: [1042, 1043, 1044, 1045, 1046],
         location: { x: 2731, y: 2732, plane: 0 },
         locationName: "Mos Le'Harmless (cave)",
         combatLevel: 70,
@@ -1545,7 +1560,7 @@ var MONSTER_DB = {
 
     "Turoth": {
         name: "Turoth",
-        npcIds: [426, 427, 428, 429, 432, 7519],
+        npcIds: [427, 428, 429, 430],
         location: { x: 2723, y: 10003, plane: 0 },
         locationName: "Fremennik Slayer Dungeon",
         combatLevel: 83,
@@ -1609,7 +1624,7 @@ var MONSTER_DB = {
 
     "Black Demon": {
         name: "Black Demon",
-        npcIds: [2048, 2049, 2050, 2051, 2052, 7244, 7245, 7246],
+        npcIds: [240, 2048, 2049, 2050, 2051, 2052, 7242, 7243],
         location: { x: 2857, y: 9777, plane: 0 },
         locationName: "Taverley Dungeon",
         combatLevel: 172,
@@ -1629,7 +1644,7 @@ var MONSTER_DB = {
 
     "Black Dragon": {
         name: "Black Dragon",
-        npcIds: [54, 247, 248, 249, 250, 8084, 8085],
+        npcIds: [252, 253, 254, 255, 256, 257, 258, 259, 8084, 8085],
         location: { x: 2830, y: 9824, plane: 0 },
         locationName: "Taverley Dungeon",
         combatLevel: 227,
@@ -1749,7 +1764,7 @@ var MONSTER_DB = {
 
     "Gargoyle": {
         name: "Gargoyle",
-        npcIds: [412, 413, 7256, 7257],
+        npcIds: [412, 413, 1543],
         location: { x: 3438, y: 3537, plane: 2 },
         locationName: "Slayer Tower (top floor)",
         combatLevel: 111,
@@ -1789,7 +1804,7 @@ var MONSTER_DB = {
 
     "Hellhound": {
         name: "Hellhound",
-        npcIds: [135, 136, 3133, 7256, 7257],
+        npcIds: [104, 105, 3133, 7256, 7877],
         location: { x: 2867, y: 9851, plane: 0 },
         locationName: "Taverley Dungeon",
         combatLevel: 122,
@@ -1929,7 +1944,7 @@ var MONSTER_DB = {
 
     "Nechryael": {
         name: "Nechryael",
-        npcIds: [8, 9, 10, 11, 7278, 7279],
+        npcIds: [8, 11],
         location: { x: 3438, y: 3559, plane: 2 },
         locationName: "Slayer Tower (top floor)",
         combatLevel: 115,
@@ -2049,7 +2064,7 @@ var MONSTER_DB = {
 
     "Troll": {
         name: "Troll",
-        npcIds: [1106, 1107, 1108, 1109, 1110, 1111, 1112, 1113, 1114, 1115, 1116, 1117, 3132, 3133, 3134],
+        npcIds: [936, 937, 938, 939, 940, 941, 942, 4143],
         location: { x: 2876, y: 3587, plane: 0 },
         locationName: "Death Plateau (Burthorpe)",
         combatLevel: 69,
@@ -2173,7 +2188,7 @@ var MONSTER_DB = {
 
     "Adamant Dragon": {
         name: "Adamant Dragon",
-        npcIds: [8030, 8031, 8032],
+        npcIds: [8030, 8090],
         location: { x: 1568, y: 5075, plane: 0 },
         locationName: "Lithkren Vault",
         combatLevel: 338,
@@ -2193,7 +2208,7 @@ var MONSTER_DB = {
 
     "Rune Dragon": {
         name: "Rune Dragon",
-        npcIds: [8027, 8028, 8029, 8031],
+        npcIds: [8031, 8091],
         location: { x: 1568, y: 5075, plane: 0 },
         locationName: "Lithkren Vault",
         combatLevel: 380,
@@ -2213,7 +2228,7 @@ var MONSTER_DB = {
 
     "Hydra": {
         name: "Hydra",
-        npcIds: [8609, 8610, 8611],
+        npcIds: [8609],
         location: { x: 1312, y: 10232, plane: 0 },
         locationName: "Karuulm Slayer Dungeon",
         combatLevel: 194,
@@ -2233,7 +2248,7 @@ var MONSTER_DB = {
 
     "Fossil Island Wyvern": {
         name: "Fossil Island Wyvern",
-        npcIds: [7793, 7794, 7795, 7796],
+        npcIds: [7792, 7793, 7794, 7795],
         location: { x: 3608, y: 10278, plane: 0 },
         locationName: "Fossil Island Wyvern Cave",
         combatLevel: 139,
@@ -2253,7 +2268,7 @@ var MONSTER_DB = {
 
     "Greater Nechryael": {
         name: "Greater Nechryael",
-        npcIds: [7278, 7279, 7280],
+        npcIds: [7278, 11240],
         location: { x: 1702, y: 10074, plane: 0 },
         locationName: "Catacombs of Kourend",
         combatLevel: 200,
@@ -2273,7 +2288,7 @@ var MONSTER_DB = {
 
     "Deviant Spectre": {
         name: "Deviant Spectre",
-        npcIds: [7279, 7280],
+        npcIds: [7279],
         location: { x: 1701, y: 10042, plane: 0 },
         locationName: "Catacombs of Kourend",
         combatLevel: 169,
@@ -2293,7 +2308,7 @@ var MONSTER_DB = {
 
     "Warped Jelly": {
         name: "Warped Jelly",
-        npcIds: [7518, 7519],
+        npcIds: [7277],
         location: { x: 1673, y: 10062, plane: 0 },
         locationName: "Catacombs of Kourend",
         combatLevel: 112,
@@ -2313,7 +2328,7 @@ var MONSTER_DB = {
 
     "Black Bear": {
         name: "Black Bear",
-        npcIds: [105, 106],
+        npcIds: [2839],
         location: { x: 3286, y: 3363, plane: 0 },
         locationName: "East of Varrock",
         combatLevel: 19,
@@ -2333,7 +2348,7 @@ var MONSTER_DB = {
 
     "Giant Bat": {
         name: "Giant Bat",
-        npcIds: [78, 3711, 4422],
+        npcIds: [2834, 6824],
         location: { x: 3240, y: 9875, plane: 0 },
         locationName: "Varrock Sewers",
         combatLevel: 27,
@@ -2353,7 +2368,7 @@ var MONSTER_DB = {
 
     "Guard Dog": {
         name: "Guard Dog",
-        npcIds: [99, 100, 3582],
+        npcIds: [114, 7209],
         location: { x: 2774, y: 3274, plane: 0 },
         locationName: "Handelmort mansion (Ardougne)",
         combatLevel: 44,
@@ -2413,7 +2428,7 @@ var MONSTER_DB = {
 
     "Wyvern": {
         name: "Wyvern",
-        npcIds: [465, 466, 467, 468, 7793, 7794, 7795, 7796],
+        npcIds: [465, 466, 467, 468, 7792, 7793, 7794, 7795],
         location: { x: 3058, y: 9555, plane: 0 },
         locationName: "Asgarnian Ice Dungeon / Fossil Island",
         combatLevel: 140,
@@ -2433,7 +2448,7 @@ var MONSTER_DB = {
 
     "Brutal Blue Dragon": {
         name: "Brutal Blue Dragon",
-        npcIds: [7272, 7273, 7274],
+        npcIds: [7273, 13795],
         location: { x: 1654, y: 10092, plane: 0 },
         locationName: "Catacombs of Kourend",
         combatLevel: 271,
@@ -2453,7 +2468,7 @@ var MONSTER_DB = {
 
     "Brutal Black Dragon": {
         name: "Brutal Black Dragon",
-        npcIds: [7274, 7275],
+        npcIds: [7275, 8092, 8093],
         location: { x: 1614, y: 10050, plane: 0 },
         locationName: "Catacombs of Kourend",
         combatLevel: 318,
@@ -2633,14 +2648,16 @@ function findMonster(taskName) {
 
     // Case-insensitive match
     var lowerName = name.toLowerCase();
-    for (var k1 in MONSTER_DB) {
+    var keys_k1 = Object.keys(MONSTER_DB); for (var idx_k1 = 0; idx_k1 < keys_k1.length; idx_k1++) {
+        var k1 = keys_k1[idx_k1];
         if (k1.toLowerCase() === lowerName) return dbLookup(MONSTER_DB, k1);
     }
 
     // Strip trailing 's' (plural)
     if (lowerName.slice(-1) === "s") {
         var sing1 = lowerName.slice(0, -1);
-        for (var k2 in MONSTER_DB) {
+        var keys_k2 = Object.keys(MONSTER_DB); for (var idx_k2 = 0; idx_k2 < keys_k2.length; idx_k2++) {
+            var k2 = keys_k2[idx_k2];
             if (k2.toLowerCase() === sing1) return dbLookup(MONSTER_DB, k2);
         }
     }
@@ -2648,20 +2665,23 @@ function findMonster(taskName) {
     // Strip trailing 'es' (e.g., "Banshees" -> "Banshee")
     if (lowerName.slice(-2) === "es") {
         var sing2 = lowerName.slice(0, -2);
-        for (var k3 in MONSTER_DB) {
+        var keys_k3 = Object.keys(MONSTER_DB); for (var idx_k3 = 0; idx_k3 < keys_k3.length; idx_k3++) {
+            var k3 = keys_k3[idx_k3];
             if (k3.toLowerCase() === sing2) return dbLookup(MONSTER_DB, k3);
         }
     }
 
     // Partial/contains match
-    for (var k4 in MONSTER_DB) {
+    var keys_k4 = Object.keys(MONSTER_DB); for (var idx_k4 = 0; idx_k4 < keys_k4.length; idx_k4++) {
+        var k4 = keys_k4[idx_k4];
         if (k4.toLowerCase().indexOf(lowerName) !== -1 || lowerName.indexOf(k4.toLowerCase()) !== -1) {
             return dbLookup(MONSTER_DB, k4);
         }
     }
 
     // Match against individual name field
-    for (var k5 in MONSTER_DB) {
+    var keys_k5 = Object.keys(MONSTER_DB); for (var idx_k5 = 0; idx_k5 < keys_k5.length; idx_k5++) {
+        var k5 = keys_k5[idx_k5];
         var mName = dbLookup(MONSTER_DB, k5).name.toLowerCase();
         if (mName === lowerName || mName === lowerName.replace(/s$/, "")) {
             return dbLookup(MONSTER_DB, k5);
@@ -2675,6 +2695,16 @@ function findMonster(taskName) {
 // FIND NEAREST BANK
 // -----------------------------------------------------------------------------
 function findNearestBank(playerX, playerY, playerPlane) {
+    // Auto-detect player position if not provided
+    if (playerX === undefined || playerY === undefined) {
+        var player = Client.getLocalPlayer();
+        if (!player) return null;
+        var loc = player.getWorldLocation();
+        if (!loc) return null;
+        playerX = loc.getX();
+        playerY = loc.getY();
+        playerPlane = loc.getPlane ? loc.getPlane() : 0;
+    }
     var nearest = null;
     var nearestDist = Infinity;
 
@@ -2690,6 +2720,9 @@ function findNearestBank(playerX, playerY, playerPlane) {
         }
     }
 
+    if (nearest) {
+        Game.sendGameMessage("Nearest bank: " + nearest.name + " (" + Math.floor(nearestDist) + " tiles away)", "SlayerBot");
+    }
     return nearest;
 }
 
@@ -2834,8 +2867,11 @@ function getDistance(x1, y1, x2, y2) {
 // -----------------------------------------------------------------------------
 function isNear(targetX, targetY, threshold) {
     if (!threshold) threshold = 5;
-    var pos = Client.getLocalPlayer().getWorldLocation();
-    return getDistance(pos.getX(), pos.getY(), targetX, targetY) <= threshold;
+    var player = Client.getLocalPlayer();
+    if (!player) return false;
+    var loc = player.getWorldLocation();
+    if (!loc) return false;
+    return getDistance(loc.getX(), loc.getY(), targetX, targetY) <= threshold;
 }
 
 // -----------------------------------------------------------------------------
@@ -2848,11 +2884,18 @@ function isAtDeathSpawn() {
 // -----------------------------------------------------------------------------
 // PRAYER CONSTANTS
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// PRAYERS (expanded for v24)
+// -----------------------------------------------------------------------------
 var PRAYERS = {
-    PROTECT_FROM_MELEE: { name: "Protect from Melee", widgetChild: 19 },
-    PROTECT_FROM_MISSILES: { name: "Protect from Missiles", widgetChild: 18 },
-    PROTECT_FROM_MAGIC: { name: "Protect from Magic", widgetChild: 17 }
+    PROTECT_FROM_MELEE: { widgetChild: 18, prayerReq: 43, drainRate: 1 },
+    PROTECT_FROM_MISSILES: { widgetChild: 17, prayerReq: 40, drainRate: 1 },
+    PROTECT_FROM_MAGIC: { widgetChild: 16, prayerReq: 37, drainRate: 1 },
+    PIETY: { widgetChild: 25, prayerReq: 70, drainRate: 2.4 },
+    EAGLE_EYE: { widgetChild: 22, prayerReq: 44, drainRate: 1 },
+    MYSTIC_MIGHT: { widgetChild: 23, prayerReq: 45, drainRate: 1 }
 };
+
 
 // -----------------------------------------------------------------------------
 // MASTER TASK ASSIGNMENTS (for reference: which monsters each master assigns)
@@ -2866,6 +2909,335 @@ var MASTER_TASKS = {
     NIEVE: ["Aberrant Spectre", "Abyssal Demon", "Adamant Dragon", "Ankou", "Black Demon", "Black Dragon", "Bloodveld", "Blue Dragon", "Brutal Black Dragon", "Brutal Blue Dragon", "Cave Horror", "Cave Kraken", "Dagannoth", "Dark Beast", "Demonic Gorilla", "Drake", "Dust Devil", "Fire Giant", "Fossil Island Wyvern", "Gargoyle", "Greater Demon", "Greater Nechryael", "Hellhound", "Iron Dragon", "Kalphite", "Kraken", "Kurask", "Lizardman", "Lizardman Shaman", "Maniacal Monkey", "Mithril Dragon", "Nechryael", "Red Dragon", "Rune Dragon", "Skeletal Wyvern", "Smoke Devil", "Spiritual Creature", "Steel Dragon", "Suqah", "Troll", "Turoth", "Warped Jelly", "Waterfiend", "Wyrm"],
     DURADEL: ["Aberrant Spectre", "Abyssal Demon", "Adamant Dragon", "Ankou", "Black Demon", "Black Dragon", "Bloodveld", "Blue Dragon", "Brutal Black Dragon", "Cave Horror", "Cave Kraken", "Dagannoth", "Dark Beast", "Demonic Gorilla", "Deviant Spectre", "Drake", "Dust Devil", "Fire Giant", "Fossil Island Wyvern", "Gargoyle", "Greater Demon", "Greater Nechryael", "Hellhound", "Iron Dragon", "Kalphite", "Kraken", "Maniacal Monkey", "Mithril Dragon", "Nechryael", "Red Dragon", "Rune Dragon", "Skeletal Wyvern", "Smoke Devil", "Spiritual Creature", "Steel Dragon", "Suqah", "Troll", "Warped Jelly", "Waterfiend", "Wyrm"]
 };
+
+
+// =============================================================================
+// V24 NEW DATA TABLES
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// RANGED WEAPONS + AMMO
+// -----------------------------------------------------------------------------
+var RANGED_WEAPONS = [
+    { name: "Magic shortbow", id: 861, rangeReq: 50, ammoType: "arrow" },
+    { name: "Maple shortbow", id: 853, rangeReq: 30, ammoType: "arrow" },
+    { name: "Willow shortbow", id: 849, rangeReq: 20, ammoType: "arrow" },
+    { name: "Oak shortbow", id: 845, rangeReq: 5, ammoType: "arrow" },
+    { name: "Shortbow", id: 841, rangeReq: 1, ammoType: "arrow" },
+    { name: "Rune crossbow", id: 9185, rangeReq: 61, ammoType: "bolt" },
+    { name: "Adamant crossbow", id: 9183, rangeReq: 46, ammoType: "bolt" },
+    { name: "Mithril crossbow", id: 9181, rangeReq: 36, ammoType: "bolt" }
+];
+
+var ARROWS = [
+    { name: "Rune arrow", id: 892, rangeReq: 40, dmg: 49 },
+    { name: "Adamant arrow", id: 890, rangeReq: 30, dmg: 31 },
+    { name: "Mithril arrow", id: 888, rangeReq: 20, dmg: 22 },
+    { name: "Steel arrow", id: 886, rangeReq: 5, dmg: 16 },
+    { name: "Iron arrow", id: 884, rangeReq: 1, dmg: 10 },
+    { name: "Bronze arrow", id: 882, rangeReq: 1, dmg: 7 }
+];
+
+// -----------------------------------------------------------------------------
+// MAGIC WEAPONS + RUNES
+// -----------------------------------------------------------------------------
+var MAGIC_WEAPONS = [
+    { name: "Staff of fire", id: 1387, mageReq: 1, freeRune: "fire" },
+    { name: "Staff of air", id: 1381, mageReq: 1, freeRune: "air" },
+    { name: "Staff of water", id: 1383, mageReq: 1, freeRune: "water" },
+    { name: "Staff of earth", id: 1385, mageReq: 1, freeRune: "earth" }
+];
+
+var RUNES = {
+    AIR: { id: 556, name: "Air rune", altarX: 2841, altarY: 4829, altarPlane: 0, rcLevel: 1 },
+    MIND: { id: 558, name: "Mind rune", altarX: 2793, altarY: 4828, altarPlane: 0, rcLevel: 2 },
+    WATER: { id: 555, name: "Water rune", altarX: 2726, altarY: 4832, altarPlane: 0, rcLevel: 5 },
+    EARTH: { id: 557, name: "Earth rune", altarX: 2655, altarY: 4830, altarPlane: 0, rcLevel: 9 },
+    FIRE: { id: 554, name: "Fire rune", altarX: 2577, altarY: 4846, altarPlane: 0, rcLevel: 14 },
+    BODY: { id: 559, name: "Body rune", altarX: 2521, altarY: 4834, altarPlane: 0, rcLevel: 20 },
+    COSMIC: { id: 564, name: "Cosmic rune", altarX: 2162, altarY: 4833, altarPlane: 0, rcLevel: 27 },
+    CHAOS: { id: 562, name: "Chaos rune", altarX: 2281, altarY: 4837, altarPlane: 0, rcLevel: 35 },
+    NATURE: { id: 561, name: "Nature rune", altarX: 2400, altarY: 4835, altarPlane: 0, rcLevel: 44 },
+    LAW: { id: 563, name: "Law rune", altarX: 2464, altarY: 4818, altarPlane: 0, rcLevel: 54 },
+    DEATH: { id: 560, name: "Death rune", altarX: 2208, altarY: 4830, altarPlane: 0, rcLevel: 65 }
+};
+
+var RUNE_ESSENCE = 1436;
+var RUNE_ESSENCE_NORMAL = 7936;
+
+// -----------------------------------------------------------------------------
+// ARROW CRAFTING CHAIN
+// -----------------------------------------------------------------------------
+var ARROW_CRAFTING = {
+    bronze: { oreId: 436, barId: 2349, headId: 39, miningLvl: 1, smithLvl: 5, fletchLvl: 1, arrowId: 882 },
+    iron: { oreId: 440, barId: 2351, headId: 40, miningLvl: 15, smithLvl: 20, fletchLvl: 15, arrowId: 884 },
+    steel: { oreId: 440, barId: 2353, headId: 41, coalNeeded: 2, miningLvl: 15, smithLvl: 35, fletchLvl: 30, arrowId: 886 },
+    mithril: { oreId: 447, barId: 2359, headId: 42, miningLvl: 55, smithLvl: 55, fletchLvl: 45, arrowId: 888 },
+    adamant: { oreId: 449, barId: 2361, headId: 43, miningLvl: 70, smithLvl: 70, fletchLvl: 60, arrowId: 890 },
+    rune: { oreId: 451, barId: 2363, headId: 44, miningLvl: 85, smithLvl: 85, fletchLvl: 75, arrowId: 892 }
+};
+
+var FEATHER_ID = 314;
+var ARROW_SHAFT_ID = 52;
+var KNIFE_ID = 946;
+var LOGS_ID = 1511;
+var OAK_LOGS = 1521;
+var WILLOW_LOGS = 1519;
+var COAL_ID = 453;
+var CHICKEN_NPC_IDS = [1017, 1018];
+var CHICKEN_LOCATIONS = [
+    { name: "Lumbridge farm", x: 3230, y: 3295, plane: 0 },
+    { name: "Champions Guild", x: 3195, y: 3359, plane: 0 }
+];
+var TREE_IDS = [1276, 1278, 1286];
+
+// -----------------------------------------------------------------------------
+// POTION RECIPES
+// -----------------------------------------------------------------------------
+var POTION_RECIPES = {
+    "Attack potion": { herbId: 249, secondaryId: 221, unfinishedId: 91, potionId4: 2428, herbLevel: 3, potionLevel: 3 },
+    "Antipoison": { herbId: 251, secondaryId: 235, unfinishedId: 93, potionId4: 2446, herbLevel: 5, potionLevel: 5 },
+    "Strength potion": { herbId: 253, secondaryId: 225, unfinishedId: 95, potionId4: 113, herbLevel: 12, potionLevel: 12 },
+    "Restore potion": { herbId: 255, secondaryId: 223, unfinishedId: 97, potionId4: 2430, herbLevel: 22, potionLevel: 22 },
+    "Defence potion": { herbId: 257, secondaryId: 239, unfinishedId: 99, potionId4: 2432, herbLevel: 30, potionLevel: 30 },
+    "Prayer potion": { herbId: 255, secondaryId: 231, unfinishedId: 97, potionId4: 2434, herbLevel: 22, potionLevel: 38 },
+    "Super attack": { herbId: 259, secondaryId: 221, unfinishedId: 101, potionId4: 2436, herbLevel: 45, potionLevel: 45 },
+    "Super antipoison": { herbId: 259, secondaryId: 235, unfinishedId: 101, potionId4: 2448, herbLevel: 48, potionLevel: 48 },
+    "Super energy": { herbId: 261, secondaryId: 2970, unfinishedId: 103, potionId4: 3016, herbLevel: 52, potionLevel: 52 },
+    "Super strength": { herbId: 263, secondaryId: 225, unfinishedId: 105, potionId4: 2440, herbLevel: 55, potionLevel: 55 },
+    "Super restore": { herbId: 3000, secondaryId: 223, unfinishedId: 3004, potionId4: 3024, herbLevel: 63, potionLevel: 63 },
+    "Super defence": { herbId: 265, secondaryId: 239, unfinishedId: 107, potionId4: 2442, herbLevel: 66, potionLevel: 66 },
+    "Antifire potion": { herbId: 2481, secondaryId: 241, unfinishedId: 2483, potionId4: 2452, herbLevel: 69, potionLevel: 69 },
+    "Ranging potion": { herbId: 267, secondaryId: 245, unfinishedId: 109, potionId4: 2444, herbLevel: 72, potionLevel: 72 },
+    "Magic potion": { herbId: 2481, secondaryId: 3138, unfinishedId: 2483, potionId4: 3040, herbLevel: 76, potionLevel: 76 },
+    "Saradomin brew": { herbId: 269, secondaryId: 6693, unfinishedId: 111, potionId4: 6685, herbLevel: 81, potionLevel: 81 },
+    "Super combat potion": { herbId: -1, secondaryId: -1, unfinishedId: -1, potionId4: 12695, herbLevel: 90, potionLevel: 90, special: "combine" },
+    "Anti-venom": { herbId: -1, secondaryId: 12934, unfinishedId: -1, potionId4: 12905, herbLevel: 87, potionLevel: 87, special: "antidote_plus_zulrah_scale" },
+    "Extended antifire": { herbId: -1, secondaryId: -1, unfinishedId: -1, potionId4: 11951, herbLevel: 84, potionLevel: 84, special: "antifire_plus_lava_scale" }
+};
+
+var VIAL_OF_WATER = 227;
+var PESTLE_AND_MORTAR = 233;
+
+// -----------------------------------------------------------------------------
+// SAFE SPOTS DATABASE
+// -----------------------------------------------------------------------------
+var SAFE_SPOTS = {
+    "Hellhound": { safeX: 2869, safeY: 9848, safePlane: 0, attackFrom: "ranged", prayAgainst: "PROTECT_FROM_MELEE" },
+    "Black demon": { safeX: 2859, safeY: 9779, safePlane: 0, attackFrom: "ranged", prayAgainst: null },
+    "Fire giant": { safeX: 2570, safeY: 9891, safePlane: 0, attackFrom: "ranged", prayAgainst: null },
+    "Greater demon": { safeX: 2836, safeY: 9818, safePlane: 0, attackFrom: "ranged", prayAgainst: null },
+    "Blue dragon": { safeX: 2900, safeY: 9808, safePlane: 0, attackFrom: "ranged", prayAgainst: null },
+    "Black dragon": { safeX: 2832, safeY: 9824, safePlane: 0, attackFrom: "ranged", prayAgainst: null },
+    "Bronze dragon": { safeX: 2735, safeY: 9485, safePlane: 0, attackFrom: "ranged", prayAgainst: "PROTECT_FROM_MAGIC" },
+    "Iron dragon": { safeX: 2699, safeY: 9444, safePlane: 0, attackFrom: "ranged", prayAgainst: "PROTECT_FROM_MAGIC" },
+    "Steel dragon": { safeX: 2710, safeY: 9460, safePlane: 0, attackFrom: "ranged", prayAgainst: "PROTECT_FROM_MAGIC" },
+    "Bloodveld": { safeX: 3418, safeY: 3564, safePlane: 1, attackFrom: "ranged", prayAgainst: "PROTECT_FROM_MELEE" },
+    "Dagannoth": { safeX: 2442, safeY: 10147, safePlane: 0, attackFrom: "ranged", prayAgainst: null },
+    "Moss giant": { safeX: 2692, safeY: 9833, safePlane: 0, attackFrom: "ranged", prayAgainst: null },
+    "Lesser demon": { safeX: 2838, safeY: 9558, safePlane: 0, attackFrom: "ranged", prayAgainst: null }
+};
+
+// -----------------------------------------------------------------------------
+// SUPERIOR MONSTERS
+// -----------------------------------------------------------------------------
+var SUPERIOR_MONSTERS = {
+    "Crawling Hand": { superiorId: 7388, superiorName: "Crushing hand" },
+    "Cave Crawler": { superiorId: 7389, superiorName: "Chasm Crawler" },
+    "Banshee": { superiorId: 7390, superiorName: "Screaming banshee" },
+    "Rock Slug": { superiorId: 7392, superiorName: "Giant rockslug" },
+    "Cockatrice": { superiorId: 7393, superiorName: "Cockathrice" },
+    "Pyrefiend": { superiorId: 7394, superiorName: "Flaming pyrelord" },
+    "Basilisk": { superiorId: 7395, superiorName: "Monstrous basilisk" },
+    "Infernal Mage": { superiorId: 7396, superiorName: "Malevolent Mage" },
+    "Bloodveld": { superiorId: 7397, superiorName: "Insatiable Bloodveld" },
+    "Aberrant Spectre": { superiorId: 7402, superiorName: "Abhorrent spectre" },
+    "Gargoyle": { superiorId: 7407, superiorName: "Marble gargoyle" },
+    "Nechryael": { superiorId: 7411, superiorName: "Nechryarch" },
+    "Abyssal Demon": { superiorId: 7410, superiorName: "Greater abyssal demon" },
+    "Dust Devil": { superiorId: 7404, superiorName: "Choke devil" },
+    "Kurask": { superiorId: 7405, superiorName: "King kurask" },
+    "Smoke Devil": { superiorId: 7406, superiorName: "Nuclear smoke devil" },
+    "Dark Beast": { superiorId: 7409, superiorName: "Night beast" },
+    "Cave Horror": { superiorId: 7401, superiorName: "Cave abomination" }
+};
+
+// -----------------------------------------------------------------------------
+// BRACELET DATA
+// -----------------------------------------------------------------------------
+var BRACELET_EXPEDITIOUS = { id: 21183, name: "Expeditious bracelet" };
+var BRACELET_SLAUGHTER = { id: 21177, name: "Bracelet of slaughter" };
+
+var GOOD_TASKS = ["Abyssal Demon", "Gargoyle", "Nechryael", "Dark Beast", "Smoke Devil", "Black Demon", "Greater Demon", "Bloodveld", "Dust Devil", "Kurask"];
+var BAD_TASKS = ["Bat", "Bird", "Rat", "Spider", "Cow", "Dog", "Dwarf", "Ghost", "Goblin", "Icefiend", "Kalphite Worker", "Lizard", "Minotaur", "Monkey", "Scorpion", "Skeleton", "Sourhog", "Wolf", "Zombie"];
+
+// -----------------------------------------------------------------------------
+// CANNON DATA
+// -----------------------------------------------------------------------------
+var CANNON = {
+    BASE: 6, STAND: 8, BARRELS: 10, FURNACE: 12,
+    CANNONBALL: 2,
+    AMMO_MOULD: 4,
+    MIN_CANNONBALLS: 1000,
+    RESTOCK_AMOUNT: 1000,
+    SMITH_LEVEL: 35,
+    MULTICOMBAT_TASKS: ["Kalphite", "Dagannoth", "Suqah", "Black demon", "Greater demon", "Hellhound", "Bloodveld", "Dust Devil", "Smoke Devil", "Nechryael"]
+};
+
+// Cannonball crafting chain: mine iron+coal -> smelt steel bars -> smith cannonballs
+var CANNONBALL_CRAFT = {
+    steelBar: 2353,
+    ironOre: 440,
+    coal: 453,
+    ammoMould: 4,
+    cannonball: 2,
+    barsPerSmelt: 1,
+    cballsPerBar: 4,
+    smithLevel: 35,
+    smeltLevel: 30,
+    ironMineLevel: 15,
+    coalMineLevel: 30,
+    // How many steel bars needed for 1000 cannonballs: 250
+    barsNeeded: function(target) { return Math.ceil(target / 4); },
+    // Iron + coal needed per steel bar: 1 iron + 2 coal
+    ironNeeded: function(bars) { return bars; },
+    coalNeeded: function(bars) { return bars * 2; }
+};
+
+// Check if a monster task is in a single-combat zone (cannon not useful)
+function isTaskSingleCombat(monsterData) {
+    if (!monsterData) return true;
+    if (monsterData.multiCombat === true) return false;
+    return true;
+}
+
+// Check if we should use cannon for this task
+function shouldUseCannon(monsterData, useCannon) {
+    if (!useCannon) return false;
+    if (!monsterData) return false;
+    // Never bring cannon to single combat zones
+    if (isTaskSingleCombat(monsterData)) return false;
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+// ATTACK STYLES
+// -----------------------------------------------------------------------------
+var ATTACK_STYLES = {
+    ACCURATE: { widgetChild: 0, xpType: "attack" },
+    AGGRESSIVE: { widgetChild: 1, xpType: "strength" },
+    DEFENSIVE: { widgetChild: 3, xpType: "defence" },
+    CONTROLLED: { widgetChild: 2, xpType: "shared" }
+};
+
+// -----------------------------------------------------------------------------
+// CLUE SCROLL IDS
+// -----------------------------------------------------------------------------
+var CLUE_SCROLLS = [
+    2677,
+    2801,
+    2722,
+    2723,
+    12073,
+    19835
+];
+
+// -----------------------------------------------------------------------------
+// SPEC WEAPONS
+// -----------------------------------------------------------------------------
+var SPEC_WEAPONS = [
+    { name: "Dragon dagger", id: 5698, specCost: 25, attackReq: 60 },
+    { name: "Granite maul", id: 4153, specCost: 50, attackReq: 50 },
+    { name: "Dragon claws", id: 13652, specCost: 50, attackReq: 60 },
+    { name: "Abyssal dagger", id: 13265, specCost: 50, attackReq: 70 }
+];
+
+// -----------------------------------------------------------------------------
+// SLAYER HELMET CRAFTING
+// -----------------------------------------------------------------------------
+var SLAYER_HELM_COMPONENTS = {
+    BLACK_MASK: 8901,
+    NOSEPEG: 4168,
+    EARMUFFS: 4166,
+    FACEMASK: 4164,
+    SPINY_HELMET: 4551,
+    ENCHANTED_GEM: 4155
+};
+var SLAYER_HELM_ID = 11864;
+var SLAYER_HELM_I_ID = 11865;
+var SLAYER_HELM_POINTS_COST = 400;
+
+// -----------------------------------------------------------------------------
+// FISHING DATA
+// -----------------------------------------------------------------------------
+var FISHING_SPOTS = {
+    shrimps: { npcId: 1525, action: "net", locations: [{x: 3246, y: 3155, plane: 0}], levelReq: 1, rawFishId: 317, cookedFishId: 315, cookLevel: 1 },
+    trout: { npcId: 1526, action: "lure", locations: [{x: 3104, y: 3424, plane: 0}], levelReq: 20, rawFishId: 335, cookedFishId: 333, cookLevel: 15 },
+    salmon: { npcId: 1526, action: "lure", locations: [{x: 3104, y: 3424, plane: 0}], levelReq: 30, rawFishId: 331, cookedFishId: 329, cookLevel: 25 },
+    lobster: { npcId: 1522, action: "cage", locations: [{x: 2924, y: 3178, plane: 0}], levelReq: 40, rawFishId: 377, cookedFishId: 379, cookLevel: 40 },
+    swordfish: { npcId: 1522, action: "harpoon", locations: [{x: 2924, y: 3178, plane: 0}], levelReq: 50, rawFishId: 371, cookedFishId: 373, cookLevel: 45 },
+    monkfish: { npcId: 1520, action: "net", locations: [{x: 2340, y: 3702, plane: 0}], levelReq: 62, rawFishId: 7944, cookedFishId: 7946, cookLevel: 62 },
+    shark: { npcId: 1520, action: "harpoon", locations: [{x: 2340, y: 3702, plane: 0}], levelReq: 76, rawFishId: 383, cookedFishId: 385, cookLevel: 80 }
+};
+
+var FISHING_NET = 303;
+var FISHING_ROD = 307;
+var FLY_FISHING_ROD = 309;
+var HARPOON = 311;
+var LOBSTER_POT = 301;
+var FEATHER_FOR_FISHING = 314;
+
+// -----------------------------------------------------------------------------
+// COOKING RANGES
+// -----------------------------------------------------------------------------
+var COOKING_RANGES = [
+    { name: "Lumbridge Range", x: 3211, y: 3215, plane: 0, objectId: 21302, bonus: true },
+    { name: "Rogues Den", x: 3043, y: 4973, plane: 1, objectId: 21302, bonus: false },
+    { name: "Cooking Guild", x: 3145, y: 3453, plane: 0, objectId: 21302, bonus: false }
+];
+
+// -----------------------------------------------------------------------------
+// MINING LOCATIONS
+// -----------------------------------------------------------------------------
+var MINING_SPOTS = {
+    copper: { rockIds: [10943], locations: [{x: 3229, y: 3148, plane: 0}], levelReq: 1 },
+    tin: { rockIds: [10944], locations: [{x: 3226, y: 3148, plane: 0}], levelReq: 1 },
+    iron: { rockIds: [10945], locations: [{x: 3285, y: 3368, plane: 0}], levelReq: 15 },
+    coal: { rockIds: [10946], locations: [{x: 3036, y: 3339, plane: 0}], levelReq: 30 },
+    mithril: { rockIds: [10947], locations: [{x: 3057, y: 9763, plane: 0}], levelReq: 55 },
+    adamantite: { rockIds: [10948], locations: [{x: 2907, y: 3355, plane: 0}], levelReq: 70 },
+    runite: { rockIds: [10949], locations: [{x: 3059, y: 9764, plane: 0}], levelReq: 85 }
+};
+
+var PICKAXES = [
+    { name: "Rune pickaxe", id: 1275, miningReq: 41 },
+    { name: "Adamant pickaxe", id: 1271, miningReq: 31 },
+    { name: "Mithril pickaxe", id: 1273, miningReq: 21 },
+    { name: "Steel pickaxe", id: 1269, miningReq: 6 },
+    { name: "Iron pickaxe", id: 1267, miningReq: 1 },
+    { name: "Bronze pickaxe", id: 1265, miningReq: 1 }
+];
+
+var FURNACES = [
+    { name: "Edgeville", x: 3109, y: 3499, plane: 0, objectId: 16469 },
+    { name: "Al Kharid", x: 3275, y: 3186, plane: 0, objectId: 16469 },
+    { name: "Falador", x: 2975, y: 3369, plane: 0, objectId: 24009 }
+];
+
+var ANVILS = [
+    { name: "Varrock West", x: 3188, y: 3426, plane: 0, objectId: 2097 },
+    { name: "Varrock", x: 3188, y: 3426, plane: 0, objectId: 2097 }
+];
+
+var HAMMER_ID = 2347;
+
+// -----------------------------------------------------------------------------
+// ANTI-VENOM+ DATA
+// -----------------------------------------------------------------------------
+var ANTIVENOM_IDS = [12905, 12907, 12909, 12911];
+var ANTIVENOM_PLUS_IDS = [12913, 12915, 12917, 12919];
+var SUPER_ANTIPOISON_IDS = [2448, 181, 183, 185]; // (4)=2448,(3)=181,(2)=183,(1)=185 -- wiki verified
+
 
 
 // ==================== RESOURCE INTELLIGENCE ENGINE ====================
@@ -3075,6 +3447,301 @@ var SS_ITEMS = {
     CURVED_BONE: 10977,
     ENSOULED_HEAD: 13467 // generic; actual IDs vary by monster
 };
+
+// =============================================================================
+// BARROWS DEGRADATION TABLE -- OSRS Wiki verified
+// Each piece has 6 states: undamaged (from chest), 100, 75, 50, 25, 0 (broken)
+// When equipped, "undamaged" becomes "100" (different ID!)
+// Repair at 25% at Bob's Axes in Lumbridge before it hits 0 (broken/useless)
+// =============================================================================
+var BARROWS_DEGRADE = {
+    // Dharok's
+    dharok_helm:      { undamaged: 4716, 100: 4880, 75: 4881, 50: 4882, 25: 4883, 0: 4884 },
+    dharok_platebody: { undamaged: 4720, 100: 4892, 75: 4893, 50: 4894, 25: 4895, 0: 4896 },
+    dharok_platelegs: { undamaged: 4722, 100: 4898, 75: 4899, 50: 4900, 25: 4901, 0: 4902 },
+    dharok_greataxe:  { undamaged: 4718, 100: 4886, 75: 4887, 50: 4888, 25: 4889, 0: 4890 },
+    // Guthan's
+    guthan_helm:       { undamaged: 4724, 100: 4904, 75: 4905, 50: 4906, 25: 4907, 0: 4908 },
+    guthan_platebody:  { undamaged: 4728, 100: 4916, 75: 4917, 50: 4918, 25: 4919, 0: 4920 },
+    guthan_chainskirt: { undamaged: 4730, 100: 4922, 75: 4923, 50: 4924, 25: 4925, 0: 4926 },
+    guthan_warspear:   { undamaged: 4726, 100: 4910, 75: 4911, 50: 4912, 25: 4913, 0: 4914 },
+    // Verac's
+    verac_helm:      { undamaged: 4753, 100: 4976, 75: 4977, 50: 4978, 25: 4979, 0: 4980 },
+    verac_brassard:  { undamaged: 4757, 100: 4988, 75: 4989, 50: 4990, 25: 4991, 0: 4992 },
+    verac_plateskirt:{ undamaged: 4759, 100: 4994, 75: 4995, 50: 4996, 25: 4997, 0: 4998 },
+    verac_flail:     { undamaged: 4755, 100: 4982, 75: 4983, 50: 4984, 25: 4985, 0: 4986 },
+    // Torag's
+    torag_helm:      { undamaged: 4745, 100: 4952, 75: 4953, 50: 4954, 25: 4955, 0: 4956 },
+    torag_platebody: { undamaged: 4749, 100: 4964, 75: 4965, 50: 4966, 25: 4967, 0: 4968 },
+    torag_platelegs: { undamaged: 4751, 100: 4970, 75: 4971, 50: 4972, 25: 4973, 0: 4974 },
+    torag_hammers:   { undamaged: 4747, 100: 4958, 75: 4959, 50: 4960, 25: 4961, 0: 4962 },
+    // Karil's
+    karil_coif:        { undamaged: 4732, 100: 4928, 75: 4929, 50: 4930, 25: 4931, 0: 4932 },
+    karil_leathertop:  { undamaged: 4736, 100: 4940, 75: 4941, 50: 4942, 25: 4943, 0: 4944 },
+    karil_leatherskirt:{ undamaged: 4738, 100: 4946, 75: 4947, 50: 4948, 25: 4949, 0: 4950 },
+    karil_crossbow:    { undamaged: 4734, 100: 4934, 75: 4935, 50: 4936, 25: 4937, 0: 4938 },
+    // Ahrim's
+    ahrim_hood:     { undamaged: 4708, 100: 4856, 75: 4857, 50: 4858, 25: 4859, 0: 4860 },
+    ahrim_robetop:  { undamaged: 4712, 100: 4868, 75: 4869, 50: 4870, 25: 4871, 0: 4872 },
+    ahrim_robeskirt:{ undamaged: 4714, 100: 4874, 75: 4875, 50: 4876, 25: 4877, 0: 4878 },
+    ahrim_staff:    { undamaged: 4710, 100: 4862, 75: 4863, 50: 4864, 25: 4865, 0: 4866 }
+};
+
+// Build reverse-lookup: itemId -> { pieceName, condition }
+var BARROWS_ID_LOOKUP = {};
+var barrowsKeys = Object.keys(BARROWS_DEGRADE);
+for (var bk = 0; bk < barrowsKeys.length; bk++) {
+    var pieceName = barrowsKeys[bk];
+    var pieceData = dbLookup(BARROWS_DEGRADE, pieceName);
+    if (!pieceData) continue;
+    var condKeys = Object.keys(pieceData);
+    for (var ck = 0; ck < condKeys.length; ck++) {
+        var cond = condKeys[ck];
+        var itemId = pieceData[cond];
+        BARROWS_ID_LOOKUP[String(itemId)] = { piece: pieceName, condition: cond };
+    }
+}
+
+// getAllBarrowsIds -- Get ALL item IDs for a given barrows piece (all 6 degradation states)
+// Pass the undamaged base ID (e.g., 4716 for Dharok's helm)
+function getAllBarrowsIds(baseId) {
+    var result = [];
+    var keys = Object.keys(BARROWS_DEGRADE);
+    for (var i = 0; i < keys.length; i++) {
+        var piece = dbLookup(BARROWS_DEGRADE, keys[i]);
+        if (!piece) continue;
+        if (piece.undamaged === baseId) {
+            result.push(piece.undamaged);
+            result.push(piece[100]);
+            result.push(piece[75]);
+            result.push(piece[50]);
+            result.push(piece[25]);
+            result.push(piece[0]);
+            return result;
+        }
+    }
+    // Not a barrows item; return single-element array
+    return [baseId];
+}
+
+// isBarrowsItem -- Returns true if this item ID is ANY barrows variant
+function isBarrowsItem(itemId) {
+    return BARROWS_ID_LOOKUP.hasOwnProperty(String(itemId));
+}
+
+// getBarrowsInfo -- Returns { piece, condition } or null
+function getBarrowsInfo(itemId) {
+    var info = BARROWS_ID_LOOKUP[String(itemId)];
+    if (info) return info;
+    return null;
+}
+
+// needsBarrowsRepair -- Returns true if item is at 25% or broken (0%)
+function needsBarrowsRepair(itemId) {
+    var info = getBarrowsInfo(itemId);
+    if (!info) return false;
+    return info.condition === "25" || info.condition === "0";
+}
+
+// hasAnyBarrowsVariant -- Check if player has ANY degradation state of a piece
+// in inventory or equipment. Pass the undamaged base ID.
+function hasAnyBarrowsVariant(baseId) {
+    var allIds = getAllBarrowsIds(baseId);
+    for (var i = 0; i < allIds.length; i++) {
+        if (Game.info.inventory.hasItem(allIds[i])) return true;
+        // Also check equipment
+        var equipped = getAllEquipmentIds();
+        for (var j = 0; j < equipped.length; j++) {
+            if (equipped[j] === allIds[i]) return true;
+        }
+    }
+    return false;
+}
+
+// checkEquippedBarrowsCondition -- Scan all equipped items for barrows gear at 25%
+// Returns array of { piece, itemId, condition } that need repair
+function checkEquippedBarrowsCondition() {
+    var needRepair = [];
+    var equipped = getAllEquipmentIds();
+    for (var i = 0; i < equipped.length; i++) {
+        var info = getBarrowsInfo(equipped[i]);
+        if (info && (info.condition === "25" || info.condition === "0")) {
+            needRepair.push({ piece: info.piece, itemId: equipped[i], condition: info.condition });
+        }
+    }
+    return needRepair;
+}
+
+// =============================================================================
+// CHARGED / UNCHARGED ITEMS -- Wiki verified
+// Bot must check for ALL variants when equipping/checking inventory
+// =============================================================================
+var CHARGED_ITEMS = {
+    ibans_staff:     { normal: 1409, broken: 1410 },
+    trident_seas:    { uncharged: 11908, charged: 11907, full: 11905 },
+    toxic_blowpipe:  { empty: 12924, charged: 12926 },
+    toxic_trident:   { uncharged: 12900, charged: 12899 },
+    serpentine_helm: { uncharged: 12929, charged: 12931 },
+    tome_of_fire:    { empty: 20714, charged: 20716 }
+};
+
+// getAllChargedVariants -- Returns all item IDs for a charged item
+function getAllChargedVariants(baseId) {
+    var keys = Object.keys(CHARGED_ITEMS);
+    for (var i = 0; i < keys.length; i++) {
+        var item = dbLookup(CHARGED_ITEMS, keys[i]);
+        if (!item) continue;
+        var vKeys = Object.keys(item);
+        for (var j = 0; j < vKeys.length; j++) {
+            if (item[vKeys[j]] === baseId) {
+                var allIds = [];
+                for (var k = 0; k < vKeys.length; k++) {
+                    allIds.push(item[vKeys[k]]);
+                }
+                return allIds;
+            }
+        }
+    }
+    return [baseId];
+}
+
+// isChargedItem -- Check if an item ID is a chargeable item
+function isChargedItem(itemId) {
+    var keys = Object.keys(CHARGED_ITEMS);
+    for (var i = 0; i < keys.length; i++) {
+        var item = dbLookup(CHARGED_ITEMS, keys[i]);
+        if (!item) continue;
+        var vKeys = Object.keys(item);
+        for (var j = 0; j < vKeys.length; j++) {
+            if (item[vKeys[j]] === itemId) return true;
+        }
+    }
+    return false;
+}
+
+// BOB'S AXES -- Repair NPC in Lumbridge
+var BOB_AXES_NPC_ID = 519;
+var BOB_AXES_LOCATION = { x: 3231, y: 3203, z: 0 };
+var COINS_ID = 995;
+
+// =============================================================================
+// POTION DOSE HELPERS -- For withdrawing/checking any dose of a potion
+// =============================================================================
+// Given a potion group array [dose4, dose3, dose2, dose1], check if ANY dose
+// is in inventory and return the first found ID, or -1 if none
+function findPotionInInventory(potGroup) {
+    for (var i = 0; i < potGroup.length; i++) {
+        if (Game.info.inventory.hasItem(potGroup[i])) return potGroup[i];
+    }
+    return -1;
+}
+
+// Count total doses of a potion group in inventory
+// potGroup = [dose4, dose3, dose2, dose1]
+// Returns total number of doses (not pots)
+function countPotionDoses(potGroup) {
+    var totalDoses = 0;
+    for (var i = 0; i < potGroup.length; i++) {
+        var count = Game.info.inventory.getItemCount(potGroup[i]);
+        var dosesPerPot = 4 - i; // index 0 = 4 doses, index 1 = 3, etc.
+        totalDoses += count * dosesPerPot;
+    }
+    return totalDoses;
+}
+
+// =============================================================================
+// SMART EQUIP -- Handles degraded barrows + charged items
+// When equipping an item, checks ALL variants (degraded/charged/uncharged)
+// =============================================================================
+function smartEquipItem(baseItemId) {
+    // First try the exact ID
+    if (Game.info.inventory.hasItem(baseItemId)) {
+        Game.interact.inventory.equipItem(baseItemId);
+        return true;
+    }
+    // Check barrows degradation variants
+    if (isBarrowsItem(baseItemId)) {
+        var allIds = getAllBarrowsIds(baseItemId);
+        for (var i = 0; i < allIds.length; i++) {
+            // Skip broken (0%) -- cannot be equipped
+            var info = getBarrowsInfo(allIds[i]);
+            if (info && info.condition === "0") continue;
+            if (Game.info.inventory.hasItem(allIds[i])) {
+                Game.interact.inventory.equipItem(allIds[i]);
+                return true;
+            }
+        }
+    }
+    // Check charged item variants
+    var chargedVariants = getAllChargedVariants(baseItemId);
+    if (chargedVariants.length > 1) {
+        for (var c = 0; c < chargedVariants.length; c++) {
+            if (Game.info.inventory.hasItem(chargedVariants[c])) {
+                Game.interact.inventory.equipItem(chargedVariants[c]);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// smartHasItem -- Check inventory OR equipment for any variant of an item
+function smartHasItem(baseItemId) {
+    if (Game.info.inventory.hasItem(baseItemId)) return true;
+    // Check equipped
+    var equipped = getAllEquipmentIds();
+    for (var e = 0; e < equipped.length; e++) {
+        if (equipped[e] === baseItemId) return true;
+    }
+    // Check barrows variants
+    if (isBarrowsItem(baseItemId)) {
+        var bIds = getAllBarrowsIds(baseItemId);
+        for (var i = 0; i < bIds.length; i++) {
+            if (Game.info.inventory.hasItem(bIds[i])) return true;
+            for (var e2 = 0; e2 < equipped.length; e2++) {
+                if (equipped[e2] === bIds[i]) return true;
+            }
+        }
+    }
+    // Check charged variants
+    var cIds = getAllChargedVariants(baseItemId);
+    for (var j = 0; j < cIds.length; j++) {
+        if (Game.info.inventory.hasItem(cIds[j])) return true;
+        for (var e3 = 0; e3 < equipped.length; e3++) {
+            if (equipped[e3] === cIds[j]) return true;
+        }
+    }
+    return false;
+}
+
+// smartWithdrawItem -- Withdraw any variant of an item from bank
+function smartWithdrawItem(baseItemId) {
+    // Try exact ID first
+    try {
+        Game.interact.bank.withdrawItem(baseItemId, BankWithdrawType.WITHDRAW_ONE, false);
+        return true;
+    } catch (e) { /* not in bank */ }
+    // Try barrows variants (prefer undamaged/100, avoid broken)
+    if (isBarrowsItem(baseItemId)) {
+        var bIds = getAllBarrowsIds(baseItemId);
+        // Try in order: undamaged, 100, 75, 50, 25 (skip 0/broken)
+        for (var i = 0; i < bIds.length - 1; i++) {
+            try {
+                Game.interact.bank.withdrawItem(bIds[i], BankWithdrawType.WITHDRAW_ONE, false);
+                return true;
+            } catch (e2) { /* not in bank */ }
+        }
+    }
+    // Try charged variants
+    var cIds = getAllChargedVariants(baseItemId);
+    for (var j = 0; j < cIds.length; j++) {
+        try {
+            Game.interact.bank.withdrawItem(cIds[j], BankWithdrawType.WITHDRAW_ONE, false);
+            return true;
+        } catch (e3) { /* not in bank */ }
+    }
+    return false;
+}
 
 // -----------------------------------------------------------------------------
 // NPC IDS
@@ -4064,13 +4731,13 @@ function handleLevelFishing() {
     }
 
     // Fish!
-    if (PlayerHelper.isPlayerIdle()) {
-        var fishingSpot = Game.info.npc.getNearest(spot);
+    if (isPlayerIdle()) {
+        var fishingSpot = Game.info.npc.getNearest([spot]);
         if (fishingSpot) {
             isExecuting = true;
             Utility.invokeLater(function() {
                 try {
-                    Game.interact.npc.attack(fishingSpot); // LEFT-CLICK fishing spot
+                    Game.interact.npc.action(fishingSpot, MenuAction.NPC_FIRST_OPTION); // Fish at spot
                     Game.sendGameMessage("[SlayerBot][RI] Fishing at " + fishingSpot.getName(), "Bot");
                 } catch(e) {
                     Game.sendGameMessage("[SlayerBot][RI] Fish error: " + e, "Bot");
@@ -4102,7 +4769,7 @@ function handleLevelCooking() {
     }
 
     // Cook on range
-    if (PlayerHelper.isPlayerIdle()) {
+    if (isPlayerIdle()) {
         var range = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE]);
         if (range) {
             isExecuting = true;
@@ -4167,8 +4834,8 @@ function handleLevelMining() {
         return;
     }
 
-    if (PlayerHelper.isPlayerIdle()) {
-        var rock = Game.info.gameObject.getNearest(oreRocks);
+    if (isPlayerIdle()) {
+        var rock = Game.info.gameObject.getNearest([oreRocks]);
         if (rock) {
             isExecuting = true;
             Utility.invokeLater(function() {
@@ -4191,8 +4858,8 @@ function handleLevelSmelting() {
         walkToLocation(SS_LOCATIONS.AL_KHARID_FURNACE);
         return;
     }
-    var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
-    if (furnace && PlayerHelper.isPlayerIdle()) {
+    var furnace = Game.info.gameObject.getNearest([SS_OBJECTS.FURNACE]);
+    if (furnace && isPlayerIdle()) {
         isExecuting = true;
         Utility.invokeLater(function() {
             try {
@@ -4384,7 +5051,7 @@ function handleGatherFoodByFishing() {
             return;
         }
         if (!PlayerHelper.isInCombat()) {
-            var chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
+            var chicken = Game.info.npc.getNearest([SS_NPCS.CHICKEN]);
             if (chicken) {
                 isExecuting = true;
                 Utility.invokeLater(function() {
@@ -4403,7 +5070,7 @@ function handleGatherFoodByFishing() {
     }
 
     // Fish!
-    if (PlayerHelper.isPlayerIdle()) {
+    if (isPlayerIdle()) {
         var spot = Game.info.npc.getNearest(gatherFoodTier.spotIds);
         if (spot) {
             isExecuting = true;
@@ -4411,17 +5078,17 @@ function handleGatherFoodByFishing() {
                 try {
                     // Different fishing methods use different menu actions
                     if (gatherFoodTier.fishAction === "NET") {
-                        Game.interact.npc.attack(spot); // NET fishing - LEFT-CLICK
+                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION); // NET fishing
                     } else if (gatherFoodTier.fishAction === "FLY") {
-                        Game.interact.npc.attack(spot); // FLY fishing - LEFT-CLICK
+                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION); // FLY fishing
                     } else if (gatherFoodTier.fishAction === "CAGE") {
-                        Game.interact.npc.attack(spot); // CAGE fishing - LEFT-CLICK
+                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION); // CAGE fishing
                     } else if (gatherFoodTier.fishAction === "HARPOON") {
-                        Game.interact.npc.attack(spot); // HARPOON - LEFT-CLICK
+                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION); // HARPOON
                     } else if (gatherFoodTier.fishAction === "ROD") {
-                        Game.interact.npc.attack(spot); // ROD - LEFT-CLICK
+                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION); // ROD
                     } else {
-                        Game.interact.npc.attack(spot); // default fishing - LEFT-CLICK
+                        Game.interact.npc.action(spot, MenuAction.NPC_FIRST_OPTION); // default fishing
                     }
                     Game.sendGameMessage("[SlayerBot][RI] Fishing " + gatherFoodTier.name, "Bot");
                 } catch(e) {
@@ -4471,7 +5138,7 @@ function handleCookAllRawFood() {
     }
 
     // Cook on range/fire
-    if (PlayerHelper.isPlayerIdle()) {
+    if (isPlayerIdle()) {
         var cookObj = Game.info.gameObject.getNearest([SS_OBJECTS.LUMBRIDGE_RANGE, SS_OBJECTS.COOKING_FIRE]);
         if (cookObj) {
             isExecuting = true;
@@ -4676,8 +5343,8 @@ function handleMineOreForGear() {
         return;
     }
 
-    if (PlayerHelper.isPlayerIdle()) {
-        var rock = Game.info.gameObject.getNearest(oreRocks);
+    if (isPlayerIdle()) {
+        var rock = Game.info.gameObject.getNearest([oreRocks]);
         if (rock) {
             isExecuting = true;
             Utility.invokeLater(function() {
@@ -4709,8 +5376,8 @@ function handleSmeltOreForGear() {
         return;
     }
 
-    if (PlayerHelper.isPlayerIdle()) {
-        var furnace = Game.info.gameObject.getNearest(SS_OBJECTS.FURNACE);
+    if (isPlayerIdle()) {
+        var furnace = Game.info.gameObject.getNearest([SS_OBJECTS.FURNACE]);
         if (furnace) {
             isExecuting = true;
             Utility.invokeLater(function() {
@@ -4750,8 +5417,8 @@ function handleSmithGearItem() {
         return;
     }
 
-    if (PlayerHelper.isPlayerIdle()) {
-        var anvil = Game.info.gameObject.getNearest(SS_OBJECTS.ANVIL);
+    if (isPlayerIdle()) {
+        var anvil = Game.info.gameObject.getNearest([SS_OBJECTS.ANVIL]);
         if (anvil) {
             isExecuting = true;
             Utility.invokeLater(function() {
@@ -4876,7 +5543,7 @@ function handleKillCowsForLeather() {
     }
 
     if (!PlayerHelper.isInCombat()) {
-        var cow = Game.info.npc.getNearest(SS_NPCS.COW);
+        var cow = Game.info.npc.getNearest([SS_NPCS.COW]);
         if (cow) {
             isExecuting = true;
             Utility.invokeLater(function() {
@@ -4906,7 +5573,7 @@ function handleTanHides() {
         isExecuting = true;
         Utility.invokeLater(function() {
             try {
-                Game.interact.npc.attack(tanner); // LEFT-CLICK tanner
+                Game.interact.npc.action(tanner, MenuAction.NPC_FIRST_OPTION); // Trade tanner
                 Game.sendGameMessage("[SlayerBot][RI] Tanning " + hideCount + " cowhides", "Bot");
             } catch(e) {}
             isExecuting = false;
@@ -5079,7 +5746,7 @@ function handleOpenChest() {
     if (isExecuting) return;
 
     // Navigate to chest in tunnels and open
-    var chest = Game.info.gameObject.getNearest(SS_OBJECTS.BARROWS_CHEST);
+    var chest = Game.info.gameObject.getNearest([SS_OBJECTS.BARROWS_CHEST]);
     if (chest) {
         isExecuting = true;
         Utility.invokeLater(function() {
@@ -5139,9 +5806,10 @@ function isNearLocation(loc, range) {
     try {
         var player = Client.getLocalPlayer();
         if (!player) return false;
-        var pos = player.getWorldLocation();
-        var dx = Math.abs(pos.getX() - loc.x);
-        var dy = Math.abs(pos.getY() - loc.y);
+        var wl = player.getWorldLocation();
+        if (!wl) return false;
+        var dx = Math.abs(wl.getX() - loc.x);
+        var dy = Math.abs(wl.getY() - loc.y);
         return dx <= range && dy <= range;
     } catch(e) {
         return false;
@@ -5275,7 +5943,7 @@ function buyFromShop(npcId, itemId, quantity) {
         isExecuting = true;
         Utility.invokeLater(function() {
             try {
-                Game.interact.npc.attack(npc); // LEFT-CLICK trade NPC
+                Game.interact.npc.action(npc, MenuAction.NPC_FIRST_OPTION); // Trade NPC
                 Game.sendGameMessage("[SlayerBot][RI] Opening shop with NPC " + npcId, "Bot");
             } catch(e) {}
             isExecuting = false;
@@ -5562,7 +6230,7 @@ function handleGatherRangedTick() {
             }
         }
         if (!PlayerHelper.isInCombat()) {
-            var chicken = Game.info.npc.getNearest(SS_NPCS.CHICKEN);
+            var chicken = Game.info.npc.getNearest([SS_NPCS.CHICKEN]);
             if (chicken) {
                 isExecuting = true;
                 Utility.invokeLater(function() {
@@ -5631,4 +6299,336 @@ function useItemOnInventoryItem(itemId1, itemId2) {
 // EQUIPMENT ID LIST -- hardcoded to avoid .id property access TypeScript errors
 function getAllEquipmentIds() {
     return [4151, 4587, 11902, 1333, 1331, 1329, 1325, 1321, 1277, 11865, 11864, 10828, 1163, 1161, 1159, 1157, 1153, 1155, 11832, 3140, 1127, 1123, 1121, 1119, 1115, 1117, 11834, 4087, 1079, 1073, 1071, 1069, 1067, 1075, 12954, 8850, 1201, 1199, 1197, 1195, 1191, 1189, 11840, 4131, 4129, 4127, 4125, 4121, 4119, 7462, 7461, 7460, 7459, 7458, 7457, 7456, 7455, 1059, 6585, 1704, 1731, 1725, 11902, 20727, 4156, 4168, 4166, 4164, 8923, 7053];
+}
+
+
+// =============================================================================
+// V24 NEW HELPER FUNCTIONS
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// getBestRangedWeapon -- Returns best ranged weapon for level
+// -----------------------------------------------------------------------------
+function getBestRangedWeapon(rangedLevel) {
+    for (var i = 0; i < RANGED_WEAPONS.length; i++) {
+        if (rangedLevel >= RANGED_WEAPONS[i].rangeReq) {
+            return RANGED_WEAPONS[i];
+        }
+    }
+    return RANGED_WEAPONS[RANGED_WEAPONS.length - 1];
+}
+
+// -----------------------------------------------------------------------------
+// getBestArrows -- Returns best arrow type for level
+// -----------------------------------------------------------------------------
+function getBestArrows(rangedLevel) {
+    for (var i = 0; i < ARROWS.length; i++) {
+        if (rangedLevel >= ARROWS[i].rangeReq) {
+            return ARROWS[i];
+        }
+    }
+    return ARROWS[ARROWS.length - 1];
+}
+
+// -----------------------------------------------------------------------------
+// getBestArrowCraftingTier -- Returns highest arrow tier the player can craft
+// -----------------------------------------------------------------------------
+function getBestArrowCraftingTier(smithLevel, fletchLevel, miningLevel) {
+    var tiers = ["rune", "adamant", "mithril", "steel", "iron", "bronze"];
+    for (var i = 0; i < tiers.length; i++) {
+        var tier = dbLookup(ARROW_CRAFTING, tiers[i]);
+        if (tier && smithLevel >= tier.smithLvl && fletchLevel >= tier.fletchLvl && miningLevel >= tier.miningLvl) {
+            return tier;
+        }
+    }
+    return dbLookup(ARROW_CRAFTING, "bronze");
+}
+
+// -----------------------------------------------------------------------------
+// getRunesForSpell -- Returns array of {runeId, quantity} for a given spell
+// -----------------------------------------------------------------------------
+function getRunesForSpell(spellName) {
+    var spells = {
+        "Wind Strike": [{ runeId: 556, quantity: 1 }, { runeId: 558, quantity: 1 }],
+        "Water Strike": [{ runeId: 555, quantity: 1 }, { runeId: 556, quantity: 1 }, { runeId: 558, quantity: 1 }],
+        "Earth Strike": [{ runeId: 557, quantity: 1 }, { runeId: 556, quantity: 1 }, { runeId: 558, quantity: 1 }],
+        "Fire Strike": [{ runeId: 554, quantity: 1 }, { runeId: 556, quantity: 1 }, { runeId: 558, quantity: 1 }],
+        "Wind Bolt": [{ runeId: 556, quantity: 2 }, { runeId: 562, quantity: 1 }],
+        "Water Bolt": [{ runeId: 555, quantity: 2 }, { runeId: 556, quantity: 2 }, { runeId: 562, quantity: 1 }],
+        "Earth Bolt": [{ runeId: 557, quantity: 2 }, { runeId: 556, quantity: 2 }, { runeId: 562, quantity: 1 }],
+        "Fire Bolt": [{ runeId: 554, quantity: 3 }, { runeId: 556, quantity: 4 }, { runeId: 562, quantity: 1 }],
+        "Wind Blast": [{ runeId: 556, quantity: 3 }, { runeId: 560, quantity: 1 }],
+        "Fire Blast": [{ runeId: 554, quantity: 4 }, { runeId: 556, quantity: 4 }, { runeId: 560, quantity: 1 }]
+    };
+    if (dbLookup(spells, spellName)) {
+        return dbLookup(spells, spellName);
+    }
+    return [];
+}
+
+// -----------------------------------------------------------------------------
+// getBestSpell -- Returns best combat spell for magic level
+// -----------------------------------------------------------------------------
+function getBestSpell(magicLevel) {
+    if (magicLevel >= 59) return { name: "Fire Blast", magicReq: 59 };
+    if (magicLevel >= 41) return { name: "Wind Blast", magicReq: 41 };
+    if (magicLevel >= 35) return { name: "Fire Bolt", magicReq: 35 };
+    if (magicLevel >= 29) return { name: "Earth Bolt", magicReq: 29 };
+    if (magicLevel >= 23) return { name: "Water Bolt", magicReq: 23 };
+    if (magicLevel >= 17) return { name: "Wind Bolt", magicReq: 17 };
+    if (magicLevel >= 13) return { name: "Fire Strike", magicReq: 13 };
+    if (magicLevel >= 9) return { name: "Earth Strike", magicReq: 9 };
+    if (magicLevel >= 5) return { name: "Water Strike", magicReq: 5 };
+    return { name: "Wind Strike", magicReq: 1 };
+}
+
+// -----------------------------------------------------------------------------
+// getBestPotion -- Returns highest tier potion recipe for a type
+// -----------------------------------------------------------------------------
+function getBestPotion(herbloreLevel, potionType) {
+    var typeMap = {
+        "attack": ["Super attack", "Attack potion"],
+        "strength": ["Super strength", "Strength potion"],
+        "defence": ["Super defence", "Defence potion"],
+        "prayer": ["Prayer potion"],
+        "restore": ["Super restore", "Restore potion"],
+        "antipoison": ["Super antipoison", "Antipoison"],
+        "antifire": ["Extended antifire", "Antifire potion"],
+        "ranging": ["Ranging potion"],
+        "magic": ["Magic potion"],
+        "combat": ["Super combat potion"]
+    };
+    var candidates = dbLookup(typeMap, potionType);
+    if (!candidates) return null;
+    for (var i = 0; i < candidates.length; i++) {
+        var recipe = dbLookup(POTION_RECIPES, candidates[i]);
+        if (recipe && herbloreLevel >= recipe.potionLevel) {
+            recipe.name = candidates[i];
+            return recipe;
+        }
+    }
+    return null;
+}
+
+// -----------------------------------------------------------------------------
+// getTaskQuality -- Returns "good", "bad", or "neutral"
+// -----------------------------------------------------------------------------
+function getTaskQuality(taskName) {
+    if (!taskName) return "neutral";
+    for (var i = 0; i < GOOD_TASKS.length; i++) {
+        if (GOOD_TASKS[i].toLowerCase() === taskName.toLowerCase()) return "good";
+    }
+    for (var j = 0; j < BAD_TASKS.length; j++) {
+        if (BAD_TASKS[j].toLowerCase() === taskName.toLowerCase()) return "bad";
+    }
+    return "neutral";
+}
+
+// -----------------------------------------------------------------------------
+// hasSafeSpot -- Returns safe spot data if exists, null otherwise
+// -----------------------------------------------------------------------------
+function hasSafeSpot(monsterName) {
+    if (!monsterName) return null;
+    var keys = Object.keys(SAFE_SPOTS);
+    for (var i = 0; i < keys.length; i++) {
+        if (keys[i].toLowerCase() === monsterName.toLowerCase()) {
+            return dbLookup(SAFE_SPOTS, keys[i]);
+        }
+    }
+    return null;
+}
+
+// -----------------------------------------------------------------------------
+// getSuperiorNpcId -- Returns superior NPC ID if the monster has one
+// -----------------------------------------------------------------------------
+function getSuperiorNpcId(monsterName) {
+    if (!monsterName) return null;
+    var keys = Object.keys(SUPERIOR_MONSTERS);
+    for (var i = 0; i < keys.length; i++) {
+        if (keys[i].toLowerCase() === monsterName.toLowerCase()) {
+            return dbLookup(SUPERIOR_MONSTERS, keys[i]).superiorId;
+        }
+    }
+    return null;
+}
+
+// -----------------------------------------------------------------------------
+// getAttackStyleForFocus -- Returns attack style widget child based on training focus
+// -----------------------------------------------------------------------------
+function getAttackStyleForFocus(focus, attackCap, strengthCap, defenceCap, attackLevel, strengthLevel, defenceLevel) {
+    // If a stat is at its cap, never use a style that trains it
+    var attackCapped = (attackCap > 0 && attackLevel >= attackCap);
+    var strengthCapped = (strengthCap > 0 && strengthLevel >= strengthCap);
+    var defenceCapped = (defenceCap > 0 && defenceLevel >= defenceCap);
+
+    // If all capped, use controlled (shared xp) or defensive
+    if (attackCapped && strengthCapped && defenceCapped) {
+        return ATTACK_STYLES.CONTROLLED.widgetChild;
+    }
+
+    // Prefer the requested focus if not capped
+    if (focus === "attack" && !attackCapped) return ATTACK_STYLES.ACCURATE.widgetChild;
+    if (focus === "strength" && !strengthCapped) return ATTACK_STYLES.AGGRESSIVE.widgetChild;
+    if (focus === "defence" && !defenceCapped) return ATTACK_STYLES.DEFENSIVE.widgetChild;
+    if (focus === "shared") return ATTACK_STYLES.CONTROLLED.widgetChild;
+
+    // Fallback: pick lowest uncapped stat
+    var lowest = Infinity;
+    var bestStyle = ATTACK_STYLES.CONTROLLED.widgetChild;
+    if (!attackCapped && attackLevel < lowest) { lowest = attackLevel; bestStyle = ATTACK_STYLES.ACCURATE.widgetChild; }
+    if (!strengthCapped && strengthLevel < lowest) { lowest = strengthLevel; bestStyle = ATTACK_STYLES.AGGRESSIVE.widgetChild; }
+    if (!defenceCapped && defenceLevel < lowest) { lowest = defenceLevel; bestStyle = ATTACK_STYLES.DEFENSIVE.widgetChild; }
+
+    return bestStyle;
+}
+
+// -----------------------------------------------------------------------------
+// getBestPickaxe -- Returns best pickaxe for mining level
+// -----------------------------------------------------------------------------
+function getBestPickaxe(miningLevel) {
+    for (var i = 0; i < PICKAXES.length; i++) {
+        if (miningLevel >= PICKAXES[i].miningReq) {
+            return PICKAXES[i];
+        }
+    }
+    return PICKAXES[PICKAXES.length - 1];
+}
+
+// -----------------------------------------------------------------------------
+// countArrows -- Counts all arrows in inventory
+// -----------------------------------------------------------------------------
+function countArrows() {
+    var total = 0;
+    for (var i = 0; i < ARROWS.length; i++) {
+        total += Game.info.inventory.getItemCount(ARROWS[i].id);
+    }
+    return total;
+}
+
+// -----------------------------------------------------------------------------
+// countRunes -- Returns count of specific rune in inventory
+// -----------------------------------------------------------------------------
+function countRunes(runeId) {
+    return Game.info.inventory.getItemCount(runeId);
+}
+
+// -----------------------------------------------------------------------------
+// hasAntifireProtection -- Checks if player has antifire or extended antifire
+// -----------------------------------------------------------------------------
+function hasAntifireProtection() {
+    // Check all antifire potion doses
+    var antifireIds = [2452, 2454, 2456, 2458]; // Antifire 4-1 dose
+    var extAntifireIds = [11951, 11953, 11955, 11957]; // Extended antifire 4-1 dose
+    for (var i = 0; i < antifireIds.length; i++) {
+        if (Game.info.inventory.getItemCount(antifireIds[i]) > 0) return true;
+    }
+    for (var j = 0; j < extAntifireIds.length; j++) {
+        if (Game.info.inventory.getItemCount(extAntifireIds[j]) > 0) return true;
+    }
+    return false;
+}
+
+// -----------------------------------------------------------------------------
+// getBestFishForLevel -- Returns the best fish the player can catch
+// -----------------------------------------------------------------------------
+function getBestFishForLevel(fishingLevel) {
+    var fishNames = ["shark", "monkfish", "swordfish", "lobster", "salmon", "trout", "shrimps"];
+    for (var i = 0; i < fishNames.length; i++) {
+        var spot = dbLookup(FISHING_SPOTS, fishNames[i]);
+        if (spot && fishingLevel >= spot.levelReq) {
+            return spot;
+        }
+    }
+    return dbLookup(FISHING_SPOTS, "shrimps");
+}
+
+// ============================================================
+// SCHEDULE + HUMAN BREAK SYSTEM
+// ============================================================
+
+// Break reason messages -- randomized for realism
+var BREAK_REASONS = [
+    "Bathroom break",
+    "Grabbing a snack",
+    "Quick phone check",
+    "Stretching legs",
+    "Getting water",
+    "Checking something real quick",
+    "AFK for a sec",
+    "Stepped away",
+    "Bio break",
+    "Making coffee",
+    "Letting the dog out",
+    "Answering the door",
+    "Quick smoke break",
+    "Refilling drink"
+];
+
+function getRandomBreakReason() {
+    var idx = Math.floor(Math.random() * BREAK_REASONS.length);
+    return BREAK_REASONS[idx];
+}
+
+// Returns a random integer between min and max (inclusive)
+function randomBetween(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Convert game ticks to minutes (1 tick = 0.6 seconds)
+function ticksToMinutes(ticks) {
+    return Math.floor((ticks * 0.6) / 60);
+}
+
+// Convert minutes to game ticks
+function minutesToTicks(minutes) {
+    return Math.floor((minutes * 60) / 0.6);
+}
+
+// Get current hour of day (0-23) from Java Date
+function getCurrentHour() {
+    var now = new Date();
+    return now.getHours();
+}
+
+// Check if current time is within the play schedule
+function isWithinSchedule(startH, endH) {
+    var hour = getCurrentHour();
+    if (startH <= endH) {
+        // Normal range: e.g. 8 to 23
+        return hour >= startH && hour < endH;
+    } else {
+        // Overnight range: e.g. 22 to 6
+        return hour >= startH || hour < endH;
+    }
+}
+
+// Calculate random ticks until next break
+function calculateNextBreakDelay(minPlay, maxPlay) {
+    var minutes = randomBetween(minPlay, maxPlay);
+    return minutesToTicks(minutes);
+}
+
+// Calculate random break duration in ticks
+function calculateBreakDuration(minBreak, maxBreak) {
+    var minutes = randomBetween(minBreak, maxBreak);
+    // Add some seconds of randomness so it's not exact minutes
+    var extraSeconds = randomBetween(0, 59);
+    var totalSeconds = (minutes * 60) + extraSeconds;
+    return Math.floor(totalSeconds / 0.6);
+}
+
+// Random idle actions during breaks (mouse movement simulation)
+// In DZ these are cosmetic -- just pauses activity
+var IDLE_ACTIONS = [
+    "standing",
+    "camera_rotate",
+    "open_stats",
+    "open_inventory",
+    "open_friends",
+    "close_tab"
+];
+
+function getRandomIdleAction() {
+    var idx = Math.floor(Math.random() * IDLE_ACTIONS.length);
+    return IDLE_ACTIONS[idx];
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Fix10o hotfix9 - MAIN</title>
+<html><head><meta charset="UTF-8"><title>Fix10o hotfix10 - MAIN</title>
 <style>
 body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; text-align: center; }
 h1 { color: #0ff; }
@@ -8,9 +8,9 @@ h1 { color: #0ff; }
 .ok { color: #0f0; font-size: 20px; margin-top: 10px; }
 textarea { width: 90%%; height: 200px; background: #111; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; border: 1px solid #333; }
 </style></head><body>
-<h1>Fix10o hotfix9 -- MAIN</h1>
-<p style="color:#ff0;font-size:18px;">Dungeon entrance system + getId crash fix</p>
-<p>11 dungeons mapped + safeGetId() protects ALL ground item/NPC getId calls</p>
+<h1>Fix10o hotfix10 -- MAIN</h1>
+<p style="color:#ff0;font-size:18px;">45-sec stuck detection for WALK_TO_TASK</p>
+<p>If character hasnt moved in 45 seconds, resets pathing and retries</p>
 <button class="btn" onclick="copyCode()">COPY MAIN CODE</button>
 <div id="status"></div>
 <br>
@@ -166,6 +166,9 @@ var DUNGEON_ENTRANCES = {
     }
 };
 var dungeonPhase = 0;
+var walkStuckTick = 0;
+var walkStuckX = -1;
+var walkStuckY = -1;
 
 var isExecuting = false;
 var actionCooldown = 0; // Ticks to wait after an action before allowing another
@@ -3025,9 +3028,31 @@ function handleWalkToTask() {
     }
 
     var taskY = currentTaskMonster.location.y;
-    var playerY = Client.getLocalPlayer().getWorldLocation().getY();
+    var pLoc = Client.getLocalPlayer().getWorldLocation();
+    var playerY = pLoc.getY();
+    var playerX = pLoc.getX();
     var isUnderground = taskY &gt;= 9000;
     var playerOnSurface = playerY &lt; 9000;
+
+    // 45-second stuck detection -- if player hasnt moved in ~75 ticks, reset pathing
+    if (playerX === walkStuckX &amp;&amp; playerY === walkStuckY) {
+        walkStuckTick = walkStuckTick + 1;
+        if (walkStuckTick &gt;= 75) {
+            botMsg(&quot;Stuck for 45 sec -- resetting path to task&quot;, &quot;SlayerBot&quot;);
+            walkStuckTick = 0;
+            walkStuckX = -1;
+            walkStuckY = -1;
+            dungeonPhase = 0;
+            isExecuting = false;
+            // Force a fresh webwalk next tick
+            return;
+        }
+    } else {
+        // Player moved -- reset counter
+        walkStuckX = playerX;
+        walkStuckY = playerY;
+        walkStuckTick = 0;
+    }
 
     // --- Dungeon entrance handling ---
     if (isUnderground &amp;&amp; playerOnSurface) {

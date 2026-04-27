@@ -1464,7 +1464,7 @@ function handleStartup() {
     }
 
     // STEP 3: Fallback -- varbit read failed, try gem
-    var hasGem = Game.info.inventory.hasItem(4155, 1);
+    hasGem = Game.info.inventory.hasItem(4155, 1);
     if (hasGem) {
         botMsg("Varbit unavailable -- checking gem for task...", "SlayerBot");
         state = STATES.CHECK_GEM;
@@ -2426,7 +2426,7 @@ function handleBankSupplies() {
         waitTicks++;
         if (waitTicks % 2 !== 0) return; // 2-tick spacing
 
-        var item = withdrawQueue[0];
+        item = withdrawQueue[0];
         withdrawQueue.splice(0, 1);
         botMsg("Withdrawing: " + item.label);
 
@@ -2592,6 +2592,7 @@ function handleWalkToGE() {
 var GE_CLERK_IDS = [1634, 1635];
 
 function handleBuyAtGE() {
+    var currentItem = null;
     if (!geBuyList || geBuyList.length === 0) {
         botMsg("GE buy list empty -- equipping and heading to task");
         geBuyPhase = 0;
@@ -2648,7 +2649,7 @@ function handleBuyAtGE() {
         waitTicks++;
         if (waitTicks < 3) return;
 
-        var currentItem = geBuyList[geBuyIndex];
+        currentItem = geBuyList[geBuyIndex];
         botMsg("GE Phase 1: Starting buy for " + currentItem.name + " (" + (geBuyIndex + 1) + "/" + geBuyList.length + ")");
 
         if (!isExecuting) {
@@ -2738,10 +2739,10 @@ function handleBuyAtGE() {
                         } else {
                             botMsg("Search result widget not found -- trying Enter key");
                             // Try pressing Enter to select first result
-                            var canvas = Client.getCanvas();
+                            canvas = Client.getCanvas();
                             if (canvas) {
-                                var KeyEvent = Java.type("java.awt.event.KeyEvent");
-                                var now = Java.type("java.lang.System").currentTimeMillis();
+                                KeyEvent = Java.type("java.awt.event.KeyEvent");
+                                now = Java.type("java.lang.System").currentTimeMillis();
                                 canvas.dispatchEvent(new KeyEvent(canvas, KeyEvent.KEY_PRESSED, now, 0, KeyEvent.VK_ENTER, '\n'.charCodeAt(0)));
                                 canvas.dispatchEvent(new KeyEvent(canvas, KeyEvent.KEY_RELEASED, now + 50, 0, KeyEvent.VK_ENTER, '\n'.charCodeAt(0)));
                             }
@@ -2810,7 +2811,7 @@ function handleBuyAtGE() {
                         botMsg("Clicked Confirm at 465:27");
                     } else {
                         // Try alternative
-                        var alt = Game.info.widget.getWidget(465, 29);
+                        alt = Game.info.widget.getWidget(465, 29);
                         if (alt && Game.info.widget.isVisible(alt)) {
                             Game.interact.widget.action(alt, MenuAction.CC_OP);
                             botMsg("Clicked Confirm at 465:29");
@@ -2842,7 +2843,7 @@ function handleBuyAtGE() {
                 try {
                     // Collect button -- usually widget 465 child 6 area or use Collect All
                     // Try clicking the offer slot to collect
-                    var slot = Game.info.widget.getWidget(465, 7);
+                    slot = Game.info.widget.getWidget(465, 7);
                     if (slot) {
                         Game.interact.widget.action(slot, MenuAction.CC_OP);
                         botMsg("Clicked slot to collect");

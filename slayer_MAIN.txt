@@ -1259,9 +1259,9 @@ function saveDeathLocation() {
     // We track it from FIGHT_TASK
     if (currentTaskMonster) {
         deathLocation = {
-            x: currentTaskMonster.x,
-            y: currentTaskMonster.y,
-            plane: currentTaskMonster.plane || 0
+            x: currentTaskMonster.location.x,
+            y: currentTaskMonster.location.y,
+            plane: currentTaskMonster.location.plane || 0
         };
     } else {
         deathLocation = null;
@@ -1284,7 +1284,7 @@ function withdrawPotionFromBank(potGroup, qty) {
 
 // ---- STARTUP ----
 function handleStartup() {
-    botMsg("Auto Slayer Bot v24 starting up!", "SlayerBot");
+    botMsg("Auto Slayer Bot v24-Fix10j starting up!", "SlayerBot");
     updateCachedStats();
     retryCount = 0;
     isExecuting = false;
@@ -2057,6 +2057,54 @@ function handleBankSupplies() {
             withdrawQueue.push({ id: 995, qty: 250, label: "250 GP" });
         }
 
+        // --- GEAR CHECK (Fix10j) --- Withdraw best weapon + armor for task ---
+        var atkLvl = Client.getRealSkillLevels(Skill.ATTACK);
+        var defLvl = Client.getRealSkillLevels(Skill.DEFENCE);
+        var bestWep = getBestWeapon(atkLvl);
+        if (bestWep && bestWep.id && !Game.info.equipment.hasItem(bestWep.id, 1)) {
+            if (Game.info.bank.hasItem(bestWep.id, 1)) {
+                withdrawQueue.push({ id: bestWep.id, qty: 1, label: "Weapon: " + bestWep.name });
+            }
+        }
+        var bestBod = getBestBody(defLvl);
+        if (bestBod && bestBod.id && !Game.info.equipment.hasItem(bestBod.id, 1)) {
+            if (Game.info.bank.hasItem(bestBod.id, 1)) {
+                withdrawQueue.push({ id: bestBod.id, qty: 1, label: "Body: " + bestBod.name });
+            }
+        }
+        var bestLeg = getBestLegs(defLvl);
+        if (bestLeg && bestLeg.id && !Game.info.equipment.hasItem(bestLeg.id, 1)) {
+            if (Game.info.bank.hasItem(bestLeg.id, 1)) {
+                withdrawQueue.push({ id: bestLeg.id, qty: 1, label: "Legs: " + bestLeg.name });
+            }
+        }
+        var bestHelm2 = getBestHelmet(defLvl, false);
+        if (bestHelm2 && bestHelm2.id && !Game.info.equipment.hasItem(bestHelm2.id, 1)) {
+            if (Game.info.bank.hasItem(bestHelm2.id, 1)) {
+                withdrawQueue.push({ id: bestHelm2.id, qty: 1, label: "Helm: " + bestHelm2.name });
+            }
+        }
+        var bestShld = getBestShield(defLvl);
+        if (bestShld && bestShld.id && !Game.info.equipment.hasItem(bestShld.id, 1)) {
+            if (Game.info.bank.hasItem(bestShld.id, 1)) {
+                withdrawQueue.push({ id: bestShld.id, qty: 1, label: "Shield: " + bestShld.name });
+            }
+        }
+        var bestBoot = getBestBoots(defLvl);
+        if (bestBoot && bestBoot.id && !Game.info.equipment.hasItem(bestBoot.id, 1)) {
+            if (Game.info.bank.hasItem(bestBoot.id, 1)) {
+                withdrawQueue.push({ id: bestBoot.id, qty: 1, label: "Boots: " + bestBoot.name });
+            }
+        }
+        var bestGlv = getBestGloves(defLvl);
+        if (bestGlv && bestGlv.id && !Game.info.equipment.hasItem(bestGlv.id, 1)) {
+            if (Game.info.bank.hasItem(bestGlv.id, 1)) {
+                withdrawQueue.push({ id: bestGlv.id, qty: 1, label: "Gloves: " + bestGlv.name });
+            }
+        }
+        botMsg("Gear check: atk=" + atkLvl + " def=" + defLvl + " wep=" + (bestWep ? bestWep.name : "none") + " body=" + (bestBod ? bestBod.name : "none"));
+
+
         // ---- DECISION (while bank is still open!) ----
         if (gatherNeeded.length > 0) {
             // Bank doesn't have everything — switch to gather plan
@@ -2131,7 +2179,49 @@ function handleBankSupplies() {
         waitTicks++;
         if (waitTicks < 4) return;
         waitTicks = 0;
-        bankPhase = 15;
+        bankPhase = 145;
+        return;
+    }
+
+
+    // Phase 145 (Fix10j): Equip any withdrawn gear items before closing bank
+    if (bankPhase === 145) {
+        // Close bank first so we can equip from inventory
+        if (Game.info.bank.isOpen()) {
+            Game.interact.bank.close();
+            waitTicks = 0;
+            return;
+        }
+        waitTicks++;
+        if (waitTicks < 4) return;
+        // Equip all gear in inventory
+        var gearIds = [];
+        var atkLvl2 = Client.getRealSkillLevels(Skill.ATTACK);
+        var defLvl2 = Client.getRealSkillLevels(Skill.DEFENCE);
+        var bw = getBestWeapon(atkLvl2); if (bw && bw.id) gearIds.push(bw.id);
+        var bb = getBestBody(defLvl2); if (bb && bb.id) gearIds.push(bb.id);
+        var bl = getBestLegs(defLvl2); if (bl && bl.id) gearIds.push(bl.id);
+        var bh = getBestHelmet(defLvl2, false); if (bh && bh.id) gearIds.push(bh.id);
+        var bs = getBestShield(defLvl2); if (bs && bs.id) gearIds.push(bs.id);
+        var bo = getBestBoots(defLvl2); if (bo && bo.id) gearIds.push(bo.id);
+        var bg = getBestGloves(defLvl2); if (bg && bg.id) gearIds.push(bg.id);
+        for (var gi = 0; gi < gearIds.length; gi++) {
+            if (Game.info.inventory.hasItem(gearIds[gi], 1)) {
+                try {
+                    Game.interact.inventory.equipItem(gearIds[gi]);
+                    botMsg("Equipping gear item: " + gearIds[gi]);
+                } catch(e) {}
+            }
+        }
+        // Move to walk phase
+        var nextSt = postBankState || STATES.CHECK_SUPPLIES;
+        postBankState = null;
+        gatherNeeded = [];
+        gatherToolsToWithdraw = [];
+        bankPhase = 0;
+        waitTicks = 0;
+        botMsg("Gear equipped -> " + nextSt);
+        state = nextSt;
         return;
     }
 
@@ -2239,7 +2329,7 @@ function handleWalkToTask() {
     // v24: Cannon setup -- ONLY in multicombat zones (never bring to single combat)
     if (cfgVal("useCannon", false) && !cannonPlaced && shouldUseCannon(currentTaskMonster, true)) {
         if (Game.info.inventory.hasItem(CANNON.BASE, 1) && Game.info.inventory.hasItem(CANNON.CANNONBALL, 1)) {
-            if (isNear(currentTaskMonster.x, currentTaskMonster.y, 15)) {
+            if (isNear(currentTaskMonster.location.x, currentTaskMonster.location.y, 15)) {
                 botMsg("[SlayerBot] Multicombat zone -- setting up cannon", "Bot");
                 state = STATES.SETUP_CANNON;
                 return;
@@ -2247,7 +2337,7 @@ function handleWalkToTask() {
         }
     }
 
-    if (isNear(currentTaskMonster.x, currentTaskMonster.y, 15)) {
+    if (isNear(currentTaskMonster.location.x, currentTaskMonster.location.y, 15)) {
         // v24: Choose fight mode based on safespot
         if (usingSafespot && cfgVal("useSafespots", false)) {
             state = STATES.SAFESPOT_FIGHT;
@@ -2263,9 +2353,9 @@ function handleWalkToTask() {
 
     if (!PlayerHelper.isWebWalking()) {
         isExecuting = true;
-        var mx = currentTaskMonster.x;
-        var my = currentTaskMonster.y;
-        var mp = currentTaskMonster.plane || 0;
+        var mx = currentTaskMonster.location.x;
+        var my = currentTaskMonster.location.y;
+        var mp = currentTaskMonster.location.plane || 0;
         Utility.invokeLater(function() {
             PlayerHelper.webWalkTo(new WorldPoint(mx, my, mp));
             isExecuting = false;
@@ -2452,9 +2542,9 @@ function handleFightTask() {
             if (stateTickCounter > 20 && !target) {
                 // Try walking closer to task center
                 if (!PlayerHelper.isWebWalking()) {
-                    var cx = currentTaskMonster.x;
-                    var cy = currentTaskMonster.y;
-                    var cp = currentTaskMonster.plane || 0;
+                    var cx = currentTaskMonster.location.x;
+                    var cy = currentTaskMonster.location.y;
+                    var cp = currentTaskMonster.location.plane || 0;
                     isExecuting = true;
                     Utility.invokeLater(function() {
                         PlayerHelper.webWalkTo(new WorldPoint(cx, cy, cp));
@@ -2862,12 +2952,12 @@ function handleSetupCannon() {
     }
 
     // Walk to monster area center
-    if (!isNear(currentTaskMonster.x, currentTaskMonster.y, 10)) {
+    if (!isNear(currentTaskMonster.location.x, currentTaskMonster.location.y, 10)) {
         if (!PlayerHelper.isWebWalking()) {
             isExecuting = true;
-            var canX = currentTaskMonster.x;
-            var canY = currentTaskMonster.y;
-            var canP = currentTaskMonster.plane || 0;
+            var canX = currentTaskMonster.location.x;
+            var canY = currentTaskMonster.location.y;
+            var canP = currentTaskMonster.location.plane || 0;
             Utility.invokeLater(function() {
                 PlayerHelper.webWalkTo(new WorldPoint(canX, canY, canP));
                 isExecuting = false;

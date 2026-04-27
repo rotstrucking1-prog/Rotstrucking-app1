@@ -1,44 +1,66 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>DZ Code Injector</title>
+<html><head><title>DZ Code Injector - Fix10j</title>
 <style>
-body{background:#1a1a2e;color:#0f0;font-family:monospace;text-align:center;padding:40px}
-h1{color:#0f0;font-size:28px}
-.btn{background:#0a0;color:#000;border:none;padding:20px 40px;font-size:20px;cursor:pointer;margin:20px;border-radius:8px;font-weight:bold}
-.btn:hover{background:#0f0}
-.status{color:#ff0;font-size:18px;margin:10px}
-p{color:#aaa;font-size:14px}
+body{background:#1a1a2e;color:#eee;font-family:monospace;padding:40px;text-align:center}
+h1{color:#0f0;font-size:2em}
+.btn{display:block;margin:20px auto;padding:20px 40px;font-size:1.2em;cursor:pointer;border:none;border-radius:8px;color:#fff;width:80%;max-width:500px}
+.util{background:#00aa00}.main{background:#0066cc}.cfg{background:#cc6600}
+.btn:hover{opacity:0.8}
+.status{margin-top:20px;padding:15px;background:#222;border-radius:8px;font-size:1.1em}
+pre{text-align:left;background:#111;padding:15px;border-radius:8px;margin:20px auto;max-width:700px;overflow-x:auto;font-size:0.9em}
 </style></head><body>
-<h1>DZ Code Injector - Fix10i</h1>
-<p>Click a button to copy the inject command, then paste into DZ DevTools console (F12)</p>
+<h1>DZ Code Injector - Fix10j</h1>
+<p>Click a button to copy the inject command, then paste it into the DZ editor's DevTools console.</p>
 
-<button class="btn" id="utilBtn" onclick="copyUtil()">COPY UTILITIES INJECT COMMAND</button>
-<div class="status" id="utilStatus"></div>
+<button class="btn util" onclick="copyCmd('UTILITIES')">COPY UTILITIES INJECT COMMAND</button>
+<button class="btn main" onclick="copyCmd('MAIN')">COPY MAIN INJECT COMMAND</button>
 
-<button class="btn" id="mainBtn" onclick="copyMain()">COPY MAIN INJECT COMMAND</button>
-<div class="status" id="mainStatus"></div>
+<div class="status" id="status">Ready — click a button above</div>
 
-<hr style="border-color:#333;margin:30px">
-<p><b>Instructions:</b></p>
-<p>1. Click the button above to copy the inject command</p>
-<p>2. Switch to the DeadZone editor tab</p>
-<p>3. Make sure you are on the correct tab (UTILITIES or MAIN)</p>
-<p>4. Press F12 to open DevTools</p>
-<p>5. Click in the Console tab</p>
-<p>6. Type: allow pasting (then press Enter)</p>
-<p>7. Press Ctrl+V to paste the command</p>
-<p>8. Press Enter to run it</p>
+<h3>Instructions:</h3>
+<pre>
+1. Click button above to copy command
+2. Switch to DZ editor tab (package 596)
+3. Click the correct tab (UTILITIES or MAIN)
+4. Press F12 to open DevTools
+5. Click Console tab
+6. Type: allow pasting   (then Enter)
+7. Right-click > Paste (or Ctrl+V)
+8. Press Enter — code auto-loads!
+9. Repeat for other tab
+10. Click COMMIT in DZ editor
+</pre>
+
+<h3>What Fix10j Fixes:</h3>
+<pre>
+BUG 1: Bot couldn't walk to task location
+  - currentTaskMonster.x was UNDEFINED
+  - Fixed: now uses currentTaskMonster.location.x
+
+BUG 2: Bot never withdrew weapons/armor
+  - BANK_SUPPLIES had NO gear check
+  - Fixed: checks atk/def levels, withdraws best gear
+
+BUG 3: Bot never equipped withdrawn gear
+  - Fixed: new Phase 145 equips all gear after withdrawal
+</pre>
 
 <script>
-function copyUtil() {
-  var cmd = "fetch('https://rotstrucking1-prog.github.io/Rotstrucking-app1/slayer_UTILITIES.txt').then(function(r){return r.text()}).then(function(code){var eds=monaco.editor.getEditors();var ed=eds[eds.length-1];ed.getModel().setValue(code);console.log('UTILITIES injected! Lines: '+code.split(String.fromCharCode(10)).length)})";
-  navigator.clipboard.writeText(cmd).then(function(){
-    document.getElementById('utilStatus').textContent = 'COPIED! Now paste into DZ DevTools console';
-  });
-}
-function copyMain() {
-  var cmd = "fetch('https://rotstrucking1-prog.github.io/Rotstrucking-app1/slayer_MAIN.txt').then(function(r){return r.text()}).then(function(code){var eds=monaco.editor.getEditors();var ed=eds[eds.length-1];ed.getModel().setValue(code);console.log('MAIN injected! Lines: '+code.split(String.fromCharCode(10)).length)})";
-  navigator.clipboard.writeText(cmd).then(function(){
-    document.getElementById('mainStatus').textContent = 'COPIED! Now paste into DZ DevTools console';
+var BASE = "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/";
+function copyCmd(tab) {
+  var file = tab === "UTILITIES" ? "slayer_UTILITIES.txt" : "slayer_MAIN.txt";
+  var cmd = 'fetch("' + BASE + file + '?t="+Date.now()).then(r=>r.text()).then(code=>{var e=document.querySelector(".monaco-editor");if(!e){alert("Open DZ editor first!");return}var m=e.querySelector(".view-lines");if(!m){alert("Cannot find editor");return}var model=monaco.editor.getModels()[0];if(model){model.setValue(code);alert("' + tab + ' code injected! Click SAVE.")}else{alert("No Monaco model found")}}).catch(e=>alert("Fetch failed: "+e))';
+  navigator.clipboard.writeText(cmd).then(function() {
+    document.getElementById("status").innerHTML = "<span style='color:#0f0'>COPIED!</span> " + tab + " inject command is in your clipboard. Paste into DZ DevTools console.";
+  }).catch(function() {
+    // Fallback
+    var ta = document.createElement("textarea");
+    ta.value = cmd;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    document.getElementById("status").innerHTML = "<span style='color:#0f0'>COPIED!</span> " + tab + " command ready.";
   });
 }
 </script>

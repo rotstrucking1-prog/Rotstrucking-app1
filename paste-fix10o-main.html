@@ -1,20 +1,23 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fix10o MAIN - Copy Helper</title>
+<html><head><meta charset="UTF-8"><title>Fix10o hotfix7 - MAIN</title>
 <style>
-body{font-family:Arial,sans-serif;margin:20px;background:#1a1a2e;color:#eee}
-h1{color:#4fc3f7}
-.copy-btn{display:inline-block;background:#1a73e8;color:#fff;padding:18px 40px;border:none;border-radius:8px;font-size:20px;font-weight:bold;cursor:pointer;margin:20px 0}
-.copy-btn:hover{background:#1557b0}
-.copy-btn.copied{background:#2e7d32}
-pre{background:#0d1117;padding:15px;border-radius:8px;overflow-x:auto;max-height:400px;font-size:11px;color:#c9d1d9;white-space:pre;border:1px solid #333}
-.info{color:#aaa;margin:10px 0}
+body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; text-align: center; }
+h1 { color: #0ff; }
+.info { color: #aaa; margin: 10px 0 20px; }
+.copy-btn { display: inline-block; padding: 20px 60px; font-size: 24px; font-weight: bold; 
+  background: #0066ff; color: white; border: none; border-radius: 12px; cursor: pointer; margin: 20px; }
+.copy-btn:hover { background: #0044cc; }
+.copy-btn:active { background: #003399; }
+.status { font-size: 18px; margin: 10px; min-height: 30px; }
+.success { color: #0f0; }
+.code-box { display: none; }
 </style></head><body>
-<h1>Fix10o -- MAIN Tab (hotfix6)</h1>
-<p class="info">Click the button below to copy ALL code, then paste into DZ MAIN tab and Commit.</p>
-<button class="copy-btn" onclick="copyCode(this)">COPY MAIN CODE</button>
-<p class="info" id="charcount"></p>
-<pre id="code">// =============================================================================
+<h1>Fix10o hotfix7 - MAIN</h1>
+<div class="info">Startup shortcut: if task known + have food + gear equipped = go straight to task<br>
+Bank exit fix: never default to SELECT_MASTER when task is known</div>
+<button class="copy-btn" onclick="copyCode()">COPY MAIN CODE</button>
+<div id="status" class="status"></div>
+<textarea id="codeBox" class="code-box">// =============================================================================
 // AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
 // =============================================================================
 // The brain of the slayer bot. Implements a full autonomous state machine that:
@@ -1458,8 +1461,26 @@ function handleStartup() {
 
     if (gotTaskFromVarbit &amp;&amp; currentTaskName &amp;&amp; killsLeft &gt; 0) {
         // Varbit gave us everything -- skip gem entirely!
-        botMsg(&quot;Task from varbit: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left) -- heading to supplies!&quot;, &quot;SlayerBot&quot;);
-        state = STATES.CHECK_SUPPLIES;
+        currentTaskMonster = findMonster(currentTaskName);
+        botMsg(&quot;Task from varbit: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left)&quot;, &quot;SlayerBot&quot;);
+        // Brad&#x27;s shortcut: if already have food + gear equipped, skip bank entirely
+        var startupFood = countFood();
+        var startupHasWeapon = false;
+        // Check if any weapon tier is equipped
+        for (var wt = GEAR_TIERS.length - 1; wt &gt;= 0; wt--) {
+            var wTier = GEAR_TIERS[wt];
+            if (wTier.weapon &amp;&amp; Game.info.equipment.hasItem(wTier.weapon)) {
+                startupHasWeapon = true;
+                break;
+            }
+        }
+        if (startupFood &gt;= 2 &amp;&amp; startupHasWeapon &amp;&amp; currentTaskMonster) {
+            botMsg(&quot;Already have food (&quot; + startupFood + &quot;) + gear equipped -- going straight to task!&quot;, &quot;SlayerBot&quot;);
+            state = STATES.WALK_TO_TASK;
+        } else {
+            botMsg(&quot;Need supplies (food:&quot; + startupFood + &quot; weapon:&quot; + startupHasWeapon + &quot;) -- checking...&quot;, &quot;SlayerBot&quot;);
+            state = STATES.CHECK_SUPPLIES;
+        }
         return;
     }
 
@@ -2131,7 +2152,7 @@ function handleBankSupplies() {
         waitTicks++;
         if (waitTicks &lt; 4) return;
         if (Game.info.bank.isOpen()) return;
-        var ns = postBankState || STATES.SELECT_MASTER;
+        var ns = postBankState || (currentTaskName ? STATES.CHECK_SUPPLIES : STATES.SELECT_MASTER);
         postBankState = null;
         bankPhase = 0;
         waitTicks = 0;
@@ -6034,15 +6055,14 @@ function handleRepairBarrows() {
             break;
     }
 }
-</pre>
+</textarea>
 <script>
-var codeText = document.getElementById("code").textContent;
-document.getElementById("charcount").textContent = "Characters: " + codeText.length;
-function copyCode(btn){
-  navigator.clipboard.writeText(codeText).then(function(){
-    btn.textContent = "COPIED!";
-    btn.className = "copy-btn copied";
-    setTimeout(function(){btn.textContent = "COPY MAIN CODE";btn.className="copy-btn";},3000);
-  });
+function copyCode() {
+  var box = document.getElementById("codeBox");
+  box.style.display = "block";
+  box.select();
+  document.execCommand("copy");
+  box.style.display = "none";
+  document.getElementById("status").innerHTML = '<span class="success">COPIED! Paste into DZ MAIN tab</span>';
 }
 </script></body></html>

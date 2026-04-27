@@ -89,6 +89,7 @@ var STATES = {
 // BOT STATE VARIABLES
 // -----------------------------------------------------------------------------
 var state = STATES.STARTUP;
+var hasGem = false;
 var isExecuting = false;
 var actionCooldown = 0; // Ticks to wait after an action before allowing another
 // ---- GE GEAR BUYING (Fix10n) ----
@@ -1405,7 +1406,12 @@ function readTaskFromVarbits() {
             // Try to map creature ID to name
             if (SLAYER_CREATURE_MAP[creatureId]) {
                 currentTaskName = SLAYER_CREATURE_MAP[creatureId];
-                botMsg("VARBIT TASK FOUND: " + currentTaskName + " (" + killsLeft + " left) - NO GEM NEEDED!", "SlayerBot");
+                currentTaskMonster = findMonster(currentTaskName);
+                if (currentTaskMonster) {
+                    botMsg("VARBIT TASK FOUND: " + currentTaskName + " (" + killsLeft + " left) at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ") - NO GEM NEEDED!", "SlayerBot");
+                } else {
+                    botMsg("VARBIT TASK: " + currentTaskName + " (" + killsLeft + " left) - WARNING: not in MONSTER_DB!", "SlayerBot");
+                }
                 return true;
             } else {
                 botMsg("Creature ID " + creatureId + " not in map - need gem or master to identify", "SlayerBot");
@@ -1436,15 +1442,33 @@ function handleStartup() {
 
     if (gotTaskFromVarbit && currentTaskName && killsLeft > 0) {
         // Varbit gave us everything -- skip gem entirely!
-        botMsg("Task from varbit: " + currentTaskName + " (" + killsLeft + " left) -- heading to supplies!", "SlayerBot");
-        state = STATES.CHECK_SUPPLIES;
+        currentTaskMonster = findMonster(currentTaskName);
+        botMsg("Task from varbit: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
+        // Brad's shortcut: if already have food + gear equipped, skip bank entirely
+        var startupFood = countFood();
+        var startupHasWeapon = false;
+        // Check if any weapon tier is equipped
+        for (var wt = GEAR_TIERS.length - 1; wt >= 0; wt--) {
+            var wTier = GEAR_TIERS[wt];
+            if (wTier.weapon && Game.info.equipment.hasItem(wTier.weapon)) {
+                startupHasWeapon = true;
+                break;
+            }
+        }
+        if (startupFood >= 2 && startupHasWeapon && currentTaskMonster) {
+            botMsg("Already have food (" + startupFood + ") + gear equipped -- going straight to task!", "SlayerBot");
+            state = STATES.WALK_TO_TASK;
+        } else {
+            botMsg("Need supplies (food:" + startupFood + " weapon:" + startupHasWeapon + ") -- checking...", "SlayerBot");
+            state = STATES.CHECK_SUPPLIES;
+        }
         return;
     }
 
     // Varbit says kills > 0 but creature ID not in map -- need gem to identify
     if (killsLeft > 0 && !currentTaskName) {
         botMsg("Varbit shows " + killsLeft + " kills but unknown creature -- checking gem...", "SlayerBot");
-        var hasGem = Game.info.inventory.hasItem(4155, 1);
+        hasGem = Game.info.inventory.hasItem(4155, 1);
         if (hasGem) {
             state = STATES.CHECK_GEM;
         } else {
@@ -1492,6 +1516,7 @@ function handleCheckStats() {
 function handleCheckGem() {
     // If we already know we have a task (e.g., from previous run), skip
     if (currentTaskName && killsLeft > 0) {
+        if (!currentTaskMonster) currentTaskMonster = findMonster(currentTaskName);
         botMsg("Already have task: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
         state = STATES.CHECK_SUPPLIES;
         return;
@@ -1504,6 +1529,7 @@ function handleCheckGem() {
         // Last resort: try varbits
         var gotTask = readTaskFromVarbits();
         if (gotTask && currentTaskName && killsLeft > 0) {
+            currentTaskMonster = findMonster(currentTaskName);
             botMsg("Varbits saved us! Task: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
             state = STATES.CHECK_SUPPLIES;
         } else {
@@ -1517,7 +1543,7 @@ function handleCheckGem() {
     gemCheckAttempts++;
 
     // Check for enchanted gem (4155) in inventory or slayer helmet equipped
-    var hasGem = Game.info.inventory.hasItem(4155, 1);
+    hasGem = Game.info.inventory.hasItem(4155, 1);
     var hasHelm = false;
     try {
         hasHelm = Game.info.equipment.hasItem(11864) || Game.info.equipment.hasItem(11865);
@@ -1553,6 +1579,7 @@ function handleWaitGemResponse() {
         // Chat handler set the task info
         gemCheckAttempts = 0;
         if (currentTaskName && killsLeft > 0) {
+            currentTaskMonster = findMonster(currentTaskName);
             botMsg("GEM FOUND TASK: " + currentTaskName + " (" + killsLeft + " left) - skipping master!", "SlayerBot");
             updateCachedStats();
             state = STATES.CHECK_SUPPLIES;
@@ -2106,7 +2133,7 @@ function handleBankSupplies() {
         waitTicks++;
         if (waitTicks < 4) return;
         if (Game.info.bank.isOpen()) return;
-        var ns = postBankState || STATES.SELECT_MASTER;
+        var ns = postBankState || (currentTaskName ? STATES.CHECK_SUPPLIES : STATES.SELECT_MASTER);
         postBankState = null;
         bankPhase = 0;
         waitTicks = 0;

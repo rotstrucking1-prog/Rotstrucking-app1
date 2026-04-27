@@ -418,7 +418,7 @@ function checkBankStuck() {
                 return true;
             }
         } else {
-            // Player moved — reset
+            // Player moved -- reset
             bankStuckX = px;
             bankStuckY = py;
             bankStuckTick = tickCounter;
@@ -428,7 +428,7 @@ function checkBankStuck() {
     return false;
 }
 
-// findNearestBank — wrapper around getAccessibleBank for compatibility
+// findNearestBank -- wrapper around getAccessibleBank for compatibility
 function findNearestBank() {
     return getAccessibleBank();
 }
@@ -461,7 +461,7 @@ function OnGameTick() {
     ticksSinceAntipoison++;
     ticksSinceCombatPot++;
 
-    // Tick 1 diagnostic — confirms OnGameTick is running
+    // Tick 1 diagnostic -- confirms OnGameTick is running
     if (tickCounter === 1) {
         Game.sendGameMessage("[ROTS] OnGameTick ALIVE - tick 1 - state: " + state, "[DIAG]");
     }
@@ -1431,24 +1431,24 @@ function handleStartup() {
     retryCount = 0;
     isExecuting = false;
 
-    // STEP 1: Try reading task from varbits (instant — no gem needed)
+    // STEP 1: Try reading task from varbits (instant -- no gem needed)
     var gotTaskFromVarbit = readTaskFromVarbits();
 
     if (gotTaskFromVarbit && currentTaskName && killsLeft > 0) {
-        // Varbit gave us everything — skip gem entirely!
-        botMsg("Task from varbit: " + currentTaskName + " (" + killsLeft + " left) — heading to supplies!", "SlayerBot");
+        // Varbit gave us everything -- skip gem entirely!
+        botMsg("Task from varbit: " + currentTaskName + " (" + killsLeft + " left) -- heading to supplies!", "SlayerBot");
         state = STATES.CHECK_SUPPLIES;
         return;
     }
 
-    // Varbit says kills > 0 but creature ID not in map — need gem to identify
+    // Varbit says kills > 0 but creature ID not in map -- need gem to identify
     if (killsLeft > 0 && !currentTaskName) {
-        botMsg("Varbit shows " + killsLeft + " kills but unknown creature — checking gem...", "SlayerBot");
+        botMsg("Varbit shows " + killsLeft + " kills but unknown creature -- checking gem...", "SlayerBot");
         var hasGem = Game.info.inventory.hasItem(4155, 1);
         if (hasGem) {
             state = STATES.CHECK_GEM;
         } else {
-            botMsg("No gem either — banking for gem to identify task", "SlayerBot");
+            botMsg("No gem either -- banking for gem to identify task", "SlayerBot");
             needGemFromBank = true;
             state = STATES.WALK_TO_BANK;
         }
@@ -1456,20 +1456,20 @@ function handleStartup() {
     }
 
     // STEP 2: Varbit says NO task (kills = 0)
-    // Skip gem check entirely — go straight to master for new task!
+    // Skip gem check entirely -- go straight to master for new task!
     if (killsLeft === 0) {
-        botMsg("No active task (varbit confirmed) — going to master for new task!", "SlayerBot");
+        botMsg("No active task (varbit confirmed) -- going to master for new task!", "SlayerBot");
         state = STATES.CHECK_STATS;
         return;
     }
 
-    // STEP 3: Fallback — varbit read failed, try gem
+    // STEP 3: Fallback -- varbit read failed, try gem
     var hasGem = Game.info.inventory.hasItem(4155, 1);
     if (hasGem) {
-        botMsg("Varbit unavailable — checking gem for task...", "SlayerBot");
+        botMsg("Varbit unavailable -- checking gem for task...", "SlayerBot");
         state = STATES.CHECK_GEM;
     } else {
-        botMsg("No varbit, no gem — going straight to master", "SlayerBot");
+        botMsg("No varbit, no gem -- going straight to master", "SlayerBot");
         state = STATES.CHECK_STATS;
     }
 }
@@ -1910,7 +1910,7 @@ function handleCheckSupplies() {
 // ---- WALK_TO_BANK ----
 // With stuck detection: if player cant reach bank in 10s, walk to fallback bank
 function handleWalkToBank() {
-    // If bank is already open — success!
+    // If bank is already open -- success!
     if (Game.info.bank.isOpen()) {
         bankStuckCount = 0; // reset stuck counter
         state = STATES.BANK_SUPPLIES;
@@ -1993,12 +1993,12 @@ function handleWalkToBank() {
 
 // ---- BANK_SUPPLIES ----
 // ============================================================
-// BANK FLOW — Brad's exact spec:
-// Trip 1 (task unknown only): open → get gem → close → check gem
-// Trip 2 (main supply run):   open → deposit gem → resource check
-//   if good: withdraw all supplies → close → go kill
-//   if bad:  grab gather tools + 250gp → close → go gather
-// ALL decisions made WHILE BANK IS OPEN — never close to think
+// BANK FLOW -- Brad's exact spec:
+// Trip 1 (task unknown only): open -> get gem -> close -> check gem
+// Trip 2 (main supply run):   open -> deposit gem -> resource check
+//   if good: withdraw all supplies -> close -> go kill
+//   if bad:  grab gather tools + 250gp -> close -> go gather
+// ALL decisions made WHILE BANK IS OPEN -- never close to think
 // ============================================================
 var bankPhase = 0;
 var withdrawQueue = [];
@@ -2039,7 +2039,7 @@ function handleBankSupplies() {
             waitTicks = 0;
             return;
         }
-        // Not open yet — let WALK_TO_BANK handle opening
+        // Not open yet -- let WALK_TO_BANK handle opening
         if (tickCounter - bankOpenAttemptTick < 5) return;
         bankOpenAttemptTick = tickCounter;
         Game.interact.bank.openNearest(0, true);
@@ -2154,7 +2154,7 @@ function handleBankSupplies() {
         if (waitTicks < 4) return;
         waitTicks = 0;
 
-        // ---- RESOURCE CHECK (bank is open — we can see what we have) ----
+        // ---- RESOURCE CHECK (bank is open -- we can see what we have) ----
         withdrawQueue = [];
         gatherNeeded = [];
         gatherToolsToWithdraw = [];
@@ -2292,7 +2292,7 @@ function handleBankSupplies() {
                     if (Game.info.equipment.hasItem(item.id)) return null;
                     // In bank? Grab it!
                     if (Game.info.bank.hasItem(item.id, 1)) return item;
-                    // Not in bank — try next tier down
+                    // Not in bank -- try next tier down
                 }
             }
             return null;
@@ -2377,8 +2377,8 @@ function handleBankSupplies() {
 
         // ---- DECISION (while bank is still open!) ----
         if (gatherNeeded.length > 0) {
-            // Bank doesn't have everything — switch to gather plan
-            botMsg("Missing from bank: " + gatherNeeded.join(", ") + " — prepping gather run");
+            // Bank doesn't have everything -- switch to gather plan
+            botMsg("Missing from bank: " + gatherNeeded.join(", ") + " -- prepping gather run");
             // Replace withdraw queue with JUST gather tools + coins
             withdrawQueue = [];
             // Add gather tools
@@ -2403,7 +2403,7 @@ function handleBankSupplies() {
                 postBankState = STATES.WALK_TO_GE;
             }
         } else {
-            // Bank has everything — going to task!
+            // Bank has everything -- going to task!
             botMsg("All supplies available! Withdrawing " + withdrawQueue.length + " items");
             missingItems = [];
             postBankState = STATES.WALK_TO_TASK;
@@ -2414,11 +2414,11 @@ function handleBankSupplies() {
         return;
     }
 
-    // Phase 13: Process withdraw queue — one item per tick, 2-tick spacing
+    // Phase 13: Process withdraw queue -- one item per tick, 2-tick spacing
     if (bankPhase === 13) {
         if (!Game.info.bank.isOpen()) { bankPhase = 10; return; }
         if (withdrawQueue.length === 0) {
-            // Done withdrawing — go to close phase
+            // Done withdrawing -- go to close phase
             bankPhase = 14;
             waitTicks = 0;
             return;
@@ -2593,7 +2593,7 @@ var GE_CLERK_IDS = [1634, 1635];
 
 function handleBuyAtGE() {
     if (!geBuyList || geBuyList.length === 0) {
-        botMsg("GE buy list empty — equipping and heading to task");
+        botMsg("GE buy list empty -- equipping and heading to task");
         geBuyPhase = 0;
         geBuyIndex = 0;
         // Equip anything we just bought
@@ -2655,7 +2655,7 @@ function handleBuyAtGE() {
             isExecuting = true;
             Utility.invokeLater(function() {
                 try {
-                    // Click first offer slot (child 7) — will show buy/sell options on empty slot
+                    // Click first offer slot (child 7) -- will show buy/sell options on empty slot
                     var slot = Game.info.widget.getWidget(465, 7);
                     if (slot) {
                         Game.interact.widget.action(slot, MenuAction.CC_OP);
@@ -2699,7 +2699,7 @@ function handleBuyAtGE() {
                         }
                         botMsg("Typed: " + searchText);
                     } else {
-                        botMsg("Client.getCanvas() returned null — cannot type in GE search");
+                        botMsg("Client.getCanvas() returned null -- cannot type in GE search");
                     }
                 } catch(e) {
                     botMsg("GE search typing error: " + e);
@@ -2724,7 +2724,7 @@ function handleBuyAtGE() {
             Utility.invokeLater(function() {
                 try {
                     // Search results appear in widget 162 (chatbox)
-                    // Try clicking the first result — usually child 53 or similar
+                    // Try clicking the first result -- usually child 53 or similar
                     var resultWidget = Game.info.widget.getWidget(162, 53);
                     if (resultWidget && Game.info.widget.isVisible(resultWidget)) {
                         Game.interact.widget.action(resultWidget, MenuAction.CC_OP);
@@ -2736,7 +2736,7 @@ function handleBuyAtGE() {
                             Game.interact.widget.action(alt, MenuAction.CC_OP);
                             botMsg("Clicked search result in 162:36");
                         } else {
-                            botMsg("Search result widget not found — trying Enter key");
+                            botMsg("Search result widget not found -- trying Enter key");
                             // Try pressing Enter to select first result
                             var canvas = Client.getCanvas();
                             if (canvas) {
@@ -2758,7 +2758,7 @@ function handleBuyAtGE() {
         return;
     }
 
-    // Phase 4: Item selected — set price high for instant buy, then confirm
+    // Phase 4: Item selected -- set price high for instant buy, then confirm
     if (geBuyPhase === 4) {
         waitTicks++;
         if (waitTicks < 5) return;
@@ -2803,7 +2803,7 @@ function handleBuyAtGE() {
             isExecuting = true;
             Utility.invokeLater(function() {
                 try {
-                    // Confirm button — try common widget IDs
+                    // Confirm button -- try common widget IDs
                     var confirm = Game.info.widget.getWidget(465, 27);
                     if (confirm && Game.info.widget.isVisible(confirm)) {
                         Game.interact.widget.action(confirm, MenuAction.CC_OP);
@@ -2840,7 +2840,7 @@ function handleBuyAtGE() {
             isExecuting = true;
             Utility.invokeLater(function() {
                 try {
-                    // Collect button — usually widget 465 child 6 area or use Collect All
+                    // Collect button -- usually widget 465 child 6 area or use Collect All
                     // Try clicking the offer slot to collect
                     var slot = Game.info.widget.getWidget(465, 7);
                     if (slot) {
@@ -2858,7 +2858,7 @@ function handleBuyAtGE() {
         return;
     }
 
-    // Phase 7: Check if we got the item — move to next or finish
+    // Phase 7: Check if we got the item -- move to next or finish
     if (geBuyPhase === 7) {
         waitTicks++;
         if (waitTicks < 5) return;
@@ -2869,12 +2869,12 @@ function handleBuyAtGE() {
         if (gotItem) {
             botMsg("Got " + currentItem.name + " from GE!");
         } else {
-            botMsg("May not have received " + currentItem.name + " yet — continuing anyway");
+            botMsg("May not have received " + currentItem.name + " yet -- continuing anyway");
         }
 
         geBuyIndex++;
         if (geBuyIndex < geBuyList.length) {
-            // More items to buy — go back to phase 1
+            // More items to buy -- go back to phase 1
             geBuyPhase = 1;
             waitTicks = 0;
             botMsg("Next item: " + geBuyList[geBuyIndex].name);
@@ -2889,14 +2889,14 @@ function handleBuyAtGE() {
             geBuyList = [];
             geBuyIndex = 0;
             geBuyPhase = 0;
-            // GO TO TASK — NOT master!
+            // GO TO TASK -- NOT master!
             state = STATES.WALK_TO_TASK;
         }
         return;
     }
 
     // Safety: unknown phase
-    botMsg("GE unknown phase " + geBuyPhase + " — resetting");
+    botMsg("GE unknown phase " + geBuyPhase + " -- resetting");
     geBuyPhase = 0;
     waitTicks = 0;
 }
@@ -3421,10 +3421,10 @@ function handleDeath() {
 // ---- RECOVER_GRAVE ----
 function handleRecoverGrave() {
     // After death respawn (usually Lumbridge):
-    // 1. Walk to accessible bank (NOT Lumbridge — its upstairs!)
+    // 1. Walk to accessible bank (NOT Lumbridge -- its upstairs!)
     // 2. Withdraw emergency food + gear
     // 3. Walk to death location to collect items
-    // 4. Return to supply check → resume task
+    // 4. Return to supply check -> resume task
 
     if (isExecuting) return;
 
@@ -3453,7 +3453,7 @@ function handleRecoverGrave() {
                 }, Utility.getDelay());
                 return;
             }
-            // Not at Lumbridge — try openNearest with stuck detection
+            // Not at Lumbridge -- try openNearest with stuck detection
             if (PlayerHelper.isWebWalking()) {
                 checkBankStuck();
                 return;
@@ -3513,10 +3513,10 @@ function handleRecoverGrave() {
         return;
     }
 
-    // Phase 3: At grave — pick up items from ground
+    // Phase 3: At grave -- pick up items from ground
     if (pickUpLoot()) return;
 
-    // Phase 4: Done recovering — go to full supply check
+    // Phase 4: Done recovering -- go to full supply check
     botMsg("Death recovery complete, resuming task.", "SlayerBot");
     deathLocation = null;
     deathDetected = false;

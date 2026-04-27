@@ -10,9 +10,9 @@ h1{color:#4fc3f7}
 pre{background:#0d1117;padding:15px;border-radius:8px;overflow-x:auto;max-height:400px;font-size:11px;color:#c9d1d9;white-space:pre;border:1px solid #333}
 .info{color:#aaa;margin:10px 0}
 </style></head><body>
-<h1>Fix10o -- MAIN Tab (hotfix5)</h1>
+<h1>Fix10o -- MAIN Tab (hotfix6)</h1>
 <p class="info">Click the button below to copy ALL code, then paste into DZ MAIN tab and Commit.</p>
-<button class="copy-btn" onclick="copyCode(this)">&#x1F4CB; COPY MAIN CODE</button>
+<button class="copy-btn" onclick="copyCode(this)">COPY MAIN CODE</button>
 <p class="info" id="charcount"></p>
 <pre id="code">// =============================================================================
 // AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
@@ -1422,7 +1422,12 @@ function readTaskFromVarbits() {
             // Try to map creature ID to name
             if (SLAYER_CREATURE_MAP[creatureId]) {
                 currentTaskName = SLAYER_CREATURE_MAP[creatureId];
-                botMsg(&quot;VARBIT TASK FOUND: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left) - NO GEM NEEDED!&quot;, &quot;SlayerBot&quot;);
+                currentTaskMonster = findMonster(currentTaskName);
+                if (currentTaskMonster) {
+                    botMsg(&quot;VARBIT TASK FOUND: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left) at (&quot; + currentTaskMonster.location.x + &quot;,&quot; + currentTaskMonster.location.y + &quot;) - NO GEM NEEDED!&quot;, &quot;SlayerBot&quot;);
+                } else {
+                    botMsg(&quot;VARBIT TASK: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left) - WARNING: not in MONSTER_DB!&quot;, &quot;SlayerBot&quot;);
+                }
                 return true;
             } else {
                 botMsg(&quot;Creature ID &quot; + creatureId + &quot; not in map - need gem or master to identify&quot;, &quot;SlayerBot&quot;);
@@ -1509,6 +1514,7 @@ function handleCheckStats() {
 function handleCheckGem() {
     // If we already know we have a task (e.g., from previous run), skip
     if (currentTaskName &amp;&amp; killsLeft &gt; 0) {
+        if (!currentTaskMonster) currentTaskMonster = findMonster(currentTaskName);
         botMsg(&quot;Already have task: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left)&quot;, &quot;SlayerBot&quot;);
         state = STATES.CHECK_SUPPLIES;
         return;
@@ -1521,6 +1527,7 @@ function handleCheckGem() {
         // Last resort: try varbits
         var gotTask = readTaskFromVarbits();
         if (gotTask &amp;&amp; currentTaskName &amp;&amp; killsLeft &gt; 0) {
+            currentTaskMonster = findMonster(currentTaskName);
             botMsg(&quot;Varbits saved us! Task: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left)&quot;, &quot;SlayerBot&quot;);
             state = STATES.CHECK_SUPPLIES;
         } else {
@@ -1570,6 +1577,7 @@ function handleWaitGemResponse() {
         // Chat handler set the task info
         gemCheckAttempts = 0;
         if (currentTaskName &amp;&amp; killsLeft &gt; 0) {
+            currentTaskMonster = findMonster(currentTaskName);
             botMsg(&quot;GEM FOUND TASK: &quot; + currentTaskName + &quot; (&quot; + killsLeft + &quot; left) - skipping master!&quot;, &quot;SlayerBot&quot;);
             updateCachedStats();
             state = STATES.CHECK_SUPPLIES;
@@ -6034,7 +6042,7 @@ function copyCode(btn){
   navigator.clipboard.writeText(codeText).then(function(){
     btn.textContent = "COPIED!";
     btn.className = "copy-btn copied";
-    setTimeout(function(){btn.textContent = "\u{1F4CB} COPY MAIN CODE";btn.className="copy-btn";},3000);
+    setTimeout(function(){btn.textContent = "COPY MAIN CODE";btn.className="copy-btn";},3000);
   });
 }
 </script></body></html>

@@ -356,6 +356,78 @@ var LUMBRIDGE_SPAWN = {x: 3222, y: 3218, plane: 0};
 // -------- Emergency teleport threshold --------
 var EMERGENCY_HP_THRESHOLD = 10;
 
+// Ground-floor banks the bot can always reach on foot
+var FALLBACK_BANKS = [
+    { name: "Al Kharid", x: 3269, y: 3167, plane: 0 },
+    { name: "Varrock West", x: 3185, y: 3436, plane: 0 },
+    { name: "Grand Exchange", x: 3164, y: 3489, plane: 0 },
+    { name: "Draynor Village", x: 3092, y: 3245, plane: 0 },
+    { name: "Edgeville", x: 3094, y: 3491, plane: 0 }
+];
+
+function isAtLumbridge() {
+    try {
+        var pos = Client.getLocalPlayer().getWorldLocation();
+        var px = pos.getX();
+        var py = pos.getY();
+        // Lumbridge spawn area: roughly 3220-3225, 3215-3220
+        return (px >= 3218 && px <= 3230 && py >= 3210 && py <= 3225);
+    } catch(e) { return false; }
+}
+
+function getAccessibleBank() {
+    // Pick closest ground-floor bank from FALLBACK_BANKS
+    try {
+        var pos = Client.getLocalPlayer().getWorldLocation();
+        var px = pos.getX();
+        var py = pos.getY();
+        var best = null;
+        var bestDist = 999999;
+        for (var i = 0; i < FALLBACK_BANKS.length; i++) {
+            var b = FALLBACK_BANKS[i];
+            var dx = px - b.x;
+            var dy = py - b.y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = b;
+            }
+        }
+        return best;
+    } catch(e) {
+        return FALLBACK_BANKS[0]; // Default to Al Kharid
+    }
+}
+
+function checkBankStuck() {
+    // Returns true if player is stuck (hasnt moved in ~17 ticks / 10 seconds)
+    try {
+        var pos = Client.getLocalPlayer().getWorldLocation();
+        var px = pos.getX();
+        var py = pos.getY();
+        if (px === bankStuckX && py === bankStuckY) {
+            if (tickCounter - bankStuckTick >= 17) {
+                bankStuckCount++;
+                bankStuckTick = tickCounter; // reset timer
+                botMsg("Stuck at bank attempt #" + bankStuckCount + " at (" + px + "," + py + ")", "SlayerBot");
+                return true;
+            }
+        } else {
+            // Player moved — reset
+            bankStuckX = px;
+            bankStuckY = py;
+            bankStuckTick = tickCounter;
+            bankStuckCount = 0;
+        }
+    } catch(e) {}
+    return false;
+}
+
+// findNearestBank — wrapper around getAccessibleBank for compatibility
+function findNearestBank() {
+    return getAccessibleBank();
+}
+
 // -------- GE location --------
 var GE_LOCATION = {x: 3165, y: 3487, plane: 0};
 
@@ -1284,7 +1356,7 @@ function withdrawPotionFromBank(potGroup, qty) {
 
 // ---- STARTUP ----
 function handleStartup() {
-    botMsg("Auto Slayer Bot v24-Fix10j starting up!", "SlayerBot");
+    botMsg("Auto Slayer Bot v24-Fix10k starting up!", "SlayerBot");
     updateCachedStats();
     retryCount = 0;
     isExecuting = false;
@@ -1736,35 +1808,78 @@ function handleCheckSupplies() {
 }
 
 // ---- WALK_TO_BANK ----
-// SIMPLIFIED: openNearest(0, true) handles BOTH walking AND opening!
-// No more coordinate lists, distance checks, or bankTarget needed.
+// With stuck detection: if player cant reach bank in 10s, walk to fallback bank
 function handleWalkToBank() {
-    // If bank is already open (player manually opened or openNearest succeeded)
+    // If bank is already open — success!
     if (Game.info.bank.isOpen()) {
+        bankStuckCount = 0; // reset stuck counter
         state = STATES.BANK_SUPPLIES;
         waitTicks = 0;
         withdrawQueue = [];
         gatherNeeded = [];
         gatherToolsToWithdraw = [];
-        // Trip 1 (gem) or Trip 2 (supplies)?
         if (!currentTaskName && needGemFromBank) {
             botMsg("Bank open - Trip 1: getting gem");
-            bankPhase = 1; // gem retrieval flow
+            bankPhase = 1;
         } else {
             botMsg("Bank open - Trip 2: supply run");
-            bankPhase = 10; // main supply run
+            bankPhase = 10;
         }
         return;
     }
 
-    // If still walking to bank, wait
-    if (PlayerHelper.isWebWalking()) return;
+    // If still walking, wait (but check stuck)
+    if (PlayerHelper.isWebWalking()) {
+        checkBankStuck();
+        return;
+    }
 
-    // Don't spam - wait for previous action to complete
-    if (isExecuting) return;
+    if (isExecuting) {
+        // Safety: auto-reset isExecuting after 10 ticks to prevent permanent lock
+        isExecutingTimeout++;
+        if (isExecutingTimeout >= 10) {
+            botMsg("isExecuting stuck for 10 ticks - force reset", "SlayerBot");
+            isExecuting = false;
+            isExecutingTimeout = 0;
+        }
+        return;
+    }
+    isExecutingTimeout = 0;
 
-    // Call openNearest(0, true) - this walks to AND opens the nearest bank!
-    // distance=0 means maximum range, prioritize=true means booth > chest > npc
+    // STUCK CHECK: if stuck 2+ times (~20 sec no movement), walk to fallback bank
+    if (checkBankStuck() && bankStuckCount >= 2) {
+        var fallback = getAccessibleBank();
+        if (fallback) {
+            botMsg("Bank unreachable! Walking to " + fallback.name + " instead", "SlayerBot");
+            bankStuckCount = 0;
+            bankStuckTick = tickCounter;
+            isExecuting = true;
+            var fbx = fallback.x;
+            var fby = fallback.y;
+            var fbp = fallback.plane;
+            Utility.invokeLater(function() {
+                PlayerHelper.webWalkTo(new WorldPoint(fbx, fby, fbp));
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+    }
+
+    // LUMBRIDGE CHECK: if at Lumbridge spawn, dont try openNearest (bank is upstairs)
+    if (isAtLumbridge()) {
+        var alKharid = FALLBACK_BANKS[0]; // Al Kharid is closest ground-floor bank
+        botMsg("At Lumbridge - walking to " + alKharid.name + " bank (ground floor)", "SlayerBot");
+        isExecuting = true;
+        var akx = alKharid.x;
+        var aky = alKharid.y;
+        Utility.invokeLater(function() {
+            PlayerHelper.webWalkTo(new WorldPoint(akx, aky, 0));
+            isExecuting = false;
+        }, Utility.getDelay());
+        return;
+    }
+
+    // Normal path: openNearest handles walking + opening
     isExecuting = true;
     Utility.invokeLater(function() {
         try {
@@ -1788,6 +1903,12 @@ function handleWalkToBank() {
 var bankPhase = 0;
 var withdrawQueue = [];
 var bankOpenAttemptTick = 0;
+var bankStuckX = 0;
+var bankStuckY = 0;
+var bankStuckTick = 0;
+var bankStuckCount = 0;
+var bankBlacklistId = 0; // NPC/booth ID to avoid
+var isExecutingTimeout = 0; // safety reset for isExecuting
 var gatherNeeded = [];
 var gatherToolsToWithdraw = []; // tools needed to go gather missing resources
 
@@ -2057,7 +2178,7 @@ function handleBankSupplies() {
             withdrawQueue.push({ id: 995, qty: 250, label: "250 GP" });
         }
 
-        // --- GEAR CHECK (Fix10j) --- Withdraw best weapon + armor for task ---
+        // --- GEAR CHECK (Fix10k) --- Withdraw best weapon + armor for task ---
         var atkLvl = Client.getRealSkillLevels(Skill.ATTACK);
         var defLvl = Client.getRealSkillLevels(Skill.DEFENCE);
         var bestWep = getBestWeapon(atkLvl);
@@ -2184,7 +2305,7 @@ function handleBankSupplies() {
     }
 
 
-    // Phase 145 (Fix10j): Equip any withdrawn gear items before closing bank
+    // Phase 145 (Fix10k): Equip any withdrawn gear items before closing bank
     if (bankPhase === 145) {
         // Close bank first so we can equip from inventory
         if (Game.info.bank.isOpen()) {
@@ -2837,12 +2958,13 @@ function handleDeath() {
 
 // ---- RECOVER_GRAVE ----
 function handleRecoverGrave() {
-    // After respawn in Lumbridge:
-    // 1. Bank and withdraw emergency food
-    // 2. Walk to death location
-    // 3. Collect items
-    // 4. Re-equip gear
-    // 5. Return to task
+    // After death respawn (usually Lumbridge):
+    // 1. Walk to accessible bank (NOT Lumbridge — its upstairs!)
+    // 2. Withdraw emergency food + gear
+    // 3. Walk to death location to collect items
+    // 4. Return to supply check → resume task
+
+    if (isExecuting) return;
 
     if (!deathLocation) {
         botMsg("No death location saved, re-checking supplies.", "SlayerBot");
@@ -2854,37 +2976,57 @@ function handleRecoverGrave() {
     // Phase 1: Get emergency food from bank
     var foodCt = countFood();
     if (foodCt < 3) {
-        // Need to bank first
         if (!Game.info.bank.isOpen()) {
-            var bank = findNearestBank();
-            if (bank && isNear(bank.x, bank.y, 8)) {
-                _gt = tickCounter;
-                if (_gt - bankOpenAttemptTick < 5) return;
-                bankOpenAttemptTick = _gt;
+            // At Lumbridge? Walk to ground-floor bank first
+            if (isAtLumbridge()) {
+                if (PlayerHelper.isWebWalking()) return;
+                var alKharid = FALLBACK_BANKS[0];
+                botMsg("Death respawn at Lumbridge - walking to " + alKharid.name + " bank", "SlayerBot");
                 isExecuting = true;
+                var akx = alKharid.x;
+                var aky = alKharid.y;
                 Utility.invokeLater(function() {
-                    Game.interact.bank.openNearest(0, true);
+                    PlayerHelper.webWalkTo(new WorldPoint(akx, aky, 0));
                     isExecuting = false;
                 }, Utility.getDelay());
                 return;
-            } else if (bank) {
-                if (!PlayerHelper.isWebWalking()) {
-                    isExecuting = true;
-                    var rbx = bank.x;
-                    var rby = bank.y;
-                    var rbp = bank.plane || 0;
-                    Utility.invokeLater(function() {
-                        PlayerHelper.webWalkTo(new WorldPoint(rbx, rby, rbp));
-                        isExecuting = false;
-                    }, Utility.getDelay());
-                }
+            }
+            // Not at Lumbridge — try openNearest with stuck detection
+            if (PlayerHelper.isWebWalking()) {
+                checkBankStuck();
                 return;
             }
+            if (checkBankStuck() && bankStuckCount >= 2) {
+                var fallback = getAccessibleBank();
+                if (fallback) {
+                    botMsg("Bank stuck! Walking to " + fallback.name, "SlayerBot");
+                    bankStuckCount = 0;
+                    isExecuting = true;
+                    var fbx = fallback.x;
+                    var fby = fallback.y;
+                    Utility.invokeLater(function() {
+                        PlayerHelper.webWalkTo(new WorldPoint(fbx, fby, 0));
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                    return;
+                }
+            }
+            if (tickCounter - bankOpenAttemptTick < 5) return;
+            bankOpenAttemptTick = tickCounter;
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                Game.interact.bank.openNearest(0, true);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
         } else {
-            // Bank is open, withdraw food
+            // Bank is open! Withdraw emergency food
+            bankStuckCount = 0;
             var emergFoodId = 379;
             try { emergFoodId = cfgVal("foodType", 379); } catch(e) {}
-            withdrawBankItem(emergFoodId, 5);
+            if (Game.info.bank.hasItem(emergFoodId, 1)) {
+                Game.interact.bank.withdrawItem(emergFoodId, BankWithdrawType.WITHDRAW_FIVE, false);
+            }
             isExecuting = true;
             Utility.invokeLater(function() {
                 Game.interact.bank.close();
@@ -2909,10 +3051,10 @@ function handleRecoverGrave() {
         return;
     }
 
-    // Phase 3: At grave - pick up items from ground
+    // Phase 3: At grave — pick up items from ground
     if (pickUpLoot()) return;
 
-    // Phase 4: Done recovering, return to supply check
+    // Phase 4: Done recovering — go to full supply check
     botMsg("Death recovery complete, resuming task.", "SlayerBot");
     deathLocation = null;
     deathDetected = false;

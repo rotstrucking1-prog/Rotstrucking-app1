@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Fix10o hotfix12 - MAIN</title>
+<html><head><meta charset="utf-8"><title>Fix10o hotfix12b MAIN</title>
 <style>
-body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; text-align: center; }
-h1 { color: #0ff; }
-.btn { display: inline-block; padding: 20px 60px; font-size: 24px; background: #0066ff; color: white; border: none; border-radius: 12px; cursor: pointer; margin: 20px; }
-.btn:hover { background: #0044cc; }
-.ok { color: #0f0; font-size: 20px; margin-top: 10px; }
-textarea { width: 90%%; height: 200px; background: #111; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; border: 1px solid #333; }
+body{background:#1a1a2e;color:#0f0;font-family:monospace;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{color:#0ff;font-size:1.5em}
+.info{color:#ff0;margin:10px 0}
+button{background:#00bfff;color:#000;font-size:24px;padding:20px 60px;border:none;border-radius:12px;cursor:pointer;margin:20px 0;font-weight:bold}
+button:hover{background:#00e5ff}
+button.copied{background:#00ff88;color:#000}
+pre{background:#0d0d1a;padding:15px;border-radius:8px;max-height:300px;overflow:auto;width:90%;font-size:11px;white-space:pre-wrap}
 </style></head><body>
-<h1>Fix10o hotfix12 -- MAIN</h1>
-<p style="color:#ff0;font-size:18px;">Food type crash fix + dungeon stuck detection bypass</p>
-<button class="btn" onclick="copyCode()">COPY MAIN CODE</button>
-<div id="status"></div>
-<br>
-<textarea id="codeBox" readonly>// =============================================================================
+<h1>Fix10o hotfix12b - MAIN</h1>
+<p class="info">Dot notation fix - clears DZ warnings</p>
+<button onclick="copyCode()">COPY MAIN CODE</button>
+<p id="status"></p>
+<pre id="code">// =============================================================================
 // AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
 // =============================================================================
 // The brain of the slayer bot. Implements a full autonomous state machine that:
@@ -382,15 +382,15 @@ FOOD_HEALING[385] = 20;   // Shark
 FOOD_HEALING[7946] = 16;  // Monkfish
 // -------- Food name to item ID lookup (config returns string names) --------
 var FOOD_NAME_TO_ID = {};
-FOOD_NAME_TO_ID[&quot;Shrimps&quot;] = 315;
-FOOD_NAME_TO_ID[&quot;Sardine&quot;] = 325;
-FOOD_NAME_TO_ID[&quot;Trout&quot;] = 333;
-FOOD_NAME_TO_ID[&quot;Salmon&quot;] = 329;
-FOOD_NAME_TO_ID[&quot;Bass&quot;] = 365;
-FOOD_NAME_TO_ID[&quot;Lobster&quot;] = 379;
-FOOD_NAME_TO_ID[&quot;Swordfish&quot;] = 373;
-FOOD_NAME_TO_ID[&quot;Monkfish&quot;] = 7946;
-FOOD_NAME_TO_ID[&quot;Shark&quot;] = 385;
+FOOD_NAME_TO_ID.Shrimps = 315;
+FOOD_NAME_TO_ID.Sardine = 325;
+FOOD_NAME_TO_ID.Trout = 333;
+FOOD_NAME_TO_ID.Salmon = 329;
+FOOD_NAME_TO_ID.Bass = 365;
+FOOD_NAME_TO_ID.Lobster = 379;
+FOOD_NAME_TO_ID.Swordfish = 373;
+FOOD_NAME_TO_ID.Monkfish = 7946;
+FOOD_NAME_TO_ID.Shark = 385;
 FOOD_NAME_TO_ID[&quot;Manta Ray&quot;] = 391;
 
 // Convert config foodType (string name) to item ID
@@ -6265,14 +6265,14 @@ function handleRepairBarrows() {
             break;
     }
 }
-</textarea>
+</pre>
 <script>
-function copyCode() {
-  var box = document.getElementById("codeBox");
-  box.select();
-  box.setSelectionRange(0, 99999999);
-  navigator.clipboard.writeText(box.value).then(function() {
-    document.getElementById("status").innerHTML = '<div class="ok">Copied! Paste into DZ MAIN tab</div>';
-  });
+function copyCode(){
+var t=document.getElementById("code").textContent;
+navigator.clipboard.writeText(t).then(function(){
+document.querySelector("button").textContent="COPIED!";
+document.querySelector("button").className="copied";
+document.getElementById("status").textContent="Paste into DZ MAIN tab";
+});
 }
 </script></body></html>

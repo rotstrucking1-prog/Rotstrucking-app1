@@ -1447,10 +1447,9 @@ function handleStartup() {
         // Brad's shortcut: if already have food + gear equipped, skip bank entirely
         var startupFood = countFood();
         var startupHasWeapon = false;
-        // Check if any weapon tier is equipped
-        for (var wt = GEAR_TIERS.length - 1; wt >= 0; wt--) {
-            var wTier = GEAR_TIERS[wt];
-            if (wTier.weapon && Game.info.equipment.hasItem(wTier.weapon)) {
+        // Check if any melee weapon is equipped
+        for (var wt = 0; wt < MELEE_WEAPONS.length; wt++) {
+            if (Game.info.equipment.hasItem(MELEE_WEAPONS[wt].id)) {
                 startupHasWeapon = true;
                 break;
             }

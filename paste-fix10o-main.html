@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Fix10o hotfix7 - MAIN</title>
+<html><head><meta charset="UTF-8"><title>Fix10o hotfix8 - MAIN</title>
 <style>
 body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; text-align: center; }
 h1 { color: #0ff; }
@@ -12,9 +12,8 @@ h1 { color: #0ff; }
 .success { color: #0f0; }
 .code-box { display: none; }
 </style></head><body>
-<h1>Fix10o hotfix7 - MAIN</h1>
-<div class="info">Startup shortcut: if task known + have food + gear equipped = go straight to task<br>
-Bank exit fix: never default to SELECT_MASTER when task is known</div>
+<h1>Fix10o hotfix8 - MAIN</h1>
+<div class="info">Fixed: GEAR_TIERS is not defined — changed to MELEE_WEAPONS (the actual array)</div>
 <button class="copy-btn" onclick="copyCode()">COPY MAIN CODE</button>
 <div id="status" class="status"></div>
 <textarea id="codeBox" class="code-box">// =============================================================================
@@ -1466,10 +1465,9 @@ function handleStartup() {
         // Brad&#x27;s shortcut: if already have food + gear equipped, skip bank entirely
         var startupFood = countFood();
         var startupHasWeapon = false;
-        // Check if any weapon tier is equipped
-        for (var wt = GEAR_TIERS.length - 1; wt &gt;= 0; wt--) {
-            var wTier = GEAR_TIERS[wt];
-            if (wTier.weapon &amp;&amp; Game.info.equipment.hasItem(wTier.weapon)) {
+        // Check if any melee weapon is equipped
+        for (var wt = 0; wt &lt; MELEE_WEAPONS.length; wt++) {
+            if (Game.info.equipment.hasItem(MELEE_WEAPONS[wt].id)) {
                 startupHasWeapon = true;
                 break;
             }

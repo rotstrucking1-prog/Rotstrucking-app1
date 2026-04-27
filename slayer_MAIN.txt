@@ -91,6 +91,11 @@ var STATES = {
 var state = STATES.STARTUP;
 var isExecuting = false;
 var actionCooldown = 0; // Ticks to wait after an action before allowing another
+// ---- GE GEAR BUYING (Fix10n) ----
+var geBuyList = [];     // Items to buy at GE [{id, name, price}]
+var geBuyIndex = 0;     // Current item being bought
+var geBuyPhase = 0;     // Sub-phase within BUY_AT_GE
+var geOfferSlot = -1;   // Which GE slot we're using
 // ---- IDLE CHECK HELPER ----
 // DZ API has NO .isIdle() on player! Use animation + movement check instead.
 function isPlayerIdle() {
@@ -1354,30 +1359,118 @@ function withdrawPotionFromBank(potGroup, qty) {
 // CORE STATE HANDLERS
 // =============================================================================
 
+// ---- READ TASK FROM VARBITS (no gem needed!) ----
+// Varp 394 = kills remaining, Varp 395 = creature ID (indexes slayer task dbtable)
+// Common creature IDs from Varp 395 for Turael/Mazchna tasks:
+var SLAYER_CREATURE_MAP = {
+    1: "banshees", 2: "bats", 3: "birds", 4: "bears",
+    5: "cave bugs", 6: "cave crawlers", 7: "cave slimes",
+    8: "cows", 9: "crawling hands", 10: "dogs",
+    11: "dwarves", 12: "ghosts", 13: "goblins", 14: "icefiends",
+    15: "minotaurs", 16: "monkeys", 17: "rats", 18: "scorpions",
+    19: "skeletons", 20: "spiders", 21: "wolves", 22: "zombies",
+    23: "hobgoblins", 24: "hill giants", 25: "ice giants",
+    26: "flesh crawlers", 27: "catablepon", 28: "rockslugs",
+    29: "cockatrice", 30: "pyrefiends", 31: "mogres",
+    32: "harpie bug swarms", 33: "wall beasts", 34: "killerwatts",
+    35: "banshees", 36: "crawling hands", 37: "lizards",
+    38: "fever spiders", 39: "infernal mages", 40: "bloodveld",
+    41: "jellies", 42: "turoth", 43: "aberrant spectres",
+    44: "dust devils", 45: "kurask", 46: "gargoyles",
+    47: "nechryael", 48: "abyssal demons", 49: "cave horrors",
+    50: "basilisks", 51: "desert lizards", 52: "terror dogs",
+    53: "molanisks", 54: "waterfiends", 55: "sea snakes",
+    56: "fire giants", 57: "earth warriors", 58: "shadow warriors",
+    59: "ankou", 60: "black demons", 61: "greater demons",
+    62: "lesser demons", 63: "blue dragons", 64: "black dragons",
+    65: "red dragons", 66: "green dragons", 67: "bronze dragons",
+    68: "iron dragons", 69: "steel dragons", 70: "hellhounds",
+    71: "dagannoth", 72: "elves", 73: "trolls", 74: "suqahs",
+    75: "kalphites", 76: "dark beasts", 77: "spiritual creatures",
+    78: "aviansies", 79: "skeletal wyverns", 80: "smoke devils",
+    81: "cave kraken", 82: "drakes", 83: "wyrms", 84: "hydras",
+    85: "fossil island wyverns", 86: "black knights",
+    87: "chaos druids", 88: "dark warriors"
+};
+
+function readTaskFromVarbits() {
+    try {
+        var killCount = Game.getVarPlayerValue(394);  // SLAYER_COUNT
+        var creatureId = Game.getVarPlayerValue(395);  // SLAYER_TARGET
+
+        if (killCount > 0 && creatureId > 0) {
+            killsLeft = killCount;
+            botMsg("Varbit read: " + killCount + " kills left, creature ID " + creatureId, "SlayerBot");
+
+            // Try to map creature ID to name
+            if (SLAYER_CREATURE_MAP[creatureId]) {
+                currentTaskName = SLAYER_CREATURE_MAP[creatureId];
+                botMsg("VARBIT TASK FOUND: " + currentTaskName + " (" + killsLeft + " left) - NO GEM NEEDED!", "SlayerBot");
+                return true;
+            } else {
+                botMsg("Creature ID " + creatureId + " not in map - need gem or master to identify", "SlayerBot");
+                // We know kills remain but not the task name
+                return false;
+            }
+        } else if (killCount === 0 || creatureId === 0) {
+            botMsg("Varbit says NO active task (kills=" + killCount + ", creature=" + creatureId + ")", "SlayerBot");
+            killsLeft = 0;
+            currentTaskName = "";
+            return false;
+        }
+    } catch(e) {
+        botMsg("Varbit read failed: " + e + " - falling back to gem/master", "SlayerBot");
+    }
+    return false;
+}
+
 // ---- STARTUP ----
 function handleStartup() {
-    botMsg("Auto Slayer Bot v24-Fix10k starting up!", "SlayerBot");
+    botMsg("Auto Slayer Bot v24-Fix10o starting up!", "SlayerBot");
     updateCachedStats();
     retryCount = 0;
     isExecuting = false;
 
-    // FIRST: Check for enchanted gem in inventory -- if missing, bank for it
-    var hasGem = Game.info.inventory.hasItem(4155, 1);
-    if (!hasGem) {
-        botMsg("No enchanted gem in inventory! Banking to get one FIRST.", "SlayerBot");
-        needGemFromBank = true;
-        state = STATES.WALK_TO_BANK;
+    // STEP 1: Try reading task from varbits (instant — no gem needed)
+    var gotTaskFromVarbit = readTaskFromVarbits();
+
+    if (gotTaskFromVarbit && currentTaskName && killsLeft > 0) {
+        // Varbit gave us everything — skip gem entirely!
+        botMsg("Task from varbit: " + currentTaskName + " (" + killsLeft + " left) — heading to supplies!", "SlayerBot");
+        state = STATES.CHECK_SUPPLIES;
         return;
     }
 
-    // Check if we already have a task from previous run
-    if (currentTaskName && killsLeft > 0) {
-        botMsg("Resuming existing task: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
-        state = STATES.CHECK_SUPPLIES;
-    } else {
-        // Check gem for existing task BEFORE anything else
-        botMsg("Checking for existing slayer task...", "SlayerBot");
+    // Varbit says kills > 0 but creature ID not in map — need gem to identify
+    if (killsLeft > 0 && !currentTaskName) {
+        botMsg("Varbit shows " + killsLeft + " kills but unknown creature — checking gem...", "SlayerBot");
+        var hasGem = Game.info.inventory.hasItem(4155, 1);
+        if (hasGem) {
+            state = STATES.CHECK_GEM;
+        } else {
+            botMsg("No gem either — banking for gem to identify task", "SlayerBot");
+            needGemFromBank = true;
+            state = STATES.WALK_TO_BANK;
+        }
+        return;
+    }
+
+    // STEP 2: Varbit says NO task (kills = 0)
+    // Skip gem check entirely — go straight to master for new task!
+    if (killsLeft === 0) {
+        botMsg("No active task (varbit confirmed) — going to master for new task!", "SlayerBot");
+        state = STATES.CHECK_STATS;
+        return;
+    }
+
+    // STEP 3: Fallback — varbit read failed, try gem
+    var hasGem = Game.info.inventory.hasItem(4155, 1);
+    if (hasGem) {
+        botMsg("Varbit unavailable — checking gem for task...", "SlayerBot");
         state = STATES.CHECK_GEM;
+    } else {
+        botMsg("No varbit, no gem — going straight to master", "SlayerBot");
+        state = STATES.CHECK_STATS;
     }
 }
 
@@ -1406,9 +1499,16 @@ function handleCheckGem() {
 
     // If we already tried gem check 2+ times, skip to master
     if (gemCheckAttempts >= 2) {
-        botMsg("Gem check failed " + gemCheckAttempts + " times - skipping to master", "SlayerBot");
+        botMsg("Gem check failed " + gemCheckAttempts + " times - trying varbits before master...", "SlayerBot");
         gemCheckAttempts = 0;
-        state = STATES.SELECT_MASTER;
+        // Last resort: try varbits
+        var gotTask = readTaskFromVarbits();
+        if (gotTask && currentTaskName && killsLeft > 0) {
+            botMsg("Varbits saved us! Task: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
+            state = STATES.CHECK_SUPPLIES;
+        } else {
+            state = STATES.SELECT_MASTER;
+        }
         return;
     }
 
@@ -1420,7 +1520,7 @@ function handleCheckGem() {
     var hasGem = Game.info.inventory.hasItem(4155, 1);
     var hasHelm = false;
     try {
-        hasHelm = Game.info.equipment.hasItem(11864, 1) || Game.info.equipment.hasItem(11865, 1);
+        hasHelm = Game.info.equipment.hasItem(11864) || Game.info.equipment.hasItem(11865);
     } catch(e) {}
 
     if (hasGem) {
@@ -1544,7 +1644,7 @@ function handleTalkToMaster() {
     taskReceived = false;
     isExecuting = true;
     Utility.invokeLater(function() {
-        Game.interact.npc.action(masterNpc, MenuAction.NPC_SECOND_OPTION);
+        Game.interact.npc.action(masterNpc, MenuAction.NPC_FIRST_OPTION);
         isExecuting = false;
     }, Utility.getDelay());
 
@@ -2178,53 +2278,102 @@ function handleBankSupplies() {
             withdrawQueue.push({ id: 995, qty: 250, label: "250 GP" });
         }
 
-        // --- GEAR CHECK (Fix10k) --- Withdraw best weapon + armor for task ---
+        // --- GEAR CHECK (Fix10m) --- Scan ALL tiers, grab best actually IN BANK ---
         var atkLvl = Client.getRealSkillLevels(Skill.ATTACK);
         var defLvl = Client.getRealSkillLevels(Skill.DEFENCE);
-        var bestWep = getBestWeapon(atkLvl);
-        if (bestWep && bestWep.id && !Game.info.equipment.hasItem(bestWep.id, 1)) {
-            if (Game.info.bank.hasItem(bestWep.id, 1)) {
-                withdrawQueue.push({ id: bestWep.id, qty: 1, label: "Weapon: " + bestWep.name });
-            }
-        }
-        var bestBod = getBestBody(defLvl);
-        if (bestBod && bestBod.id && !Game.info.equipment.hasItem(bestBod.id, 1)) {
-            if (Game.info.bank.hasItem(bestBod.id, 1)) {
-                withdrawQueue.push({ id: bestBod.id, qty: 1, label: "Body: " + bestBod.name });
-            }
-        }
-        var bestLeg = getBestLegs(defLvl);
-        if (bestLeg && bestLeg.id && !Game.info.equipment.hasItem(bestLeg.id, 1)) {
-            if (Game.info.bank.hasItem(bestLeg.id, 1)) {
-                withdrawQueue.push({ id: bestLeg.id, qty: 1, label: "Legs: " + bestLeg.name });
-            }
-        }
-        var bestHelm2 = getBestHelmet(defLvl, false);
-        if (bestHelm2 && bestHelm2.id && !Game.info.equipment.hasItem(bestHelm2.id, 1)) {
-            if (Game.info.bank.hasItem(bestHelm2.id, 1)) {
-                withdrawQueue.push({ id: bestHelm2.id, qty: 1, label: "Helm: " + bestHelm2.name });
-            }
-        }
-        var bestShld = getBestShield(defLvl);
-        if (bestShld && bestShld.id && !Game.info.equipment.hasItem(bestShld.id, 1)) {
-            if (Game.info.bank.hasItem(bestShld.id, 1)) {
-                withdrawQueue.push({ id: bestShld.id, qty: 1, label: "Shield: " + bestShld.name });
-            }
-        }
-        var bestBoot = getBestBoots(defLvl);
-        if (bestBoot && bestBoot.id && !Game.info.equipment.hasItem(bestBoot.id, 1)) {
-            if (Game.info.bank.hasItem(bestBoot.id, 1)) {
-                withdrawQueue.push({ id: bestBoot.id, qty: 1, label: "Boots: " + bestBoot.name });
-            }
-        }
-        var bestGlv = getBestGloves(defLvl);
-        if (bestGlv && bestGlv.id && !Game.info.equipment.hasItem(bestGlv.id, 1)) {
-            if (Game.info.bank.hasItem(bestGlv.id, 1)) {
-                withdrawQueue.push({ id: bestGlv.id, qty: 1, label: "Gloves: " + bestGlv.name });
-            }
-        }
-        botMsg("Gear check: atk=" + atkLvl + " def=" + defLvl + " wep=" + (bestWep ? bestWep.name : "none") + " body=" + (bestBod ? bestBod.name : "none"));
 
+        // Helper: scan tier array, find best item in bank that player can use & doesn't have equipped
+        var findBestInBank = function(tierArray, levelField, playerLevel) {
+            for (var ti = 0; ti < tierArray.length; ti++) {
+                var item = tierArray[ti];
+                var reqLevel = item[levelField] || 1;
+                if (playerLevel >= reqLevel) {
+                    // Already equipped? Skip (we're good)
+                    if (Game.info.equipment.hasItem(item.id)) return null;
+                    // In bank? Grab it!
+                    if (Game.info.bank.hasItem(item.id, 1)) return item;
+                    // Not in bank — try next tier down
+                }
+            }
+            return null;
+        };
+
+        var gearWep = findBestInBank(MELEE_WEAPONS, "atkReq", atkLvl);
+        if (gearWep) withdrawQueue.push({ id: gearWep.id, qty: 1, label: "Weapon: " + gearWep.name });
+
+        var gearBod = findBestInBank(PLATEBODIES, "defReq", defLvl);
+        if (gearBod) withdrawQueue.push({ id: gearBod.id, qty: 1, label: "Body: " + gearBod.name });
+
+        var gearLeg = findBestInBank(PLATELEGS, "defReq", defLvl);
+        if (gearLeg) withdrawQueue.push({ id: gearLeg.id, qty: 1, label: "Legs: " + gearLeg.name });
+
+        var gearHelm = findBestInBank(HELMETS, "defReq", defLvl);
+        if (gearHelm) withdrawQueue.push({ id: gearHelm.id, qty: 1, label: "Helm: " + gearHelm.name });
+
+        var gearShld = findBestInBank(SHIELDS, "defReq", defLvl);
+        if (gearShld) withdrawQueue.push({ id: gearShld.id, qty: 1, label: "Shield: " + gearShld.name });
+
+        var gearBoot = findBestInBank(BOOTS, "defReq", defLvl);
+        if (gearBoot) withdrawQueue.push({ id: gearBoot.id, qty: 1, label: "Boots: " + gearBoot.name });
+
+        var gearGlv = findBestInBank(GLOVES, "defReq", defLvl);
+        if (gearGlv) withdrawQueue.push({ id: gearGlv.id, qty: 1, label: "Gloves: " + gearGlv.name });
+
+        botMsg("Gear scan: atk=" + atkLvl + " def=" + defLvl + " wep=" + (gearWep ? gearWep.name : "equipped/none") + " body=" + (gearBod ? gearBod.name : "equipped/none"));
+
+        // ---- FIX10n: NO GEAR DETECTION -> BUY AT GE ----
+        var hasGearInBank = (gearWep || gearBod || gearLeg || gearHelm || gearShld || gearBoot || gearGlv);
+        if (!hasGearInBank) {
+            // Check if player already has SOMETHING equipped
+            var hasEquippedWep = false;
+            var hasEquippedBod = false;
+            for (var mwc = 0; mwc < MELEE_WEAPONS.length; mwc++) {
+                if (Game.info.equipment.hasItem(MELEE_WEAPONS[mwc].id)) { hasEquippedWep = true; break; }
+            }
+            for (var pbc = 0; pbc < PLATEBODIES.length; pbc++) {
+                if (Game.info.equipment.hasItem(PLATEBODIES[pbc].id)) { hasEquippedBod = true; break; }
+            }
+            if (!hasEquippedWep && !hasEquippedBod) {
+                // NO gear in bank, NO gear equipped -> buy at GE!
+                // Iron set costs ~2500gp with overpay for instant buy
+                var IRON_SET = [
+                    { id: 1323, name: "Iron scimitar", price: 500 },
+                    { id: 1115, name: "Iron platebody", price: 700 },
+                    { id: 1067, name: "Iron platelegs", price: 500 },
+                    { id: 1153, name: "Iron full helm", price: 300 },
+                    { id: 1191, name: "Iron kiteshield", price: 500 }
+                ];
+                var totalCost = 0;
+                for (var ic = 0; ic < IRON_SET.length; ic++) totalCost += IRON_SET[ic].price;
+
+                var bankGold = 0;
+                try { bankGold = Game.info.bank.getItemCount(995); } catch(e) {}
+                var invGold = 0;
+                try { invGold = Game.info.inventory.getItemCount(995); } catch(e) {}
+                var totalGold = bankGold + invGold;
+
+                if (totalGold >= totalCost) {
+                    botMsg("NO GEAR anywhere! Buying iron set from GE. Need " + totalCost + "gp, have " + totalGold + "gp");
+                    geBuyList = IRON_SET;
+                    geBuyIndex = 0;
+                    geBuyPhase = 0;
+                    // Withdraw enough gold + extra for travel
+                    withdrawQueue = [];
+                    if (bankGold >= totalCost + 500) {
+                        Game.interact.bank.setCustomWithdrawQuantity(totalCost + 500);
+                        withdrawQueue.push({ id: 995, qty: totalCost + 500, label: (totalCost + 500) + " GP for GE" });
+                    } else {
+                        withdrawQueue.push({ id: 995, qty: 0, label: "All GP", withdrawAll: true });
+                    }
+                    postBankState = STATES.WALK_TO_GE;
+                    bankPhase = 13;
+                    waitTicks = 0;
+                    return;
+                } else {
+                    botMsg("NO gear and not enough GP! Have " + totalGold + "gp, need " + totalCost + "gp. Going with bare hands.");
+                }
+            }
+        }
 
         // ---- DECISION (while bank is still open!) ----
         if (gatherNeeded.length > 0) {
@@ -2289,6 +2438,14 @@ function handleBankSupplies() {
                     }
                 }
             }
+        } else if (item.withdrawAll) {
+            // Fix10n: Withdraw all of this item (used for GP when buying gear)
+            try {
+                Game.interact.bank.withdrawItem(item.id, BankWithdrawType.WITHDRAW_ALL, false);
+                botMsg("Withdrew ALL of item " + item.id);
+            } catch(e) {
+                botMsg("Withdraw ALL error: " + e);
+            }
         } else {
             withdrawBankItem(item.id, item.qty);
         }
@@ -2305,7 +2462,7 @@ function handleBankSupplies() {
     }
 
 
-    // Phase 145 (Fix10k): Equip any withdrawn gear items before closing bank
+    // Phase 145 (Fix10m): Equip any withdrawn gear items before closing bank
     if (bankPhase === 145) {
         // Close bank first so we can equip from inventory
         if (Game.info.bank.isOpen()) {
@@ -2316,24 +2473,24 @@ function handleBankSupplies() {
         waitTicks++;
         if (waitTicks < 4) return;
         // Equip all gear in inventory
-        var gearIds = [];
-        var atkLvl2 = Client.getRealSkillLevels(Skill.ATTACK);
-        var defLvl2 = Client.getRealSkillLevels(Skill.DEFENCE);
-        var bw = getBestWeapon(atkLvl2); if (bw && bw.id) gearIds.push(bw.id);
-        var bb = getBestBody(defLvl2); if (bb && bb.id) gearIds.push(bb.id);
-        var bl = getBestLegs(defLvl2); if (bl && bl.id) gearIds.push(bl.id);
-        var bh = getBestHelmet(defLvl2, false); if (bh && bh.id) gearIds.push(bh.id);
-        var bs = getBestShield(defLvl2); if (bs && bs.id) gearIds.push(bs.id);
-        var bo = getBestBoots(defLvl2); if (bo && bo.id) gearIds.push(bo.id);
-        var bg = getBestGloves(defLvl2); if (bg && bg.id) gearIds.push(bg.id);
-        for (var gi = 0; gi < gearIds.length; gi++) {
-            if (Game.info.inventory.hasItem(gearIds[gi], 1)) {
-                try {
-                    Game.interact.inventory.equipItem(gearIds[gi]);
-                    botMsg("Equipping gear item: " + gearIds[gi]);
-                } catch(e) {}
+        // Equip anything equippable in inventory (scan all tier arrays)
+        var allTierArrays = [MELEE_WEAPONS, PLATEBODIES, PLATELEGS, HELMETS, SHIELDS, BOOTS, GLOVES];
+        var equipCount = 0;
+        for (var ta = 0; ta < allTierArrays.length; ta++) {
+            var tierArr = allTierArrays[ta];
+            for (var ti2 = 0; ti2 < tierArr.length; ti2++) {
+                var tItem = tierArr[ti2];
+                if (tItem && tItem.id && Game.info.inventory.hasItem(tItem.id, 1)) {
+                    try {
+                        Game.interact.inventory.equipItem(tItem.id);
+                        botMsg("Equipping: " + tItem.name + " (" + tItem.id + ")");
+                        equipCount++;
+                    } catch(e) {}
+                    break; // Only equip best found per slot
+                }
             }
         }
+        if (equipCount === 0) botMsg("No gear in inventory to equip");
         // Move to walk phase
         var nextSt = postBankState || STATES.CHECK_SUPPLIES;
         postBankState = null;
@@ -2427,16 +2584,321 @@ function handleWalkToGE() {
     }
 }
 
-// ---- BUY_AT_GE ----
+// ---- BUY_AT_GE (Fix10n) ---- Full GE gear buying ----
+// GE Clerk NPC ID: 1634
+// GE Widget group: 465 (main interface)
+// Chatbox: 162 (search input)
+// Coins item ID: 995
+var GE_CLERK_IDS = [1634, 1635];
+
 function handleBuyAtGE() {
-    // GE purchasing is complex and depends on DZ APIs
-    // For now, log and skip to self-sufficient gathering
-    botMsg("GE purchasing not available in self-sufficient mode. Crafting instead.", "SlayerBot");
-    if (cfgVal("selfSufficiency", false)) {
-        state = STATES.CHECK_SUPPLIES;
-    } else {
-        state = STATES.IDLE;
+    if (!geBuyList || geBuyList.length === 0) {
+        botMsg("GE buy list empty — equipping and heading to task");
+        geBuyPhase = 0;
+        geBuyIndex = 0;
+        // Equip anything we just bought
+        var bought = [1323, 1115, 1067, 1153, 1191];
+        for (var bi = 0; bi < bought.length; bi++) {
+            if (Game.info.inventory.hasItem(bought[bi], 1)) {
+                try { Game.interact.inventory.equipItem(bought[bi]); } catch(e) {}
+            }
+        }
+        state = STATES.WALK_TO_TASK;
+        return;
     }
+
+    // Phase 0: Open GE interface (interact with clerk)
+    if (geBuyPhase === 0) {
+        var geOpen = false;
+        try {
+            var geW = Game.info.widget.getWidget(465, 0);
+            geOpen = geW && Game.info.widget.isVisible(geW);
+        } catch(e) {}
+
+        if (geOpen) {
+            geBuyPhase = 1;
+            waitTicks = 0;
+            botMsg("GE interface is open");
+            return;
+        }
+
+        if (!isExecuting) {
+            botMsg("Opening GE (interacting with clerk)...");
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try {
+                    Game.interact.npc.interactNearest(GE_CLERK_IDS, MenuAction.NPC_FIRST_OPTION);
+                } catch(e) {
+                    botMsg("GE clerk interact error: " + e);
+                }
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        waitTicks++;
+        if (waitTicks > 30) {
+            botMsg("GE clerk not found! Aborting GE buy, going to task with no gear");
+            geBuyList = [];
+            state = STATES.WALK_TO_TASK;
+        }
+        return;
+    }
+
+    // Phase 1: Click on an empty buy offer slot
+    if (geBuyPhase === 1) {
+        waitTicks++;
+        if (waitTicks < 3) return;
+
+        var currentItem = geBuyList[geBuyIndex];
+        botMsg("GE Phase 1: Starting buy for " + currentItem.name + " (" + (geBuyIndex + 1) + "/" + geBuyList.length + ")");
+
+        if (!isExecuting) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try {
+                    // Click first offer slot (child 7) — will show buy/sell options on empty slot
+                    var slot = Game.info.widget.getWidget(465, 7);
+                    if (slot) {
+                        Game.interact.widget.action(slot, MenuAction.CC_OP);
+                        botMsg("Clicked GE slot 1");
+                    } else {
+                        botMsg("GE slot widget 465:7 not found");
+                    }
+                } catch(e) {
+                    botMsg("GE slot click error: " + e);
+                }
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        geBuyPhase = 2;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 2: Wait for search to appear, then type item name
+    if (geBuyPhase === 2) {
+        waitTicks++;
+        if (waitTicks < 5) return;
+
+        currentItem = geBuyList[geBuyIndex];
+        botMsg("GE Phase 2: Typing search for " + currentItem.name);
+
+        if (!isExecuting) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try {
+                    // Type item name into GE search via Java AWT KeyEvent
+                    var searchText = currentItem.name.toLowerCase();
+                    var canvas = Client.getCanvas();
+                    if (canvas) {
+                        var KeyEvent = Java.type("java.awt.event.KeyEvent");
+                        var System = Java.type("java.lang.System");
+                        for (var ci = 0; ci < searchText.length; ci++) {
+                            var ch = searchText.charAt(ci);
+                            var now = System.currentTimeMillis();
+                            canvas.dispatchEvent(new KeyEvent(canvas, KeyEvent.KEY_TYPED, now, 0, KeyEvent.VK_UNDEFINED, ch.charCodeAt(0)));
+                        }
+                        botMsg("Typed: " + searchText);
+                    } else {
+                        botMsg("Client.getCanvas() returned null — cannot type in GE search");
+                    }
+                } catch(e) {
+                    botMsg("GE search typing error: " + e);
+                }
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        geBuyPhase = 3;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 3: Wait for search results, click first result
+    if (geBuyPhase === 3) {
+        waitTicks++;
+        if (waitTicks < 8) return; // Give time for search to populate
+
+        botMsg("GE Phase 3: Clicking search result");
+
+        if (!isExecuting) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try {
+                    // Search results appear in widget 162 (chatbox)
+                    // Try clicking the first result — usually child 53 or similar
+                    var resultWidget = Game.info.widget.getWidget(162, 53);
+                    if (resultWidget && Game.info.widget.isVisible(resultWidget)) {
+                        Game.interact.widget.action(resultWidget, MenuAction.CC_OP);
+                        botMsg("Clicked search result in 162:53");
+                    } else {
+                        // Try alternative: widget 162 child 36
+                        var alt = Game.info.widget.getWidget(162, 36);
+                        if (alt && Game.info.widget.isVisible(alt)) {
+                            Game.interact.widget.action(alt, MenuAction.CC_OP);
+                            botMsg("Clicked search result in 162:36");
+                        } else {
+                            botMsg("Search result widget not found — trying Enter key");
+                            // Try pressing Enter to select first result
+                            var canvas = Client.getCanvas();
+                            if (canvas) {
+                                var KeyEvent = Java.type("java.awt.event.KeyEvent");
+                                var now = Java.type("java.lang.System").currentTimeMillis();
+                                canvas.dispatchEvent(new KeyEvent(canvas, KeyEvent.KEY_PRESSED, now, 0, KeyEvent.VK_ENTER, '\n'.charCodeAt(0)));
+                                canvas.dispatchEvent(new KeyEvent(canvas, KeyEvent.KEY_RELEASED, now + 50, 0, KeyEvent.VK_ENTER, '\n'.charCodeAt(0)));
+                            }
+                        }
+                    }
+                } catch(e) {
+                    botMsg("GE result click error: " + e);
+                }
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        geBuyPhase = 4;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 4: Item selected — set price high for instant buy, then confirm
+    if (geBuyPhase === 4) {
+        waitTicks++;
+        if (waitTicks < 5) return;
+
+        botMsg("GE Phase 4: Setting price +5% x4 and confirming");
+
+        if (!isExecuting) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try {
+                    // Click +5% price button 4 times (overpay for instant buy)
+                    // +5% button is typically widget 465 child 39 or similar
+                    // We try to find and click it multiple times
+                    for (var pp = 0; pp < 4; pp++) {
+                        try {
+                            // Try common +5% widget IDs
+                            var plus5 = Game.info.widget.getWidget(465, 39);
+                            if (plus5 && Game.info.widget.isVisible(plus5)) {
+                                Game.interact.widget.action(plus5, MenuAction.CC_OP);
+                            }
+                        } catch(e2) {}
+                    }
+                } catch(e) {
+                    botMsg("GE price set error: " + e);
+                }
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        geBuyPhase = 5;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 5: Click Confirm button
+    if (geBuyPhase === 5) {
+        waitTicks++;
+        if (waitTicks < 3) return;
+
+        botMsg("GE Phase 5: Clicking Confirm");
+
+        if (!isExecuting) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try {
+                    // Confirm button — try common widget IDs
+                    var confirm = Game.info.widget.getWidget(465, 27);
+                    if (confirm && Game.info.widget.isVisible(confirm)) {
+                        Game.interact.widget.action(confirm, MenuAction.CC_OP);
+                        botMsg("Clicked Confirm at 465:27");
+                    } else {
+                        // Try alternative
+                        var alt = Game.info.widget.getWidget(465, 29);
+                        if (alt && Game.info.widget.isVisible(alt)) {
+                            Game.interact.widget.action(alt, MenuAction.CC_OP);
+                            botMsg("Clicked Confirm at 465:29");
+                        } else {
+                            botMsg("Confirm button not found");
+                        }
+                    }
+                } catch(e) {
+                    botMsg("GE confirm error: " + e);
+                }
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        geBuyPhase = 6;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 6: Wait for purchase to complete, then collect
+    if (geBuyPhase === 6) {
+        waitTicks++;
+        if (waitTicks < 10) return; // Wait for offer to process
+
+        botMsg("GE Phase 6: Collecting purchased item");
+
+        if (!isExecuting) {
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                try {
+                    // Collect button — usually widget 465 child 6 area or use Collect All
+                    // Try clicking the offer slot to collect
+                    var slot = Game.info.widget.getWidget(465, 7);
+                    if (slot) {
+                        Game.interact.widget.action(slot, MenuAction.CC_OP);
+                        botMsg("Clicked slot to collect");
+                    }
+                } catch(e) {
+                    botMsg("GE collect error: " + e);
+                }
+                isExecuting = false;
+            }, Utility.getDelay());
+        }
+        geBuyPhase = 7;
+        waitTicks = 0;
+        return;
+    }
+
+    // Phase 7: Check if we got the item — move to next or finish
+    if (geBuyPhase === 7) {
+        waitTicks++;
+        if (waitTicks < 5) return;
+
+        currentItem = geBuyList[geBuyIndex];
+        var gotItem = Game.info.inventory.hasItem(currentItem.id, 1);
+
+        if (gotItem) {
+            botMsg("Got " + currentItem.name + " from GE!");
+        } else {
+            botMsg("May not have received " + currentItem.name + " yet — continuing anyway");
+        }
+
+        geBuyIndex++;
+        if (geBuyIndex < geBuyList.length) {
+            // More items to buy — go back to phase 1
+            geBuyPhase = 1;
+            waitTicks = 0;
+            botMsg("Next item: " + geBuyList[geBuyIndex].name);
+        } else {
+            // All done! Equip everything and go to task
+            botMsg("GE shopping done! Equipping gear and heading to task");
+            for (var eq = 0; eq < geBuyList.length; eq++) {
+                if (Game.info.inventory.hasItem(geBuyList[eq].id, 1)) {
+                    try { Game.interact.inventory.equipItem(geBuyList[eq].id); } catch(e) {}
+                }
+            }
+            geBuyList = [];
+            geBuyIndex = 0;
+            geBuyPhase = 0;
+            // GO TO TASK — NOT master!
+            state = STATES.WALK_TO_TASK;
+        }
+        return;
+    }
+
+    // Safety: unknown phase
+    botMsg("GE unknown phase " + geBuyPhase + " — resetting");
+    geBuyPhase = 0;
+    waitTicks = 0;
 }
 
 // ---- WALK_TO_TASK ----

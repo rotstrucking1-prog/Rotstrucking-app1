@@ -1,0 +1,32 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fix10o MAIN</title>
+<style>body{background:#1a1a2e;color:#eee;font-family:monospace;text-align:center;padding:20px}
+button{font-size:24px;padding:20px 60px;background:#00b4d8;color:#fff;border:none;border-radius:12px;cursor:pointer;margin:20px}
+button:active{background:#0096c7}
+#status{font-size:18px;margin:10px;color:#90e0ef}
+pre{text-align:left;background:#16213e;padding:15px;border-radius:8px;max-height:200px;overflow:auto;font-size:11px}</style></head><body>
+<h1>Fix10o — MAIN</h1>
+<p>Varbit task reading + var currentItem fix</p>
+<button onclick="copyCode()">COPY MAIN CODE</button>
+<div id="status"></div>
+<script>
+var CODE = "";
+async function loadCode() {
+  try {
+    var r = await fetch("slayer_MAIN.txt");
+    CODE = await r.text();
+    document.getElementById("status").textContent = "Loaded " + CODE.length + " chars";
+  } catch(e) {
+    document.getElementById("status").textContent = "Error: " + e;
+  }
+}
+function copyCode() {
+  if (!CODE) { document.getElementById("status").textContent = "Still loading..."; return; }
+  navigator.clipboard.writeText(CODE).then(function() {
+    document.getElementById("status").textContent = "COPIED! Paste into DZ MAIN tab";
+    document.getElementById("status").style.color = "#00ff88";
+  }).catch(function(e) {
+    document.getElementById("status").textContent = "Copy failed: " + e;
+  });
+}
+loadCode();
+</script></body></html>

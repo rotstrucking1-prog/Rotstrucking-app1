@@ -1,0 +1,18 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Hotfix20 MAIN</title>
+<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:20px;background:#1a1a2e;color:#e0e0e0}
+h1{color:#00d4ff}h2{color:#ffa500}.copy-btn{display:block;width:100%;padding:20px;font-size:22px;font-weight:bold;
+background:#0066ff;color:#fff;border:none;border-radius:12px;cursor:pointer;margin:15px 0}
+.copy-btn:hover{background:#0052cc}.copy-btn.copied{background:#00cc44}
+textarea{width:100%;height:200px;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:8px;padding:10px;font-family:monospace;font-size:11px;display:none}
+.show-btn{background:#333;color:#aaa;border:1px solid #555;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+</style></head><body>
+<h1>Hotfix20 - MAIN</h1>
+<h2>Fixes: .ids → .npcIds (root cause of no targeting + teleporting to master) + cfgVal type-safety + manhole rewrite</h2>
+<button class="copy-btn" onclick="copyCode(this,'main')">COPY MAIN CODE</button>
+<button class="show-btn" onclick="document.getElementById('main').style.display=document.getElementById('main').style.display==='none'?'block':'none'">Show/Hide Code</button>
+<textarea id="main"></textarea>
+<script>
+var mainB64 = "";
+fetch("slayer_MAIN.txt").then(r=>r.text()).then(t=>{document.getElementById("main").value=t;});
+function copyCode(btn,id){var t=document.getElementById(id);t.select();document.execCommand("copy");btn.textContent="COPIED!";btn.classList.add("copied");setTimeout(function(){btn.textContent="COPY MAIN CODE";btn.classList.remove("copied")},3000);}
+</script></body></html>

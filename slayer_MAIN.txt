@@ -16,13 +16,41 @@
 // SAFE CONFIG READER - prevents crash when config property is missing
 // -----------------------------------------------------------------------------
 function cfgVal(name, defaultVal) {
-    if (config && config[name] && typeof config[name].getValue === "function") {
-        var v = config[name].getValue();
-        if (v !== null && v !== undefined) {
-            return v;
+    try {
+        if (!config || !config[name]) return defaultVal;
+        var getter = config[name].getValue;
+        if (!getter) return defaultVal;
+        var v = getter.call(config[name]);
+        if (v === null || v === undefined) return defaultVal;
+        // Force-convert to match defaultVal type — never rely on typeof for Java values
+        if (typeof defaultVal === "string") {
+            try { return "" + v; } catch(e2) { return defaultVal; }
         }
+        if (typeof defaultVal === "number") {
+            var n = Number(v);
+            if (isNaN(n)) return defaultVal;
+            return n;
+        }
+        if (typeof defaultVal === "boolean") {
+            try {
+                var s = "" + v;
+                if (s === "true") return true;
+                if (s === "false") return false;
+            } catch(e2) {}
+            return defaultVal;
+        }
+        return v;
+    } catch(e) {
+        return defaultVal;
     }
-    return defaultVal;
+}
+
+function cfgSet(name, val) {
+    try {
+        if (config && config[name] && config[name].setValue) {
+            config[name].setValue(val);
+        }
+    } catch(e) {}
 }
 
 // -----------------------------------------------------------------------------
@@ -1460,7 +1488,7 @@ function setAttackStyle() {
 function attackWithRangedOrMagic() {
     if (!currentTaskMonster) return;
     if (!isPlayerIdle()) return;
-    var npcIds = currentTaskMonster.ids;
+    var npcIds = currentTaskMonster.npcIds;
     if (!npcIds || npcIds.length === 0) return;
 
     var target = Game.info.npc.getNearest(npcIds);
@@ -3334,7 +3362,7 @@ function handleWalkToTask() {
         // Phase 0: Walk to dungeon entrance on surface
         if (dungeonPhase === 0) {
             if (isNear(entrance.surfX, entrance.surfY, 8)) {
-                botMsg("At " + entrance.desc + " -- entering dungeon", "SlayerBot");
+                botMsg("At " + entrance.desc + " -- checking entrance", "SlayerBot");
                 dungeonPhase = 1;
                 return;
             }
@@ -3346,71 +3374,67 @@ function handleWalkToTask() {
             return;
         }
 
-        // Phase 1: Interact with entrance object (first click -- open cover)
-        if (dungeonPhase === 1) {
-            var entObj = null;
-            var clickedId = 0;
-            for (var ei = 0; ei < entrance.objects.length; ei++) {
-                entObj = Game.info.gameObject.getNearest([entrance.objects[ei]]);
-                if (entObj) {
-                    clickedId = entrance.objects[ei];
-                    break;
-                }
-            }
-            if (entObj) {
-                botMsg("Phase1: clicking object " + clickedId, "SlayerBot");
-                isExecuting = true;
-                Utility.invokeLater(function() {
-                    Game.interact.gameObject.interact(entObj, MenuAction.GAME_OBJECT_FIRST_OPTION);
-                    isExecuting = false;
-                }, Utility.getDelay());
-                dungeonPhase = 2;
-                actionCooldown = 10;
-            } else {
-                botMsg("Phase1: no entrance objects found -- back to phase 0", "SlayerBot");
-                dungeonPhase = 0;
-            }
-            return;
-        }
-
-        // Phase 2: Wait for player to arrive underground
-        if (dungeonPhase === 2) {
+        // Phase 1+2: Simple logic -- if open hole exists click it, else open the cover
+        if (dungeonPhase >= 1) {
+            if (actionCooldown > 0) return;
+            // Check if we fell underground already
             var nowY = Client.getLocalPlayer().getWorldLocation().getY();
             if (nowY >= 9000) {
                 botMsg("Entered dungeon -- walking to task", "SlayerBot");
                 dungeonPhase = 0;
                 return;
             }
-            // Still on surface -- try to click the climb-down object
-            // Prefer 881 (open manhole) over 882 (closed cover)
-            if (actionCooldown <= 0) {
-                // Try each object individually for better debug
-                var entObj2 = null;
-                var usedId = 0;
-                // Reverse order: open manhole (881) first, then closed (882)
-                for (var ei2 = entrance.objects.length - 1; ei2 >= 0; ei2--) {
-                    entObj2 = Game.info.gameObject.getNearest([entrance.objects[ei2]]);
-                    if (entObj2) {
-                        usedId = entrance.objects[ei2];
-                        break;
-                    }
-                }
-                if (entObj2) {
-                    botMsg("Phase2: clicking object " + usedId, "SlayerBot");
-                    isExecuting = true;
-                    Utility.invokeLater(function() {
-                        Game.interact.gameObject.interact(entObj2, MenuAction.GAME_OBJECT_FIRST_OPTION);
-                        isExecuting = false;
-                    }, Utility.getDelay());
-                    actionCooldown = 10;
-                } else {
-                    botMsg("Phase2: no objects found near player -- back to phase 0", "SlayerBot");
-                    dungeonPhase = 0;
+            // Look for OPEN hole first (881) -- click = climb down
+            var openHole = Game.info.gameObject.getNearest([881]);
+            if (openHole) {
+                botMsg("Open manhole found (881) -- climbing down", "SlayerBot");
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.interact(openHole, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    isExecuting = false;
+                }, Utility.getDelay());
+                actionCooldown = 10;
+                dungeonPhase = 2;
+                return;
+            }
+            // No open hole -- look for CLOSED cover (882) -- click = open it
+            var closedCover = Game.info.gameObject.getNearest([882]);
+            if (closedCover) {
+                botMsg("Closed manhole (882) -- opening it", "SlayerBot");
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.interact(closedCover, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    isExecuting = false;
+                }, Utility.getDelay());
+                actionCooldown = 6;
+                return;
+            }
+            // Neither found -- try other entrance objects from table
+            var entObj = null;
+            var usedId = 0;
+            for (var ei = 0; ei < entrance.objects.length; ei++) {
+                if (entrance.objects[ei] === 881 || entrance.objects[ei] === 882) continue;
+                entObj = Game.info.gameObject.getNearest([entrance.objects[ei]]);
+                if (entObj) {
+                    usedId = entrance.objects[ei];
+                    break;
                 }
             }
+            if (entObj) {
+                botMsg("Clicking entrance object " + usedId, "SlayerBot");
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.interact(entObj, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    isExecuting = false;
+                }, Utility.getDelay());
+                actionCooldown = 10;
+                dungeonPhase = 2;
+                return;
+            }
+            botMsg("No entrance objects found -- walking closer", "SlayerBot");
+            dungeonPhase = 0;
             return;
         }
-        return;
     }
 
     // --- Already underground or surface task -- normal walk ---
@@ -3659,7 +3683,7 @@ function handleFightTask() {
 
     // === PRIORITY 15: Attack target ===
     if (!isInActiveCombat()) {
-        var npcIds = currentTaskMonster.ids;
+        var npcIds = currentTaskMonster.npcIds;
         if (!npcIds || npcIds.length === 0) {
             botMsg("No NPC IDs for " + currentTaskName, "SlayerBot");
             state = STATES.SELECT_MASTER;
@@ -3697,7 +3721,7 @@ function handleFightTask() {
 function handleSpecialFinishCheck() {
     if (!currentTaskMonster) return false;
     var monName = currentTaskMonster.name.toLowerCase();
-    var npcIds = currentTaskMonster.ids;
+    var npcIds = currentTaskMonster.npcIds;
 
     // Gargoyles: rock hammer when low HP
     if (monName.indexOf("gargoyle") !== -1 && Game.info.inventory.hasItem(ROCK_HAMMER_ID, 1)) {
@@ -6045,7 +6069,7 @@ function handleDebugIdle() {
 
     if (startFlag && selectedTest !== "none") {
         // Reset the start flag immediately so it does not re-trigger
-        config.debugStartTest.setValue(false);
+        cfgSet("debugStartTest", false);
         botMsg("Starting test: " + selectedTest, "DEBUG");
         if (debugOverlay) debugOverlay.setValue("DEBUG: Running " + selectedTest);
         startDebugTest(selectedTest);
@@ -6156,7 +6180,7 @@ function runVarbitDump() {
                 botMsg("Creature " + creature + " = " + monName, "DEBUG");
                 if (MONSTER_DB[monName]) {
                     var monData = MONSTER_DB[monName];
-                    botMsg("  IDs: " + monData.ids.join(",") + " | Loc: (" + monData.location.x + "," + monData.location.y + ")", "DEBUG");
+                    botMsg("  IDs: " + monData.npcIds.join(",") + " | Loc: (" + monData.location.x + "," + monData.location.y + ")", "DEBUG");
                 }
             } else {
                 botMsg("Creature " + creature + " = UNKNOWN (not in lookup table)", "DEBUG");
@@ -6204,7 +6228,7 @@ function runStatusDump() {
         botMsg("Food count: unavailable", "DEBUG");
     }
     if (currentTaskMonster) {
-        botMsg("Monster: " + currentTaskMonster.name + " | IDs: " + currentTaskMonster.ids.join(","), "DEBUG");
+        botMsg("Monster: " + currentTaskMonster.name + " | IDs: " + currentTaskMonster.npcIds.join(","), "DEBUG");
         botMsg("Location: (" + currentTaskMonster.location.x + ", " + currentTaskMonster.location.y + ")", "DEBUG");
     }
     botMsg("========================", "DEBUG");
@@ -6225,8 +6249,8 @@ function handleDebugChatCommand(msg) {
         debugTestName = "";
         debugTickCount = 0;
         state = STATES.DEBUG_IDLE;
-        config.debugStartTest.setValue(false);
-        config.debugTest.setValue("none");
+        cfgSet("debugStartTest", false);
+        cfgSet("debugTest", "none");
         if (debugOverlay) debugOverlay.setValue("DEBUG: Idle");
         return true;
     }
@@ -6236,8 +6260,8 @@ function handleDebugChatCommand(msg) {
         debugActive = false;
         debugAllowedStates = null;
         debugTestName = "";
-        config.debugStartTest.setValue(false);
-        config.debugTest.setValue("none");
+        cfgSet("debugStartTest", false);
+        cfgSet("debugTest", "none");
         if (debugOverlay) debugOverlay.setValue("");
         state = STATES.STARTUP;
         return true;
@@ -6271,8 +6295,8 @@ function checkDebugReturn() {
     debugTestName = "";
     debugTickCount = 0;
     debugWatchWarnings = 0;
-    config.debugStartTest.setValue(false);
-    config.debugTest.setValue("none");
+    cfgSet("debugStartTest", false);
+    cfgSet("debugTest", "none");
     state = STATES.DEBUG_IDLE;
     if (debugOverlay) debugOverlay.setValue("DEBUG: Idle");
 }
@@ -6314,8 +6338,8 @@ function debugWatchdog() {
         debugAllowedStates = null;
         debugTestName = "";
         debugTickCount = 0;
-        config.debugStartTest.setValue(false);
-        config.debugTest.setValue("none");
+        cfgSet("debugStartTest", false);
+        cfgSet("debugTest", "none");
         state = STATES.DEBUG_IDLE;
         if (debugOverlay) debugOverlay.setValue("DEBUG: TIMEOUT -- check warnings");
         return;
@@ -6605,9 +6629,9 @@ function OnNPCLootAppeared(npc) {
 
     // Check if this NPC is our task
     var isTask = false;
-    if (currentTaskMonster.ids) {
-        for (var i = 0; i < currentTaskMonster.ids.length; i++) {
-            if (currentTaskMonster.ids[i] === npcId) {
+    if (currentTaskMonster.npcIds) {
+        for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
+            if (currentTaskMonster.npcIds[i] === npcId) {
                 isTask = true;
                 break;
             }

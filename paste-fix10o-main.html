@@ -10,7 +10,7 @@ h1{color:#4fc3f7}
 pre{background:#0d1117;padding:15px;border-radius:8px;overflow-x:auto;max-height:400px;font-size:11px;color:#c9d1d9;white-space:pre;border:1px solid #333}
 .info{color:#aaa;margin:10px 0}
 </style></head><body>
-<h1>Fix10o -- MAIN Tab</h1>
+<h1>Fix10o -- MAIN Tab (hotfix5)</h1>
 <p class="info">Click the button below to copy ALL code, then paste into DZ MAIN tab and Commit.</p>
 <button class="copy-btn" onclick="copyCode(this)">&#x1F4CB; COPY MAIN CODE</button>
 <p class="info" id="charcount"></p>
@@ -105,6 +105,7 @@ var STATES = {
 // BOT STATE VARIABLES
 // -----------------------------------------------------------------------------
 var state = STATES.STARTUP;
+var hasGem = false;
 var isExecuting = false;
 var actionCooldown = 0; // Ticks to wait after an action before allowing another
 // ---- GE GEAR BUYING (Fix10n) ----
@@ -1442,7 +1443,6 @@ function readTaskFromVarbits() {
 
 // ---- STARTUP ----
 function handleStartup() {
-    var hasGem = false;
     botMsg(&quot;Auto Slayer Bot v24-Fix10o starting up!&quot;, &quot;SlayerBot&quot;);
     updateCachedStats();
     retryCount = 0;

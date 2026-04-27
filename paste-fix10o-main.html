@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Fix10o hotfix10 - MAIN</title>
+<html><head><meta charset="UTF-8"><title>Fix10o hotfix11 - MAIN</title>
 <style>
 body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; text-align: center; }
 h1 { color: #0ff; }
@@ -8,9 +8,8 @@ h1 { color: #0ff; }
 .ok { color: #0f0; font-size: 20px; margin-top: 10px; }
 textarea { width: 90%%; height: 200px; background: #111; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; border: 1px solid #333; }
 </style></head><body>
-<h1>Fix10o hotfix10 -- MAIN</h1>
-<p style="color:#ff0;font-size:18px;">45-sec stuck detection for WALK_TO_TASK</p>
-<p>If character hasnt moved in 45 seconds, resets pathing and retries</p>
+<h1>Fix10o hotfix11 -- MAIN</h1>
+<p style="color:#ff0;font-size:18px;">Manhole fix + stuck detection bypass during dungeon entry</p>
 <button class="btn" onclick="copyCode()">COPY MAIN CODE</button>
 <div id="status"></div>
 <br>
@@ -3035,7 +3034,12 @@ function handleWalkToTask() {
     var playerOnSurface = playerY &lt; 9000;
 
     // 45-second stuck detection -- if player hasnt moved in ~75 ticks, reset pathing
-    if (playerX === walkStuckX &amp;&amp; playerY === walkStuckY) {
+    // Skip during dungeon entrance phases -- player stands still while interacting
+    if (dungeonPhase &gt; 0) {
+        walkStuckTick = 0;
+        walkStuckX = -1;
+        walkStuckY = -1;
+    } else if (playerX === walkStuckX &amp;&amp; playerY === walkStuckY) {
         walkStuckTick = walkStuckTick + 1;
         if (walkStuckTick &gt;= 75) {
             botMsg(&quot;Stuck for 45 sec -- resetting path to task&quot;, &quot;SlayerBot&quot;);
@@ -3116,10 +3120,12 @@ function handleWalkToTask() {
                 dungeonPhase = 0;
                 return;
             }
-            // Still on surface -- might need to interact again (e.g. open then climb)
+            // Still on surface -- interact with the SECOND object (climb-down)
+            // After opening cover (882), the open manhole (881) appears
+            // Try objects in REVERSE order to prefer the open/climb version
             if (actionCooldown &lt;= 0) {
                 var entObj2 = null;
-                for (var ei2 = 0; ei2 &lt; entrance.objects.length; ei2++) {
+                for (var ei2 = entrance.objects.length - 1; ei2 &gt;= 0; ei2--) {
                     entObj2 = Game.info.gameObject.getNearest([entrance.objects[ei2]]);
                     if (entObj2) { break; }
                 }
@@ -3129,7 +3135,10 @@ function handleWalkToTask() {
                         Game.interact.gameObject.interact(entObj2, MenuAction.GAME_OBJECT_FIRST_OPTION);
                         isExecuting = false;
                     }, Utility.getDelay());
-                    actionCooldown = 5;
+                    actionCooldown = 8;
+                } else {
+                    botMsg(&quot;No entrance object found -- retrying phase 0&quot;, &quot;SlayerBot&quot;);
+                    dungeonPhase = 0;
                 }
             }
             return;

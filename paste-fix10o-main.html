@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Fix10o hotfix11 - MAIN</title>
+<html><head><meta charset="UTF-8"><title>Fix10o hotfix12 - MAIN</title>
 <style>
 body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; text-align: center; }
 h1 { color: #0ff; }
@@ -8,8 +8,8 @@ h1 { color: #0ff; }
 .ok { color: #0f0; font-size: 20px; margin-top: 10px; }
 textarea { width: 90%%; height: 200px; background: #111; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; border: 1px solid #333; }
 </style></head><body>
-<h1>Fix10o hotfix11 -- MAIN</h1>
-<p style="color:#ff0;font-size:18px;">Manhole fix + stuck detection bypass during dungeon entry</p>
+<h1>Fix10o hotfix12 -- MAIN</h1>
+<p style="color:#ff0;font-size:18px;">Food type crash fix + dungeon stuck detection bypass</p>
 <button class="btn" onclick="copyCode()">COPY MAIN CODE</button>
 <div id="status"></div>
 <br>
@@ -380,6 +380,26 @@ FOOD_HEALING[379] = 12;   // Lobster
 FOOD_HEALING[373] = 16;   // Swordfish
 FOOD_HEALING[385] = 20;   // Shark
 FOOD_HEALING[7946] = 16;  // Monkfish
+// -------- Food name to item ID lookup (config returns string names) --------
+var FOOD_NAME_TO_ID = {};
+FOOD_NAME_TO_ID[&quot;Shrimps&quot;] = 315;
+FOOD_NAME_TO_ID[&quot;Sardine&quot;] = 325;
+FOOD_NAME_TO_ID[&quot;Trout&quot;] = 333;
+FOOD_NAME_TO_ID[&quot;Salmon&quot;] = 329;
+FOOD_NAME_TO_ID[&quot;Bass&quot;] = 365;
+FOOD_NAME_TO_ID[&quot;Lobster&quot;] = 379;
+FOOD_NAME_TO_ID[&quot;Swordfish&quot;] = 373;
+FOOD_NAME_TO_ID[&quot;Monkfish&quot;] = 7946;
+FOOD_NAME_TO_ID[&quot;Shark&quot;] = 385;
+FOOD_NAME_TO_ID[&quot;Manta Ray&quot;] = 391;
+
+// Convert config foodType (string name) to item ID
+function getFoodId() {
+    var raw = cfgVal(&quot;foodType&quot;, &quot;Lobster&quot;);
+    if (typeof raw === &quot;number&quot;) return raw;
+    if (FOOD_NAME_TO_ID[raw] !== undefined) return FOOD_NAME_TO_ID[raw];
+    return 379; // Default lobster
+}
 
 // -------- Potion IDs (dose 1-4 groups) --------
 // VERIFIED vs OSRS Wiki -- each dose has unique item ID (NOT sequential!)
@@ -999,7 +1019,7 @@ function eatFood() {
     // Try the configured food first, then any known food
     var foodId = 0;
     try {
-        foodId = cfgVal(&quot;foodType&quot;, 379);
+        foodId = getFoodId();
     } catch (e) {
         foodId = 379; // Default lobster
     }
@@ -2278,7 +2298,7 @@ function handleBankSupplies() {
         var diff = getTaskDifficulty();
 
         // --- Food ---
-        var foodId = cfgVal(&quot;foodType&quot;, 379);
+        var foodId = getFoodId();
         if (typeof foodId === &quot;string&quot;) {
             var FOOD_MAP = {
                 &quot;shrimps&quot;: 315, &quot;shrimp&quot;: 315, &quot;anchovies&quot;: 319,
@@ -3726,7 +3746,7 @@ function handleRecoverGrave() {
             // Bank is open! Withdraw emergency food
             bankStuckCount = 0;
             var emergFoodId = 379;
-            try { emergFoodId = cfgVal(&quot;foodType&quot;, 379); } catch(e) {}
+            try { emergFoodId = getFoodId(); } catch(e) {}
             if (Game.info.bank.hasItem(emergFoodId, 1)) {
                 Game.interact.bank.withdrawItem(emergFoodId, BankWithdrawType.WITHDRAW_FIVE, false);
             }

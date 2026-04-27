@@ -82,15 +82,97 @@ var STATES = {
     OUTSIDE_SCHEDULE: "OUTSIDE_SCHEDULE",
     REPAIR_BARROWS: "REPAIR_BARROWS",
 
-    IDLE: "IDLE"
+    IDLE: "IDLE",
+    DEBUG_IDLE: "DEBUG_IDLE"
 };
 
 // -----------------------------------------------------------------------------
 // BOT STATE VARIABLES
 // -----------------------------------------------------------------------------
 var state = STATES.STARTUP;
+
+// --- DEBUG MODE VARIABLES ---
+var debugActive = false;
+var debugTestName = "";
+var debugAllowedStates = null;
+var debugTickLimit = 0;
+var debugTickCount = 0;
+// Watchdog -- tracks progress, warns when stuck
+var debugWatchLastState = "";
+var debugWatchLastX = 0;
+var debugWatchLastY = 0;
+var debugWatchProgressTick = 0;
+var debugWatchBankOpened = false;
+var debugWatchKillCount = 0;
+var debugWatchWarnings = 0;
 var hasGem = false;
+
+// Dungeon entrance lookup -- surface coords + object IDs for underground task locations
+var DUNGEON_ENTRANCES = {
+    "Varrock Sewers": {
+        surfX: 3237, surfY: 3457,
+        objects: [882, 881],
+        desc: "Manhole"
+    },
+    "Edgeville Dungeon": {
+        surfX: 3097, surfY: 3468,
+        objects: [1579, 1581],
+        desc: "Trapdoor"
+    },
+    "Fremennik Slayer Dungeon": {
+        surfX: 2794, surfY: 3615,
+        objects: [2123],
+        desc: "Cave entrance"
+    },
+    "Rellekka Slayer Cave": {
+        surfX: 2794, surfY: 3615,
+        objects: [2123],
+        desc: "Cave entrance"
+    },
+    "Lumbridge Swamp Caves": {
+        surfX: 3169, surfY: 3172,
+        objects: [5947],
+        desc: "Dark hole"
+    },
+    "Taverly Dungeon": {
+        surfX: 2884, surfY: 3397,
+        objects: [16680],
+        desc: "Ladder"
+    },
+    "Taverley Dungeon": {
+        surfX: 2884, surfY: 3397,
+        objects: [16680],
+        desc: "Ladder"
+    },
+    "Dwarven Mine": {
+        surfX: 3019, surfY: 3450,
+        objects: [30942],
+        desc: "Stairs"
+    },
+    "Kalphite Lair": {
+        surfX: 3228, surfY: 3108,
+        objects: [3827],
+        desc: "Tunnel"
+    },
+    "Stronghold of Security": {
+        surfX: 3081, surfY: 3420,
+        objects: [20790],
+        desc: "Entrance"
+    },
+    "Catacombs of Kourend": {
+        surfX: 1632, surfY: 3673,
+        objects: [28900],
+        desc: "Vine"
+    }
+};
+var dungeonPhase = 0;
+var walkStuckTick = 0;
+var lastWalkIssuedTick = 0; // Cooldown: min 15 ticks between webWalkTo calls
+var walkStuckX = -1;
+var walkStuckY = -1;
+
 var isExecuting = false;
+var fightIdleTicks = 0; // Ticks in FIGHT_TASK with no action
 var actionCooldown = 0; // Ticks to wait after an action before allowing another
 // ---- GE GEAR BUYING (Fix10n) ----
 var geBuyList = [];     // Items to buy at GE [{id, name, price}]
@@ -105,6 +187,45 @@ function isPlayerIdle() {
     return p.getAnimation() === -1 && !PlayerHelper.isMoving() && !PlayerHelper.isWebWalking();
 }
 
+// Returns true ONLY if player is actively fighting a LIVING target
+function isInActiveCombat() {
+    try {
+        var target = Client.getLocalPlayer().getInteracting();
+        if (!target) return false;
+        // If target is dead, we are NOT in active combat
+        try { if (target.isDead()) return false; } catch(e) {}
+        // If target health is 0, not active combat
+        try { if (target.getHealthRatio() === 0) return false; } catch(e2) {}
+        return true;
+    } catch(e) { return false; }
+}
+
+
+
+// Gated webwalk -- prevents dual-route by enforcing 15-tick cooldown between calls
+// MUST be at global scope so WALK_TO_TASK can access it
+var gatedWebWalk = function(x, y, plane) {
+    if (tickCounter - lastWalkIssuedTick < 15) {
+        return; // Too soon since last walk command
+    }
+    if (PlayerHelper.isWebWalking()) {
+        return; // Already walking
+    }
+    lastWalkIssuedTick = tickCounter;
+    PlayerHelper.webWalkTo(new WorldPoint(x, y, plane));
+};
+
+// Safe getId helper -- DZ ground items may not have .getId()
+function safeGetId(obj) {
+    if (!obj) return -1;
+    try { return obj.getId(); } catch(e1) {}
+    try { return obj.getItemId(); } catch(e2) {}
+    try { return obj.getID(); } catch(e3) {}
+    try { return obj.id; } catch(e4) {}
+    return -1;
+}
+
+var noTaskRetryCount = 0;
 var executingStuckTicks = 0;
 var tickCounter = 0;
 var stateTickCounter = 0;
@@ -146,6 +267,7 @@ var cookingLevel = 0;
 // Banking
 var bankTarget = null;
 var needsRestock = false;
+var needGEJewelry = null;  // set when jewelry needs GE purchase
 var missingItems = [];
 var needGemFromBank = false;
 var gatherToolNeeded = 0;  // Item ID of tool needed for current gather operation
@@ -291,6 +413,26 @@ FOOD_HEALING[379] = 12;   // Lobster
 FOOD_HEALING[373] = 16;   // Swordfish
 FOOD_HEALING[385] = 20;   // Shark
 FOOD_HEALING[7946] = 16;  // Monkfish
+// -------- Food name to item ID lookup (config returns string names) --------
+var FOOD_NAME_TO_ID = {};
+FOOD_NAME_TO_ID.Shrimps = 315;
+FOOD_NAME_TO_ID.Sardine = 325;
+FOOD_NAME_TO_ID.Trout = 333;
+FOOD_NAME_TO_ID.Salmon = 329;
+FOOD_NAME_TO_ID.Bass = 365;
+FOOD_NAME_TO_ID.Lobster = 379;
+FOOD_NAME_TO_ID.Swordfish = 373;
+FOOD_NAME_TO_ID.Monkfish = 7946;
+FOOD_NAME_TO_ID.Shark = 385;
+FOOD_NAME_TO_ID["Manta Ray"] = 391;
+
+// Convert config foodType (string name) to item ID
+function getFoodId() {
+    var raw = cfgVal("foodType", "Lobster");
+    if (typeof raw === "number") return raw;
+    if (FOOD_NAME_TO_ID[raw] !== undefined) return FOOD_NAME_TO_ID[raw];
+    return 379; // Default lobster
+}
 
 // -------- Potion IDs (dose 1-4 groups) --------
 // VERIFIED vs OSRS Wiki -- each dose has unique item ID (NOT sequential!)
@@ -484,6 +626,9 @@ function OnGameTick() {
         return;
     }
 
+    // --- Skip schedule/break/stuck/repair in debug mode ---
+    if (!debugActive) {
+
     // ================================================================
     // SCHEDULE CHECK -- Are we within play hours?
     // ================================================================
@@ -608,6 +753,24 @@ function OnGameTick() {
     // =========================================================================
     // STATE ROUTER
     // =========================================================================
+    // GLOBAL GUARD: Never go to master if we have a valid task
+    } // end of !debugActive schedule/break/stuck checks
+
+    if (state === STATES.SELECT_MASTER && currentTaskName && killsLeft > 0) {
+        botMsg("GUARD: Blocked false SELECT_MASTER -- still have " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
+        state = STATES.CHECK_SUPPLIES;
+    }
+    // GLOBAL GUARD 2: Never declare task complete if varbits say kills remain
+    if (state === STATES.TASK_COMPLETE && killsLeft <= 0) {
+        var guardKills = 0;
+        try { guardKills = Game.getVarPlayerValue(394); } catch(eg) {}
+        if (guardKills > 0) {
+            killsLeft = guardKills;
+            botMsg("GUARD: Task NOT complete -- varbits say " + guardKills + " kills remain", "SlayerBot");
+            state = STATES.FIGHT_TASK;
+        }
+    }
+
     switch (state) {
         case STATES.STARTUP:
             handleStartup();
@@ -747,11 +910,17 @@ function OnGameTick() {
         case STATES.IDLE:
             // Do nothing -- idle until manually restarted or state changed
             break;
+        case STATES.DEBUG_IDLE:
+            handleDebugIdle();
+            break;
         default:
             botMsg("Unknown state: " + state + ", resetting.", "SlayerBot");
             state = STATES.STARTUP;
             break;
     }
+    // --- DEBUG RETURN INTERCEPTOR ---
+    checkDebugReturn();
+    debugWatchdog();
   } catch (err) {
     Game.sendGameMessage("[ROTS] ERROR in OnGameTick: " + err, "[ERR]");
     Game.sendGameMessage("[ROTS] State was: " + state + " | Tick: " + tickCounter, "[ERR]");
@@ -831,8 +1000,12 @@ function canPoison(name) {
 }
 
 function getPlayerLocation() {
-    var loc = Client.getLocalPlayer().getWorldLocation();
-    return {x: loc.getX(), y: loc.getY(), plane: loc.getPlane()};
+    try {
+        var loc = Client.getLocalPlayer().getWorldLocation();
+        return {x: loc.getX(), y: loc.getY(), plane: loc.getPlane()};
+    } catch(e) {
+        return {x: 0, y: 0, plane: 0};
+    }
 }
 
 function hasClueScroll() {
@@ -910,7 +1083,7 @@ function eatFood() {
     // Try the configured food first, then any known food
     var foodId = 0;
     try {
-        foodId = cfgVal("foodType", 379);
+        foodId = getFoodId();
     } catch (e) {
         foodId = 379; // Default lobster
     }
@@ -1015,26 +1188,41 @@ function getTaskDifficulty() {
 function getDesiredFoodCount() {
     var diff = getTaskDifficulty();
     var kl = killsLeft || 10;
+    var playerCmb = getCombatLevel();
 
-    // Scale by difficulty AND kill count
-    if (diff === "TRIVIAL") {
-        // Ghosts, chickens, etc - barely need food
-        if (kl <= 15) return 2;
-        return 4;
+    // LOW LEVEL OVERRIDE: at low combat, even trivial mobs hit hard
+    // Brad: "need to take at least 15 food for tasks early on"
+    if (playerCmb < 40) {
+        // Low level: always bring 15 minimum
+        if (diff === "TRIVIAL" || diff === "EASY") return 15;
+        return 18; // medium+ at low level = bring more
     }
-    if (diff === "EASY") {
-        if (kl <= 20) return 4;
+    if (playerCmb < 70) {
+        // Mid level: still bring decent food
+        if (diff === "TRIVIAL") return 8;
+        if (diff === "EASY") return 10;
+        if (diff === "MEDIUM") return 14;
+        return 18;
+    }
+
+    // High level (70+): original scaling
+    if (diff === "TRIVIAL") {
+        if (kl <= 15) return 4;
         return 6;
     }
+    if (diff === "EASY") {
+        if (kl <= 20) return 6;
+        return 8;
+    }
     if (diff === "MEDIUM") {
-        if (kl <= 15) return 8;
-        return 12;
+        if (kl <= 15) return 10;
+        return 14;
     }
     if (diff === "HARD") {
-        return 16; // dragons/demons hit hard
+        return 18;
     }
     // BOSS
-    return 20;
+    return 22;
 }
 
 // Returns how many prayer pots needed (0 if task doesnt warrant it)
@@ -1196,12 +1384,17 @@ function pickUpLoot() {
 
     for (var i = 0; i < groundItems.length; i++) {
         var item = groundItems[i];
-        var itemId = item.getId();
+        var itemId = safeGetId(item);
+        if (itemId === -1) continue;
 
         // Distance check: only pick up items within 5 tiles
-        var itemLoc = item.getWorldLocation();
-        var dx = Math.abs(itemLoc.getX() - playerLoc.x);
-        var dy = Math.abs(itemLoc.getY() - playerLoc.y);
+        var itemLoc = null;
+        try { itemLoc = item.getWorldLocation(); } catch(e) { continue; }
+        if (!itemLoc) continue;
+        var ilx = 0; var ily = 0;
+        try { ilx = itemLoc.getX(); ily = itemLoc.getY(); } catch(e2) { continue; }
+        var dx = Math.abs(ilx - playerLoc.x);
+        var dy = Math.abs(ily - playerLoc.y);
         if (dx > 5 || dy > 5) continue;
 
         // Always pick up: bones, clue scrolls
@@ -1212,6 +1405,7 @@ function pickUpLoot() {
             isExecuting = true;
             Utility.invokeLater(function() {
                 Game.interact.groundItem.pickup(item);
+                fightIdleTicks = 0;
                 isExecuting = false;
             }, Utility.getDelay());
             return true;
@@ -1221,6 +1415,7 @@ function pickUpLoot() {
             isExecuting = true;
             Utility.invokeLater(function() {
                 Game.interact.groundItem.pickup(item);
+                fightIdleTicks = 0;
                 isExecuting = false;
             }, Utility.getDelay());
             return true;
@@ -1432,6 +1627,17 @@ function readTaskFromVarbits() {
 
 // ---- STARTUP ----
 function handleStartup() {
+    // --- DEBUG MODE CHECK ---
+    if (cfgVal("debugMode", false) && !debugActive) {
+        debugActive = true;
+        debugTickCount = 0;
+        botMsg("DEBUG MODE ENABLED -- bot will stand still", "DEBUG");
+        botMsg("Type !help in chat to see available test commands", "DEBUG");
+        if (statusOverlay) statusOverlay.setValue("Status: DEBUG MODE");
+        if (debugOverlay) debugOverlay.setValue("DEBUG: Idle -- type !help");
+        state = STATES.DEBUG_IDLE;
+        return;
+    }
     botMsg("Auto Slayer Bot v24-Fix10o starting up!", "SlayerBot");
     updateCachedStats();
     retryCount = 0;
@@ -1506,7 +1712,21 @@ function handleCheckStats() {
     // Set attack style based on training focus
     setAttackStyle();
 
-    // Go to master to get/check task
+    // SAFETY: If we already have a valid task, do NOT go to master
+    if (currentTaskName && killsLeft > 0) {
+        botMsg("CHECK_STATS but still have task: " + currentTaskName + " (" + killsLeft + " left) -- resuming!", "SlayerBot");
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+    // Try varbits one more time before going to master
+    var recovered = readTaskFromVarbits();
+    if (recovered && currentTaskName && killsLeft > 0) {
+        botMsg("CHECK_STATS recovered task from varbits: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
+        state = STATES.CHECK_SUPPLIES;
+        return;
+    }
+
+    // Genuinely no task -- go to master
     state = STATES.SELECT_MASTER;
 }
 
@@ -1922,6 +2142,16 @@ function handleCheckSupplies() {
         }
     }
 
+    // 12. Jewelry charge check - replace if at 1 charge or uncharged
+    var activeJewelry = getActiveJewelryTypes();
+    for (var ji = 0; ji < activeJewelry.length; ji++) {
+        if (isJewelryLow(activeJewelry[ji])) {
+            missingItems.push({type: "jewelry", jewelry: activeJewelry[ji], name: activeJewelry[ji].name});
+            needsRestock = true;
+            botMsg("[Jewelry] " + activeJewelry[ji].name + " is low on charges - need replacement!", "SlayerBot");
+        }
+    }
+
     if (needsRestock) {
         var types = [];
         for (var mi = 0; mi < missingItems.length; mi++) { types.push(missingItems[mi].type); }
@@ -2122,17 +2352,80 @@ function handleBankSupplies() {
         if (Game.info.bank.isOpen()) {
             Game.interact.bank.close();
         }
-        bankPhase = 5;
+        bankPhase = 45;  // check jewelry before final exit
         waitTicks = 0;
         return;
     }
 
     // Phase 5: Wait for close then transition
+    // ---- JEWELRY REPLACEMENT (bankPhase 45) ----
+    if (bankPhase === 45) {
+        var activeJewelry = getActiveJewelryTypes();
+        var jewelryHandled = false;
+        for (var ji = 0; ji < activeJewelry.length; ji++) {
+            var jDef = activeJewelry[ji];
+            if (isJewelryLow(jDef)) {
+                // Deposit the old low-charge jewelry first
+                for (var li = 0; li < jDef.lowChargeIds.length; li++) {
+                    if (Game.info.inventory.hasItem(jDef.lowChargeIds[li], 1)) {
+                        Game.interact.bank.depositItem(jDef.lowChargeIds[li], BankDepositType.DEPOSIT_ALL);
+                        botMsg("[Jewelry] Deposited low-charge " + jDef.name, "SlayerBot");
+                        actionCooldown = 3;
+                        return;
+                    }
+                }
+                if (jDef.unchargedId && Game.info.inventory.hasItem(jDef.unchargedId, 1)) {
+                    Game.interact.bank.depositItem(jDef.unchargedId, BankDepositType.DEPOSIT_ALL);
+                    botMsg("[Jewelry] Deposited uncharged " + jDef.name, "SlayerBot");
+                    actionCooldown = 3;
+                    return;
+                }
+                // Now withdraw a charged replacement
+                var replId = findBankReplacement(jDef);
+                if (replId > 0) {
+                    Game.interact.bank.withdrawItem(replId, BankWithdrawType.WITHDRAW_ONE, false);
+                    botMsg("[Jewelry] Withdrew " + jDef.name + " replacement (id:" + replId + ")", "SlayerBot");
+                    jewelryHandled = true;
+                    actionCooldown = 3;
+                    return;
+                } else {
+                    // No replacement in bank - will need to buy at GE
+                    botMsg("[Jewelry] No " + jDef.name + " in bank - will buy at GE", "SlayerBot");
+                    needGEJewelry = jDef;
+                    jewelryHandled = true;
+                }
+            }
+        }
+        bankPhase = 5;
+        if (!jewelryHandled) {
+            actionCooldown = 2;
+        }
+        return;
+    }
+
     if (bankPhase === 5) {
         waitTicks++;
         if (waitTicks < 4) return;
         if (Game.info.bank.isOpen()) return;
-        var ns = postBankState || (currentTaskName ? STATES.CHECK_SUPPLIES : STATES.SELECT_MASTER);
+        var ns = postBankState;
+        if (!ns) {
+            if (currentTaskName) {
+                ns = STATES.CHECK_SUPPLIES;
+            } else {
+                var bkCreature = Game.getVarPlayerValue(395);
+                var bkKills = Game.getVarPlayerValue(394);
+                if (bkCreature > 0 && bkKills > 0) {
+                    var bkName = SLAYER_CREATURE_MAP[bkCreature];
+                    if (bkName) {
+                        currentTaskName = bkName;
+                        currentTaskMonster = findMonster(bkName);
+                        killsLeft = bkKills;
+                        botMsg("Bank exit recovered task: " + bkName + " x" + bkKills);
+                        ns = STATES.CHECK_SUPPLIES;
+                    } else { ns = STATES.SELECT_MASTER; }
+                } else { ns = STATES.SELECT_MASTER; }
+            }
+        }
         postBankState = null;
         bankPhase = 0;
         waitTicks = 0;
@@ -2188,7 +2481,7 @@ function handleBankSupplies() {
         var diff = getTaskDifficulty();
 
         // --- Food ---
-        var foodId = cfgVal("foodType", 379);
+        var foodId = getFoodId();
         if (typeof foodId === "string") {
             var FOOD_MAP = {
                 "shrimps": 315, "shrimp": 315, "anchovies": 319,
@@ -2346,6 +2639,22 @@ function handleBankSupplies() {
         if (gearGlv) withdrawQueue.push({ id: gearGlv.id, qty: 1, label: "Gloves: " + gearGlv.name });
 
         botMsg("Gear scan: atk=" + atkLvl + " def=" + defLvl + " wep=" + (gearWep ? gearWep.name : "equipped/none") + " body=" + (gearBod ? gearBod.name : "equipped/none"));
+
+        // ---- JEWELRY REPLACEMENT (hotfix18) ----
+        var activeJwl = getActiveJewelryTypes();
+        for (var jwi = 0; jwi < activeJwl.length; jwi++) {
+            var jwDef = activeJwl[jwi];
+            if (isJewelryLow(jwDef)) {
+                var replJwl = findBankReplacement(jwDef);
+                if (replJwl > 0) {
+                    withdrawQueue.push({ id: replJwl, qty: 1, label: "Jewelry: " + jwDef.name });
+                    botMsg("[Jewelry] Queued " + jwDef.name + " replacement (id:" + replJwl + ")");
+                } else {
+                    botMsg("[Jewelry] No " + jwDef.name + " in bank! Will need GE purchase.");
+                    needGEJewelry = jwDef;
+                }
+            }
+        }
 
         // ---- FIX10n: NO GEAR DETECTION -> BUY AT GE ----
         var hasGearInBank = (gearWep || gearBod || gearLeg || gearHelm || gearShld || gearBoot || gearGlv);
@@ -2601,13 +2910,7 @@ function handleWalkToGE() {
         return;
     }
 
-    if (!PlayerHelper.isWebWalking()) {
-        isExecuting = true;
-        Utility.invokeLater(function() {
-            PlayerHelper.webWalkTo(new WorldPoint(GE_LOCATION.x, GE_LOCATION.y, GE_LOCATION.plane));
-            isExecuting = false;
-        }, Utility.getDelay());
-    }
+    gatedWebWalk(GE_LOCATION.x, GE_LOCATION.y);
 }
 
 // ---- BUY_AT_GE (Fix10n) ---- Full GE gear buying ----
@@ -2931,10 +3234,188 @@ function handleBuyAtGE() {
 // ---- WALK_TO_TASK ----
 function handleWalkToTask() {
     if (!currentTaskMonster) {
-        botMsg("No task monster data, returning to master.", "SlayerBot");
-        state = STATES.SELECT_MASTER;
+        // Try to recover task from varbits before giving up
+        var creatureId = Game.getVarPlayerValue(395);
+        var killCount = Game.getVarPlayerValue(394);
+        if (creatureId > 0 && killCount > 0) {
+            var monName = SLAYER_CREATURE_MAP[creatureId];
+            if (monName && findMonster(monName)) {
+                killsLeft = killCount;
+                noTaskRetryCount = 0;
+                botMsg("Task recovered in WALK: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
+            } else {
+                noTaskRetryCount = (noTaskRetryCount || 0) + 1;
+                if (noTaskRetryCount % 25 === 0) { botMsg("Walk task data missing x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+                return;
+            }
+        } else {
+            noTaskRetryCount = (noTaskRetryCount || 0) + 1;
+            if (noTaskRetryCount % 25 === 0) { botMsg("Walk no varbits x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+            return;
+        }
+    }
+
+    var taskY = currentTaskMonster.location.y;
+    var pLoc = Client.getLocalPlayer().getWorldLocation();
+    var playerY = pLoc.getY();
+    var playerX = pLoc.getX();
+    var isUnderground = taskY >= 9000;
+    var playerOnSurface = playerY < 9000;
+
+    // --- WebWalker conflict guard ---
+    // If DZ WebWalker is already actively pathing, do NOT issue any new commands.
+    // Only check if we have arrived; otherwise let WebWalker finish uninterrupted.
+    if (PlayerHelper.isWebWalking()) {
+        // Check arrival even while walking
+        if (!isUnderground || !playerOnSurface) {
+            if (isNear(currentTaskMonster.location.x, currentTaskMonster.location.y, 15)) {
+                if (usingSafespot && cfgVal("useSafespots", false)) {
+                    state = STATES.SAFESPOT_FIGHT;
+                } else {
+                    state = STATES.FIGHT_TASK;
+                }
+                retryCount = 0;
+                ticksSinceAntifire = 0;
+                ticksSinceAntipoison = 0;
+                ticksSinceCombatPot = 0;
+                dungeonPhase = 0;
+                botMsg("Arrived at task (while webwalking)", "SlayerBot");
+            }
+        }
+        // Check if underground arrival during dungeon walk
+        if (isUnderground && dungeonPhase === 2) {
+            if (playerY >= 9000) {
+                botMsg("Entered dungeon -- walking to task", "SlayerBot");
+                dungeonPhase = 0;
+            }
+        }
         return;
     }
+
+    // 45-second stuck detection -- if player hasnt moved in ~75 ticks, reset pathing
+    // Skip during dungeon entrance phases -- player stands still while interacting
+    if (dungeonPhase > 0) {
+        walkStuckTick = 0;
+        walkStuckX = -1;
+        walkStuckY = -1;
+    } else if (playerX === walkStuckX && playerY === walkStuckY) {
+        walkStuckTick = walkStuckTick + 1;
+        if (walkStuckTick >= 75) {
+            botMsg("Stuck for 45 sec -- resetting path to task", "SlayerBot");
+            walkStuckTick = 0;
+            walkStuckX = -1;
+            walkStuckY = -1;
+            dungeonPhase = 0;
+            isExecuting = false;
+            // Force a fresh webwalk next tick
+            return;
+        }
+    } else {
+        // Player moved -- reset counter
+        walkStuckX = playerX;
+        walkStuckY = playerY;
+        walkStuckTick = 0;
+    }
+
+    // --- Dungeon entrance handling ---
+    if (isUnderground && playerOnSurface) {
+        var locName = currentTaskMonster.locationName || "";
+        var entrance = DUNGEON_ENTRANCES[locName] || null;
+        if (!entrance) {
+            // Try webwalk anyway -- some clients handle transitions
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                gatedWebWalk(currentTaskMonster.location.x, taskY, currentTaskMonster.location.plane || 0);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+
+        // Phase 0: Walk to dungeon entrance on surface
+        if (dungeonPhase === 0) {
+            if (isNear(entrance.surfX, entrance.surfY, 8)) {
+                botMsg("At " + entrance.desc + " -- entering dungeon", "SlayerBot");
+                dungeonPhase = 1;
+                return;
+            }
+            isExecuting = true;
+            Utility.invokeLater(function() {
+                gatedWebWalk(entrance.surfX, entrance.surfY, 0);
+                isExecuting = false;
+            }, Utility.getDelay());
+            return;
+        }
+
+        // Phase 1: Interact with entrance object (first click -- open cover)
+        if (dungeonPhase === 1) {
+            var entObj = null;
+            var clickedId = 0;
+            for (var ei = 0; ei < entrance.objects.length; ei++) {
+                entObj = Game.info.gameObject.getNearest([entrance.objects[ei]]);
+                if (entObj) {
+                    clickedId = entrance.objects[ei];
+                    break;
+                }
+            }
+            if (entObj) {
+                botMsg("Phase1: clicking object " + clickedId, "SlayerBot");
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.interact(entObj, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    isExecuting = false;
+                }, Utility.getDelay());
+                dungeonPhase = 2;
+                actionCooldown = 10;
+            } else {
+                botMsg("Phase1: no entrance objects found -- back to phase 0", "SlayerBot");
+                dungeonPhase = 0;
+            }
+            return;
+        }
+
+        // Phase 2: Wait for player to arrive underground
+        if (dungeonPhase === 2) {
+            var nowY = Client.getLocalPlayer().getWorldLocation().getY();
+            if (nowY >= 9000) {
+                botMsg("Entered dungeon -- walking to task", "SlayerBot");
+                dungeonPhase = 0;
+                return;
+            }
+            // Still on surface -- try to click the climb-down object
+            // Prefer 881 (open manhole) over 882 (closed cover)
+            if (actionCooldown <= 0) {
+                // Try each object individually for better debug
+                var entObj2 = null;
+                var usedId = 0;
+                // Reverse order: open manhole (881) first, then closed (882)
+                for (var ei2 = entrance.objects.length - 1; ei2 >= 0; ei2--) {
+                    entObj2 = Game.info.gameObject.getNearest([entrance.objects[ei2]]);
+                    if (entObj2) {
+                        usedId = entrance.objects[ei2];
+                        break;
+                    }
+                }
+                if (entObj2) {
+                    botMsg("Phase2: clicking object " + usedId, "SlayerBot");
+                    isExecuting = true;
+                    Utility.invokeLater(function() {
+                        Game.interact.gameObject.interact(entObj2, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                    actionCooldown = 10;
+                } else {
+                    botMsg("Phase2: no objects found near player -- back to phase 0", "SlayerBot");
+                    dungeonPhase = 0;
+                }
+            }
+            return;
+        }
+        return;
+    }
+
+    // --- Already underground or surface task -- normal walk ---
+    // Reset dungeon phase when underground
+    dungeonPhase = 0;
 
     // v24: Cannon setup -- ONLY in multicombat zones (never bring to single combat)
     if (cfgVal("useCannon", false) && !cannonPlaced && shouldUseCannon(currentTaskMonster, true)) {
@@ -2961,30 +3442,71 @@ function handleWalkToTask() {
         return;
     }
 
-    if (!PlayerHelper.isWebWalking()) {
-        isExecuting = true;
-        var mx = currentTaskMonster.location.x;
-        var my = currentTaskMonster.location.y;
-        var mp = currentTaskMonster.location.plane || 0;
-        Utility.invokeLater(function() {
-            PlayerHelper.webWalkTo(new WorldPoint(mx, my, mp));
-            isExecuting = false;
-        }, Utility.getDelay());
-    }
+    isExecuting = true;
+    var mx = currentTaskMonster.location.x;
+    var my = currentTaskMonster.location.y;
+    var mp = currentTaskMonster.location.plane || 0;
+    Utility.invokeLater(function() {
+        gatedWebWalk(mx, my, mp);
+        isExecuting = false;
+    }, Utility.getDelay());
 }
 
 // ---- FIGHT_TASK (major overhaul for v24) ----
 function handleFightTask() {
+    // Fight idle timeout: if stuck for 15+ ticks, force state recovery
+    fightIdleTicks++;
+    if (fightIdleTicks > 15) {
+        // Force re-read varbits and re-target
+        var fKills = 0;
+        try { fKills = Game.getVarPlayerValue(394); } catch(e) {}
+        if (fKills > 0) {
+            killsLeft = fKills;
+            fightIdleTicks = 0;
+            botMsg("Fight idle 15 ticks -- force re-target (kills: " + fKills + ")", "SlayerBot");
+            // Clear any stale interaction
+        } else if (fKills === 0) {
+            killsLeft = 0;
+            state = STATES.TASK_COMPLETE;
+            fightIdleTicks = 0;
+            return;
+        }
+    }
     if (!currentTaskMonster) {
-        state = STATES.SELECT_MASTER;
-        return;
+        // Try to recover task from varbits before giving up
+        var creatureId = Game.getVarPlayerValue(395);
+        var killCount = Game.getVarPlayerValue(394);
+        if (creatureId > 0 && killCount > 0) {
+            var monName = SLAYER_CREATURE_MAP[creatureId];
+            if (monName && findMonster(monName)) {
+                killsLeft = killCount;
+                noTaskRetryCount = 0;
+                botMsg("Task recovered from varbits: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
+            } else {
+                noTaskRetryCount = (noTaskRetryCount || 0) + 1;
+                if (noTaskRetryCount % 25 === 0) { botMsg("Fight task data missing x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+                return;
+            }
+        } else {
+            noTaskRetryCount = (noTaskRetryCount || 0) + 1;
+            if (noTaskRetryCount % 25 === 0) { botMsg("Fight no varbits x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+            return;
+        }
     }
 
-    // Task complete check
+    // Task complete check -- verify with varbits before declaring complete
     if (killsLeft <= 0) {
-        botMsg("Task complete! Killed all " + currentTaskName, "SlayerBot");
-        state = STATES.TASK_COMPLETE;
-        return;
+        // Double-check varbits before declaring task complete
+        var verifyKills = 0;
+        try { verifyKills = Game.getVarPlayerValue(394); } catch(e2) {}
+        if (verifyKills > 0) {
+            killsLeft = verifyKills;
+            botMsg("killsLeft was 0 but varbits say " + verifyKills + " -- restored!", "SlayerBot");
+        } else {
+            botMsg("Task complete! Killed all " + currentTaskName, "SlayerBot");
+            state = STATES.TASK_COMPLETE;
+            return;
+        }
     }
 
     var currentHP = Client.getBoostedSkillLevels(Skill.HITPOINTS);
@@ -3009,9 +3531,10 @@ function handleFightTask() {
     }
 
     // === PRIORITY 3: Eat food ===
-    if (currentHP <= Math.floor(maxHP * 0.45)) {
+    if (currentHP <= Math.floor(maxHP * 0.65)) {
         if (countFood() > 0) {
             eatFood();
+            fightIdleTicks = 0;
             return;
         } else {
             // Out of food -- bank
@@ -3099,8 +3622,11 @@ function handleFightTask() {
     }
 
     // === PRIORITY 11: Loot check ===
-    if (!Client.getLocalPlayer().isInteracting()) {
-        if (pickUpLoot()) return;
+    if (!isInActiveCombat()) {
+        if (pickUpLoot()) {
+            fightIdleTicks = 0;  // We're actively looting
+            return;
+        }
     }
 
     // === PRIORITY 12: Clue scroll banking ===
@@ -3111,7 +3637,8 @@ function handleFightTask() {
     }
 
     // === PRIORITY 13: Bone burying ===
-    if (cfgVal("buryBones", false) && !Client.getLocalPlayer().isInteracting()) {
+    if (cfgVal("buryBones", false) && !isInActiveCombat()) {
+        fightIdleTicks = 0;  // We're doing something
         for (var b = 0; b < ALL_BONE_IDS.length; b++) {
             if (Game.info.inventory.hasItem(ALL_BONE_IDS[b], 1)) {
                 var boneId = ALL_BONE_IDS[b];
@@ -3131,7 +3658,7 @@ function handleFightTask() {
     }
 
     // === PRIORITY 15: Attack target ===
-    if (!Client.getLocalPlayer().isInteracting()) {
+    if (!isInActiveCombat()) {
         var npcIds = currentTaskMonster.ids;
         if (!npcIds || npcIds.length === 0) {
             botMsg("No NPC IDs for " + currentTaskName, "SlayerBot");
@@ -3145,6 +3672,7 @@ function handleFightTask() {
             actionCooldown = 3; // Wait 3 ticks before next action attempt
             Utility.invokeLater(function() {
                 Game.interact.npc.attack(target);
+                fightIdleTicks = 0;
                 isExecuting = false;
             }, Utility.getDelay());
         } else {
@@ -3235,8 +3763,24 @@ function reloadCannon() {
 // ---- SAFESPOT_FIGHT ----
 function handleSafespotFight() {
     if (!currentTaskMonster) {
-        state = STATES.SELECT_MASTER;
-        return;
+        var creatureId = Game.getVarPlayerValue(395);
+        var killCount = Game.getVarPlayerValue(394);
+        if (creatureId > 0 && killCount > 0) {
+            var monName = SLAYER_CREATURE_MAP[creatureId];
+            if (monName && findMonster(monName)) {
+                killsLeft = killCount;
+                noTaskRetryCount = 0;
+                botMsg("Task recovered in SAFESPOT: " + currentTaskName + " (" + killsLeft + " left)", "SlayerBot");
+            } else {
+                noTaskRetryCount = (noTaskRetryCount || 0) + 1;
+                if (noTaskRetryCount % 25 === 0) { botMsg("Safe task data missing x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+                return;
+            }
+        } else {
+            noTaskRetryCount = (noTaskRetryCount || 0) + 1;
+            if (noTaskRetryCount % 25 === 0) { botMsg("Safe no varbits x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+            return;
+        }
     }
 
     if (killsLeft <= 0) {
@@ -3512,7 +4056,7 @@ function handleRecoverGrave() {
             // Bank is open! Withdraw emergency food
             bankStuckCount = 0;
             var emergFoodId = 379;
-            try { emergFoodId = cfgVal("foodType", 379); } catch(e) {}
+            try { emergFoodId = getFoodId(); } catch(e) {}
             if (Game.info.bank.hasItem(emergFoodId, 1)) {
                 Game.interact.bank.withdrawItem(emergFoodId, BankWithdrawType.WITHDRAW_FIVE, false);
             }
@@ -3867,7 +4411,7 @@ function handleLeatherGathering() {
             var hides = Game.info.groundItem.getAll();
             if (hides) {
                 for (var h = 0; h < hides.length; h++) {
-                    if (hides[h].getId() === 1739) { // Cowhide
+                    if (safeGetId(hides[h]) === 1739) { // Cowhide
                         isExecuting = true;
                         var hideItem = hides[h];
                         Utility.invokeLater(function() {
@@ -4148,7 +4692,7 @@ function handleGatherRanged() {
         try { gItems = Game.info.groundItem.getAll(); } catch(e) {}
         if (gItems) {
             for (var gi = 0; gi < gItems.length; gi++) {
-                if (gItems[gi].getId() === FEATHER_ID) {
+                if (safeGetId(gItems[gi]) === FEATHER_ID) {
                     isExecuting = true;
                     var featherItem = gItems[gi];
                     Utility.invokeLater(function() {
@@ -4486,7 +5030,7 @@ function handleArrowKillChickens() {
         try { gItems = Game.info.groundItem.getAll(); } catch(e) {}
         if (gItems) {
             for (var gi = 0; gi < gItems.length; gi++) {
-                if (gItems[gi].getId() === FEATHER_ID) {
+                if (safeGetId(gItems[gi]) === FEATHER_ID) {
                     isExecuting = true;
                     var fItem = gItems[gi];
                     Utility.invokeLater(function() {
@@ -5259,6 +5803,591 @@ function handleLevelHerblore() {
 // OnChatMessage -- Intercepts chat messages to detect tasks, kills, deaths
 // =============================================================================
 var insideChatHandler = false;
+
+// =============================================================================
+// DEBUG MODE SYSTEM
+// Type !help in game chat to see all commands
+// Each command tests one bot system in isolation
+// =============================================================================
+
+var DEBUG_TESTS = {
+    bank: {
+        name: "Banking (open/deposit/close)",
+        states: ["WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "WALK_TO_BANK",
+        setup: null
+    },
+    supplies: {
+        name: "Full Supply Run (check + withdraw)",
+        states: ["CHECK_SUPPLIES", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "CHECK_SUPPLIES",
+        setup: null
+    },
+    ge: {
+        name: "GE Purchase Flow",
+        states: ["WALK_TO_GE", "BUY_AT_GE"],
+        entry: "WALK_TO_GE",
+        setup: null
+    },
+    walk: {
+        name: "Walk to Task Location",
+        states: ["WALK_TO_TASK"],
+        entry: "WALK_TO_TASK",
+        setup: null
+    },
+    fight: {
+        name: "Combat Loop (attack + eat + loot)",
+        states: ["FIGHT_TASK", "SAFESPOT_FIGHT", "EAT_FOOD", "DRINK_PRAYER", "LOOT_ITEMS", "BURY_BONES"],
+        entry: "FIGHT_TASK",
+        setup: null
+    },
+    master: {
+        name: "Get New Slayer Task",
+        states: ["SELECT_MASTER", "WALK_TO_MASTER", "TALK_TO_MASTER", "WAIT_FOR_TASK", "READ_TASK", "CHECK_GEM", "WAIT_GEM_RESPONSE"],
+        entry: "SELECT_MASTER",
+        setup: null
+    },
+    eat: {
+        name: "Eat Food Test",
+        states: ["EAT_FOOD"],
+        entry: "EAT_FOOD",
+        setup: null
+    },
+    loot: {
+        name: "Loot Nearby Items",
+        states: ["LOOT_ITEMS"],
+        entry: "LOOT_ITEMS",
+        setup: null
+    },
+    repair: {
+        name: "Barrows Gear Repair",
+        states: ["REPAIR_BARROWS", "WALK_TO_BANK"],
+        entry: "REPAIR_BARROWS",
+        setup: null
+    },
+    cannon: {
+        name: "Cannon Setup",
+        states: ["SETUP_CANNON"],
+        entry: "SETUP_CANNON",
+        setup: null
+    },
+    death: {
+        name: "Death Recovery",
+        states: ["HANDLE_DEATH", "RECOVER_GRAVE", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "HANDLE_DEATH",
+        setup: null
+    },
+    equip: {
+        name: "Equipment Check + Equip",
+        states: ["CHECK_SUPPLIES", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "CHECK_SUPPLIES",
+        setup: null
+    },
+    task: {
+        name: "Full Task Cycle (supplies + walk + fight)",
+        states: ["CHECK_SUPPLIES", "WALK_TO_BANK", "BANK_SUPPLIES", "WALK_TO_TASK", "FIGHT_TASK", "SAFESPOT_FIGHT", "EAT_FOOD", "DRINK_PRAYER", "LOOT_ITEMS", "BURY_BONES", "TASK_COMPLETE"],
+        entry: "CHECK_SUPPLIES",
+        setup: null
+    },
+    varbits: {
+        name: "Read Varbits (no movement)",
+        states: [],
+        entry: null,
+        setup: "varbits"
+    },
+    status: {
+        name: "Show Bot Status (no movement)",
+        states: [],
+        entry: null,
+        setup: "status"
+    },
+    // === SELF-SUFFICIENCY SYSTEMS (v24) ===
+    fish: {
+        name: "Fishing (gather raw food)",
+        states: ["GATHER_FOOD", "WALK_TO_GATHER", "COOK_FOOD", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "GATHER_FOOD",
+        setup: null
+    },
+    cook: {
+        name: "Cook Food (cook raw fish in inventory)",
+        states: ["COOK_FOOD", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "COOK_FOOD",
+        setup: null
+    },
+    mine: {
+        name: "Mine Ore",
+        states: ["MINE_ORE", "WALK_TO_GATHER", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "MINE_ORE",
+        setup: null
+    },
+    smelt: {
+        name: "Smelt Ore into Bars",
+        states: ["SMELT_ORE", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "SMELT_ORE",
+        setup: null
+    },
+    smith: {
+        name: "Smith Gear from Bars",
+        states: ["SMITH_GEAR", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "SMITH_GEAR",
+        setup: null
+    },
+    leather: {
+        name: "Leather Crafting (kill + tan + craft)",
+        states: ["GATHER_GEAR", "TAN_HIDES", "CRAFT_GEAR", "WALK_TO_GATHER", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "GATHER_GEAR",
+        setup: null
+    },
+    arrows: {
+        name: "Craft Arrows",
+        states: ["CRAFT_ARROWS", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "CRAFT_ARROWS",
+        setup: null
+    },
+    runes: {
+        name: "Runecrafting",
+        states: ["CRAFT_RUNES", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "CRAFT_RUNES",
+        setup: null
+    },
+    potions: {
+        name: "Brew Potions",
+        states: ["BREW_POTIONS", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "BREW_POTIONS",
+        setup: null
+    },
+    herblore: {
+        name: "Level Herblore",
+        states: ["LEVEL_HERBLORE", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "LEVEL_HERBLORE",
+        setup: null
+    },
+    safespot: {
+        name: "Safespot Combat (ranged/magic)",
+        states: ["SAFESPOT_FIGHT", "EAT_FOOD", "DRINK_PRAYER", "LOOT_ITEMS", "BURY_BONES"],
+        entry: "SAFESPOT_FIGHT",
+        setup: null
+    },
+    cballs: {
+        name: "Cannonball Crafting (mine + smelt + smith)",
+        states: ["GATHER_CANNONBALLS", "MINE_ORE", "SMELT_ORE", "SMITH_GEAR", "WALK_TO_GATHER", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "GATHER_CANNONBALLS",
+        setup: null
+    },
+    ranged: {
+        name: "Gather Ranged Supplies",
+        states: ["GATHER_RANGED", "WALK_TO_GATHER", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "GATHER_RANGED",
+        setup: null
+    },
+    pray: {
+        name: "Drink Prayer Potion",
+        states: ["DRINK_PRAYER"],
+        entry: "DRINK_PRAYER",
+        setup: null
+    },
+    bones: {
+        name: "Bury Bones",
+        states: ["BURY_BONES"],
+        entry: "BURY_BONES",
+        setup: null
+    },
+    grave: {
+        name: "Grave Recovery (after death)",
+        states: ["RECOVER_GRAVE", "WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "RECOVER_GRAVE",
+        setup: null
+    },
+    startup: {
+        name: "Startup Sequence (read varbits + decide path)",
+        states: ["STARTUP", "CHECK_STATS", "CHECK_SUPPLIES", "WALK_TO_BANK", "BANK_SUPPLIES", "WALK_TO_TASK"],
+        entry: "STARTUP",
+        setup: null
+    },
+    gem: {
+        name: "Enchanted Gem Check",
+        states: ["CHECK_GEM", "WAIT_GEM_RESPONSE", "CHECK_SUPPLIES"],
+        entry: "CHECK_GEM",
+        setup: null
+    },
+    jewelry: {
+        name: "Jewelry Charge Check + Replace",
+        states: ["WALK_TO_BANK", "BANK_SUPPLIES"],
+        entry: "WALK_TO_BANK",
+        setup: "jewelry"
+    },
+    dungeon: {
+        name: "Dungeon Entry (manhole test)",
+        states: ["WALK_TO_TASK"],
+        entry: "WALK_TO_TASK",
+        setup: "dungeon"
+    },
+    levelup: {
+        name: "Level Up Handler",
+        states: ["HANDLE_LEVEL_UP", "CHECK_STATS"],
+        entry: "HANDLE_LEVEL_UP",
+        setup: null
+    }
+};
+
+function handleDebugIdle() {
+    // First tick -- one clean message
+    if (debugTickCount === 0) {
+        botMsg("DEBUG MODE -- select test in Config panel", "DEBUG");
+        if (debugOverlay) debugOverlay.setValue("DEBUG: Idle -- pick test in Config");
+    }
+    debugTickCount++;
+
+    // Check if user selected a test and toggled Start Test
+    var selectedTest = cfgVal("debugTest", "none");
+    var startFlag = cfgVal("debugStartTest", false);
+
+    if (startFlag && selectedTest !== "none") {
+        // Reset the start flag immediately so it does not re-trigger
+        config.debugStartTest.setValue(false);
+        botMsg("Starting test: " + selectedTest, "DEBUG");
+        if (debugOverlay) debugOverlay.setValue("DEBUG: Running " + selectedTest);
+        startDebugTest(selectedTest);
+    }
+}
+
+function startDebugTest(testKey) {
+    var test = DEBUG_TESTS[testKey];
+    if (!test) {
+        botMsg("Unknown test: " + testKey + " -- type !help for list", "DEBUG");
+        return;
+    }
+
+    // Handle info-only tests (no state change)
+    if (test.setup === "varbits") {
+        runVarbitDump();
+        return;
+    }
+    if (test.setup === "status") {
+        runStatusDump();
+        return;
+    }
+    if (test.setup === "jewelry") {
+        needJewelryReplace = true;
+        botMsg("Jewelry test -- forcing jewelry replace check on next bank visit", "DEBUG");
+    }
+    if (test.setup === "dungeon") {
+        // Force dungeon entry by setting task to Varrock Sewers ghosts
+        if (!currentTaskMonster || !currentTaskMonster.underground) {
+            currentTaskMonster = MONSTER_DB.Ghost;
+            currentTaskName = "Ghost";
+            killsLeft = 10;
+            botMsg("Dungeon test -- set task to Ghost (Varrock Sewers)", "DEBUG");
+        }
+        dungeonPhase = 0;
+    }
+
+    // Check prerequisites
+    if ((testKey === "walk" || testKey === "fight" || testKey === "task" || testKey === "safespot") && !currentTaskMonster) {
+        // Try reading from varbits first
+        var dbgCreature = 0;
+        try { dbgCreature = Game.getVarPlayerValue(395); } catch(e) {}
+        if (dbgCreature > 0) {
+            var dbgName = SLAYER_CREATURE_MAP[dbgCreature];
+            if (dbgName && MONSTER_DB[dbgName]) {
+                currentTaskMonster = MONSTER_DB[dbgName];
+                currentTaskName = dbgName;
+                try { killsLeft = Game.getVarPlayerValue(394); } catch(e2) { killsLeft = 99; }
+                botMsg("Recovered task from varbits: " + currentTaskName + " x" + killsLeft, "DEBUG");
+            }
+        }
+        if (!currentTaskMonster) {
+            botMsg("No task assigned! Use !master first to get a task, or !varbits to check.", "DEBUG");
+            return;
+        }
+    }
+
+    if (testKey === "ge") {
+        botMsg("GE test -- bot will walk to GE. Use !supplies first if gear is needed.", "DEBUG");
+    }
+
+    // Build allowed states array
+    var allowed = [];
+    var stateNames = test.states;
+    for (var si = 0; si < stateNames.length; si++) {
+        allowed.push(STATES[stateNames[si]]);
+    }
+
+    debugTestName = test.name;
+    debugAllowedStates = allowed;
+    debugTickLimit = 0;
+    debugTickCount = 0;
+    // Reset watchdog
+    debugWatchProgressTick = 0;
+    debugWatchLastState = "";
+    debugWatchLastX = 0;
+    debugWatchLastY = 0;
+    debugWatchBankOpened = false;
+    debugWatchKillCount = 0;
+    debugWatchWarnings = 0;
+
+    // Reset relevant phase vars
+    bankPhase = 0;
+
+    botMsg("===== STARTING TEST: " + test.name + " =====", "DEBUG");
+    if (debugOverlay) debugOverlay.setValue("DEBUG: " + test.name);
+    if (currentStateOverlay) currentStateOverlay.setValue("State: " + test.entry);
+
+    state = STATES[test.entry];
+}
+
+function runVarbitDump() {
+    botMsg("===== VARBIT DUMP =====", "DEBUG");
+    try {
+        var kills = Game.getVarPlayerValue(394);
+        var creature = Game.getVarPlayerValue(395);
+        var location = Game.getVarPlayerValue(2096);
+        var slayPts = Game.getVarbitValue(Varbit.SLAYER_POINTS);
+        var streak = Game.getVarbitValue(Varbit.SLAYER_TASK_STREAK);
+        botMsg("Varp 394 (kills remaining): " + kills, "DEBUG");
+        botMsg("Varp 395 (creature type): " + creature, "DEBUG");
+        botMsg("Varp 2096 (task location): " + location, "DEBUG");
+        botMsg("Slayer Points: " + slayPts, "DEBUG");
+        botMsg("Task Streak: " + streak, "DEBUG");
+        if (creature > 0) {
+            var monName = SLAYER_CREATURE_MAP[creature];
+            if (monName) {
+                botMsg("Creature " + creature + " = " + monName, "DEBUG");
+                if (MONSTER_DB[monName]) {
+                    var monData = MONSTER_DB[monName];
+                    botMsg("  IDs: " + monData.ids.join(",") + " | Loc: (" + monData.location.x + "," + monData.location.y + ")", "DEBUG");
+                }
+            } else {
+                botMsg("Creature " + creature + " = UNKNOWN (not in lookup table)", "DEBUG");
+            }
+        } else {
+            botMsg("No active task (creature ID = 0)", "DEBUG");
+        }
+    } catch(e) {
+        botMsg("Varbit read error: " + e, "DEBUG");
+    }
+    botMsg("========================", "DEBUG");
+}
+
+function runStatusDump() {
+    botMsg("===== BOT STATUS =====", "DEBUG");
+    botMsg("State: " + state, "DEBUG");
+    botMsg("Task: " + (currentTaskName ? currentTaskName : "NONE"), "DEBUG");
+    botMsg("Kills Left: " + killsLeft, "DEBUG");
+    botMsg("Total Kills: " + totalKills, "DEBUG");
+    botMsg("Tasks Completed: " + tasksCompleted, "DEBUG");
+    botMsg("Tick Counter: " + tickCounter, "DEBUG");
+    botMsg("Bank Phase: " + bankPhase, "DEBUG");
+    botMsg("Dungeon Phase: " + dungeonPhase, "DEBUG");
+    botMsg("geBuyPhase: " + geBuyPhase, "DEBUG");
+    botMsg("needJewelryReplace: " + (typeof needJewelryReplace !== "undefined" ? needJewelryReplace : "N/A"), "DEBUG");
+    try {
+        var loc = Client.getLocalPlayer().getWorldLocation();
+        botMsg("Position: (" + loc.getX() + ", " + loc.getY() + ") plane " + loc.getPlane(), "DEBUG");
+    } catch(e) {
+        botMsg("Position: unavailable", "DEBUG");
+    }
+    try {
+        var hp = Game.info.skills.getLevel(Skill.HITPOINTS);
+        var maxHp = Game.info.skills.getRealLevel(Skill.HITPOINTS);
+        var cmb = Client.getLocalPlayer().getCombatLevel();
+        var slay = Game.info.skills.getRealLevel(Skill.SLAYER);
+        botMsg("HP: " + hp + "/" + maxHp + " | Combat: " + cmb + " | Slayer: " + slay, "DEBUG");
+    } catch(e2) {
+        botMsg("Stats: unavailable", "DEBUG");
+    }
+    try {
+        var foodCount = Game.info.inventory.count(getFoodId());
+        botMsg("Food in inv: " + foodCount, "DEBUG");
+    } catch(e3) {
+        botMsg("Food count: unavailable", "DEBUG");
+    }
+    if (currentTaskMonster) {
+        botMsg("Monster: " + currentTaskMonster.name + " | IDs: " + currentTaskMonster.ids.join(","), "DEBUG");
+        botMsg("Location: (" + currentTaskMonster.location.x + ", " + currentTaskMonster.location.y + ")", "DEBUG");
+    }
+    botMsg("========================", "DEBUG");
+}
+
+function handleDebugChatCommand(msg) {
+    if (!debugActive) return false;
+    if (msg.charAt(0) !== "!") return false;
+
+    var cmd = msg.substring(1).toLowerCase();
+    var spIdx = cmd.indexOf(" ");
+    if (spIdx !== -1) cmd = cmd.substring(0, spIdx);
+
+    // Emergency controls only -- all test selection is via Config panel
+    if (cmd === "stop") {
+        botMsg("Test aborted", "DEBUG");
+        debugAllowedStates = null;
+        debugTestName = "";
+        debugTickCount = 0;
+        state = STATES.DEBUG_IDLE;
+        config.debugStartTest.setValue(false);
+        config.debugTest.setValue("none");
+        if (debugOverlay) debugOverlay.setValue("DEBUG: Idle");
+        return true;
+    }
+
+    if (cmd === "run") {
+        botMsg("Exiting debug -- running normally", "DEBUG");
+        debugActive = false;
+        debugAllowedStates = null;
+        debugTestName = "";
+        config.debugStartTest.setValue(false);
+        config.debugTest.setValue("none");
+        if (debugOverlay) debugOverlay.setValue("");
+        state = STATES.STARTUP;
+        return true;
+    }
+
+    return false;
+}
+
+// --- Debug return interceptor ---
+// Called after each state handler runs. If we're in a debug test and the
+// state transitioned outside the allowed set, snap back to DEBUG_IDLE.
+function checkDebugReturn() {
+    if (!debugActive) return;
+    if (!debugAllowedStates) return;
+    if (debugAllowedStates.length === 0) return;
+
+    // If state is already DEBUG_IDLE, nothing to do
+    if (state === STATES.DEBUG_IDLE) return;
+
+    // If state is still in allowed set, let it continue
+    for (var di = 0; di < debugAllowedStates.length; di++) {
+        if (state === debugAllowedStates[di]) return;
+    }
+
+    // State escaped the allowed set -- test is done
+    botMsg("===== TEST COMPLETE: " + debugTestName + " =====", "DEBUG");
+    botMsg("Exited via state: " + state, "DEBUG");
+    var warnSummary = debugWatchWarnings > 0 ? " (" + debugWatchWarnings + " warnings)" : "";
+    botMsg("Ran " + debugTickCount + " ticks" + warnSummary, "DEBUG");
+    debugAllowedStates = null;
+    debugTestName = "";
+    debugTickCount = 0;
+    debugWatchWarnings = 0;
+    config.debugStartTest.setValue(false);
+    config.debugTest.setValue("none");
+    state = STATES.DEBUG_IDLE;
+    if (debugOverlay) debugOverlay.setValue("DEBUG: Idle");
+}
+
+// ===== DEBUG WATCHDOG =====
+// Monitors test progress -- warns when something is wrong
+function debugWatchdog() {
+    if (!debugActive) return;
+    if (!debugTestName || debugTestName.length === 0) return;
+    if (state === STATES.DEBUG_IDLE) return;
+
+    var p = Client.getLocalPlayer();
+    if (!p) return;
+    var loc = p.getWorldLocation();
+    var cx = loc ? loc.getX() : 0;
+    var cy = loc ? loc.getY() : 0;
+
+    // Check if anything changed (position or state)
+    var moved = (cx !== debugWatchLastX || cy !== debugWatchLastY);
+    var stateChanged = (state !== debugWatchLastState);
+    var bankNowOpen = Game.info.bank.isOpen();
+
+    if (moved || stateChanged || (bankNowOpen && !debugWatchBankOpened)) {
+        debugWatchProgressTick = debugTickCount;
+        debugWatchLastX = cx;
+        debugWatchLastY = cy;
+        debugWatchLastState = state;
+        if (bankNowOpen) debugWatchBankOpened = true;
+    }
+
+    var stuckTicks = debugTickCount - debugWatchProgressTick;
+
+    // --- TIMEOUT: Test took too long overall ---
+    if (debugTickCount > 500) {
+        debugWatchWarnings++;
+        botMsg("!! WARNING: Test " + debugTestName + " hit 500 tick limit !!", "DEBUG");
+        botMsg("!! Last state: " + state + " | Pos: " + cx + "," + cy + " !!", "DEBUG");
+        botMsg("!! Aborting test -- something is stuck !!", "DEBUG");
+        debugAllowedStates = null;
+        debugTestName = "";
+        debugTickCount = 0;
+        config.debugStartTest.setValue(false);
+        config.debugTest.setValue("none");
+        state = STATES.DEBUG_IDLE;
+        if (debugOverlay) debugOverlay.setValue("DEBUG: TIMEOUT -- check warnings");
+        return;
+    }
+
+    // --- NO PROGRESS for 60 ticks (~36 sec) ---
+    if (stuckTicks >= 60 && stuckTicks % 60 === 0) {
+        debugWatchWarnings++;
+        var warnNum = debugWatchWarnings;
+        botMsg("!! WARN #" + warnNum + ": No progress for " + stuckTicks + " ticks !!", "DEBUG");
+        botMsg("   Test: " + debugTestName + " | State: " + state, "DEBUG");
+        botMsg("   Pos: " + cx + "," + cy + " (not moving)", "DEBUG");
+
+        // System-specific diagnostics
+        if (debugTestName === "bank" || debugTestName === "supplies") {
+            if (!bankNowOpen) {
+                botMsg("   DIAG: Bank NOT open -- openNearest may have failed", "DEBUG");
+                botMsg("   FIX: Is player near a bank? Try moving closer", "DEBUG");
+            } else {
+                botMsg("   DIAG: Bank IS open but stuck -- withdrawal issue?", "DEBUG");
+            }
+        }
+        if (debugTestName === "walk" || debugTestName === "dungeon") {
+            var isMoving = PlayerHelper.isMoving();
+            botMsg("   DIAG: isMoving=" + isMoving, "DEBUG");
+            if (!isMoving) {
+                botMsg("   FIX: WebWalker may be stuck -- door/obstacle blocking path?", "DEBUG");
+            }
+            if (debugTestName === "dungeon") {
+                botMsg("   DIAG: dungeonPhase=" + dungeonPhase, "DEBUG");
+            }
+        }
+        if (debugTestName === "fight" || debugTestName === "task") {
+            var anim = Client.getLocalPlayer().getAnimation();
+            var targ = Client.getLocalPlayer().getInteracting();
+            botMsg("   DIAG: animation=" + anim + " target=" + (targ ? "yes" : "none"), "DEBUG");
+            if (anim === -1 && !targ) {
+                botMsg("   FIX: Not in combat + no target -- NPC may not be nearby", "DEBUG");
+            }
+            if (killsLeft !== null && killsLeft !== undefined) {
+                botMsg("   DIAG: killsLeft=" + killsLeft, "DEBUG");
+            }
+        }
+        if (debugTestName === "master") {
+            botMsg("   DIAG: Walking to slayer master -- check if path is blocked", "DEBUG");
+        }
+        if (debugTestName === "ge") {
+            botMsg("   DIAG: GE state -- check if player reached GE", "DEBUG");
+        }
+        if (debugTestName === "fish") {
+            botMsg("   DIAG: Fishing -- check fishing spot nearby? Right tools?", "DEBUG");
+        }
+        if (debugTestName === "cook") {
+            botMsg("   DIAG: Cooking -- raw fish in inventory? Range/fire nearby?", "DEBUG");
+        }
+    }
+
+    // --- FIRST 10 ticks: quick sanity checks ---
+    if (debugTickCount === 10) {
+        // Verify the state actually changed from DEBUG_IDLE
+        if (state === STATES.DEBUG_IDLE) {
+            debugWatchWarnings++;
+            botMsg("!! BROKEN: State never left DEBUG_IDLE after 10 ticks !!", "DEBUG");
+            botMsg("   Test " + debugTestName + " failed to set initial state", "DEBUG");
+        }
+    }
+
+    // Update overlay with live status
+    if (debugOverlay && debugTickCount % 10 === 0) {
+        debugOverlay.setValue("DEBUG: " + debugTestName + " | " + state + " | t:" + debugTickCount);
+    }
+}
+
 function OnChatMessage(chatMsg) {
     if (!chatMsg) return;
     if (insideChatHandler) return; // prevent recursion from sendGameMessage
@@ -5290,6 +6419,9 @@ function handleChatMessage(chatMsg) {
     }
     var message = cleanText;
     var msg = cleanText.toLowerCase();
+
+    // --- DEBUG COMMAND CHECK ---
+    if (debugActive && msg.charAt(0) === "!" && handleDebugChatCommand(msg)) return;
 
     // Detect gem response: "You're assigned to kill [monster]; only [N] more to go"
     // This has DIFFERENT format than task assignment - name first, then count
@@ -5467,18 +6599,14 @@ function parseKillsRemaining(msg) {
 function OnNPCLootAppeared(npc) {
     if (!currentTaskMonster || !npc) return;
 
-    var npcId = -1;
-    try {
-        npcId = npc.getId();
-    } catch (e) {
-        return;
-    }
+    var npcId = safeGetId(npc);
+    if (npcId === -1) return;
 
     // Check if this NPC is our task
     var isTask = false;
-    if (currentTaskMonster.npcIds) {
-        for (var i = 0; i < currentTaskMonster.npcIds.length; i++) {
-            if (currentTaskMonster.npcIds[i] === npcId) {
+    if (currentTaskMonster.ids) {
+        for (var i = 0; i < currentTaskMonster.ids.length; i++) {
+            if (currentTaskMonster.ids[i] === npcId) {
                 isTask = true;
                 break;
             }

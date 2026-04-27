@@ -1,22 +1,20 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Fix10o hotfix8 - MAIN</title>
+<html><head><meta charset="UTF-8"><title>Fix10o hotfix9 - MAIN</title>
 <style>
 body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; text-align: center; }
 h1 { color: #0ff; }
-.info { color: #aaa; margin: 10px 0 20px; }
-.copy-btn { display: inline-block; padding: 20px 60px; font-size: 24px; font-weight: bold; 
-  background: #0066ff; color: white; border: none; border-radius: 12px; cursor: pointer; margin: 20px; }
-.copy-btn:hover { background: #0044cc; }
-.copy-btn:active { background: #003399; }
-.status { font-size: 18px; margin: 10px; min-height: 30px; }
-.success { color: #0f0; }
-.code-box { display: none; }
+.btn { display: inline-block; padding: 20px 60px; font-size: 24px; background: #0066ff; color: white; border: none; border-radius: 12px; cursor: pointer; margin: 20px; }
+.btn:hover { background: #0044cc; }
+.ok { color: #0f0; font-size: 20px; margin-top: 10px; }
+textarea { width: 90%%; height: 200px; background: #111; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; border: 1px solid #333; }
 </style></head><body>
-<h1>Fix10o hotfix8 - MAIN</h1>
-<div class="info">Fixed: GEAR_TIERS is not defined — changed to MELEE_WEAPONS (the actual array)</div>
-<button class="copy-btn" onclick="copyCode()">COPY MAIN CODE</button>
-<div id="status" class="status"></div>
-<textarea id="codeBox" class="code-box">// =============================================================================
+<h1>Fix10o hotfix9 -- MAIN</h1>
+<p style="color:#ff0;font-size:18px;">Dungeon entrance system + getId crash fix</p>
+<p>11 dungeons mapped + safeGetId() protects ALL ground item/NPC getId calls</p>
+<button class="btn" onclick="copyCode()">COPY MAIN CODE</button>
+<div id="status"></div>
+<br>
+<textarea id="codeBox" readonly>// =============================================================================
 // AUTO SLAYER BOT v24 -- MAIN STATE MACHINE
 // =============================================================================
 // The brain of the slayer bot. Implements a full autonomous state machine that:
@@ -108,6 +106,67 @@ var STATES = {
 // -----------------------------------------------------------------------------
 var state = STATES.STARTUP;
 var hasGem = false;
+
+// Dungeon entrance lookup -- surface coords + object IDs for underground task locations
+var DUNGEON_ENTRANCES = {
+    &quot;Varrock Sewers&quot;: {
+        surfX: 3237, surfY: 3457,
+        objects: [882, 881],
+        desc: &quot;Manhole&quot;
+    },
+    &quot;Edgeville Dungeon&quot;: {
+        surfX: 3097, surfY: 3468,
+        objects: [1579, 1581],
+        desc: &quot;Trapdoor&quot;
+    },
+    &quot;Fremennik Slayer Dungeon&quot;: {
+        surfX: 2794, surfY: 3615,
+        objects: [2123],
+        desc: &quot;Cave entrance&quot;
+    },
+    &quot;Rellekka Slayer Cave&quot;: {
+        surfX: 2794, surfY: 3615,
+        objects: [2123],
+        desc: &quot;Cave entrance&quot;
+    },
+    &quot;Lumbridge Swamp Caves&quot;: {
+        surfX: 3169, surfY: 3172,
+        objects: [5947],
+        desc: &quot;Dark hole&quot;
+    },
+    &quot;Taverly Dungeon&quot;: {
+        surfX: 2884, surfY: 3397,
+        objects: [16680],
+        desc: &quot;Ladder&quot;
+    },
+    &quot;Taverley Dungeon&quot;: {
+        surfX: 2884, surfY: 3397,
+        objects: [16680],
+        desc: &quot;Ladder&quot;
+    },
+    &quot;Dwarven Mine&quot;: {
+        surfX: 3019, surfY: 3450,
+        objects: [30942],
+        desc: &quot;Stairs&quot;
+    },
+    &quot;Kalphite Lair&quot;: {
+        surfX: 3228, surfY: 3108,
+        objects: [3827],
+        desc: &quot;Tunnel&quot;
+    },
+    &quot;Stronghold of Security&quot;: {
+        surfX: 3081, surfY: 3420,
+        objects: [20790],
+        desc: &quot;Entrance&quot;
+    },
+    &quot;Catacombs of Kourend&quot;: {
+        surfX: 1632, surfY: 3673,
+        objects: [28900],
+        desc: &quot;Vine&quot;
+    }
+};
+var dungeonPhase = 0;
+
 var isExecuting = false;
 var actionCooldown = 0; // Ticks to wait after an action before allowing another
 // ---- GE GEAR BUYING (Fix10n) ----
@@ -121,6 +180,16 @@ function isPlayerIdle() {
     var p = Client.getLocalPlayer();
     if (!p) return false;
     return p.getAnimation() === -1 &amp;&amp; !PlayerHelper.isMoving() &amp;&amp; !PlayerHelper.isWebWalking();
+}
+
+// Safe getId helper -- DZ ground items may not have .getId()
+function safeGetId(obj) {
+    if (!obj) return -1;
+    try { return obj.getId(); } catch(e1) {}
+    try { return obj.getItemId(); } catch(e2) {}
+    try { return obj.getID(); } catch(e3) {}
+    try { return obj.id; } catch(e4) {}
+    return -1;
 }
 
 var executingStuckTicks = 0;
@@ -1214,7 +1283,8 @@ function pickUpLoot() {
 
     for (var i = 0; i &lt; groundItems.length; i++) {
         var item = groundItems[i];
-        var itemId = item.getId();
+        var itemId = safeGetId(item);
+        if (itemId === -1) continue;
 
         // Distance check: only pick up items within 5 tiles
         var itemLoc = item.getWorldLocation();
@@ -2954,6 +3024,98 @@ function handleWalkToTask() {
         return;
     }
 
+    var taskY = currentTaskMonster.location.y;
+    var playerY = Client.getLocalPlayer().getWorldLocation().getY();
+    var isUnderground = taskY &gt;= 9000;
+    var playerOnSurface = playerY &lt; 9000;
+
+    // --- Dungeon entrance handling ---
+    if (isUnderground &amp;&amp; playerOnSurface) {
+        var locName = currentTaskMonster.locationName || &quot;&quot;;
+        var entrance = DUNGEON_ENTRANCES[locName] || null;
+        if (!entrance) {
+            // Try webwalk anyway -- some clients handle transitions
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(currentTaskMonster.location.x, taskY, currentTaskMonster.location.plane || 0));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+
+        // Phase 0: Walk to dungeon entrance on surface
+        if (dungeonPhase === 0) {
+            if (isNear(entrance.surfX, entrance.surfY, 8)) {
+                botMsg(&quot;At &quot; + entrance.desc + &quot; -- entering dungeon&quot;, &quot;SlayerBot&quot;);
+                dungeonPhase = 1;
+                return;
+            }
+            if (!PlayerHelper.isWebWalking()) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    PlayerHelper.webWalkTo(new WorldPoint(entrance.surfX, entrance.surfY, 0));
+                    isExecuting = false;
+                }, Utility.getDelay());
+            }
+            return;
+        }
+
+        // Phase 1: Interact with entrance object
+        if (dungeonPhase === 1) {
+            var entObj = null;
+            for (var ei = 0; ei &lt; entrance.objects.length; ei++) {
+                entObj = Game.info.gameObject.getNearest([entrance.objects[ei]]);
+                if (entObj) { break; }
+            }
+            if (entObj) {
+                isExecuting = true;
+                Utility.invokeLater(function() {
+                    Game.interact.gameObject.interact(entObj, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                    isExecuting = false;
+                }, Utility.getDelay());
+                dungeonPhase = 2;
+            } else {
+                botMsg(&quot;Cannot find entrance object -- trying webwalk&quot;, &quot;SlayerBot&quot;);
+                dungeonPhase = 0;
+            }
+            return;
+        }
+
+        // Phase 2: Wait for player to arrive underground
+        if (dungeonPhase === 2) {
+            var nowY = Client.getLocalPlayer().getWorldLocation().getY();
+            if (nowY &gt;= 9000) {
+                botMsg(&quot;Entered dungeon -- walking to task&quot;, &quot;SlayerBot&quot;);
+                dungeonPhase = 0;
+                return;
+            }
+            // Still on surface -- might need to interact again (e.g. open then climb)
+            if (actionCooldown &lt;= 0) {
+                var entObj2 = null;
+                for (var ei2 = 0; ei2 &lt; entrance.objects.length; ei2++) {
+                    entObj2 = Game.info.gameObject.getNearest([entrance.objects[ei2]]);
+                    if (entObj2) { break; }
+                }
+                if (entObj2) {
+                    isExecuting = true;
+                    Utility.invokeLater(function() {
+                        Game.interact.gameObject.interact(entObj2, MenuAction.GAME_OBJECT_FIRST_OPTION);
+                        isExecuting = false;
+                    }, Utility.getDelay());
+                    actionCooldown = 5;
+                }
+            }
+            return;
+        }
+        return;
+    }
+
+    // --- Already underground or surface task -- normal walk ---
+    // Reset dungeon phase when underground
+    dungeonPhase = 0;
+
     // v24: Cannon setup -- ONLY in multicombat zones (never bring to single combat)
     if (cfgVal(&quot;useCannon&quot;, false) &amp;&amp; !cannonPlaced &amp;&amp; shouldUseCannon(currentTaskMonster, true)) {
         if (Game.info.inventory.hasItem(CANNON.BASE, 1) &amp;&amp; Game.info.inventory.hasItem(CANNON.CANNONBALL, 1)) {
@@ -3885,7 +4047,7 @@ function handleLeatherGathering() {
             var hides = Game.info.groundItem.getAll();
             if (hides) {
                 for (var h = 0; h &lt; hides.length; h++) {
-                    if (hides[h].getId() === 1739) { // Cowhide
+                    if (safeGetId(hides[h]) === 1739) { // Cowhide
                         isExecuting = true;
                         var hideItem = hides[h];
                         Utility.invokeLater(function() {
@@ -4166,7 +4328,7 @@ function handleGatherRanged() {
         try { gItems = Game.info.groundItem.getAll(); } catch(e) {}
         if (gItems) {
             for (var gi = 0; gi &lt; gItems.length; gi++) {
-                if (gItems[gi].getId() === FEATHER_ID) {
+                if (safeGetId(gItems[gi]) === FEATHER_ID) {
                     isExecuting = true;
                     var featherItem = gItems[gi];
                     Utility.invokeLater(function() {
@@ -4504,7 +4666,7 @@ function handleArrowKillChickens() {
         try { gItems = Game.info.groundItem.getAll(); } catch(e) {}
         if (gItems) {
             for (var gi = 0; gi &lt; gItems.length; gi++) {
-                if (gItems[gi].getId() === FEATHER_ID) {
+                if (safeGetId(gItems[gi]) === FEATHER_ID) {
                     isExecuting = true;
                     var fItem = gItems[gi];
                     Utility.invokeLater(function() {
@@ -5485,12 +5647,8 @@ function parseKillsRemaining(msg) {
 function OnNPCLootAppeared(npc) {
     if (!currentTaskMonster || !npc) return;
 
-    var npcId = -1;
-    try {
-        npcId = npc.getId();
-    } catch (e) {
-        return;
-    }
+    var npcId = safeGetId(npc);
+    if (npcId === -1) return;
 
     // Check if this NPC is our task
     var isTask = false;
@@ -6057,10 +6215,10 @@ function handleRepairBarrows() {
 <script>
 function copyCode() {
   var box = document.getElementById("codeBox");
-  box.style.display = "block";
   box.select();
-  document.execCommand("copy");
-  box.style.display = "none";
-  document.getElementById("status").innerHTML = '<span class="success">COPIED! Paste into DZ MAIN tab</span>';
+  box.setSelectionRange(0, 99999999);
+  navigator.clipboard.writeText(box.value).then(function() {
+    document.getElementById("status").innerHTML = '<div class="ok">Copied! Paste into DZ MAIN tab</div>';
+  });
 }
 </script></body></html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Run N14 Diagnostic Test</title>
+<style>
+body{font-family:Arial,sans-serif;background:#1a1a2e;color:#e0e0e0;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}
+.card{background:#16213e;border-radius:16px;padding:30px;max-width:600px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+h1{color:#00d4ff;text-align:center;margin-bottom:5px}
+.sub{color:#888;text-align:center;margin-bottom:25px}
+.cmd-box{background:#0d1117;border:2px solid #00d4ff;border-radius:10px;padding:15px;margin:20px 0;position:relative;font-family:'Courier New',monospace;font-size:13px;word-break:break-all;line-height:1.5}
+.copy-btn{display:block;width:100%;padding:16px;background:linear-gradient(135deg,#00d4ff,#0099cc);color:#000;border:none;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;margin-top:15px;transition:transform 0.1s}
+.copy-btn:active{transform:scale(0.97)}
+.steps{list-style:none;padding:0;margin:20px 0}
+.steps li{padding:10px 0;border-bottom:1px solid #2a2a4a;font-size:15px}
+.steps li:last-child{border:none}
+.num{color:#00d4ff;font-weight:bold;margin-right:8px}
+.ok{color:#4CAF50;font-weight:bold}
+</style></head><body>
+<div class="card">
+<h1>🔧 N14 Diagnostic Test</h1>
+<p class="sub">Tests EVERY way to read data from your adapter</p>
+
+<ul class="steps">
+<li><span class="num">1.</span> Make sure adapter is plugged into truck AND laptop</li>
+<li><span class="num">2.</span> Turn key ON (engine running is better)</li>
+<li><span class="num">3.</span> Open <strong>PowerShell</strong> on laptop (right-click Start → PowerShell)</li>
+<li><span class="num">4.</span> Copy the command below and paste into PowerShell</li>
+<li><span class="num">5.</span> Press Enter — it will run 7 diagnostic tests</li>
+<li><span class="num">6.</span> <strong>Screenshot the ENTIRE output</strong> and send to me</li>
+</ul>
+
+<div class="cmd-box" id="cmd">powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/diag_test.py' -OutFile $env:TEMP\diag_test.py; python $env:TEMP\diag_test.py"</div>
+
+<button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('cmd').innerText).then(()=>{this.textContent='✅ COPIED!';setTimeout(()=>{this.textContent='📋 COPY COMMAND'},2000)})">📋 COPY COMMAND</button>
+
+<p style="text-align:center;margin-top:20px;color:#888;font-size:13px">After it finishes, screenshot everything and text it to me.<br>I'll know exactly what your adapter can and can't do.</p>
+</div>
+</body></html>

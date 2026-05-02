@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jetta TDI OBD2 Dashboard — Install</title>
+<style>
+body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+.container { max-width: 700px; margin: 0 auto; }
+h1 { color: #00c853; text-align: center; }
+.subtitle { color: #888; text-align: center; margin-bottom: 30px; }
+.step { background: #16213e; border-radius: 10px; padding: 20px; margin: 15px 0; border-left: 4px solid #00c853; }
+.step h3 { color: #00c853; margin-top: 0; }
+.cmd-box { background: #0a0a1a; border: 2px solid #00c853; border-radius: 8px; padding: 15px; margin: 10px 0; font-family: Consolas, monospace; font-size: 13px; word-break: break-all; cursor: pointer; position: relative; }
+.copy-btn { display: block; background: #00c853; color: black; border: none; padding: 15px 40px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 15px auto; text-align: center; }
+.copy-btn:hover { background: #00e676; transform: scale(1.02); }
+.copy-btn:active { transform: scale(0.98); }
+.success { display: none; color: #00c853; text-align: center; font-size: 20px; font-weight: bold; padding: 10px; }
+.note { color: #ff9800; font-size: 13px; }
+.features { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 15px 0; }
+.feat { background: #0d1b3e; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+.feat span { color: #00c853; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🚗 Jetta TDI OBD2 Dashboard v2</h1>
+<p class="subtitle">12 Confirmed Gauges — Protocol 6 CAN — No More N/A</p>
+
+<div class="features">
+<div class="feat"><span>✅</span> RPM</div>
+<div class="feat"><span>✅</span> Speed (MPH)</div>
+<div class="feat"><span>✅</span> Boost PSI</div>
+<div class="feat"><span>✅</span> Coolant Temp</div>
+<div class="feat"><span>✅</span> Engine Load %</div>
+<div class="feat"><span>✅</span> MAF Flow</div>
+<div class="feat"><span>✅</span> Intake Air Temp</div>
+<div class="feat"><span>✅</span> Battery Voltage</div>
+<div class="feat"><span>✅</span> Ambient Temp</div>
+<div class="feat"><span>✅</span> Cmd Throttle %</div>
+<div class="feat"><span>✅</span> Barometric PSI</div>
+<div class="feat"><span>✅</span> Runtime</div>
+</div>
+
+<div class="step">
+<h3>Step 1: Open PowerShell</h3>
+<p>Right-click Start button → "Windows PowerShell (Admin)" or "Terminal"</p>
+</div>
+
+<div class="step">
+<h3>Step 2: Copy this command</h3>
+<div class="cmd-box" id="cmdBox">irm https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/jetta-obd2/install_jetta_obd2.ps1 | iex</div>
+<button class="copy-btn" onclick="copyCmd()">📋 COPY COMMAND</button>
+<div class="success" id="successMsg">✅ COPIED! Now paste in PowerShell and hit Enter</div>
+</div>
+
+<div class="step">
+<h3>Step 3: Paste & Run</h3>
+<p>Right-click in PowerShell to paste, then hit Enter.</p>
+<p class="note">⚠️ Before running: Close the old OBD2 Dashboard if open. Make sure Vgate is plugged into the Jetta and the key is ON.</p>
+</div>
+</div>
+
+<script>
+function copyCmd() {
+    var cmd = document.getElementById('cmdBox').innerText;
+    navigator.clipboard.writeText(cmd).then(function() {
+        document.getElementById('successMsg').style.display = 'block';
+        document.querySelector('.copy-btn').textContent = '✅ COPIED!';
+        document.querySelector('.copy-btn').style.background = '#4caf50';
+    });
+}
+</script>
+</body>
+</html>

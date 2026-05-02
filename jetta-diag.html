@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jetta TDI Scanner — Install</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0a0a0a;color:#e0e0e0;padding:20px;min-height:100vh}
+.container{max-width:700px;margin:0 auto}
+h1{color:#00e676;font-size:1.6em;text-align:center;margin-bottom:8px}
+.sub{color:#aaa;text-align:center;margin-bottom:30px;font-size:0.9em}
+.step{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:20px;margin-bottom:20px}
+.step h2{color:#64b5f6;font-size:1.1em;margin-bottom:12px}
+.step p{color:#bbb;font-size:0.9em;margin-bottom:12px;line-height:1.5}
+.cmd-box{background:#000;border:1px solid #444;border-radius:8px;padding:15px;font-family:'Courier New',monospace;font-size:0.8em;color:#0f0;word-break:break-all;margin-bottom:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap}
+.copy-btn{display:block;width:100%;padding:16px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:1.1em;font-weight:bold;cursor:pointer;text-align:center}
+.copy-btn:active{background:#0d47a1}
+.copy-btn.copied{background:#2e7d32}
+.note{background:#1a1a0a;border:1px solid #555500;border-radius:8px;padding:12px;margin-top:15px;font-size:0.85em;color:#ffeb3b}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔧 Jetta TDI Diagnostic Scanner</h1>
+<p class="sub">Tests every OBD2 protocol and PID — shows exactly what your Jetta supports</p>
+
+<div class="step">
+<h2>Step 1: Copy the command</h2>
+<p>Tap the blue button to copy the install command:</p>
+<div class="cmd-box" id="cmdText">Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://rotstrucking1-prog.github.io/Rotstrucking-app1/install_jetta_diag.ps1 | iex</div>
+<button class="copy-btn" id="copyBtn" onclick="copyCmd()">📋 COPY COMMAND</button>
+</div>
+
+<div class="step">
+<h2>Step 2: Open PowerShell on your laptop</h2>
+<p>Right-click Start button → "Windows PowerShell (Admin)" or "Terminal (Admin)"</p>
+</div>
+
+<div class="step">
+<h2>Step 3: Paste & run</h2>
+<p>Right-click in PowerShell to paste, then hit Enter. The scanner will test everything and show results.</p>
+</div>
+
+<div class="note">
+⚠️ <strong>Before running:</strong> Close the OBD2 Dashboard app first if it's open. Make sure the Vgate is plugged into the Jetta and the key is ON.
+</div>
+</div>
+
+<script>
+function copyCmd(){
+var t=document.getElementById('cmdText').textContent;
+if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){done()})}
+else{var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a);done()}
+function done(){var b=document.getElementById('copyBtn');b.textContent='✅ COPIED!';b.classList.add('copied');setTimeout(function(){b.textContent='📋 COPY COMMAND';b.classList.remove('copied')},3000)}
+}
+</script>
+</body>
+</html>

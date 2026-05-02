@@ -64,104 +64,146 @@ class ELM327:
         return None
 
     def connect(self, port=None):
-        """Connect to adapter and initialize"""
+        """Connect to adapter and initialize — tries multiple baud rates"""
         if port is None:
             port = self.find_port()
         if port is None:
-            return False, "No OBD2 adapter found"
+            return False, "No OBD2 adapter found. Is the USB cable plugged in?"
 
         self.port = port
-        try:
-            self.serial = serial.Serial(
-                port=port,
-                baudrate=38400,
-                timeout=2,
-                write_timeout=2
-            )
-            time.sleep(0.5)
+        self.connect_log = []
 
-            # Reset adapter
-            self._send_cmd("ATZ", delay=1.5)
-            time.sleep(0.5)
+        # Try multiple baud rates — Vgate vLinker FS often uses 115200
+        baud_rates = [115200, 38400, 9600, 57600, 230400, 500000]
 
-            # Echo off
-            self._send_cmd("ATE0")
+        for baud in baud_rates:
+            self.connect_log.append(f"Trying {port} @ {baud} baud...")
+            try:
+                if self.serial and self.serial.is_open:
+                    self.serial.close()
+                    time.sleep(0.3)
 
-            # Get version
-            ver = self._send_cmd("ATI")
-            if ver:
-                self.elm_version = ver.strip()
+                self.serial = serial.Serial(
+                    port=port,
+                    baudrate=baud,
+                    timeout=2,
+                    write_timeout=2,
+                    bytesize=serial.EIGHTBITS,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE
+                )
+                time.sleep(0.5)
 
-            # Linefeed off
-            self._send_cmd("ATL0")
+                # Flush any garbage
+                self.serial.flushInput()
+                self.serial.flushOutput()
 
-            # Spaces off for easier parsing
-            self._send_cmd("ATS0")
+                # Reset adapter
+                resp = self._send_cmd("ATZ", delay=2.0)
+                self.connect_log.append(f"  ATZ response: {repr(resp)}")
 
-            # Headers off
-            self._send_cmd("ATH0")
+                if not resp or ("ELM" not in resp.upper() and "STN" not in resp.upper()
+                               and "AT" not in resp.upper() and "OK" not in resp.upper()):
+                    self.connect_log.append(f"  No valid response at {baud} baud")
+                    continue
 
-            # Adaptive timing auto
-            self._send_cmd("ATAT2")
+                self.connect_log.append(f"  ** ADAPTER FOUND at {baud} baud! **")
+                time.sleep(0.3)
 
-            # Set timeout (longer for diesel)
-            self._send_cmd("ATST64")
+                # Echo off
+                self._send_cmd("ATE0")
 
-            # Auto-detect protocol
-            resp = self._send_cmd("ATSP0")
+                # Get version
+                ver = self._send_cmd("ATI")
+                if ver:
+                    self.elm_version = ver.strip()
+                    self.connect_log.append(f"  Version: {self.elm_version}")
 
-            # Try a test command to force protocol detection
-            test = self._send_cmd("0100")
-            if test and "UNABLE" not in test.upper() and "NO DATA" not in test.upper() and "ERROR" not in test.upper():
-                self.connected = True
-                # Get detected protocol
-                proto = self._send_cmd("ATDPN")
-                if proto:
-                    proto_num = proto.strip().replace("A", "")
-                    proto_names = {
-                        "1": "SAE J1850 PWM",
-                        "2": "SAE J1850 VPW",
-                        "3": "ISO 9141-2",
-                        "4": "ISO 14230-4 (KWP slow)",
-                        "5": "ISO 14230-4 (KWP fast)",
-                        "6": "ISO 15765-4 (CAN 11/500)",
-                        "7": "ISO 15765-4 (CAN 29/500)",
-                        "8": "ISO 15765-4 (CAN 11/250)",
-                        "9": "ISO 15765-4 (CAN 29/250)",
-                    }
-                    self.protocol = proto_names.get(proto_num, f"Protocol {proto_num}")
+                # Linefeed off
+                self._send_cmd("ATL0")
 
-                # Get battery voltage
-                volts = self._send_cmd("ATRV")
-                if volts:
-                    self.voltage = volts.strip()
+                # Spaces off for easier parsing
+                self._send_cmd("ATS0")
 
-                return True, f"Connected on {port}"
-            else:
-                # Try forcing CAN protocol (most likely for 2009 TDI)
-                for proto in ["6", "7", "8", "9"]:
-                    self._send_cmd(f"ATSP{proto}")
-                    test = self._send_cmd("0100")
-                    if test and "UNABLE" not in test.upper() and "NO DATA" not in test.upper():
-                        self.connected = True
+                # Headers off
+                self._send_cmd("ATH0")
+
+                # Adaptive timing auto
+                self._send_cmd("ATAT2")
+
+                # Set timeout (longer for diesel ECU)
+                self._send_cmd("ATST96")
+
+                # Auto-detect protocol
+                self._send_cmd("ATSP0")
+
+                # Try a test command to force protocol detection
+                test = self._send_cmd("0100", delay=2.0)
+                self.connect_log.append(f"  PID 0100 response: {repr(test)}")
+
+                if test and "UNABLE" not in test.upper() and "NO DATA" not in test.upper() and "ERROR" not in test.upper() and "?" not in test:
+                    self.connected = True
+                    # Get detected protocol
+                    proto = self._send_cmd("ATDPN")
+                    if proto:
+                        proto_num = proto.strip().replace("A", "")
                         proto_names = {
+                            "1": "SAE J1850 PWM",
+                            "2": "SAE J1850 VPW",
+                            "3": "ISO 9141-2",
+                            "4": "ISO 14230-4 (KWP slow)",
+                            "5": "ISO 14230-4 (KWP fast)",
                             "6": "ISO 15765-4 (CAN 11/500)",
                             "7": "ISO 15765-4 (CAN 29/500)",
                             "8": "ISO 15765-4 (CAN 11/250)",
                             "9": "ISO 15765-4 (CAN 29/250)",
                         }
-                        self.protocol = proto_names.get(proto, f"Protocol {proto}")
-                        volts = self._send_cmd("ATRV")
-                        if volts:
-                            self.voltage = volts.strip()
-                        return True, f"Connected on {port} (forced {self.protocol})"
+                        self.protocol = proto_names.get(proto_num, f"Protocol {proto_num}")
+                        self.connect_log.append(f"  Protocol: {self.protocol}")
 
-                return False, "Connected to adapter but vehicle not responding. Is ignition ON?"
+                    # Get battery voltage
+                    volts = self._send_cmd("ATRV")
+                    if volts:
+                        self.voltage = volts.strip()
+                        self.connect_log.append(f"  Battery: {self.voltage}")
 
-        except serial.SerialException as e:
-            return False, f"Port error: {str(e)}"
-        except Exception as e:
-            return False, f"Error: {str(e)}"
+                    return True, f"Connected on {port} @ {baud} baud"
+                else:
+                    # Try forcing each CAN protocol (most likely for 2009 TDI)
+                    for proto_id in ["6", "7", "8", "9", "3", "4", "5"]:
+                        self._send_cmd(f"ATSP{proto_id}")
+                        time.sleep(0.5)
+                        test = self._send_cmd("0100", delay=2.0)
+                        self.connect_log.append(f"  Protocol {proto_id} test: {repr(test)}")
+                        if test and "UNABLE" not in test.upper() and "NO DATA" not in test.upper() and "?" not in test:
+                            self.connected = True
+                            proto_names = {
+                                "3": "ISO 9141-2",
+                                "4": "ISO 14230-4 (KWP slow)",
+                                "5": "ISO 14230-4 (KWP fast)",
+                                "6": "ISO 15765-4 (CAN 11/500)",
+                                "7": "ISO 15765-4 (CAN 29/500)",
+                                "8": "ISO 15765-4 (CAN 11/250)",
+                                "9": "ISO 15765-4 (CAN 29/250)",
+                            }
+                            self.protocol = proto_names.get(proto_id, f"Protocol {proto_id}")
+                            volts = self._send_cmd("ATRV")
+                            if volts:
+                                self.voltage = volts.strip()
+                            return True, f"Connected on {port} @ {baud} (forced {self.protocol})"
+
+                    self.connect_log.append(f"  Adapter responded but vehicle ECU not talking")
+
+            except serial.SerialException as e:
+                self.connect_log.append(f"  Port error: {str(e)}")
+                continue
+            except Exception as e:
+                self.connect_log.append(f"  Error: {str(e)}")
+                continue
+
+        # None of the baud rates worked — build diagnostic message
+        log_text = "\n".join(self.connect_log)
+        return False, f"Adapter found but not responding.\n\nChecklist:\n1. Is ignition key turned to ON? (not just ACC)\n2. Close any other OBD apps (Peterbilt Dashboard, etc)\n3. Unplug USB, wait 5 sec, plug back in\n4. Try running as Administrator\n\nDiagnostic log:\n{log_text}"
 
     def _send_cmd(self, cmd, delay=0.3):
         """Send AT/OBD command and get response"""

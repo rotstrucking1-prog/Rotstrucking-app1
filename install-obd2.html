@@ -3,54 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ROTS Trucking — OBD2 Dashboard Installer</title>
+<title>OBD2 Dashboard Installer — 2009 VW Jetta TDI</title>
 <style>
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-.card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 30px; max-width: 600px; width: 100%; text-align: center; }
-h1 { color: #00ff88; font-size: 24px; margin-bottom: 10px; }
-.subtitle { color: #8b949e; margin-bottom: 20px; }
-.steps { text-align: left; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 15px 20px; margin: 15px 0; }
-.steps li { margin: 8px 0; }
-.copy-btn { background: #1f6feb; color: white; border: none; padding: 15px 40px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
-.copy-btn:hover { background: #388bfd; }
-.copy-btn.copied { background: #238636; }
-.note { color: #f0883e; font-size: 13px; margin-top: 15px; }
-pre { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; font-size: 11px; overflow-x: auto; text-align: left; color: #79c0ff; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f1a;color:#e0e0e0;font-family:'Segoe UI',sans-serif;padding:20px;min-height:100vh}
+.container{max-width:700px;margin:0 auto}
+h1{color:#60A5FA;font-size:24px;text-align:center;margin-bottom:8px}
+.sub{color:#888;text-align:center;margin-bottom:30px;font-size:14px}
+.step{background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:20px;margin-bottom:16px}
+.step-num{background:#2563EB;color:white;display:inline-block;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:bold;margin-right:10px}
+.step-title{font-size:18px;font-weight:bold;color:#60A5FA;margin-bottom:12px}
+.code-box{background:#000;border:1px solid #444;border-radius:8px;padding:16px;font-family:'Consolas',monospace;font-size:13px;color:#00ff88;word-break:break-all;margin:10px 0;position:relative;max-height:120px;overflow-y:auto}
+.copy-btn{display:block;width:100%;padding:16px;background:#2563EB;color:white;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;margin-top:12px;transition:all 0.2s}
+.copy-btn:hover{background:#1D4ED8;transform:scale(1.02)}
+.copy-btn:active{background:#1e40af;transform:scale(0.98)}
+.copied{background:#16A34A!important}
+.note{background:#1e1e3a;border-left:4px solid #FFA500;padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px;color:#ccc}
+.warn{border-left-color:#DC2626}
 </style>
 </head>
 <body>
-<div class="card">
-<h1>🚗 OBD2 Dashboard</h1>
-<p class="subtitle">ROTS Trucking — Live vehicle diagnostics for your Kia</p>
-<ol class="steps">
-<li>Open <strong>PowerShell</strong> on laptop (right-click Start → PowerShell)</li>
-<li>Tap the blue button below to <strong>COPY</strong></li>
-<li><strong>Paste</strong> into PowerShell → press <strong>Enter</strong></li>
-<li>Wait ~30 seconds — app will launch automatically!</li>
-</ol>
-<button class="copy-btn" onclick="copyCmd()" id="copyBtn">📋 COPY COMMAND</button>
-<p class="note">⚠️ If PowerShell asks about execution policy, type Y and press Enter</p>
-<pre id="cmdText">powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/obd2/install_obd2.ps1' -OutFile $env:TEMP\install_obd2.ps1; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; & $env:TEMP\install_obd2.ps1"</pre>
+<div class="container">
+<h1>🚗 OBD2 Dashboard Installer</h1>
+<p class="sub">2009 VW Jetta TDI — Vgate vLinker FS</p>
+
+<div class="step">
+<div class="step-title"><span class="step-num">1</span>Open PowerShell as Admin</div>
+<p>Right-click the Start button → <strong>Windows PowerShell (Admin)</strong></p>
+<p style="margin-top:8px;color:#888;font-size:13px">Or search "PowerShell" → right-click → Run as Administrator</p>
 </div>
-<textarea id="hidden" style="position:absolute;left:-9999px"></textarea>
+
+<div class="step">
+<div class="step-title"><span class="step-num">2</span>Copy This Command</div>
+<div class="code-box" id="cmd">Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/install_obd2.ps1 | iex</div>
+<button class="copy-btn" id="copyBtn" onclick="copyCmd()">📋 COPY INSTALLER COMMAND</button>
+</div>
+
+<div class="step">
+<div class="step-title"><span class="step-num">3</span>Paste & Run</div>
+<p>Click inside PowerShell → <strong>Right-click to paste</strong> → Press <strong>Enter</strong></p>
+<p style="margin-top:8px;color:#888;font-size:13px">It will download the dashboard, install dependencies, and create a desktop shortcut.</p>
+</div>
+
+<div class="note">
+<strong>⚠️ Before launching:</strong><br>
+1. Plug Vgate USB into laptop<br>
+2. Plug Vgate OBD2 end into Jetta (under dash, driver side)<br>
+3. Turn ignition ON (key to ON position — engine can be off or running)
+</div>
+
+<div class="note">
+<strong>🔧 For ABS Brake Bleeding:</strong><br>
+Use your <strong>XTOOL A30M</strong> with the Anyscan app → Special Functions → ABS Bleeding.<br>
+The Vgate adapter reads engine data; the XTOOL handles the ABS module.
+</div>
+</div>
+
 <script>
-function copyCmd() {
-  var cmd = document.getElementById('cmdText').innerText;
-  var ta = document.getElementById('hidden');
-  ta.value = cmd;
-  ta.style.position = 'fixed';
-  ta.style.left = '0';
-  ta.style.top = '0';
-  ta.focus();
-  ta.select();
-  try { document.execCommand('copy'); } catch(e) {}
-  ta.style.position = 'absolute';
-  ta.style.left = '-9999px';
-  if (navigator.clipboard) { navigator.clipboard.writeText(cmd).catch(function(){}); }
-  var btn = document.getElementById('copyBtn');
-  btn.textContent = '✅ COPIED!';
-  btn.classList.add('copied');
-  setTimeout(function() { btn.textContent = '📋 COPY COMMAND'; btn.classList.remove('copied'); }, 3000);
+function copyCmd(){
+var t=document.getElementById('cmd').innerText;
+navigator.clipboard.writeText(t).then(function(){
+var b=document.getElementById('copyBtn');
+b.textContent='✅ COPIED! Now paste into PowerShell';
+b.classList.add('copied');
+setTimeout(function(){b.textContent='📋 COPY INSTALLER COMMAND';b.classList.remove('copied')},4000);
+});
 }
 </script>
 </body>

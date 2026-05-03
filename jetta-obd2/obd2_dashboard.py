@@ -152,7 +152,7 @@ class ELM327:
 
         return False, "Adapter not responding.\n\n" + "\n".join(log)
 
-    def _send_cmd(self, cmd, delay=0.3):
+    def _send_cmd(self, cmd, delay=0.05):
         if not self.serial or not self.serial.is_open:
             return None
         try:
@@ -162,14 +162,14 @@ class ELM327:
             time.sleep(delay)
 
             response = b""
-            timeout = time.time() + 3
+            timeout = time.time() + 0.5
             while time.time() < timeout:
                 if self.serial.in_waiting > 0:
                     chunk = self.serial.read(self.serial.in_waiting)
                     response += chunk
                     if b">" in chunk:
                         break
-                time.sleep(0.05)
+                time.sleep(0.01)
 
             text = response.decode("ascii", errors="ignore")
             text = text.replace("\r", "\n").replace(">", "").strip()
@@ -183,7 +183,7 @@ class ELM327:
             return None
 
     def query_pid(self, pid_hex):
-        resp = self._send_cmd(pid_hex, delay=0.2)
+        resp = self._send_cmd(pid_hex, delay=0.03)
         if resp is None:
             return None
         resp = resp.upper().replace(" ", "")
@@ -556,7 +556,7 @@ class Dashboard(QMainWindow):
             self.status_label.setStyleSheet("color: #f44336; font-size: 11px; padding: 3px;")
 
     def _poll_loop(self):
-        """Background thread: reads all confirmed PIDs every ~1.5s"""
+        """Background thread: reads all confirmed PIDs — fast refresh"""
         while self.running and self.elm.connected:
             for gw, pid_cmd, parser in self.gauge_widgets:
                 if not self.running:
@@ -566,7 +566,7 @@ class Dashboard(QMainWindow):
                 gw.set_value(val)
 
             self.update_signal.emit()
-            time.sleep(0.3)
+            time.sleep(0.05)
 
     def _refresh_gauges(self):
         self.lbl_reads.setText(f"Reads: {self.elm.rx_count}")

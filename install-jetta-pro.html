@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jetta TDI Pro — Install</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.card{background:#1a1a2e;border:1px solid #00d4ff33;border-radius:16px;padding:40px;max-width:600px;width:100%;text-align:center;box-shadow:0 0 40px #00d4ff15}
+h1{font-size:28px;color:#00d4ff;margin-bottom:8px}
+.sub{color:#888;margin-bottom:30px;font-size:14px}
+.steps{text-align:left;margin-bottom:30px}
+.steps li{margin-bottom:12px;padding-left:8px;color:#ccc;line-height:1.5}
+.steps li b{color:#00d4ff}
+.cmd-box{background:#0d1117;border:1px solid #333;border-radius:10px;padding:16px;margin-bottom:20px;position:relative;text-align:left;word-break:break-all;font-family:'Courier New',monospace;font-size:13px;color:#7ee787;line-height:1.6}
+.copy-btn{background:linear-gradient(135deg,#0066ff,#00d4ff);color:#fff;border:none;border-radius:12px;padding:18px 40px;font-size:20px;font-weight:700;cursor:pointer;width:100%;margin-bottom:15px;transition:all .2s}
+.copy-btn:hover{transform:scale(1.02);box-shadow:0 0 20px #00d4ff55}
+.copy-btn.copied{background:linear-gradient(135deg,#00cc44,#00ff88);transform:scale(1.05)}
+.note{color:#666;font-size:12px;margin-top:15px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>🚗 Jetta TDI Pro</h1>
+<p class="sub">2009 VW Jetta TDI 2.0L — Desktop Diagnostic Suite</p>
+<ol class="steps">
+<li>Open <b>PowerShell</b> on your laptop</li>
+<li>Click the blue button below to <b>copy</b> the command</li>
+<li><b>Paste</b> into PowerShell (right-click or Ctrl+V)</li>
+<li>Press <b>Enter</b> — installs + creates desktop shortcut</li>
+</ol>
+<div class="cmd-box" id="cmd">irm https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/jetta-tdi-pro/install.ps1 | iex</div>
+<button class="copy-btn" id="copyBtn" onclick="copyCmd()">📋 COPY INSTALL COMMAND</button>
+<p class="note">After install, just double-click "Jetta TDI Pro" on your desktop.<br>To update later, run update.bat in the app folder.</p>
+</div>
+<script>
+function copyCmd(){
+var t=document.getElementById('cmd').innerText;
+if(navigator.clipboard){
+navigator.clipboard.writeText(t).then(done);
+}else{
+var a=document.createElement('textarea');
+a.value=t;document.body.appendChild(a);a.select();
+document.execCommand('copy');document.body.removeChild(a);done();
+}
+}
+function done(){
+var b=document.getElementById('copyBtn');
+b.textContent='✅ COPIED!';b.classList.add('copied');
+setTimeout(function(){b.textContent='📋 COPY INSTALL COMMAND';b.classList.remove('copied');},3000);
+}
+</script>
+</body>
+</html>

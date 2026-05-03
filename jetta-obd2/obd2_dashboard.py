@@ -152,7 +152,7 @@ class ELM327:
 
         return False, "Adapter not responding.\n\n" + "\n".join(log)
 
-    def _send_cmd(self, cmd, delay=0.05):
+    def _send_cmd(self, cmd, delay=0.01):
         if not self.serial or not self.serial.is_open:
             return None
         try:
@@ -162,14 +162,14 @@ class ELM327:
             time.sleep(delay)
 
             response = b""
-            timeout = time.time() + 0.5
+            timeout = time.time() + 0.15
             while time.time() < timeout:
                 if self.serial.in_waiting > 0:
                     chunk = self.serial.read(self.serial.in_waiting)
                     response += chunk
                     if b">" in chunk:
                         break
-                time.sleep(0.01)
+                time.sleep(0.005)
 
             text = response.decode("ascii", errors="ignore")
             text = text.replace("\r", "\n").replace(">", "").strip()
@@ -183,7 +183,7 @@ class ELM327:
             return None
 
     def query_pid(self, pid_hex):
-        resp = self._send_cmd(pid_hex, delay=0.03)
+        resp = self._send_cmd(pid_hex, delay=0.01)
         if resp is None:
             return None
         resp = resp.upper().replace(" ", "")
@@ -566,14 +566,16 @@ class Dashboard(QMainWindow):
                 gw.set_value(val)
 
             self.update_signal.emit()
-            time.sleep(0.05)
 
     def _refresh_gauges(self):
         self.lbl_reads.setText(f"Reads: {self.elm.rx_count}")
         self.lbl_errors.setText(f"Errors: {self.elm.error_count}")
-        volts = self.elm._send_cmd("ATRV") if self.elm.connected else None
-        if volts:
-            self.lbl_volts.setText(f"Battery: {volts.strip()}")
+        self._volt_counter = getattr(self, "_volt_counter", 0) + 1
+        if self._volt_counter >= 30:
+            self._volt_counter = 0
+            volts = self.elm._send_cmd("ATRV") if self.elm.connected else None
+            if volts:
+                self.lbl_volts.setText(f"Battery: {volts.strip()}")
 
     def _read_codes(self):
         if not self.elm.connected:

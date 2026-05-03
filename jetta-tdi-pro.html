@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROTS — Jetta TDI Pro</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiSmV0dGEgVERJIFBybyIsInNob3J0X25hbWUiOiJKZXR0YSBUREkiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBhMGExYSIsInRoZW1lX2NvbG9yIjoiIzAwZjBmZiJ9">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a1a;--card:rgba(15,15,35,0.85);--border:rgba(0,240,255,0.15);
+  --cyan:#00f0ff;--green:#00ff88;--red:#ff3366;--orange:#ff8800;
+  --purple:#a855f7;--text:#e0e0ff;--dim:#5a5a7a;
+  --glow-cyan:0 0 20px rgba(0,240,255,0.3);--glow-green:0 0 20px rgba(0,255,136,0.3);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,240,255,0.03),transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(168,85,247,0.03),transparent 60%);pointer-events:none;z-index:0}
+
+/* Header */
+.header{position:sticky;top:0;z-index:100;background:rgba(10,10,26,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:1.3em;font-weight:700;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .sub{font-size:0.75em;color:var(--dim);margin-top:2px}
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
+.status-dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
+.status-dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+.connect-btn{background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;color:#fff;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9em;transition:all 0.3s}
+.connect-btn:hover{transform:scale(1.05);box-shadow:var(--glow-cyan)}
+.connect-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;padding:8px 16px;background:rgba(10,10,26,0.9);border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.85em;font-weight:500;color:var(--dim);transition:all 0.3s;white-space:nowrap;border:1px solid transparent}
+.tab.active{color:var(--cyan);background:rgba(0,240,255,0.08);border-color:rgba(0,240,255,0.2)}
+.tab:hover{color:var(--text)}
+
+/* Content */
+.content{padding:16px;max-width:1400px;margin:0 auto;position:relative;z-index:1}
+.panel{display:none}.panel.active{display:block}
+
+/* Gauge Grid */
+.gauge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.gauge-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center;backdrop-filter:blur(10px);transition:all 0.3s;position:relative;overflow:hidden}
+.gauge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0.5}
+.gauge-card:hover{border-color:rgba(0,240,255,0.3);transform:translateY(-2px);box-shadow:var(--glow-cyan)}
+.gauge-label{font-size:0.7em;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:8px}
+.gauge-value{font-size:2.2em;font-weight:700;font-variant-numeric:tabular-nums;transition:color 0.3s}
+.gauge-unit{font-size:0.7em;color:var(--dim);margin-top:4px}
+.gauge-bar{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:10px;overflow:hidden}
+.gauge-bar-fill{height:100%;border-radius:2px;transition:width 0.3s ease,background 0.3s}
+.gauge-range{display:flex;justify-content:space-between;font-size:0.6em;color:var(--dim);margin-top:4px}
+
+/* Category headers */
+.cat-header{font-size:0.9em;font-weight:600;color:var(--cyan);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:2px}
+.cat-header:first-child{margin-top:0}
+
+/* Chart */
+.chart-container{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.chart-title{font-size:0.85em;font-weight:600;color:var(--cyan)}
+canvas.chart{width:100%;height:200px;border-radius:8px}
+
+/* DTC Panel */
+.dtc-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px}
+.dtc-list{max-height:400px;overflow-y:auto}
+.dtc-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02)}
+.dtc-item.active{border-left:3px solid var(--red);background:rgba(255,51,102,0.05)}
+.dtc-item.pending{border-left:3px solid var(--orange);background:rgba(255,136,0,0.05)}
+.dtc-item.cleared{border-left:3px solid var(--green);background:rgba(0,255,136,0.05)}
+.dtc-code{font-weight:700;font-family:monospace;font-size:1.1em}
+.dtc-desc{font-size:0.8em;color:var(--dim)}
+.btn{padding:10px 24px;border-radius:10px;border:none;font-weight:600;cursor:pointer;transition:all 0.3s;font-size:0.85em}
+.btn-red{background:linear-gradient(135deg,var(--red),#cc0044);color:#fff}
+.btn-green{background:linear-gradient(135deg,var(--green),#00cc66);color:#000}
+.btn-cyan{background:linear-gradient(135deg,var(--cyan),#0088cc);color:#000}
+.btn:hover{transform:scale(1.05)}
+
+/* Tune Panel */
+.tune-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.tune-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;backdrop-filter:blur(10px)}
+.tune-card h3{font-size:0.9em;color:var(--cyan);margin-bottom:16px}
+.tune-slider{width:100%;margin:8px 0;-webkit-appearance:none;height:6px;border-radius:3px;background:rgba(255,255,255,0.1);outline:none}
+.tune-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));cursor:pointer;box-shadow:var(--glow-cyan)}
+.tune-row{margin-bottom:14px}
+.tune-label{display:flex;justify-content:space-between;font-size:0.8em;margin-bottom:4px}
+.tune-label span:first-child{color:var(--dim)}
+.tune-label span:last-child{color:var(--cyan);font-weight:600;font-variant-numeric:tabular-nums}
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.preset-btn{padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--text);cursor:pointer;font-size:0.8em;font-weight:500;transition:all 0.3s;text-align:center}
+.preset-btn:hover,.preset-btn.active{border-color:var(--cyan);background:rgba(0,240,255,0.08);color:var(--cyan)}
+.preset-btn .preset-name{font-weight:700;margin-bottom:2px}
+.preset-btn .preset-desc{font-size:0.7em;color:var(--dim)}
+.warning-box{background:rgba(255,136,0,0.08);border:1px solid rgba(255,136,0,0.3);border-radius:10px;padding:14px;margin-top:16px;font-size:0.8em;color:var(--orange)}
+.warning-box strong{display:block;margin-bottom:4px}
+
+/* Data Logger */
+.log-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.log-entry{font-family:monospace;font-size:0.75em;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.log-window{background:rgba(0,0,0,0.3);border-radius:10px;padding:8px;max-height:400px;overflow-y:auto;font-family:monospace;font-size:0.75em}
+
+/* Info/status bar */
+.info-bar{display:flex;gap:16px;padding:8px 16px;background:rgba(10,10,26,0.9);border-bottom:1px solid var(--border);font-size:0.75em;color:var(--dim);flex-wrap:wrap}
+.info-item{display:flex;align-items:center;gap:4px}
+.info-item span.val{color:var(--cyan);font-weight:600}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,240,255,0.2);border-radius:3px}
+
+/* Responsive */
+@media(max-width:600px){
+  .gauge-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .gauge-value{font-size:1.6em}
+  .tune-grid{grid-template-columns:1fr}
+}
+
+/* Animations */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.connecting .status-dot{animation:pulse 1s infinite}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.gauge-card{animation:slideIn 0.3s ease forwards}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>⚡ JETTA TDI PRO</h1>
+    <div class="sub">2009 VW Jetta TDI 2.0L — ROTS Trucking</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="status-dot off" id="statusDot"></span>
+    <button class="connect-btn" id="connectBtn" onclick="toggleConnection()">CONNECT</button>
+  </div>
+</div>
+
+<div class="info-bar" id="infoBar">
+  <div class="info-item">Protocol: <span class="val" id="infoProto">—</span></div>
+  <div class="info-item">Adapter: <span class="val" id="infoAdapter">—</span></div>
+  <div class="info-item">Refresh: <span class="val" id="infoRefresh">—</span></div>
+  <div class="info-item">Uptime: <span class="val" id="infoUptime">—</span></div>
+  <div class="info-item">VIN: <span class="val" id="infoVin">—</span></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('dashboard')">🏎️ Dashboard</div>
+  <div class="tab" onclick="switchTab('charts')">📈 Live Charts</div>
+  <div class="tab" onclick="switchTab('dtc')">🔧 Trouble Codes</div>
+  <div class="tab" onclick="switchTab('tune')">🔮 Tune Builder</div>
+  <div class="tab" onclick="switchTab('logger')">📊 Data Logger</div>
+</div>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div class="panel active" id="panel-dashboard">
+  <div class="cat-header">⚡ Engine Performance</div>
+  <div class="gauge-grid" id="perfGauges"></div>
+  <div class="cat-header">🌡️ Temperature & Pressure</div>
+  <div class="gauge-grid" id="tempGauges"></div>
+  <div class="cat-header">🔋 Electrical & System</div>
+  <div class="gauge-grid" id="sysGauges"></div>
+</div>
+
+<!-- LIVE CHARTS -->
+<div class="panel" id="panel-charts">
+  <div class="chart-container">
+    <div class="chart-header">
+      <span class="chart-title">📈 RPM & Speed</span>
+      <select id="chartSelect" onchange="updateChartView()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:0.8em">
+        <option value="rpm_speed">RPM & Speed</option>
+        <option value="boost_load">Boost & Engine Load</option>
+        <option value="temps">Temperatures</option>
+        <option value="fuel">Fuel System</option>
+      </select>
+    </div>
+    <canvas id="liveChart" class="chart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- TROUBLE CODES -->
+<div class="panel" id="panel-dtc">
+  <div class="dtc-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="color:var(--cyan);font-size:1em">Diagnostic Trouble Codes</h3>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-cyan" onclick="scanDTC()">🔍 Scan</button>
+        <button class="btn btn-red" onclick="clearDTC()">🗑️ Clear All</button>
+      </div>
+    </div>
+    <div class="dtc-list" id="dtcList">
+      <div style="text-align:center;color:var(--dim);padding:40px">Click <strong>Scan</strong> to read trouble codes</div>
+    </div>
+  </div>
+</div>
+
+<!-- TUNE BUILDER -->
+<div class="panel" id="panel-tune">
+  <div class="preset-grid">
+    <div class="preset-btn active" onclick="loadPreset('stock')">
+      <div class="preset-name">🏭 Stock</div>
+      <div class="preset-desc">Factory defaults</div>
+    </div>
+    <div class="preset-btn" onclick="loadPreset('eco')">
+      <div class="preset-name">🌱 Economy</div>
+      <div class="preset-desc">Max MPG</div>
+    </div>
+    <div class="preset-btn" onclick="loadPreset('sport')">
+      <div class="preset-name">🏎️ Sport</div>
+      <div class="preset-desc">+30% power</div>
+    </div>
+    <div class="preset-btn" onclick="loadPreset('tow')">
+      <div class="preset-name">🚛 Tow</div>
+      <div class="preset-desc">Heavy load</div>
+    </div>
+    <div class="preset-btn" onclick="loadPreset('race')">
+      <div class="preset-name">⚡ Race</div>
+      <div class="preset-desc">Full send</div>
+    </div>
+    <div class="preset-btn" onclick="loadPreset('custom')">
+      <div class="preset-name">🔧 Custom</div>
+      <div class="preset-desc">Your tune</div>
+    </div>
+  </div>
+
+  <div class="tune-grid">
+    <div class="tune-card">
+      <h3>💨 Boost & Turbo</h3>
+      <div class="tune-row">
+        <div class="tune-label"><span>Boost Limit (PSI)</span><span id="tuneBoostVal">22</span></div>
+        <input type="range" class="tune-slider" id="tuneBoost" min="15" max="35" value="22" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>Wastegate Duty %</span><span id="tuneWgVal">50</span></div>
+        <input type="range" class="tune-slider" id="tuneWg" min="20" max="95" value="50" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>VNT Vane Position</span><span id="tuneVntVal">50</span></div>
+        <input type="range" class="tune-slider" id="tuneVnt" min="10" max="90" value="50" oninput="updateTune()">
+      </div>
+    </div>
+
+    <div class="tune-card">
+      <h3>⛽ Fuel & Injection</h3>
+      <div class="tune-row">
+        <div class="tune-label"><span>Rail Pressure (bar)</span><span id="tuneRailVal">1600</span></div>
+        <input type="range" class="tune-slider" id="tuneRail" min="800" max="2000" value="1600" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>Injection Timing (°BTDC)</span><span id="tuneTimingVal">6</span></div>
+        <input type="range" class="tune-slider" id="tuneTiming" min="-2" max="14" value="6" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>Pilot Injection Qty (mg)</span><span id="tunePilotVal">2.0</span></div>
+        <input type="range" class="tune-slider" id="tunePilot" min="0" max="5" value="2" step="0.5" oninput="updateTune()">
+      </div>
+    </div>
+
+    <div class="tune-card">
+      <h3>🔒 Safety Limits</h3>
+      <div class="tune-row">
+        <div class="tune-label"><span>EGT Limit (°F)</span><span id="tuneEgtVal">1400</span></div>
+        <input type="range" class="tune-slider" id="tuneEgt" min="1000" max="1600" value="1400" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>RPM Limit</span><span id="tuneRpmVal">4500</span></div>
+        <input type="range" class="tune-slider" id="tuneRpm" min="4000" max="5500" value="4500" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>Coolant Temp Cutoff (°F)</span><span id="tuneCoolVal">230</span></div>
+        <input type="range" class="tune-slider" id="tuneCool" min="200" max="260" value="230" oninput="updateTune()">
+      </div>
+    </div>
+
+    <div class="tune-card">
+      <h3>⚙️ Transmission & Torque</h3>
+      <div class="tune-row">
+        <div class="tune-label"><span>Torque Limit (lb-ft)</span><span id="tuneTorqVal">236</span></div>
+        <input type="range" class="tune-slider" id="tuneTorq" min="200" max="350" value="236" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>Rev Limiter (RPM)</span><span id="tuneRevVal">4500</span></div>
+        <input type="range" class="tune-slider" id="tuneRev" min="4000" max="5500" value="4500" oninput="updateTune()">
+      </div>
+      <div class="tune-row">
+        <div class="tune-label"><span>Throttle Response</span><span id="tuneThrVal">50</span></div>
+        <input type="range" class="tune-slider" id="tuneThr" min="10" max="100" value="50" oninput="updateTune()">
+      </div>
+    </div>
+  </div>
+
+  <div class="warning-box">
+    <strong>⚠️ Tuning Hardware Required</strong>
+    The ELM327/Vgate adapter can <b>read</b> all sensors but cannot flash ECU tunes. To apply tune profiles, you'll need either:
+    <br>• <b>VCDS/VAG-COM cable</b> (~$200) — for adaptation channels & basic adjustments
+    <br>• <b>Alientech KESS v2 clone</b> (~$150) — for full ECU map flashing
+    <br>• <b>Custom Malone tune</b> ($400-600) — mail-order ECU flash, most popular for TDI
+    <br><br>
+    Saved tune profiles will be ready to flash once you have the hardware. The app will auto-detect when a flasher is connected.
+  </div>
+</div>
+
+<!-- DATA LOGGER -->
+<div class="panel" id="panel-logger">
+  <div class="dtc-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="color:var(--cyan);font-size:1em">📊 Data Logger</h3>
+      <div class="log-controls">
+        <button class="btn btn-green" id="logBtn" onclick="toggleLog()">▶ Start Recording</button>
+        <button class="btn btn-cyan" onclick="exportLog()">💾 Export CSV</button>
+        <button class="btn btn-red" onclick="clearLog()">🗑️ Clear</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;font-size:0.8em">
+      <label style="color:var(--dim)">Log interval:</label>
+      <select id="logInterval" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:2px 6px;border-radius:4px">
+        <option value="500">0.5 sec</option>
+        <option value="1000" selected>1 sec</option>
+        <option value="2000">2 sec</option>
+        <option value="5000">5 sec</option>
+      </select>
+      <span style="color:var(--dim);margin-left:8px">Entries: <span class="val" id="logCount">0</span></span>
+    </div>
+    <div class="log-window" id="logWindow">
+      <div style="text-align:center;color:var(--dim);padding:20px">Click <strong>Start Recording</strong> to begin logging sensor data</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============================================
+// JETTA TDI PRO — Web Serial OBD2 Dashboard
+// 2009 VW Jetta TDI 2.0L Diesel — ROTS Trucking
+// ============================================
+
+// --- PID Definitions (19 Confirmed) ---
+var PIDS = [
+  // Performance
+  {pid:'010C',name:'RPM',unit:'RPM',min:0,max:6000,cat:'perf',parse:function(d){return((d[0]*256)+d[1])/4},warn:4500,crit:5000},
+  {pid:'010D',name:'Speed',unit:'MPH',min:0,max:150,cat:'perf',parse:function(d){return Math.round(d[0]*0.621371)},warn:80,crit:100},
+  {pid:'0111',name:'Throttle',unit:'%',min:0,max:100,cat:'perf',parse:function(d){return Math.round(d[0]*100/255)},warn:90,crit:95},
+  {pid:'0110',name:'MAF Flow',unit:'g/s',min:0,max:400,cat:'perf',parse:function(d){return((d[0]*256)+d[1])/100},warn:300,crit:380},
+  {pid:'0104',name:'Engine Load',unit:'%',min:0,max:100,cat:'perf',parse:function(d){return Math.round(d[0]*100/255)},warn:85,crit:95},
+  {pid:'011F',name:'Runtime',unit:'sec',min:0,max:65535,cat:'perf',parse:function(d){return(d[0]*256)+d[1]},warn:99999,crit:99999},
+  // Temp & Pressure
+  {pid:'010B',name:'Boost PSI',unit:'PSI',min:0,max:40,cat:'temp',parse:function(d){return Math.round((d[0]*0.145038-14.696)*10)/10},warn:25,crit:30},
+  {pid:'0105',name:'Coolant',unit:'°F',min:0,max:280,cat:'temp',parse:function(d){return Math.round((d[0]-40)*9/5+32)},warn:220,crit:240},
+  {pid:'010F',name:'Intake Air',unit:'°F',min:-40,max:300,cat:'temp',parse:function(d){return Math.round((d[0]-40)*9/5+32)},warn:150,crit:180},
+  {pid:'0133',name:'Barometric',unit:'PSI',min:12,max:16,cat:'temp',parse:function(d){return Math.round(d[0]*0.145038*100)/100},warn:99,crit:99},
+  {pid:'0146',name:'Ambient',unit:'°F',min:-40,max:150,cat:'temp',parse:function(d){return Math.round((d[0]-40)*9/5+32)},warn:110,crit:120},
+  // System & Electrical
+  {pid:'0142',name:'Battery',unit:'V',min:10,max:16,cat:'sys',parse:function(d){return Math.round(((d[0]*256)+d[1])/1000*100)/100},warn:14.5,crit:15},
+  {pid:'014D',name:'MIL Time',unit:'min',min:0,max:65535,cat:'sys',parse:function(d){return(d[0]*256)+d[1]},warn:1,crit:9999},
+  {pid:'0121',name:'Dist w/MIL',unit:'mi',min:0,max:65535,cat:'sys',parse:function(d){return Math.round((d[0]*256+d[1])*0.621371)},warn:1,crit:9999},
+  {pid:'011C',name:'OBD Standard',unit:'',min:0,max:30,cat:'sys',parse:function(d){return d[0]},warn:99,crit:99},
+  {pid:'0101',name:'Monitor Status',unit:'',min:0,max:255,cat:'sys',parse:function(d){return d[0]},warn:99,crit:99},
+  {pid:'0145',name:'Cmd Throttle',unit:'%',min:0,max:100,cat:'sys',parse:function(d){return Math.round(d[0]*100/255)},warn:90,crit:95},
+  {pid:'0103',name:'Fuel System',unit:'',min:0,max:16,cat:'sys',parse:function(d){return d[0]},warn:99,crit:99},
+  {pid:'0102',name:'Freeze DTC',unit:'',min:0,max:65535,cat:'sys',parse:function(d){return(d[0]*256)+d[1]},warn:1,crit:9999}
+];
+
+// Key PIDs for fast polling (engine-critical, poll every cycle)
+var FAST_PIDS = ['010C','010D','010B','0105','0104','0111'];
+// Slow PIDs poll every 5th cycle
+var slowCounter = 0;
+
+var port = null, reader = null, writer = null;
+var connected = false, pollTimer = null, startTime = 0;
+var gaugeData = {}, chartData = {}, logEntries = [], logging = false, logTimer = null;
+
+// --- Serial Communication ---
+async function toggleConnection(){
+  if(connected){disconnect();return}
+  if(!('serial' in navigator)){alert('Web Serial not supported. Use Chrome/Edge.');return}
+  try{
+    port = await navigator.serial.requestPort();
+    await port.open({baudRate:115200});
+    reader = port.readable.getReader();
+    writer = port.writable.getWriter();
+    document.getElementById('connectBtn').textContent='CONNECTING...';
+    document.getElementById('connectBtn').disabled=true;
+    document.querySelector('.header').classList.add('connecting');
+    await initELM();
+  }catch(e){
+    console.error('Connection failed:',e);
+    document.getElementById('connectBtn').textContent='CONNECT';
+    document.getElementById('connectBtn').disabled=false;
+    document.querySelector('.header').classList.remove('connecting');
+  }
+}
+
+async function send(cmd){
+  var enc=new TextEncoder();
+  await writer.write(enc.encode(cmd+'\r'));
+  var resp='',timeout=Date.now()+1500;
+  while(Date.now()<timeout){
+    var {value,done}=await Promise.race([reader.read(),new Promise(function(r){setTimeout(function(){r({value:null,done:false})},100)})]);
+    if(value){resp+=new TextDecoder().decode(value)}
+    if(done)break;
+    if(resp.indexOf('>')!==-1)break;
+  }
+  return resp.replace(/\r/g,'\n').trim();
+}
+
+async function initELM(){
+  await send('ATZ');await sleep(500);
+  await send('ATE0');
+  await send('ATL0');
+  await send('ATS0');
+  await send('ATH0');
+  var r=await send('ATSP6'); // Protocol 6 locked
+  await send('ATST32'); // Timeout 200ms
+  await send('ATAT2'); // Adaptive timing aggressive
+
+  // Get adapter info
+  var ver=await send('ATI');
+  document.getElementById('infoAdapter').textContent=ver.split('\n')[0]||'ELM327';
+  document.getElementById('infoProto').textContent='CAN 11/500 (ISO 15765-4)';
+
+  // Try VIN
+  try{
+    var vin=await send('0902');
+    if(vin.indexOf('49')!==-1){
+      document.getElementById('infoVin').textContent='Detected';
+    }
+  }catch(e){}
+
+  connected=true;startTime=Date.now();
+  document.getElementById('statusDot').className='status-dot on';
+  document.getElementById('connectBtn').textContent='DISCONNECT';
+  document.getElementById('connectBtn').disabled=false;
+  document.querySelector('.header').classList.remove('connecting');
+  startPolling();
+}
+
+function disconnect(){
+  connected=false;
+  if(pollTimer)clearInterval(pollTimer);
+  try{if(reader)reader.cancel()}catch(e){}
+  try{if(writer)writer.close()}catch(e){}
+  try{if(port)port.close()}catch(e){}
+  document.getElementById('statusDot').className='status-dot off';
+  document.getElementById('connectBtn').textContent='CONNECT';
+  document.getElementById('infoRefresh').textContent='—';
+}
+
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+
+// --- Polling ---
+function startPolling(){
+  poll(); // immediate first
+  pollTimer=setInterval(poll,100); // attempt every 100ms
+}
+
+var polling=false;
+async function poll(){
+  if(!connected||polling)return;
+  polling=true;
+  var cycleStart=Date.now();
+  slowCounter++;
+  var pidsToQuery=(slowCounter%5===0)?PIDS:PIDS.filter(function(p){return FAST_PIDS.indexOf(p.pid)!==-1});
+
+  for(var i=0;i<pidsToQuery.length;i++){
+    if(!connected)break;
+    var p=pidsToQuery[i];
+    try{
+      var resp=await send(p.pid);
+      var bytes=parseResponse(resp,p.pid);
+      if(bytes&&bytes.length>=1){
+        var val=p.parse(bytes);
+        gaugeData[p.pid]={value:val,time:Date.now()};
+        updateGauge(p,val);
+        // Chart data
+        if(!chartData[p.pid])chartData[p.pid]=[];
+        chartData[p.pid].push({t:Date.now(),v:val});
+        if(chartData[p.pid].length>300)chartData[p.pid].shift();
+      }
+    }catch(e){}
+  }
+
+  var elapsed=Date.now()-cycleStart;
+  document.getElementById('infoRefresh').textContent=elapsed+'ms';
+  var up=Math.floor((Date.now()-startTime)/1000);
+  var m=Math.floor(up/60),s=up%60;
+  document.getElementById('infoUptime').textContent=m+'m '+s+'s';
+  polling=false;
+}
+
+function parseResponse(resp,pid){
+  var lines=resp.split('\n');
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].replace(/\s/g,'');
+    var expect='41'+pid.substring(2);
+    var idx=line.indexOf(expect);
+    if(idx!==-1){
+      var hex=line.substring(idx+expect.length);
+      var bytes=[];
+      for(var j=0;j<hex.length;j+=2){
+        bytes.push(parseInt(hex.substring(j,j+2),16));
+      }
+      return bytes;
+    }
+  }
+  return null;
+}
+
+// --- Gauge Rendering ---
+function buildGauges(){
+  var cats={perf:'perfGauges',temp:'tempGauges',sys:'sysGauges'};
+  PIDS.forEach(function(p,idx){
+    var container=document.getElementById(cats[p.cat]);
+    if(!container)return;
+    var card=document.createElement('div');
+    card.className='gauge-card';
+    card.style.animationDelay=(idx*0.05)+'s';
+    card.id='gc-'+p.pid;
+    card.innerHTML='<div class="gauge-label">'+p.name+'</div>'+
+      '<div class="gauge-value" id="gv-'+p.pid+'">—</div>'+
+      '<div class="gauge-unit">'+p.unit+'</div>'+
+      '<div class="gauge-bar"><div class="gauge-bar-fill" id="gb-'+p.pid+'" style="width:0%"></div></div>'+
+      '<div class="gauge-range"><span>'+p.min+'</span><span>'+p.max+'</span></div>';
+    container.appendChild(card);
+  });
+}
+
+function updateGauge(p,val){
+  var el=document.getElementById('gv-'+p.pid);
+  var bar=document.getElementById('gb-'+p.pid);
+  if(!el)return;
+
+  // Format value
+  if(p.pid==='011F'){
+    var mm=Math.floor(val/60),ss=val%60;
+    el.textContent=mm+':'+(ss<10?'0':'')+ss;
+  }else if(typeof val==='number'&&val%1!==0){
+    el.textContent=val.toFixed(1);
+  }else{
+    el.textContent=val;
+  }
+
+  // Color based on thresholds
+  if(val>=p.crit){el.style.color='var(--red)'}
+  else if(val>=p.warn){el.style.color='var(--orange)'}
+  else{el.style.color='var(--green)'}
+
+  // Bar fill
+  var pct=Math.max(0,Math.min(100,((val-p.min)/(p.max-p.min))*100));
+  bar.style.width=pct+'%';
+  if(val>=p.crit)bar.style.background='linear-gradient(90deg,var(--orange),var(--red))';
+  else if(val>=p.warn)bar.style.background='linear-gradient(90deg,var(--green),var(--orange))';
+  else bar.style.background='linear-gradient(90deg,var(--cyan),var(--green))';
+}
+
+// --- Chart Rendering ---
+function drawChart(){
+  var canvas=document.getElementById('liveChart');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var W=canvas.width=canvas.offsetWidth;
+  var H=canvas.height=200;
+  ctx.clearRect(0,0,W,H);
+
+  var view=document.getElementById('chartSelect').value;
+  var series=[];
+  if(view==='rpm_speed'){
+    series=[{pid:'010C',color:'#00f0ff',label:'RPM',maxY:6000},{pid:'010D',color:'#00ff88',label:'MPH',maxY:150}];
+  }else if(view==='boost_load'){
+    series=[{pid:'010B',color:'#a855f7',label:'Boost PSI',maxY:40},{pid:'0104',color:'#ff8800',label:'Load %',maxY:100}];
+  }else if(view==='temps'){
+    series=[{pid:'0105',color:'#ff3366',label:'Coolant °F',maxY:280},{pid:'010F',color:'#00f0ff',label:'Intake °F',maxY:200}];
+  }else{
+    series=[{pid:'0111',color:'#00ff88',label:'Throttle %',maxY:100},{pid:'0110',color:'#ff8800',label:'MAF g/s',maxY:400}];
+  }
+
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+  for(var g=0;g<5;g++){var gy=g*H/4;ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke()}
+
+  // Draw each series
+  series.forEach(function(s,si){
+    var data=chartData[s.pid];
+    if(!data||data.length<2)return;
+    var now=Date.now();
+    ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();
+    var first=true;
+    data.forEach(function(pt){
+      var x=W-((now-pt.t)/30000)*W;
+      var y=H-(pt.v/s.maxY)*H;
+      if(x<0)return;
+      if(first){ctx.moveTo(x,y);first=false}else{ctx.lineTo(x,y)}
+    });
+    ctx.stroke();
+    // Legend
+    ctx.fillStyle=s.color;ctx.font='bold 11px sans-serif';
+    ctx.fillText(s.label,10+si*120,16);
+  });
+}
+function updateChartView(){drawChart()}
+setInterval(drawChart,200);
+
+// --- DTC ---
+var DTC_CODES={
+  'P0401':'EGR Flow Insufficient','P0402':'EGR Flow Excessive','P0101':'MAF Circuit Range',
+  'P0100':'MAF Circuit Malfunction','P0110':'IAT Circuit Malfunction','P0115':'ECT Circuit Malfunction',
+  'P0234':'Turbo Overboost','P0299':'Turbo Underboost','P0480':'Cooling Fan Relay',
+  'P0671':'Glow Plug #1','P0672':'Glow Plug #2','P0673':'Glow Plug #3','P0674':'Glow Plug #4',
+  'P0088':'Fuel Rail Pressure Too High','P0087':'Fuel Rail Pressure Too Low',
+  'P2002':'DPF Efficiency Below Threshold','P2463':'DPF Soot Accumulation',
+  'P0420':'Catalyst Efficiency Below','P0171':'System Too Lean','P0172':'System Too Rich'
+};
+async function scanDTC(){
+  var list=document.getElementById('dtcList');
+  list.innerHTML='<div style="text-align:center;color:var(--cyan);padding:20px">Scanning...</div>';
+  if(!connected){list.innerHTML='<div style="text-align:center;color:var(--red);padding:20px">Connect to vehicle first</div>';return}
+  try{
+    var resp=await send('03');
+    var codes=parseDTCResponse(resp);
+    if(codes.length===0){
+      list.innerHTML='<div style="text-align:center;color:var(--green);padding:40px">✅ No trouble codes found — all clear!</div>';
+    }else{
+      list.innerHTML='';
+      codes.forEach(function(c){
+        var div=document.createElement('div');
+        div.className='dtc-item active';
+        div.innerHTML='<div><div class="dtc-code">'+c+'</div><div class="dtc-desc">'+(DTC_CODES[c]||'Unknown code')+'</div></div>';
+        list.appendChild(div);
+      });
+    }
+  }catch(e){
+    list.innerHTML='<div style="text-align:center;color:var(--red);padding:20px">Scan failed: '+e.message+'</div>';
+  }
+}
+function parseDTCResponse(resp){
+  var codes=[];
+  var hex=resp.replace(/[\s\r\n>]/g,'');
+  var idx=hex.indexOf('43');
+  if(idx===-1)return codes;
+  hex=hex.substring(idx+2);
+  for(var i=0;i<hex.length-3;i+=4){
+    var b1=parseInt(hex[i],16),b2=hex[i+1],b3=hex[i+2],b4=hex[i+3];
+    if(b1===0&&b2==='0'&&b3==='0'&&b4==='0')continue;
+    var prefix=['P','C','B','U'][b1>>2];
+    var code=prefix+((b1&3).toString())+b2+b3+b4;
+    codes.push(code);
+  }
+  return codes;
+}
+async function clearDTC(){
+  if(!connected){alert('Connect first');return}
+  if(!confirm('Clear all trouble codes?'))return;
+  await send('04');
+  document.getElementById('dtcList').innerHTML='<div style="text-align:center;color:var(--green);padding:40px">✅ Codes cleared!</div>';
+}
+
+// --- Tune Presets ---
+var PRESETS={
+  stock:{boost:22,wg:50,vnt:50,rail:1600,timing:6,pilot:2,egt:1400,rpm:4500,cool:230,torq:236,rev:4500,thr:50},
+  eco:{boost:18,wg:40,vnt:60,rail:1400,timing:4,pilot:2.5,egt:1200,rpm:4000,cool:220,torq:200,rev:4200,thr:40},
+  sport:{boost:28,wg:70,vnt:40,rail:1800,timing:8,pilot:1.5,egt:1450,rpm:5000,cool:235,torq:280,rev:5000,thr:70},
+  tow:{boost:25,wg:55,vnt:55,rail:1700,timing:5,pilot:2,egt:1350,rpm:4200,cool:225,torq:300,rev:4500,thr:45},
+  race:{boost:32,wg:85,vnt:30,rail:1950,timing:10,pilot:1,egt:1500,rpm:5200,cool:240,torq:330,rev:5200,thr:90},
+  custom:{boost:22,wg:50,vnt:50,rail:1600,timing:6,pilot:2,egt:1400,rpm:4500,cool:230,torq:236,rev:4500,thr:50}
+};
+function loadPreset(name){
+  var p=PRESETS[name];if(!p)return;
+  document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('active')});
+  event.currentTarget.classList.add('active');
+  document.getElementById('tuneBoost').value=p.boost;
+  document.getElementById('tuneWg').value=p.wg;
+  document.getElementById('tuneVnt').value=p.vnt;
+  document.getElementById('tuneRail').value=p.rail;
+  document.getElementById('tuneTiming').value=p.timing;
+  document.getElementById('tunePilot').value=p.pilot;
+  document.getElementById('tuneEgt').value=p.egt;
+  document.getElementById('tuneRpm').value=p.rpm;
+  document.getElementById('tuneCool').value=p.cool;
+  document.getElementById('tuneTorq').value=p.torq;
+  document.getElementById('tuneRev').value=p.rev;
+  document.getElementById('tuneThr').value=p.thr;
+  updateTune();
+}
+function updateTune(){
+  document.getElementById('tuneBoostVal').textContent=document.getElementById('tuneBoost').value;
+  document.getElementById('tuneWgVal').textContent=document.getElementById('tuneWg').value;
+  document.getElementById('tuneVntVal').textContent=document.getElementById('tuneVnt').value;
+  document.getElementById('tuneRailVal').textContent=document.getElementById('tuneRail').value;
+  document.getElementById('tuneTimingVal').textContent=document.getElementById('tuneTiming').value;
+  document.getElementById('tunePilotVal').textContent=document.getElementById('tunePilot').value;
+  document.getElementById('tuneEgtVal').textContent=document.getElementById('tuneEgt').value;
+  document.getElementById('tuneRpmVal').textContent=document.getElementById('tuneRpm').value;
+  document.getElementById('tuneCoolVal').textContent=document.getElementById('tuneCool').value;
+  document.getElementById('tuneTorqVal').textContent=document.getElementById('tuneTorq').value;
+  document.getElementById('tuneRevVal').textContent=document.getElementById('tuneRev').value;
+  document.getElementById('tuneThrVal').textContent=document.getElementById('tuneThr').value;
+}
+
+// --- Data Logger ---
+function toggleLog(){
+  logging=!logging;
+  var btn=document.getElementById('logBtn');
+  if(logging){
+    btn.textContent='⏹ Stop';btn.className='btn btn-red';
+    var iv=parseInt(document.getElementById('logInterval').value);
+    logTimer=setInterval(logEntry,iv);
+  }else{
+    btn.textContent='▶ Start Recording';btn.className='btn btn-green';
+    if(logTimer)clearInterval(logTimer);
+  }
+}
+function logEntry(){
+  var entry={time:new Date().toISOString()};
+  PIDS.forEach(function(p){
+    if(gaugeData[p.pid])entry[p.name]=gaugeData[p.pid].value;
+  });
+  logEntries.push(entry);
+  document.getElementById('logCount').textContent=logEntries.length;
+  var win=document.getElementById('logWindow');
+  var line=document.createElement('div');
+  line.className='log-entry';
+  var parts=[entry.time.split('T')[1].split('.')[0]];
+  FAST_PIDS.forEach(function(pid){
+    var p=PIDS.filter(function(x){return x.pid===pid})[0];
+    if(p&&entry[p.name]!==undefined)parts.push(p.name+':'+entry[p.name]);
+  });
+  line.textContent=parts.join(' | ');
+  win.appendChild(line);
+  win.scrollTop=win.scrollHeight;
+}
+function clearLog(){logEntries=[];document.getElementById('logCount').textContent='0';document.getElementById('logWindow').innerHTML=''}
+function exportLog(){
+  if(logEntries.length===0){alert('No data to export');return}
+  var headers=Object.keys(logEntries[0]);
+  var csv=headers.join(',')+'\n';
+  logEntries.forEach(function(e){
+    csv+=headers.map(function(h){return e[h]||''}).join(',')+'\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='jetta_tdi_log_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+
+// --- Tab Switching ---
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active')});
+  document.getElementById('panel-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// --- Init ---
+buildGauges();
+</script>
+</body>
+</html>

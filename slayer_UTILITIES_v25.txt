@@ -642,7 +642,7 @@ function selectBestMaster(combatLevel, slayerLevel, preference) {
             return master;
         }
     }
-    return SLAYER_MASTER_DB["Turael"];
+    return SLAYER_MASTER_DB.Turael;
 }
 
 // -----------------------------------------------------------------------------
@@ -4764,5 +4764,5 @@ var MINING_SPOTS = {
 
 // SLAYER_MASTERS alias -- MAIN uses SLAYER_MASTERS.TURAEL
 var SLAYER_MASTERS = {
-    TURAEL: SLAYER_MASTER_DB["Turael"]
+    TURAEL: SLAYER_MASTER_DB.Turael
 };

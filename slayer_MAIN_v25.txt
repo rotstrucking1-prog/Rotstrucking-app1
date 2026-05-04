@@ -1746,17 +1746,11 @@ function readTaskFromVarbits() {
                 return true;
             }
 
-            // STEP 1: Check VERIFIED overrides first (known-correct mappings)
+            // STEP 1: Check VERIFIED overrides ONLY (known-correct mappings)
             var taskName = null;
             if (VERIFIED_CREATURE_OVERRIDES[creatureId]) {
                 taskName = VERIFIED_CREATURE_OVERRIDES[creatureId];
                 botMsg("VERIFIED OVERRIDE: ID " + creatureId + " = " + taskName, "SlayerBot");
-            } else if (SLAYER_CREATURE_MAP[creatureId]) {
-                taskName = SLAYER_CREATURE_MAP[creatureId];
-                botMsg("CREATURE MAP: ID " + creatureId + " = " + taskName + " (UNVERIFIED -- report this ID!)", "SlayerBot");
-            }
-
-            if (taskName) {
                 currentTaskName = taskName;
                 currentTaskMonster = findMonsterChecked(currentTaskName);
                 if (currentTaskMonster) {
@@ -1765,11 +1759,17 @@ function readTaskFromVarbits() {
                     botMsg("TASK: " + currentTaskName + " (" + killsLeft + " left) - WARNING: not in MONSTER_DB!", "SlayerBot");
                 }
                 return true;
-            } else {
-                botMsg("Creature ID " + creatureId + " not in map - need gem or master to identify", "SlayerBot");
-                // We know kills remain but not the task name
-                return false;
             }
+            // UNVERIFIED creature IDs -- DO NOT TRUST for routing
+            // Many SLAYER_CREATURE_MAP IDs were guessed and send bot to wrong location
+            // Instead: fall back to gem check which gives the real task name
+            if (SLAYER_CREATURE_MAP[creatureId]) {
+                botMsg("UNVERIFIED creature ID " + creatureId + " = " + SLAYER_CREATURE_MAP[creatureId] + " -- NOT TRUSTING, will gem-check instead", "SlayerBot");
+            } else {
+                botMsg("UNKNOWN creature ID " + creatureId + " -- will gem-check", "SlayerBot");
+            }
+            // Return false so startup falls through to gem check
+            return false;
         } else if (killCount === 0 || creatureId === 0) {
             botMsg("Varbit says NO active task (kills=" + killCount + ", creature=" + creatureId + ")", "SlayerBot");
             killsLeft = 0;
@@ -2360,13 +2360,28 @@ function handleCheckSupplies() {
         }
     }
 
-    // 12. Jewelry charge check - replace if at 1 charge or uncharged
-    var activeJewelry = getActiveJewelryTypes();
-    for (var ji = 0; ji < activeJewelry.length; ji++) {
-        if (isJewelryLow(activeJewelry[ji])) {
-            missingItems.push({type: "jewelry", jewelry: activeJewelry[ji], name: activeJewelry[ji].name});
+    // 12. Jewelry check -- detect MISSING (crumbled/uncharged) AND low charge
+    // Check ALL 5 jewelry types -- not just what's equipped
+    var ALL_JEWELRY_TYPES = [JEWELRY.GLORY, JEWELRY.GAMES_NECKLACE, JEWELRY.RING_OF_DUELING,
+                             JEWELRY.COMBAT_BRACELET, JEWELRY.RING_OF_WEALTH];
+    for (var ji = 0; ji < ALL_JEWELRY_TYPES.length; ji++) {
+        var jDef = ALL_JEWELRY_TYPES[ji];
+        var jCharges = getEquippedJewelryCharge(jDef);
+        if (jCharges === -1) {
+            // Not equipped at all -- check if in inventory (any charge level)
+            var jInInv = false;
+            for (var jk = 0; jk < jDef.allIds.length; jk++) {
+                if (Game.info.inventory.hasItem(jDef.allIds[jk], 1)) { jInInv = true; break; }
+            }
+            if (!jInInv) {
+                missingItems.push({type: "jewelry", jewelry: jDef, name: jDef.name});
+                needsRestock = true;
+                botMsg("[Jewelry] " + jDef.name + " not equipped or in inventory -- need one!", "SlayerBot");
+            }
+        } else if (jCharges <= 1) {
+            missingItems.push({type: "jewelry", jewelry: jDef, name: jDef.name});
             needsRestock = true;
-            botMsg("[Jewelry] " + activeJewelry[ji].name + " is low on charges - need replacement!", "SlayerBot");
+            botMsg("[Jewelry] " + jDef.name + " at " + jCharges + " charge(s) -- need replacement!", "SlayerBot");
         }
     }
 
@@ -2626,6 +2641,19 @@ function handleBankSupplies() {
         waitTicks++;
         if (waitTicks < 4) return;
         if (Game.info.bank.isOpen()) return;
+        // If jewelry needs GE purchase, redirect to GE before task
+        if (needGEJewelry) {
+            botMsg("[Jewelry] Going to GE to buy " + needGEJewelry.name + " (id:" + needGEJewelry.geBuyId + ")");
+            geBuyList = [{ id: needGEJewelry.geBuyId, name: needGEJewelry.name, price: 25000 }];
+            geBuyIndex = 0;
+            geBuyPhase = 0;
+            needGEJewelry = null;
+            bankPhase = 0;
+            waitTicks = 0;
+            postBankState = null;
+            state = STATES.WALK_TO_GE;
+            return;
+        }
         ns = postBankState;
         bkCreature = 0;
         bkKills = 0;
@@ -2637,7 +2665,7 @@ function handleBankSupplies() {
                 bkCreature = Game.getVarPlayerValue(395);
                 bkKills = Game.getVarPlayerValue(394);
                 if (bkCreature > 0 && bkKills > 0) {
-                    bkName = VERIFIED_CREATURE_OVERRIDES[bkCreature] || SLAYER_CREATURE_MAP[bkCreature];
+                    bkName = VERIFIED_CREATURE_OVERRIDES[bkCreature];
                     if (bkName) {
                         currentTaskName = bkName;
                         currentTaskMonster = findMonsterChecked(bkName);
@@ -2645,7 +2673,8 @@ function handleBankSupplies() {
                         botMsg("Bank exit recovered task: " + bkName + " x" + bkKills);
                         ns = STATES.CHECK_SUPPLIES;
                     } else {
-                        ns = STATES.SELECT_MASTER;
+                        botMsg("Unverified creature ID " + bkCreature + " -- gem check needed");
+                        ns = STATES.CHECK_GEM;
                     }
                 } else {
                     ns = STATES.SELECT_MASTER;
@@ -2722,7 +2751,20 @@ function handleBankSupplies() {
         desiredFood = getDesiredFoodCount();
         if (desiredFood > 0) {
             if (Game.info.bank.hasItem(foodId, 1)) {
-                withdrawQueue.push({ id: foodId, qty: desiredFood, label: "Food x" + desiredFood });
+                // Decompose into fixed withdraw types -- X_CUSTOM is broken in DZ
+                var fRemain = desiredFood;
+                while (fRemain >= 10) {
+                    withdrawQueue.push({ id: foodId, fixedType: "TEN", label: "Food x10" });
+                    fRemain -= 10;
+                }
+                if (fRemain >= 5) {
+                    withdrawQueue.push({ id: foodId, fixedType: "FIVE", label: "Food x5" });
+                    fRemain -= 5;
+                }
+                while (fRemain >= 1) {
+                    withdrawQueue.push({ id: foodId, fixedType: "ONE", label: "Food x1" });
+                    fRemain -= 1;
+                }
 
         // Waterskins for desert tasks
         if (isDesertTask()) {
@@ -2876,17 +2918,31 @@ function handleBankSupplies() {
 
         botMsg("Gear scan: atk=" + atkLvl + " def=" + defLvl + " wep=" + (gearWep ? gearWep.name : "equipped/none") + " body=" + (gearBod ? gearBod.name : "equipped/none"));
 
-        // ---- JEWELRY REPLACEMENT (hotfix18) ----
-        var activeJwl = getActiveJewelryTypes();
-        for (var jwi = 0; jwi < activeJwl.length; jwi++) {
-            var jwDef = activeJwl[jwi];
-            if (isJewelryLow(jwDef)) {
+        // ---- JEWELRY REPLACEMENT (fix3) ----
+        // Check ALL 5 jewelry types -- not just currently equipped
+        var ALL_JWL = [JEWELRY.GLORY, JEWELRY.GAMES_NECKLACE, JEWELRY.RING_OF_DUELING,
+                       JEWELRY.COMBAT_BRACELET, JEWELRY.RING_OF_WEALTH];
+        for (var jwi = 0; jwi < ALL_JWL.length; jwi++) {
+            var jwDef = ALL_JWL[jwi];
+            var jwCharges = getEquippedJewelryCharge(jwDef);
+            var jwNeedsReplace = false;
+            if (jwCharges === -1) {
+                // Not equipped -- check inventory
+                var jwInInv = false;
+                for (var jwk = 0; jwk < jwDef.allIds.length; jwk++) {
+                    if (Game.info.inventory.hasItem(jwDef.allIds[jwk], 1)) { jwInInv = true; break; }
+                }
+                if (!jwInInv) { jwNeedsReplace = true; }
+            } else if (jwCharges <= 1) {
+                jwNeedsReplace = true;
+            }
+            if (jwNeedsReplace) {
                 var replJwl = findBankReplacement(jwDef);
                 if (replJwl > 0) {
                     withdrawQueue.push({ id: replJwl, qty: 1, label: "Jewelry: " + jwDef.name });
                     botMsg("[Jewelry] Queued " + jwDef.name + " replacement (id:" + replJwl + ")");
                 } else {
-                    botMsg("[Jewelry] No " + jwDef.name + " in bank! Will need GE purchase.");
+                    botMsg("[Jewelry] No " + jwDef.name + " in bank! Will buy at GE.");
                     needGEJewelry = jwDef;
                 }
             }
@@ -2988,6 +3044,21 @@ function handleBankSupplies() {
     // Phase 13: Process withdraw queue -- one item per tick, 2-tick spacing
     if (bankPhase === 13) {
         if (!Game.info.bank.isOpen()) { bankPhase = 10; return; }
+
+        // Handle pending X_CUSTOM withdrawal from previous pass
+        if (pendingXCustomId > 0) {
+            waitTicks++;
+            if (waitTicks % 2 !== 0) return; // give it a tick gap
+            try {
+                Game.interact.bank.withdrawItem(pendingXCustomId, BankWithdrawType.X_CUSTOM, false);
+                botMsg("X_CUSTOM withdraw FIRED for item " + pendingXCustomId);
+            } catch(e2) {
+                botMsg("X_CUSTOM withdraw error: " + e2);
+            }
+            pendingXCustomId = 0;
+            return;
+        }
+
         if (withdrawQueue.length === 0) {
             // Done withdrawing -- restore HP/prayer before closing
             bankPhase = 143;
@@ -3008,6 +3079,18 @@ function handleBankSupplies() {
                         withdrawPotionFromBank(item.fallback2, item.qty);
                     }
                 }
+            }
+        } else if (item.fixedType) {
+            // Fix3c: Direct fixed-type withdrawal -- bypasses X_CUSTOM entirely
+            try {
+                var fType;
+                if (item.fixedType === "TEN") fType = BankWithdrawType.WITHDRAW_TEN;
+                else if (item.fixedType === "FIVE") fType = BankWithdrawType.WITHDRAW_FIVE;
+                else fType = BankWithdrawType.WITHDRAW_ONE;
+                Game.interact.bank.withdrawItem(item.id, fType, false);
+                botMsg("Fixed withdraw " + item.fixedType + " of item " + item.id);
+            } catch(e) {
+                botMsg("Fixed withdraw error: " + e);
             }
         } else if (item.withdrawAll) {
             // Fix10n: Withdraw all of this item (used for GP when buying gear)
@@ -3130,6 +3213,9 @@ function handleBankSupplies() {
     }
 }
 
+// Pending X_CUSTOM withdrawal -- set by withdrawBankItem, consumed by bankPhase 13
+var pendingXCustomId = 0;
+
 function withdrawBankItem(itemId, qty) {
     try {
         // Safety: itemId MUST be a number -- bank API crashes on strings
@@ -3143,8 +3229,6 @@ function withdrawBankItem(itemId, qty) {
             return;
         }
         // CORRECT DZ API: withdrawItem(id, BankWithdrawType, allowDuplicate)
-        // 2nd arg = BankWithdrawType enum (NOT a number!)
-        // 3rd arg = boolean allowDuplicate
         var amount = qty || 1;
         var wType;
         if (amount <= 0) {
@@ -3156,18 +3240,11 @@ function withdrawBankItem(itemId, qty) {
         } else if (amount === 10) {
             wType = BankWithdrawType.WITHDRAW_TEN;
         } else {
-            // Use X_CUSTOM for exact qty (avoids grabbing entire bank stack)
-            // MUST split into 2 ticks: setCustomWithdrawQuantity first, then withdrawItem next tick
+            // X_CUSTOM: set quantity NOW, actual withdraw happens NEXT bankPhase 13 pass
+            // DO NOT use invokeLater -- it is unreliable in DZ
             Game.interact.bank.setCustomWithdrawQuantity(amount);
-            botMsg("Bank withdraw: item " + itemId + " x" + amount + " (X_CUSTOM -- qty set, withdrawing next tick)");
-            var _xcId = itemId;
-            Utility.invokeLater(function() {
-                try {
-                    Game.interact.bank.withdrawItem(_xcId, BankWithdrawType.X_CUSTOM, false);
-                } catch(e2) {
-                    botMsg("X_CUSTOM withdraw error: " + e2);
-                }
-            }, Utility.getDelay());
+            pendingXCustomId = itemId;
+            botMsg("Bank withdraw: item " + itemId + " x" + amount + " (X_CUSTOM -- qty set, will grab next pass)");
             return;
         }
         botMsg("Bank withdraw: item " + itemId + " x" + amount + " (type=" + wType + ")");
@@ -3529,21 +3606,31 @@ function handleWalkToTask() {
             }
         }
         if (!currentTaskMonster) {
-        // Try to recover task from varbits
+        // Try to recover -- first from currentTaskName (gem-verified), then VERIFIED varbits only
+        if (currentTaskName) {
+            var recoveredMon = findMonsterChecked(currentTaskName);
+            if (recoveredMon) {
+                currentTaskMonster = recoveredMon;
+                noTaskRetryCount = 0;
+                botMsg("Task recovered in WALK from name: " + currentTaskName + " at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
+            }
+        }
+        if (!currentTaskMonster) {
         creatureId = Game.getVarPlayerValue(395);
         killCount = Game.getVarPlayerValue(394);
         if (creatureId > 0 && killCount > 0) {
-            monName = VERIFIED_CREATURE_OVERRIDES[creatureId] || SLAYER_CREATURE_MAP[creatureId];
-            var recoveredMon = monName ? findMonsterChecked(monName) : null;
-            if (recoveredMon) {
+            monName = VERIFIED_CREATURE_OVERRIDES[creatureId];
+            var recoveredMon2 = monName ? findMonsterChecked(monName) : null;
+            if (recoveredMon2) {
                 currentTaskName = monName;
-                currentTaskMonster = recoveredMon;
+                currentTaskMonster = recoveredMon2;
                 killsLeft = killCount;
                 noTaskRetryCount = 0;
-                botMsg("Task recovered in WALK: " + currentTaskName + " (" + killsLeft + " left) at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
+                botMsg("Task recovered in WALK (VERIFIED): " + currentTaskName + " (" + killsLeft + " left) at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
             } else {
                 noTaskRetryCount = (noTaskRetryCount || 0) + 1;
-                if (noTaskRetryCount % 25 === 0) { botMsg("Walk task data missing x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+                if (noTaskRetryCount % 25 === 0) { botMsg("Walk task data missing x" + noTaskRetryCount + " -- going to gem check", "SlayerBot"); }
+                if (noTaskRetryCount >= 10) { state = STATES.CHECK_GEM; noTaskRetryCount = 0; }
                 return;
             }
         } else {
@@ -3551,7 +3638,8 @@ function handleWalkToTask() {
             if (noTaskRetryCount % 25 === 0) { botMsg("Walk no varbits x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
             return;
         }
-    }
+        }
+        }
     }
     if (!currentTaskMonster) { return; }
 
@@ -3821,27 +3909,38 @@ function handleFightTask() {
         }
     }
     if (!currentTaskMonster) {
-        // Try to recover task from varbits before giving up
+        // Try currentTaskName first (gem-verified), then VERIFIED varbits only
+        if (currentTaskName) {
+            var recovFight = findMonsterChecked(currentTaskName);
+            if (recovFight) {
+                currentTaskMonster = recovFight;
+                noTaskRetryCount = 0;
+                botMsg("Task recovered in FIGHT from name: " + currentTaskName + " at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
+            }
+        }
+        if (!currentTaskMonster) {
         creatureId = Game.getVarPlayerValue(395);
         killCount = Game.getVarPlayerValue(394);
         if (creatureId > 0 && killCount > 0) {
-            monName = VERIFIED_CREATURE_OVERRIDES[creatureId] || SLAYER_CREATURE_MAP[creatureId];
-            var recovFight = monName ? findMonsterChecked(monName) : null;
-            if (recovFight) {
+            monName = VERIFIED_CREATURE_OVERRIDES[creatureId];
+            var recovFight2 = monName ? findMonsterChecked(monName) : null;
+            if (recovFight2) {
                 currentTaskName = monName;
-                currentTaskMonster = recovFight;
+                currentTaskMonster = recovFight2;
                 killsLeft = killCount;
                 noTaskRetryCount = 0;
-                botMsg("Task recovered from varbits: " + currentTaskName + " (" + killsLeft + " left) at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
+                botMsg("Task recovered in FIGHT (VERIFIED): " + currentTaskName + " (" + killsLeft + " left) at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
             } else {
                 noTaskRetryCount = (noTaskRetryCount || 0) + 1;
-                if (noTaskRetryCount % 25 === 0) { botMsg("Fight task data missing x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+                if (noTaskRetryCount % 25 === 0) { botMsg("Fight task data missing x" + noTaskRetryCount + " -- going to gem check", "SlayerBot"); }
+                if (noTaskRetryCount >= 10) { state = STATES.CHECK_GEM; noTaskRetryCount = 0; }
                 return;
             }
         } else {
             noTaskRetryCount = (noTaskRetryCount || 0) + 1;
             if (noTaskRetryCount % 25 === 0) { botMsg("Fight no varbits x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
             return;
+        }
         }
     }
 
@@ -4111,26 +4210,38 @@ function reloadCannon() {
 // ---- SAFESPOT_FIGHT ----
 function handleSafespotFight() {
     if (!currentTaskMonster) {
+        // Try currentTaskName first (gem-verified), then VERIFIED varbits only
+        if (currentTaskName) {
+            var recovSafe = findMonsterChecked(currentTaskName);
+            if (recovSafe) {
+                currentTaskMonster = recovSafe;
+                noTaskRetryCount = 0;
+                botMsg("Task recovered in SAFESPOT from name: " + currentTaskName + " at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
+            }
+        }
+        if (!currentTaskMonster) {
         creatureId = Game.getVarPlayerValue(395);
         killCount = Game.getVarPlayerValue(394);
         if (creatureId > 0 && killCount > 0) {
-            monName = VERIFIED_CREATURE_OVERRIDES[creatureId] || SLAYER_CREATURE_MAP[creatureId];
-            var recovSafe = monName ? findMonsterChecked(monName) : null;
-            if (recovSafe) {
+            monName = VERIFIED_CREATURE_OVERRIDES[creatureId];
+            var recovSafe2 = monName ? findMonsterChecked(monName) : null;
+            if (recovSafe2) {
                 currentTaskName = monName;
-                currentTaskMonster = recovSafe;
+                currentTaskMonster = recovSafe2;
                 killsLeft = killCount;
                 noTaskRetryCount = 0;
-                botMsg("Task recovered in SAFESPOT: " + currentTaskName + " (" + killsLeft + " left) at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
+                botMsg("Task recovered in SAFESPOT (VERIFIED): " + currentTaskName + " (" + killsLeft + " left) at (" + currentTaskMonster.location.x + "," + currentTaskMonster.location.y + ")", "SlayerBot");
             } else {
                 noTaskRetryCount = (noTaskRetryCount || 0) + 1;
-                if (noTaskRetryCount % 25 === 0) { botMsg("Safe task data missing x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
+                if (noTaskRetryCount % 25 === 0) { botMsg("Safe task data missing x" + noTaskRetryCount + " -- going to gem check", "SlayerBot"); }
+                if (noTaskRetryCount >= 10) { state = STATES.CHECK_GEM; noTaskRetryCount = 0; }
                 return;
             }
         } else {
             noTaskRetryCount = (noTaskRetryCount || 0) + 1;
             if (noTaskRetryCount % 25 === 0) { botMsg("Safe no varbits x" + noTaskRetryCount + " -- still retrying", "SlayerBot"); }
             return;
+        }
         }
     }
 

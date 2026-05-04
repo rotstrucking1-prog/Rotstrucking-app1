@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bot v25 Fix3c — Food Withdrawal Fix</title>
+<style>
+body{font-family:system-ui;background:#1a1a2e;color:#e0e0e0;margin:0;padding:20px}
+h1{color:#00d4ff;text-align:center}
+h2{color:#ff6b6b;margin-top:30px}
+.info{background:#16213e;padding:15px;border-radius:8px;margin:10px 0;border-left:4px solid #00d4ff}
+.copy-btn{display:block;width:100%;padding:20px;font-size:20px;font-weight:bold;color:white;border:none;border-radius:12px;cursor:pointer;margin:15px 0}
+.copy-main{background:linear-gradient(135deg,#ff6b35,#f7931e)}
+.copy-util{background:linear-gradient(135deg,#00b4d8,#0077b6)}
+.copy-btn:active{transform:scale(0.97)}
+textarea{width:100%;height:0;opacity:0;position:absolute}
+.status{text-align:center;padding:10px;font-size:18px;font-weight:bold;color:#00ff88;display:none}
+</style>
+</head>
+<body>
+<h1>🤖 Bot v25 Fix3c</h1>
+<div class="info">
+<strong>What's fixed:</strong><br>
+✅ Food withdrawal: X_CUSTOM REMOVED — uses WITHDRAW_TEN + WITHDRAW_FIVE + WITHDRAW_ONE<br>
+✅ Gem check for unverified tasks (no more Slayer Tower default)<br>
+✅ Jewelry GE buy when charges run out<br>
+✅ All braces balanced (1521/1521)
+</div>
+
+<h2>📋 MAIN Tab</h2>
+<div class="info">Paste into DeadZone → Package 596 → MAIN tab → Commit</div>
+<button class="copy-btn copy-main" onclick="copyCode('main')">📋 COPY MAIN CODE</button>
+<div id="main-status" class="status">✅ MAIN copied!</div>
+
+<h2>📋 UTILITIES Tab</h2>
+<div class="info">Paste into DeadZone → Package 596 → UTILITIES tab → Commit</div>
+<button class="copy-btn copy-util" onclick="copyCode('util')">📋 COPY UTILITIES CODE</button>
+<div id="util-status" class="status">✅ UTILITIES copied!</div>
+
+<textarea id="main-code"></textarea>
+<textarea id="util-code"></textarea>
+
+<script>
+async function loadCode() {
+  try {
+    const [mainR, utilR] = await Promise.all([
+      fetch('bot-code/slayer_MAIN_v25.txt'),
+      fetch('bot-code/slayer_UTILITIES_v25.txt')
+    ]);
+    document.getElementById('main-code').value = await mainR.text();
+    document.getElementById('util-code').value = await utilR.text();
+  } catch(e) { console.error(e); }
+}
+function copyCode(which) {
+  const ta = document.getElementById(which + '-code');
+  ta.style.height = 'auto'; ta.style.opacity = '1';
+  ta.select(); ta.setSelectionRange(0, 99999999);
+  document.execCommand('copy');
+  ta.style.height = '0'; ta.style.opacity = '0';
+  const st = document.getElementById(which + '-status');
+  st.style.display = 'block';
+  setTimeout(function(){ st.style.display = 'none'; }, 3000);
+}
+loadCode();
+</script>
+</body>
+</html>

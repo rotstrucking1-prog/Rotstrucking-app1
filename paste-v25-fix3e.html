@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ROTS Bot v25 Fix3e — Closest Location Routing</title>
+<title>ROTS Bot v25 Fix3e — Closest Location + !here Override</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#1a1a2e;color:#e0e0e0;font-family:system-ui;padding:16px}
@@ -17,11 +17,11 @@ h1{color:#0f0;text-align:center;margin-bottom:8px;font-size:1.3em}
 .ok{color:#0f0;text-align:center;font-weight:bold;margin-top:6px;display:none}
 </style></head><body>
 <h1>ROTS Bot v25 Fix3e</h1>
-<p class="sub">Closest location routing + master fix + food fix</p>
+<p class="sub">Closest location + !here spawn override + master fix + food fix</p>
 <div class="fix"><h3>What changed:</h3><ul>
-<li><b>CLOSEST LOCATION</b> — bot now picks nearest surface spawn from ALL locations in the database (not just the default)</li>
-<li>Shows which location it picked in game chat (e.g. "CLOSEST LOC: Scorpion -> Al Kharid mine")</li>
-<li>Prefers surface locations; only picks underground if no surface option exists</li>
+<li><b>CLOSEST LOCATION</b> — bot picks nearest surface spawn from ALL DB locations</li>
+<li><b>!here COMMAND</b> — walk to where monsters actually are, type !here in chat, bot updates its target location in real-time</li>
+<li>Shows location picks in game chat (e.g. "CLOSEST LOC: Scorpion -> Al Kharid mine")</li>
 <li>Master walk fix (selectedMaster.x instead of .location.x)</li>
 <li>Food: WITHDRAW_TEN + WITHDRAW_FIVE (no X_CUSTOM)</li>
 </ul></div>

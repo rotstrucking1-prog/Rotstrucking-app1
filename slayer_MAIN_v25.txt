@@ -6928,6 +6928,26 @@ function handleChatMessage(chatMsg) {
     // --- DEBUG COMMAND CHECK ---
     if (debugActive && msg.charAt(0) === "!" && handleDebugChatCommand(msg)) return;
 
+    // --- !here command -- update spawn location to player's current position ---
+    if (msg === "!here") {
+        var plr = Client.getLocalPlayer();
+        if (!plr) { botMsg("Cannot read player position", "SlayerBot"); return; }
+        var loc = plr.getWorldLocation();
+        var hx = loc.getX();
+        var hy = loc.getY();
+        var hp = loc.getPlane();
+        if (currentTaskMonster) {
+            currentTaskMonster.location = { x: hx, y: hy, plane: hp };
+            botMsg("SPAWN UPDATED -> (" + hx + "," + hy + ") plane=" + hp, "SlayerBot");
+            botMsg("Bot will now hunt at YOUR position", "SlayerBot");
+            // If we were walking, stay in walk state -- isNear check will catch us
+            // If we were fighting, keep fighting here
+        } else {
+            botMsg("No active task -- !here only works during a task", "SlayerBot");
+        }
+        return;
+    }
+
     // Detect gem response: "You're assigned to kill [monster]; only [N] more to go"
     // This has DIFFERENT format than task assignment - name first, then count
     if (msg.indexOf("assigned to kill") !== -1 && msg.indexOf("more to go") !== -1) {

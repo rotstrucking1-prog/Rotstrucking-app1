@@ -1720,6 +1720,8 @@ var SLAYER_CREATURE_MAP = {
 function findMonsterChecked(name) {
     var mon = findMonster(name);
     if (mon && name) {
+        // Ensure .name is set -- MONSTER_DB entries don't have it (key IS the name)
+        if (!mon.name) { mon.name = name; }
         var ln = name.toLowerCase();
         // Strip trailing 's' for plural match too
         var lnStrip = (ln.slice(-1) === "s") ? ln.slice(0, -1) : ln;
@@ -2394,7 +2396,7 @@ function handleCheckSupplies() {
     }
 
     // 11. Special finish items (gargoyle/rockslug/lizard)
-    if (cfgVal("specialFinish", false) && currentTaskMonster) {
+    if (cfgVal("specialFinish", false) && currentTaskMonster && currentTaskMonster.name) {
         var mn = currentTaskMonster.name.toLowerCase();
         if (mn.indexOf("gargoyle") !== -1 && !Game.info.inventory.hasItem(ROCK_HAMMER_ID, 1)) {
             missingItems.push({type: "special", itemId: ROCK_HAMMER_ID, name: "rock_hammer"});
@@ -2906,7 +2908,7 @@ function handleBankSupplies() {
         }
 
         // --- Special items (rock hammer, ice cooler) ---
-        if (cfgVal("specialFinish", false) && currentTaskMonster) {
+        if (cfgVal("specialFinish", false) && currentTaskMonster && currentTaskMonster.name) {
             monName = currentTaskMonster.name.toLowerCase();
             if (monName.indexOf("gargoyle") !== -1 && Game.info.bank.hasItem(ROCK_HAMMER_ID, 1)) {
                 withdrawQueue.push({ id: ROCK_HAMMER_ID, qty: 1, label: "Rock hammer" });
@@ -4188,7 +4190,7 @@ function handleFightTask() {
 }
 
 function handleSpecialFinishCheck() {
-    if (!currentTaskMonster) return false;
+    if (!currentTaskMonster || !currentTaskMonster.name) return false;
     monName = currentTaskMonster.name.toLowerCase();
     npcIds = currentTaskMonster.npcIds;
 

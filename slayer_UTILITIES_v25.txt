@@ -737,12 +737,14 @@ function findMonster(taskName) {
         }
     }
 
-    // Match against individual name field
+    // Match against individual name field (if entry has .name set)
     var keys_k5 = Object.keys(MONSTER_DB); for (var idx_k5 = 0; idx_k5 < keys_k5.length; idx_k5++) {
         var k5 = keys_k5[idx_k5];
-        var mName = dbLookup(MONSTER_DB, k5).name.toLowerCase();
+        var entry5 = dbLookup(MONSTER_DB, k5);
+        var mName = entry5.name || k5;
+        mName = mName.toLowerCase();
         if (mName === lowerName || mName === lowerName.replace(/s$/, "")) {
-            return dbLookup(MONSTER_DB, k5);
+            return entry5;
         }
     }
 

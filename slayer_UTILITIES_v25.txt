@@ -541,17 +541,56 @@ function findNearestBank(px, py) {
     return nearest;
 }
 
-// --- getMonsterLocation(name) ---
+// --- getMonsterLocation(name) --- picks CLOSEST location from locs array
 function getMonsterLocation(name) {
-  if (MONSTER_DB[name]) { return { x: MONSTER_DB[name].location.x, y: MONSTER_DB[name].location.y }; }
-  var parts = name.split(' ');
-  var t = '';
-  for (var i = 0; i < parts.length; i++) {
-    if (i > 0) { t += ' '; }
-    t += parts[i].charAt(0).toUpperCase() + parts[i].slice(1).toLowerCase();
+  var entry = MONSTER_DB[name];
+  if (!entry) {
+    var parts = name.split(' ');
+    var t = '';
+    for (var i = 0; i < parts.length; i++) {
+      if (i > 0) { t += ' '; }
+      t += parts[i].charAt(0).toUpperCase() + parts[i].slice(1).toLowerCase();
+    }
+    entry = MONSTER_DB[t];
   }
-  if (MONSTER_DB[t]) { return { x: MONSTER_DB[t].location.x, y: MONSTER_DB[t].location.y }; }
-  return null;
+  if (!entry) { return null; }
+  // If no locs array or empty, fall back to default location
+  if (!entry.locs || entry.locs.length === 0) {
+    return { x: entry.location.x, y: entry.location.y };
+  }
+  // Get player position for distance calc
+  var px = 0;
+  var py = 0;
+  try {
+    var lp = Client.getLocalPlayer();
+    if (lp) {
+      var wl = lp.getWorldLocation();
+      if (wl) { px = wl.getX(); py = wl.getY(); }
+    }
+  } catch (e) { /* use 0,0 if cant read */ }
+  // First pass: find closest SURFACE (non-underground) location
+  var bestDist = 999999999;
+  var bestLoc = null;
+  for (var i = 0; i < entry.locs.length; i++) {
+    var loc = entry.locs[i];
+    if (loc.ug) { continue; }
+    var dx = loc.x - px;
+    var dy = loc.y - py;
+    var dist = dx * dx + dy * dy;
+    if (dist < bestDist) { bestDist = dist; bestLoc = loc; }
+  }
+  // If no surface locations, try underground
+  if (!bestLoc) {
+    for (var j = 0; j < entry.locs.length; j++) {
+      var loc2 = entry.locs[j];
+      var dx2 = loc2.x - px;
+      var dy2 = loc2.y - py;
+      var dist2 = dx2 * dx2 + dy2 * dy2;
+      if (dist2 < bestDist) { bestDist = dist2; bestLoc = loc2; }
+    }
+  }
+  if (bestLoc) { return { x: bestLoc.x, y: bestLoc.y, name: bestLoc.n }; }
+  return { x: entry.location.x, y: entry.location.y };
 }
 
 // --- findBestFishingSpot(level) ---

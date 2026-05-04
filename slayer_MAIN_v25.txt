@@ -1718,11 +1718,52 @@ function findMonsterChecked(name) {
         var ln = name.toLowerCase();
         // Strip trailing 's' for plural match too
         var lnStrip = (ln.slice(-1) === "s") ? ln.slice(0, -1) : ln;
+        // 1) TASK_LOCATION_OVERRIDES take priority
         var ov = TASK_LOCATION_OVERRIDES[ln] || TASK_LOCATION_OVERRIDES[lnStrip];
         if (ov) {
             mon.location.x = ov.x;
             mon.location.y = ov.y;
             botMsg("LOC OVERRIDE: " + name + " -> (" + ov.x + "," + ov.y + ")", "SlayerBot");
+        } else if (mon.locs && mon.locs.length > 1) {
+            // 2) Pick CLOSEST surface location from locs array
+            var px = 0;
+            var py = 0;
+            try {
+                var lp = Client.getLocalPlayer();
+                if (lp) {
+                    var wl = lp.getWorldLocation();
+                    if (wl) { px = wl.getX(); py = wl.getY(); }
+                }
+            } catch (e) { /* fallback to default */ }
+            if (px > 0) {
+                var bestDist = 999999999;
+                var bestLoc = null;
+                // First pass: surface only
+                for (var ci = 0; ci < mon.locs.length; ci++) {
+                    var cl = mon.locs[ci];
+                    if (cl.ug) { continue; }
+                    var cdx = cl.x - px;
+                    var cdy = cl.y - py;
+                    var cd = cdx * cdx + cdy * cdy;
+                    if (cd < bestDist) { bestDist = cd; bestLoc = cl; }
+                }
+                // If no surface found, try underground
+                if (!bestLoc) {
+                    for (var ci2 = 0; ci2 < mon.locs.length; ci2++) {
+                        var cl2 = mon.locs[ci2];
+                        var cdx2 = cl2.x - px;
+                        var cdy2 = cl2.y - py;
+                        var cd2 = cdx2 * cdx2 + cdy2 * cdy2;
+                        if (cd2 < bestDist) { bestDist = cd2; bestLoc = cl2; }
+                    }
+                }
+                if (bestLoc) {
+                    mon.location.x = bestLoc.x;
+                    mon.location.y = bestLoc.y;
+                    mon.locationName = bestLoc.n || "";
+                    botMsg("CLOSEST LOC: " + name + " -> " + (bestLoc.n || "unknown") + " (" + bestLoc.x + "," + bestLoc.y + ")", "SlayerBot");
+                }
+            }
         }
     }
     return mon;

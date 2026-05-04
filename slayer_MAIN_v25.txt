@@ -1993,7 +1993,7 @@ function handleWalkToMaster() {
         return;
     }
 
-    if (isNear(selectedMaster.location.x, selectedMaster.location.y, 10)) {
+    if (isNear(selectedMaster.x, selectedMaster.y, 10)) {
         state = STATES.TALK_TO_MASTER;
         retryCount = 0;
         masterWalkCooldown = 0;
@@ -2006,9 +2006,9 @@ function handleWalkToMaster() {
     }
 
     if (!PlayerHelper.isWebWalking()) {
-        var masterX = selectedMaster.location.x;
-        var masterY = selectedMaster.location.y;
-        var masterPlane = selectedMaster.location.plane || 0;
+        var masterX = selectedMaster.x;
+        var masterY = selectedMaster.y;
+        var masterPlane = selectedMaster.plane || 0;
         masterWalkCooldown = 10;
         Utility.invokeLater(function() {
             PlayerHelper.webWalkTo(new WorldPoint(masterX, masterY, masterPlane));

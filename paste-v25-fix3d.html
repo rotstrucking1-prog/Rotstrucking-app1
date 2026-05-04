@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ROTS Bot v25 Fix3d — Master Location Fix</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;color:#e0e0e0;font-family:system-ui;padding:16px}
+h1{color:#0f0;text-align:center;margin-bottom:8px;font-size:1.3em}
+.sub{text-align:center;color:#aaa;margin-bottom:16px;font-size:.9em}
+.fix{background:#0a2a0a;border:1px solid #0f0;border-radius:8px;padding:12px;margin-bottom:16px}
+.fix h3{color:#0f0;margin-bottom:6px}
+.fix ul{margin-left:18px;font-size:.9em}
+.tab{background:#16213e;border-radius:8px;padding:12px;margin-bottom:16px}
+.tab h2{color:#e94560;margin-bottom:8px;font-size:1.1em}
+.tab textarea{width:100%;height:120px;background:#0f3460;color:#0f0;border:1px solid #333;border-radius:6px;font-family:monospace;font-size:11px;padding:8px}
+.btn{display:block;width:100%;padding:14px;background:#e94560;color:#fff;border:none;border-radius:8px;font-size:1.1em;font-weight:bold;cursor:pointer;margin-top:8px}
+.btn:active{background:#c73650}
+.ok{color:#0f0;text-align:center;font-weight:bold;margin-top:6px;display:none}
+</style></head><body>
+<h1>ROTS Bot v25 Fix3d</h1>
+<p class="sub">Master location fix + decomposed food withdrawal</p>
+<div class="fix"><h3>What changed (MAIN only):</h3><ul>
+<li>Fixed <code>selectedMaster.location.x</code> → <code>selectedMaster.x</code> (DB uses flat coords)</li>
+<li>Food withdrawal: WITHDRAW_TEN + WITHDRAW_FIVE + WITHDRAW_ONE (no X_CUSTOM)</li>
+<li>Gem check for unverified creature IDs</li>
+<li>Jewelry GE buy system</li>
+</ul></div>
+<div class="tab"><h2>📋 MAIN Tab</h2>
+<textarea id="main" readonly>Loading...</textarea>
+<button class="btn" onclick="copyCode('main')">📋 COPY MAIN CODE</button>
+<p class="ok" id="main-ok">✅ Copied!</p></div>
+<div class="tab"><h2>📋 UTILITIES Tab</h2>
+<textarea id="util" readonly>Loading...</textarea>
+<button class="btn" onclick="copyCode('util')">📋 COPY UTILITIES CODE</button>
+<p class="ok" id="util-ok">✅ Copied!</p></div>
+<script>
+async function loadCode(){
+ try{
+  var r1=await fetch('slayer_MAIN_v25.txt');var t1=await r1.text();document.getElementById('main').value=t1;
+  var r2=await fetch('slayer_UTILITIES_v25.txt');var t2=await r2.text();document.getElementById('util').value=t2;
+ }catch(e){document.getElementById('main').value='Error loading: '+e.message;}
+}
+function copyCode(id){
+ var ta=document.getElementById(id);ta.select();ta.setSelectionRange(0,9999999);
+ navigator.clipboard.writeText(ta.value).then(function(){
+  var ok=document.getElementById(id+'-ok');ok.style.display='block';setTimeout(function(){ok.style.display='none';},2000);
+ });
+}
+loadCode();
+</script></body></html>

@@ -1,1 +1,87 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROTS Bot v25 - Wiki Location Databases</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:20px}
+h1{color:#00ff88;text-align:center;margin-bottom:10px;font-size:1.5em}
+.subtitle{text-align:center;color:#888;margin-bottom:20px;font-size:0.9em}
+.tab-bar{display:flex;gap:8px;margin-bottom:15px;justify-content:center;flex-wrap:wrap}
+.tab{padding:12px 24px;background:#16213e;border:2px solid #0f3460;border-radius:8px;cursor:pointer;font-size:1em;color:#e0e0e0;font-weight:bold}
+.tab.active{background:#0f3460;border-color:#00ff88;color:#00ff88}
+.copy-btn{display:block;width:100%;padding:16px;background:#00ff88;color:#1a1a2e;border:none;border-radius:8px;font-size:1.2em;font-weight:bold;cursor:pointer;margin-bottom:10px}
+.copy-btn:active{background:#00cc66}
+.copy-btn.copied{background:#4CAF50}
+.stats{background:#16213e;border-radius:8px;padding:15px;margin-bottom:15px}
+.stats div{margin:4px 0;font-size:0.9em}
+.stats span{color:#00ff88;font-weight:bold}
+textarea{width:100%;height:200px;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:8px;padding:10px;font-family:monospace;font-size:11px;resize:vertical}
+.hidden{display:none}
+.warn{color:#ff6b6b;font-weight:bold;text-align:center;margin:10px 0}
+</style>
+</head>
+<body>
+<h1>ROTS Bot v25</h1>
+<p class="subtitle">Wiki-Verified Location Databases + Wolf Fix</p>
+
+<div class="stats">
+<div>MONSTER_DB: <span>109 monsters</span> with wiki-verified coordinates + npcIds</div>
+<div>BANK_DB: <span>40 banks</span> | FISHING_DB: <span>13 spots</span> | MINING_DB: <span>13 spots</span></div>
+<div>TREE_DB: <span>11 spots</span> | CRAFTING_DB: <span>14 stations</span> | OBSTACLE_DB: <span>16 obstacles</span></div>
+<div>SLAYER_MASTER_DB: <span>8 masters</span> | Total spawn tiles: <span>6,616</span></div>
+<div style="margin-top:8px;color:#ff6b6b">Wolf override FIXED: White Wolf Mountain (2836, 3497)</div>
+</div>
+
+<div class="tab-bar">
+<div class="tab active" onclick="showTab('utilities')">UTILITIES</div>
+<div class="tab" onclick="showTab('main')">MAIN</div>
+</div>
+
+<div id="utilities-section">
+<button class="copy-btn" onclick="copyCode('utilities')">COPY UTILITIES CODE</button>
+<textarea id="utilities-code" readonly>Loading...</textarea>
+</div>
+
+<div id="main-section" class="hidden">
+<button class="copy-btn" onclick="copyCode('main')">COPY MAIN CODE</button>
+<textarea id="main-code" readonly>Loading...</textarea>
+</div>
+
+<p class="warn">Paste into DeadZone package #596 > correct tab > Commit</p>
+
+<script>
+var codes = {};
+function showTab(name) {
+    document.getElementById('utilities-section').className = name === 'utilities' ? '' : 'hidden';
+    document.getElementById('main-section').className = name === 'main' ? '' : 'hidden';
+    document.querySelectorAll('.tab').forEach(function(t) {
+        t.className = t.textContent.trim().toLowerCase() === name ? 'tab active' : 'tab';
+    });
+}
+function copyCode(name) {
+    var el = document.getElementById(name + '-code');
+    el.select();
+    document.execCommand('copy');
+    var btn = el.previousElementSibling;
+    btn.textContent = 'COPIED!';
+    btn.className = 'copy-btn copied';
+    setTimeout(function() {
+        btn.textContent = 'COPY ' + name.toUpperCase() + ' CODE';
+        btn.className = 'copy-btn';
+    }, 2000);
+}
+// Load code from companion files
+fetch('slayer_UTILITIES_v25.txt').then(function(r){return r.text()}).then(function(t){
+    document.getElementById('utilities-code').value = t;
+    codes.utilities = t;
+});
+fetch('slayer_MAIN_v25.txt').then(function(r){return r.text()}).then(function(t){
+    document.getElementById('main-code').value = t;
+    codes.main = t;
+});
+</script>
+</body>
+</html>

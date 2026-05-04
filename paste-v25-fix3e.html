@@ -2910,11 +2910,23 @@ function handleBankSupplies() {
         // --- Special items (rock hammer, ice cooler) ---
         if (cfgVal("specialFinish", false) && currentTaskMonster && currentTaskMonster.name) {
             monName = currentTaskMonster.name.toLowerCase();
-            if (monName.indexOf("gargoyle") !== -1 && Game.info.bank.hasItem(ROCK_HAMMER_ID, 1)) {
-                withdrawQueue.push({ id: ROCK_HAMMER_ID, qty: 1, label: "Rock hammer" });
+            if (monName.indexOf("gargoyle") !== -1) {
+                if (Game.info.bank.hasItem(ROCK_HAMMER_ID, 1)) {
+                    withdrawQueue.push({ id: ROCK_HAMMER_ID, qty: 1, label: "Rock hammer" });
+                } else if (!Game.info.inventory.hasItem(ROCK_HAMMER_ID, 1)) {
+                    botMsg("[Special] No rock hammer in bank -- buying from GE");
+                    geBuyList.push({ id: ROCK_HAMMER_ID, name: "Rock hammer", price: 1000 });
+                    postBankState = STATES.WALK_TO_GE;
+                }
             }
-            if ((monName.indexOf("rockslug") !== -1 || monName.indexOf("lizard") !== -1) && Game.info.bank.hasItem(ICE_COOLER_ID, 1)) {
-                withdrawQueue.push({ id: ICE_COOLER_ID, qty: 1, label: "Ice cooler" });
+            if (monName.indexOf("rockslug") !== -1 || monName.indexOf("lizard") !== -1) {
+                if (Game.info.bank.hasItem(ICE_COOLER_ID, 1)) {
+                    withdrawQueue.push({ id: ICE_COOLER_ID, qty: 1, label: "Ice cooler" });
+                } else if (!Game.info.inventory.hasItem(ICE_COOLER_ID, 1)) {
+                    botMsg("[Special] No ice cooler in bank -- buying from GE");
+                    geBuyList.push({ id: ICE_COOLER_ID, name: "Ice cooler", price: 500 });
+                    postBankState = STATES.WALK_TO_GE;
+                }
             }
         }
 

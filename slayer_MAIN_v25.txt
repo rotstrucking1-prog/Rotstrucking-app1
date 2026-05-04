@@ -1611,8 +1611,8 @@ var VERIFIED_CREATURE_OVERRIDES = {
 var TASK_LOCATION_OVERRIDES = {
     icefiend: {x: 3008, y: 3475},
     icefiends: {x: 3008, y: 3475},
-    wolf: {x: 2836, y: 3497}  // White Wolf Mountain (wiki-verified),
-    wolves: {x: 2857, y: 3553},
+    wolf: {x: 2836, y: 3497},
+    wolves: {x: 2836, y: 3497},
     minotaur: {x: 1866, y: 5234},
     minotaurs: {x: 1866, y: 5234}
 };

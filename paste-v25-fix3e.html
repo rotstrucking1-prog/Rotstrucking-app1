@@ -1,50 +1,42 @@
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ROTS Bot v25 Fix3e — Closest Location + !here Override</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#1a1a2e;color:#e0e0e0;font-family:system-ui;padding:16px}
-h1{color:#0f0;text-align:center;margin-bottom:8px;font-size:1.3em}
-.sub{text-align:center;color:#aaa;margin-bottom:16px;font-size:.9em}
-.fix{background:#0a2a0a;border:1px solid #0f0;border-radius:8px;padding:12px;margin-bottom:16px}
-.fix h3{color:#0f0;margin-bottom:6px}
-.fix ul{margin-left:18px;font-size:.9em}
-.tab{background:#16213e;border-radius:8px;padding:12px;margin-bottom:16px}
-.tab h2{color:#e94560;margin-bottom:8px;font-size:1.1em}
-.tab textarea{width:100%;height:120px;background:#0f3460;color:#0f0;border:1px solid #333;border-radius:6px;font-family:monospace;font-size:11px;padding:8px}
-.btn{display:block;width:100%;padding:14px;background:#e94560;color:#fff;border:none;border-radius:8px;font-size:1.1em;font-weight:bold;cursor:pointer;margin-top:8px}
-.btn:active{background:#c73650}
-.ok{color:#0f0;text-align:center;font-weight:bold;margin-top:6px;display:none}
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>ROTS Bot v25-Fix3e — Paste Page</title>
+<style>body{font-family:Arial,sans-serif;background:#1a1a2e;color:#e0e0e0;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#00d4ff;text-align:center}h2{color:#ffd700;margin-top:30px}
+.tab{background:#16213e;border:1px solid #0f3460;border-radius:8px;padding:15px;margin:10px 0}
+textarea{width:100%;height:200px;background:#0a0a1a;color:#00ff88;border:1px solid #333;font-family:monospace;font-size:11px;padding:10px;border-radius:4px}
+.btn{background:linear-gradient(135deg,#0066ff,#00d4ff);color:#fff;border:none;padding:15px 40px;font-size:18px;border-radius:8px;cursor:pointer;display:block;margin:10px auto;font-weight:bold}
+.btn:hover{transform:scale(1.05)}.btn:active{background:#00aa00}
+.info{background:#1a3a1a;border:1px solid #00ff88;padding:10px;border-radius:5px;margin:10px 0;text-align:center}
+.warn{background:#3a2a1a;border:1px solid #ffd700;padding:10px;border-radius:5px;margin:10px 0}
 </style></head><body>
-<h1>ROTS Bot v25 Fix3e</h1>
-<p class="sub">Closest location + !here spawn override + master fix + food fix</p>
-<div class="fix"><h3>What changed:</h3><ul>
-<li><b>CLOSEST LOCATION</b> — bot picks nearest surface spawn from ALL DB locations</li>
-<li><b>!here COMMAND</b> — walk to where monsters actually are, type !here in chat, bot updates its target location in real-time</li>
-<li>Shows location picks in game chat (e.g. "CLOSEST LOC: Scorpion -> Al Kharid mine")</li>
-<li>Master walk fix (selectedMaster.x instead of .location.x)</li>
-<li>Food: WITHDRAW_TEN + WITHDRAW_FIVE (no X_CUSTOM)</li>
-</ul></div>
-<div class="tab"><h2>📋 MAIN Tab (CHANGED)</h2>
-<textarea id="main" readonly>Loading...</textarea>
-<button class="btn" onclick="copyCode('main')">📋 COPY MAIN CODE</button>
-<p class="ok" id="main-ok">✅ Copied!</p></div>
-<div class="tab"><h2>📋 UTILITIES Tab (CHANGED)</h2>
-<textarea id="util" readonly>Loading...</textarea>
-<button class="btn" onclick="copyCode('util')">📋 COPY UTILITIES CODE</button>
-<p class="ok" id="util-ok">✅ Copied!</p></div>
+<h1>🤖 ROTS Bot v25-Fix3e</h1>
+<div class="warn">⚠️ BOTH TABS CHANGED — paste MAIN then UTILITIES</div>
+<div class="info">✅ Closest location routing + !pause/!here spawn override + duplicate var fix</div>
+
+<h2>📋 Tab 1: MAIN</h2>
+<div class="tab">
+<button class="btn" onclick="copyTab('main')">📋 COPY MAIN</button>
+<textarea id="main" readonly>LOADING...</textarea>
+</div>
+
+<h2>📋 Tab 2: UTILITIES</h2>
+<div class="tab">
+<button class="btn" onclick="copyTab('util')">📋 COPY UTILITIES</button>
+<textarea id="util" readonly>LOADING...</textarea>
+</div>
+
+<div class="info" id="status">Loading code from GitHub...</div>
+
 <script>
-async function loadCode(){
- try{
-  var r1=await fetch('slayer_MAIN_v25.txt');var t1=await r1.text();document.getElementById('main').value=t1;
-  var r2=await fetch('slayer_UTILITIES_v25.txt');var t2=await r2.text();document.getElementById('util').value=t2;
- }catch(e){document.getElementById('main').value='Error loading: '+e.message;}
-}
-function copyCode(id){
- var ta=document.getElementById(id);ta.select();ta.setSelectionRange(0,9999999);
- navigator.clipboard.writeText(ta.value).then(function(){
-  var ok=document.getElementById(id+'-ok');ok.style.display='block';setTimeout(function(){ok.style.display='none';},2000);
- });
-}
-loadCode();
+var base='https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/';
+function loadFile(id,file){
+fetch(base+file+'?t='+Date.now()).then(function(r){return r.text()}).then(function(t){
+document.getElementById(id).value=t;
+document.getElementById('status').textContent='✅ Code loaded — ready to copy!';
+}).catch(function(e){document.getElementById(id).value='ERROR: '+e});}
+function copyTab(id){
+var ta=document.getElementById(id);ta.select();document.execCommand('copy');
+var b=event.target;b.textContent='✅ COPIED!';b.style.background='#00aa00';
+setTimeout(function(){b.textContent=id==='main'?'📋 COPY MAIN':'📋 COPY UTILITIES';b.style.background='';},2000);}
+loadFile('main','slayer_MAIN_v25.txt');
+loadFile('util','slayer_UTILITIES_v25.txt');
 </script></body></html>

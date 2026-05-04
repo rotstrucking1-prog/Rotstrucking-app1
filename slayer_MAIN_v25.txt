@@ -202,6 +202,7 @@ var walkStuckY = -1;
 var isExecuting = false;
 var fightIdleTicks = 0; // Ticks in FIGHT_TASK with no action
 var actionCooldown = 0; // Ticks to wait after an action before allowing another
+var pausedForHere = false; // Player paused bot to walk to correct spawn
 // ---- GE GEAR BUYING (Fix10n) ----
 var geBuyList = [];     // Items to buy at GE [{id, name, price}]
 var geBuyIndex = 0;     // Current item being bought
@@ -660,6 +661,10 @@ function OnGameTick() {
     }
     if (actionCooldown > 0) {
         actionCooldown--;
+        return;
+    }
+    // --- PAUSE FOR !here --- bot does nothing while player walks to correct spot
+    if (pausedForHere) {
         return;
     }
 
@@ -6928,6 +6933,13 @@ function handleChatMessage(chatMsg) {
     // --- DEBUG COMMAND CHECK ---
     if (debugActive && msg.charAt(0) === "!" && handleDebugChatCommand(msg)) return;
 
+    // --- !pause command -- stop bot so player can walk to correct spawn ---
+    if (msg === "!pause") {
+        pausedForHere = true;
+        botMsg("BOT PAUSED -- walk to the correct spot then type !here", "SlayerBot");
+        return;
+    }
+
     // --- !here command -- update spawn location to player's current position ---
     if (msg === "!here") {
         var plr = Client.getLocalPlayer();
@@ -6939,9 +6951,13 @@ function handleChatMessage(chatMsg) {
         if (currentTaskMonster) {
             currentTaskMonster.location = { x: hx, y: hy, plane: hp };
             botMsg("SPAWN UPDATED -> (" + hx + "," + hy + ") plane=" + hp, "SlayerBot");
-            botMsg("Bot will now hunt at YOUR position", "SlayerBot");
-            // If we were walking, stay in walk state -- isNear check will catch us
-            // If we were fighting, keep fighting here
+            // Auto-resume from pause
+            if (pausedForHere) {
+                pausedForHere = false;
+                botMsg("RESUMED -- hunting at YOUR position now", "SlayerBot");
+            } else {
+                botMsg("Bot will now hunt at YOUR position", "SlayerBot");
+            }
         } else {
             botMsg("No active task -- !here only works during a task", "SlayerBot");
         }

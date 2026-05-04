@@ -571,8 +571,8 @@ function getMonsterLocation(name) {
   // First pass: find closest SURFACE (non-underground) location
   var bestDist = 999999999;
   var bestLoc = null;
-  for (var i = 0; i < entry.locs.length; i++) {
-    var loc = entry.locs[i];
+  for (var k = 0; k < entry.locs.length; k++) {
+    var loc = entry.locs[k];
     if (loc.ug) { continue; }
     var dx = loc.x - px;
     var dy = loc.y - py;

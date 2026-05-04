@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>OSRS Slayer Monster Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+#controls {
+  background: #16213e; padding: 8px 12px; display: flex; gap: 10px; align-items: center;
+  border-bottom: 2px solid #0f3460; flex-wrap: wrap; z-index: 1000;
+}
+#controls input, #controls select {
+  background: #1a1a2e; color: #e0e0e0; border: 1px solid #0f3460;
+  padding: 4px 8px; border-radius: 4px; font-size: 13px;
+}
+#controls label { font-size: 12px; color: #aaa; }
+#controls button {
+  background: #e94560; color: white; border: none; padding: 4px 10px;
+  border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+#controls button:hover { background: #c73e54; }
+.legend { display: flex; gap: 12px; font-size: 11px; align-items: center; flex-wrap: wrap; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 3px; vertical-align: middle; }
+
+#map { flex: 1; background: #0a0a1a; }
+
+.monster-popup { font-size: 13px; line-height: 1.6; }
+.monster-popup .name { font-weight: bold; font-size: 15px; color: #e94560; }
+.monster-popup .field { color: #888; }
+.monster-popup .val { color: #222; font-weight: 500; }
+.monster-popup .coords { font-family: monospace; color: #0066cc; }
+
+.leaflet-container { background: #0a0a1a; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <input type="text" id="search" placeholder="Search monster or location..." style="width:200px"/>
+  <select id="filter">
+    <option value="all">All Monsters</option>
+    <option value="surface">Surface Only</option>
+    <option value="underground">Underground Only</option>
+    <option value="turael">Turael Tasks</option>
+    <option value="slayer-tower">Slayer Tower</option>
+  </select>
+  <button id="resetBtn">Reset View</button>
+  <span style="color:#666;font-size:11px" id="count"></span>
+  <div class="legend">
+    <span><span class="legend-dot" style="background:#4ade80"></span>Low lvl</span>
+    <span><span class="legend-dot" style="background:#e94560"></span>Melee</span>
+    <span><span class="legend-dot" style="background:#53d8fb"></span>High combat</span>
+    <span><span class="legend-dot" style="background:#ffd700"></span>High slayer</span>
+    <span><span class="legend-dot" style="background:#ff8c00"></span>Underground</span>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<script>
+var MONSTERS = [];
+
+var LANDMARKS = [
+  { name: "Lumbridge", x: 3222, y: 3218, icon: "🏰" },
+  { name: "Varrock", x: 3213, y: 3428, icon: "🏰" },
+  { name: "Falador", x: 2964, y: 3378, icon: "🏰" },
+  { name: "Edgeville", x: 3087, y: 3496, icon: "🏰" },
+  { name: "Burthorpe", x: 2926, y: 3560, icon: "🏰" },
+  { name: "Canifis", x: 3496, y: 3487, icon: "🏰" },
+  { name: "Slayer Tower", x: 3429, y: 3535, icon: "💀" },
+  { name: "Warriors Guild", x: 2849, y: 3543, icon: "⚔️" },
+  { name: "White Wolf Mtn", x: 2845, y: 3500, icon: "🐺" },
+  { name: "Grand Exchange", x: 3165, y: 3487, icon: "💰" },
+  { name: "Al Kharid", x: 3293, y: 3174, icon: "🏜️" },
+  { name: "Fremennik Dungeon", x: 2790, y: 10000, icon: "🕳️" },
+  { name: "Catacombs of Kourend", x: 1670, y: 10050, icon: "🕳️" },
+  { name: "Karuulm Dungeon", x: 1310, y: 10188, icon: "🕳️" },
+  { name: "Taverley Dungeon", x: 2884, y: 9798, icon: "🕳️" },
+  { name: "Stronghold of Security", x: 1867, y: 5234, icon: "🕳️" },
+  { name: "God Wars Dungeon", x: 2870, y: 5362, icon: "⚔️" },
+  { name: "Karamja", x: 2856, y: 9570, icon: "🌴" },
+  { name: "Ice Mountain", x: 3008, y: 3475, icon: "❄️" },
+  { name: "Zanaris", x: 2412, y: 4434, icon: "🧚" }
+];
+
+var TURAEL_TASKS = [
+  "Banshee", "Bat", "Bear", "Bird", "Cave Bug", "Cave Crawler", "Cave Slime",
+  "Cow", "Crawling Hand", "Desert Lizard", "Dog", "Dwarf", "Ghost", "Goblin",
+  "Icefiend", "Kalphite Worker", "Minotaur", "Monkey", "Rat", "Scorpion",
+  "Skeleton", "Spider", "Wolf", "Zombie"
+];
+
+var SCALE = 0.05;
+var map, markerLayer, labelLayer, landmarkLayer;
+var allMarkers = [];
+
+function gameToLatLng(x, y) {
+  return L.latLng(y * SCALE, x * SCALE);
+}
+
+function getMonsterColor(m) {
+  if (m.y > 9000 || (m.y > 5000 && m.y < 6000) || (m.y > 4000 && m.y < 5000)) return "#ff8c00";
+  if (m.slayerLevel >= 85) return "#ffd700";
+  if (m.combatLevel <= 30 && m.slayerLevel <= 1) return "#4ade80";
+  if (m.combatLevel > 100) return "#53d8fb";
+  return "#e94560";
+}
+
+function getMarkerSize(m) {
+  if (m.slayerLevel >= 75) return 14;
+  if (m.combatLevel >= 100) return 12;
+  return 10;
+}
+
+function isSurface(y) { return y >= 2400 && y <= 4200; }
+function isUnderground(y) { return !isSurface(y); }
+
+function buildMap() {
+  map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -2,
+    maxZoom: 4,
+    zoomSnap: 0.5,
+    attributionControl: false
+  });
+
+  markerLayer = L.layerGroup().addTo(map);
+  labelLayer = L.layerGroup().addTo(map);
+  landmarkLayer = L.layerGroup().addTo(map);
+
+  addRegions();
+  addGrid();
+  addLandmarks();
+  renderMonsters(MONSTERS);
+
+  var defaultCenter = gameToLatLng(3100, 3400);
+  map.setView(defaultCenter, 0);
+}
+
+function addRegions() {
+  var regions = [
+    { name: "Misthalin", x1: 3100, y1: 3100, x2: 3400, y2: 3600, color: "#4ade80" },
+    { name: "Asgarnia", x1: 2800, y1: 3200, x2: 3100, y2: 3600, color: "#53d8fb" },
+    { name: "Kandarin", x1: 2400, y1: 3200, x2: 2800, y2: 3600, color: "#ffd700" },
+    { name: "Morytania", x1: 3400, y1: 3200, x2: 3800, y2: 3600, color: "#e94560" },
+    { name: "Kharidian Desert", x1: 3200, y1: 2800, x2: 3600, y2: 3200, color: "#ff8c00" },
+    { name: "Zeah", x1: 1200, y1: 3400, x2: 1800, y2: 3900, color: "#a855f7" }
+  ];
+
+  for (var i = 0; i < regions.length; i++) {
+    var r = regions[i];
+    var sw = gameToLatLng(r.x1, r.y1);
+    var ne = gameToLatLng(r.x2, r.y2);
+    L.rectangle([sw, ne], {
+      color: r.color, weight: 1, fillOpacity: 0.06, opacity: 0.3, interactive: false
+    }).addTo(map);
+    var center = gameToLatLng((r.x1 + r.x2) / 2, r.y2 - 20);
+    L.marker(center, {
+      icon: L.divIcon({
+        className: '',
+        html: '<div style="color:' + r.color + ';font-size:11px;font-weight:bold;opacity:0.4;white-space:nowrap">' + r.name + '</div>',
+        iconSize: [100, 20], iconAnchor: [50, 10]
+      }),
+      interactive: false
+    }).addTo(map);
+  }
+}
+
+function addGrid() {
+  var gridStyle = { color: '#333', weight: 0.5, opacity: 0.3, interactive: false };
+  for (var x = 1000; x <= 4000; x += 200) {
+    L.polyline([gameToLatLng(x, 2000), gameToLatLng(x, 12000)], gridStyle).addTo(map);
+  }
+  for (var y = 2000; y <= 12000; y += 200) {
+    L.polyline([gameToLatLng(1000, y), gameToLatLng(4000, y)], gridStyle).addTo(map);
+  }
+}
+
+function addLandmarks() {
+  landmarkLayer.clearLayers();
+  for (var i = 0; i < LANDMARKS.length; i++) {
+    var lm = LANDMARKS[i];
+    var pos = gameToLatLng(lm.x, lm.y);
+    var icon = L.divIcon({
+      className: '',
+      html: '<div style="text-align:center;white-space:nowrap"><div style="font-size:16px">' + lm.icon + '</div><div style="font-size:10px;color:#aaa;margin-top:1px">' + lm.name + '</div></div>',
+      iconSize: [100, 30], iconAnchor: [50, 15]
+    });
+    L.marker(pos, { icon: icon, interactive: false }).addTo(landmarkLayer);
+  }
+}
+
+function renderMonsters(monsters) {
+  markerLayer.clearLayers();
+  labelLayer.clearLayers();
+  allMarkers = [];
+
+  for (var i = 0; i < monsters.length; i++) {
+    var m = monsters[i];
+    var pos = gameToLatLng(m.x, m.y);
+    var color = getMonsterColor(m);
+    var size = getMarkerSize(m);
+    var isTurael = TURAEL_TASKS.indexOf(m.name) !== -1;
+
+    var popupHtml = '<div class="monster-popup">'
+      + '<div class="name">' + m.name + (isTurael ? ' <span style="color:#4ade80;font-size:11px">[Turael]</span>' : '') + '</div>'
+      + '<div><span class="field">Location:</span> <span class="val">' + m.locationName + '</span></div>'
+      + '<div><span class="field">Coords:</span> <span class="coords">(' + m.x + ', ' + m.y + ')</span></div>'
+      + '<div><span class="field">Combat:</span> <span class="val">' + m.combatLevel + '</span>'
+      + ' | <span class="field">Slayer:</span> <span class="val">' + m.slayerLevel + '</span></div>'
+      + '<div><span class="field">NPC IDs:</span> <span class="val" style="font-size:11px">' + m.npcIds + '</span></div>'
+      + '<div style="margin-top:4px;font-size:11px;color:#888">' + (isSurface(m.y) ? '☀️ Surface' : '🕳️ Underground') + '</div>'
+      + '</div>';
+
+    var markerIcon = L.divIcon({
+      className: '',
+      html: '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + color + ';border:2px solid rgba(255,255,255,0.3);cursor:pointer;box-shadow:0 0 6px ' + color + '44"></div>',
+      iconSize: [size, size], iconAnchor: [size/2, size/2]
+    });
+
+    var marker = L.marker(pos, { icon: markerIcon }).bindPopup(popupHtml, { maxWidth: 300 });
+    marker._monsterData = m;
+    marker.addTo(markerLayer);
+    allMarkers.push(marker);
+
+    var labelIcon = L.divIcon({
+      className: '',
+      html: '<div style="font-size:9px;color:' + color + ';white-space:nowrap;text-shadow:0 0 3px #000,0 0 3px #000;pointer-events:none">' + m.name + '</div>',
+      iconSize: [100, 14], iconAnchor: [50, -2]
+    });
+    L.marker(pos, { icon: labelIcon, interactive: false }).addTo(labelLayer);
+  }
+
+  document.getElementById('count').textContent = monsters.length + ' monsters shown';
+}
+
+function applyFilters() {
+  var searchVal = document.getElementById('search').value.toLowerCase();
+  var filterVal = document.getElementById('filter').value;
+
+  var filtered = MONSTERS.filter(function(m) {
+    if (searchVal) {
+      var nameMatch = m.name.toLowerCase().indexOf(searchVal) !== -1;
+      var locMatch = m.locationName.toLowerCase().indexOf(searchVal) !== -1;
+      if (!nameMatch && !locMatch) return false;
+    }
+    if (filterVal === 'surface') return isSurface(m.y);
+    if (filterVal === 'underground') return isUnderground(m.y);
+    if (filterVal === 'turael') return TURAEL_TASKS.indexOf(m.name) !== -1;
+    if (filterVal === 'slayer-tower') return m.locationName.toLowerCase().indexOf('slayer tower') !== -1;
+    return true;
+  });
+
+  renderMonsters(filtered);
+
+  if (filtered.length > 0 && filtered.length <= 20) {
+    var fgMarkers = [];
+    for (var i = 0; i < allMarkers.length; i++) fgMarkers.push(allMarkers[i]);
+    if (fgMarkers.length > 0) {
+      var group = L.featureGroup(fgMarkers);
+      map.fitBounds(group.getBounds().pad(0.2));
+    }
+  }
+}
+
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('filter').addEventListener('change', applyFilters);
+document.getElementById('resetBtn').addEventListener('click', function() {
+  document.getElementById('search').value = '';
+  document.getElementById('filter').value = 'all';
+  renderMonsters(MONSTERS);
+  map.setView(gameToLatLng(3100, 3400), 0);
+});
+
+// Load monster data
+fetch('./monsters.json')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    MONSTERS = data;
+    buildMap();
+  })
+  .catch(function(err) {
+    console.error('Failed to load monsters:', err);
+    // Fallback: build empty map
+    buildMap();
+  });
+</script>
+</body>
+</html>

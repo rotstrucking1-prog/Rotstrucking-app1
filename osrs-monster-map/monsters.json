@@ -1,0 +1,992 @@
+[
+  {
+    "name": "Banshee",
+    "x": 3442,
+    "y": 3545,
+    "locationName": "Slayer Tower (ground floor)",
+    "combatLevel": 23,
+    "slayerLevel": 15,
+    "npcIds": "414, 1612"
+  },
+  {
+    "name": "Bat",
+    "x": 3170,
+    "y": 3370,
+    "locationName": "West of Varrock",
+    "combatLevel": 6,
+    "slayerLevel": 1,
+    "npcIds": "2827, 10888, 14042"
+  },
+  {
+    "name": "Bear",
+    "x": 2661,
+    "y": 3305,
+    "locationName": "East Ardougne",
+    "combatLevel": 19,
+    "slayerLevel": 1,
+    "npcIds": "2838, 2839, 3423"
+  },
+  {
+    "name": "Bird",
+    "x": 3168,
+    "y": 9572,
+    "locationName": "Lumbridge",
+    "combatLevel": 1,
+    "slayerLevel": 1,
+    "npcIds": "1017, 1018, 1401, 1402, 1475, 1476, 5240, 5241, 6113, 6114, 10541"
+  },
+  {
+    "name": "Cave Bug",
+    "x": 3160,
+    "y": 9572,
+    "locationName": "Lumbridge Swamp Caves",
+    "combatLevel": 6,
+    "slayerLevel": 7,
+    "npcIds": "481, 483"
+  },
+  {
+    "name": "Cave Crawler",
+    "x": 2788,
+    "y": 9997,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 23,
+    "slayerLevel": 10,
+    "npcIds": "406, 407, 408, 409"
+  },
+  {
+    "name": "Cave Slime",
+    "x": 3160,
+    "y": 9572,
+    "locationName": "Lumbridge Swamp Caves",
+    "combatLevel": 23,
+    "slayerLevel": 17,
+    "npcIds": "480"
+  },
+  {
+    "name": "Cow",
+    "x": 3168,
+    "y": 9572,
+    "locationName": "Lumbridge",
+    "combatLevel": 2,
+    "slayerLevel": 1,
+    "npcIds": "2790, 2791, 2793, 2795, 5842"
+  },
+  {
+    "name": "Crawling Hand",
+    "x": 3418,
+    "y": 3546,
+    "locationName": "Slayer Tower (ground floor)",
+    "combatLevel": 16,
+    "slayerLevel": 5,
+    "npcIds": "448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 1648, 1649, 1650, 1651, 1652"
+  },
+  {
+    "name": "Desert Lizard",
+    "x": 3312,
+    "y": 3041,
+    "locationName": "Kharidian Desert",
+    "combatLevel": 24,
+    "slayerLevel": 22,
+    "npcIds": "458, 459, 460, 461, 12003"
+  },
+  {
+    "name": "Dog",
+    "x": 2926,
+    "y": 3560,
+    "locationName": "Burthorpe",
+    "combatLevel": 29,
+    "slayerLevel": 1,
+    "npcIds": "112, 113, 114, 4185, 7209, 11583"
+  },
+  {
+    "name": "Dwarf",
+    "x": 3025,
+    "y": 9803,
+    "locationName": "Dwarven Mine",
+    "combatLevel": 10,
+    "slayerLevel": 1,
+    "npcIds": "117, 118, 2462, 5880, 5881"
+  },
+  {
+    "name": "Ghost",
+    "x": 3241,
+    "y": 9911,
+    "locationName": "Varrock Sewers",
+    "combatLevel": 19,
+    "slayerLevel": 1,
+    "npcIds": "85, 86, 87, 88, 89, 90, 91, 92, 93, 95, 97, 99, 472, 473, 474, 505, 506, 507, 2527, 2528, 2529, 2530, 2531, 2532, 2533, 2534, 7263, 7264"
+  },
+  {
+    "name": "Goblin",
+    "x": 3168,
+    "y": 9572,
+    "locationName": "Lumbridge",
+    "combatLevel": 5,
+    "slayerLevel": 1,
+    "npcIds": "3028, 3029, 3030, 3031, 3032, 3033, 3034, 3035, 3036, 3037, 3038, 3039, 3040, 3041, 3042, 3043, 3044, 3045, 3046, 3051, 3052, 3053, 3054, 3073, 3074, 3075, 3076, 5192, 5193, 5195, 5196, 5197, 5198, 5199, 5200, 5201, 5202, 5203, 5204, 5205, 5206, 5207, 5208"
+  },
+  {
+    "name": "Icefiend",
+    "x": 3008,
+    "y": 3475,
+    "locationName": "Ice Mountain",
+    "combatLevel": 13,
+    "slayerLevel": 1,
+    "npcIds": "3140, 3141, 4813"
+  },
+  {
+    "name": "Kalphite Worker",
+    "x": 3323,
+    "y": 9502,
+    "locationName": "Kalphite Lair",
+    "combatLevel": 28,
+    "slayerLevel": 1,
+    "npcIds": "955"
+  },
+  {
+    "name": "Minotaur",
+    "x": 1866,
+    "y": 5234,
+    "locationName": "Stronghold of Security (first floor)",
+    "combatLevel": 12,
+    "slayerLevel": 1,
+    "npcIds": "2481, 2482, 2483, 4404, 4405, 4832, 4833"
+  },
+  {
+    "name": "Monkey",
+    "x": 2856,
+    "y": 9570,
+    "locationName": "Karamja",
+    "combatLevel": 3,
+    "slayerLevel": 1,
+    "npcIds": "205, 1038, 2711, 2848, 5259, 5260"
+  },
+  {
+    "name": "Rat",
+    "x": 3237,
+    "y": 9911,
+    "locationName": "Varrock Sewers",
+    "combatLevel": 1,
+    "slayerLevel": 1,
+    "npcIds": "87, 2492, 2513, 2854, 2855, 2856, 4396, 4397"
+  },
+  {
+    "name": "Scorpion",
+    "x": 3298,
+    "y": 3298,
+    "locationName": "Al Kharid Mine",
+    "combatLevel": 14,
+    "slayerLevel": 1,
+    "npcIds": "2479, 2480, 3024, 5242, 13001, 14940"
+  },
+  {
+    "name": "Skeleton",
+    "x": 3233,
+    "y": 9911,
+    "locationName": "Varrock Sewers",
+    "combatLevel": 21,
+    "slayerLevel": 1,
+    "npcIds": "74, 75, 76, 90, 91, 92, 93, 3240"
+  },
+  {
+    "name": "Spider",
+    "x": 3168,
+    "y": 9572,
+    "locationName": "Lumbridge Swamp",
+    "combatLevel": 1,
+    "slayerLevel": 1,
+    "npcIds": "60, 61, 62, 63, 2478, 3019, 4561"
+  },
+  {
+    "name": "Wolf",
+    "x": 2857,
+    "y": 3553,
+    "locationName": "White Wolf Mountain",
+    "combatLevel": 25,
+    "slayerLevel": 1,
+    "npcIds": "106, 110, 2490, 2491, 3912"
+  },
+  {
+    "name": "Zombie",
+    "x": 3238,
+    "y": 9906,
+    "locationName": "Varrock Sewers",
+    "combatLevel": 13,
+    "slayerLevel": 1,
+    "npcIds": "26, 27, 28, 29, 30, 31, 32, 34, 37, 38, 39, 40, 41, 58, 59, 73, 74, 75, 76, 2836, 2837"
+  },
+  {
+    "name": "Catablepon",
+    "x": 1866,
+    "y": 5234,
+    "locationName": "Stronghold of Security (second floor)",
+    "combatLevel": 49,
+    "slayerLevel": 1,
+    "npcIds": "2475, 2476, 2477"
+  },
+  {
+    "name": "Cockatrice",
+    "x": 2792,
+    "y": 10002,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 37,
+    "slayerLevel": 25,
+    "npcIds": "419, 420"
+  },
+  {
+    "name": "Cyclops",
+    "x": 2849,
+    "y": 3543,
+    "locationName": "Warriors Guild",
+    "combatLevel": 56,
+    "slayerLevel": 1,
+    "npcIds": "2463, 2464, 2465, 2466"
+  },
+  {
+    "name": "Earth Warrior",
+    "x": 3132,
+    "y": 9912,
+    "locationName": "Edgeville Dungeon",
+    "combatLevel": 51,
+    "slayerLevel": 1,
+    "npcIds": "2840"
+  },
+  {
+    "name": "Flesh Crawler",
+    "x": 1866,
+    "y": 5234,
+    "locationName": "Stronghold of Security (second floor)",
+    "combatLevel": 41,
+    "slayerLevel": 1,
+    "npcIds": "2498, 2499, 2500"
+  },
+  {
+    "name": "Ghoul",
+    "x": 3489,
+    "y": 3489,
+    "locationName": "Canifis",
+    "combatLevel": 42,
+    "slayerLevel": 1,
+    "npcIds": "289"
+  },
+  {
+    "name": "Hill Giant",
+    "x": 3132,
+    "y": 9912,
+    "locationName": "Edgeville Dungeon",
+    "combatLevel": 28,
+    "slayerLevel": 1,
+    "npcIds": "2098, 2099, 2100, 2101, 2102, 2103, 13502, 13503, 13504"
+  },
+  {
+    "name": "Hobgoblin",
+    "x": 3132,
+    "y": 9912,
+    "locationName": "Edgeville Dungeon",
+    "combatLevel": 28,
+    "slayerLevel": 1,
+    "npcIds": "2240, 2241, 2242, 3049, 3050, 3286, 3287, 3288, 3289, 3583"
+  },
+  {
+    "name": "Ice Warrior",
+    "x": 3029,
+    "y": 9582,
+    "locationName": "Asgarnian Ice Dungeon",
+    "combatLevel": 57,
+    "slayerLevel": 1,
+    "npcIds": "124, 2841, 2842, 2851, 3172, 13802"
+  },
+  {
+    "name": "Infernal Mage",
+    "x": 3429,
+    "y": 3535,
+    "locationName": "Slayer Tower",
+    "combatLevel": 66,
+    "slayerLevel": 45,
+    "npcIds": "443, 444, 445, 446, 447"
+  },
+  {
+    "name": "Killerwatt",
+    "x": 3108,
+    "y": 3346,
+    "locationName": "Draynor Manor",
+    "combatLevel": 55,
+    "slayerLevel": 37,
+    "npcIds": "469, 470, 3201, 7637"
+  },
+  {
+    "name": "Mogre",
+    "x": 2987,
+    "y": 3108,
+    "locationName": "Mudskipper Point",
+    "combatLevel": 32,
+    "slayerLevel": 32,
+    "npcIds": "2592"
+  },
+  {
+    "name": "Pyrefiend",
+    "x": 2762,
+    "y": 10009,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 43,
+    "slayerLevel": 30,
+    "npcIds": "433, 434, 435, 436, 3139"
+  },
+  {
+    "name": "Rock Slug",
+    "x": 2774,
+    "y": 10003,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 29,
+    "slayerLevel": 20,
+    "npcIds": "421, 422, 14423"
+  },
+  {
+    "name": "Shade",
+    "x": 3489,
+    "y": 3270,
+    "locationName": "Mort'ton",
+    "combatLevel": 40,
+    "slayerLevel": 1,
+    "npcIds": "6740, 7258"
+  },
+  {
+    "name": "Vampire",
+    "x": 3563,
+    "y": 3475,
+    "locationName": "Canifis",
+    "combatLevel": 32,
+    "slayerLevel": 1,
+    "npcIds": "3137, 3234, 3237, 3707, 3708"
+  },
+  {
+    "name": "Wall Beast",
+    "x": 3163,
+    "y": 9571,
+    "locationName": "Lumbridge Swamp Caves",
+    "combatLevel": 49,
+    "slayerLevel": 35,
+    "npcIds": "475, 476, 7823"
+  },
+  {
+    "name": "Aberrant Spectre",
+    "x": 3430,
+    "y": 3543,
+    "locationName": "Slayer Tower (first floor)",
+    "combatLevel": 96,
+    "slayerLevel": 60,
+    "npcIds": "2, 3, 4, 5, 6, 7"
+  },
+  {
+    "name": "Ankou",
+    "x": 1867,
+    "y": 5234,
+    "locationName": "Stronghold of Security",
+    "combatLevel": 75,
+    "slayerLevel": 1,
+    "npcIds": "2514, 2515, 2516, 2517, 2518, 2519, 6608, 7257, 7864"
+  },
+  {
+    "name": "Basilisk",
+    "x": 2774,
+    "y": 10003,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 61,
+    "slayerLevel": 40,
+    "npcIds": "417, 418"
+  },
+  {
+    "name": "Bloodveld",
+    "x": 3429,
+    "y": 3535,
+    "locationName": "Slayer Tower",
+    "combatLevel": 76,
+    "slayerLevel": 50,
+    "npcIds": "484, 485, 486, 487, 3138, 7276, 7277, 7278"
+  },
+  {
+    "name": "Blue Dragon",
+    "x": 2884,
+    "y": 9798,
+    "locationName": "Taverley Dungeon",
+    "combatLevel": 111,
+    "slayerLevel": 1,
+    "npcIds": "265, 266, 267, 268, 269"
+  },
+  {
+    "name": "Bronze Dragon",
+    "x": 2710,
+    "y": 9466,
+    "locationName": "Brimhaven Dungeon",
+    "combatLevel": 131,
+    "slayerLevel": 1,
+    "npcIds": "270, 271, 7253"
+  },
+  {
+    "name": "Crocodile",
+    "x": 3287,
+    "y": 9253,
+    "locationName": "Sophanem",
+    "combatLevel": 63,
+    "slayerLevel": 1,
+    "npcIds": "1621, 1622, 1623, 4184, 11581, 11582"
+  },
+  {
+    "name": "Dagannoth",
+    "x": 2515,
+    "y": 3640,
+    "locationName": "Lighthouse",
+    "combatLevel": 74,
+    "slayerLevel": 1,
+    "npcIds": "970, 971, 972, 973, 974, 975, 2259, 2260, 2261, 2262, 2263, 2264, 2265, 7259, 7260"
+  },
+  {
+    "name": "Fire Giant",
+    "x": 2575,
+    "y": 9861,
+    "locationName": "Waterfall Dungeon",
+    "combatLevel": 86,
+    "slayerLevel": 1,
+    "npcIds": "2075, 2076, 2077, 2078, 2079, 2080, 2081, 2082, 2083, 2084, 7251, 7252, 7253"
+  },
+  {
+    "name": "Green Dragon",
+    "x": 3345,
+    "y": 3670,
+    "locationName": "Wilderness (west, level 13-14)",
+    "combatLevel": 79,
+    "slayerLevel": 1,
+    "npcIds": "260, 261, 262, 263, 264, 7868, 7869, 7870, 8073, 8076, 8082"
+  },
+  {
+    "name": "Harpie Bug Swarm",
+    "x": 2856,
+    "y": 9570,
+    "locationName": "Karamja",
+    "combatLevel": 46,
+    "slayerLevel": 33,
+    "npcIds": "464, 3153, 3154"
+  },
+  {
+    "name": "Ice Giant",
+    "x": 3048,
+    "y": 9579,
+    "locationName": "Asgarnian Ice Dungeon",
+    "combatLevel": 53,
+    "slayerLevel": 1,
+    "npcIds": "2085, 2086, 2087, 2088, 2089, 13796, 13797"
+  },
+  {
+    "name": "Jelly",
+    "x": 2789,
+    "y": 9990,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 78,
+    "slayerLevel": 52,
+    "npcIds": "437, 438, 439, 440, 441, 442"
+  },
+  {
+    "name": "Jungle Horror",
+    "x": 3740,
+    "y": 9373,
+    "locationName": "Mos Le'Harmless",
+    "combatLevel": 70,
+    "slayerLevel": 1,
+    "npcIds": "1042, 1043, 1044, 1045, 1046"
+  },
+  {
+    "name": "Lesser Demon",
+    "x": 2838,
+    "y": 9568,
+    "locationName": "Karamja Dungeon",
+    "combatLevel": 82,
+    "slayerLevel": 1,
+    "npcIds": "2005, 2006, 2007, 2008, 2018, 7247, 7248, 7656, 7657, 7664, 7865, 7866, 7867"
+  },
+  {
+    "name": "Moss Giant",
+    "x": 3237,
+    "y": 9911,
+    "locationName": "Varrock Sewers",
+    "combatLevel": 42,
+    "slayerLevel": 1,
+    "npcIds": "2090, 2091, 2092, 2093, 3851, 3852, 7262, 12844, 12845, 12846, 12847, 14422"
+  },
+  {
+    "name": "Otherworldly Being",
+    "x": 2412,
+    "y": 4434,
+    "locationName": "Zanaris",
+    "combatLevel": 64,
+    "slayerLevel": 1,
+    "npcIds": "2843, 2844"
+  },
+  {
+    "name": "Shadow Warrior",
+    "x": 2729,
+    "y": 9773,
+    "locationName": "Legends' Guild basement",
+    "combatLevel": 48,
+    "slayerLevel": 1,
+    "npcIds": "688, 2853, 5846"
+  },
+  {
+    "name": "Turoth",
+    "x": 2774,
+    "y": 10003,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 83,
+    "slayerLevel": 55,
+    "npcIds": "427, 428, 429, 430"
+  },
+  {
+    "name": "Werewolf",
+    "x": 3505,
+    "y": 3474,
+    "locationName": "Canifis",
+    "combatLevel": 88,
+    "slayerLevel": 1,
+    "npcIds": "6006, 6007, 6008, 6009, 6010, 6011, 6012, 6013, 6014, 6015, 6016, 6017, 6018, 6019, 6020, 6021"
+  },
+  {
+    "name": "Abyssal Demon",
+    "x": 3429,
+    "y": 3535,
+    "locationName": "Slayer Tower (top floor)",
+    "combatLevel": 124,
+    "slayerLevel": 85,
+    "npcIds": "415, 416, 7241, 7242, 11239"
+  },
+  {
+    "name": "Black Demon",
+    "x": 2884,
+    "y": 9798,
+    "locationName": "Taverley Dungeon",
+    "combatLevel": 172,
+    "slayerLevel": 1,
+    "npcIds": "240, 2048, 2049, 2050, 2051, 2052, 5874, 5875, 5876, 5877, 7242, 7243, 7874, 7875, 7876"
+  },
+  {
+    "name": "Black Dragon",
+    "x": 2884,
+    "y": 9798,
+    "locationName": "Taverley Dungeon",
+    "combatLevel": 227,
+    "slayerLevel": 1,
+    "npcIds": "252, 253, 254, 255, 256, 257, 258, 259, 7861, 7862, 7863, 8084, 8085"
+  },
+  {
+    "name": "Cave Horror",
+    "x": 3750,
+    "y": 9375,
+    "locationName": "Mos Le'Harmless Cave",
+    "combatLevel": 80,
+    "slayerLevel": 58,
+    "npcIds": "1047, 1048, 1049, 1050, 1051, 3209, 3210, 3211, 3212, 3213, 3214"
+  },
+  {
+    "name": "Cave Kraken",
+    "x": 2280,
+    "y": 10001,
+    "locationName": "Kraken Cove",
+    "combatLevel": 127,
+    "slayerLevel": 87,
+    "npcIds": "492, 493"
+  },
+  {
+    "name": "Dark Beast",
+    "x": 2015,
+    "y": 4639,
+    "locationName": "Mourner Tunnels",
+    "combatLevel": 182,
+    "slayerLevel": 90,
+    "npcIds": "4005, 4006, 7250, 7938, 7939"
+  },
+  {
+    "name": "Drake",
+    "x": 1310,
+    "y": 10187,
+    "locationName": "Karuulm Slayer Dungeon",
+    "combatLevel": 192,
+    "slayerLevel": 84,
+    "npcIds": "8612, 8613"
+  },
+  {
+    "name": "Dust Devil",
+    "x": 3206,
+    "y": 9379,
+    "locationName": "Smoke Dungeon",
+    "combatLevel": 93,
+    "slayerLevel": 65,
+    "npcIds": "423, 424, 7249, 7250, 11238"
+  },
+  {
+    "name": "Gargoyle",
+    "x": 3438,
+    "y": 3537,
+    "locationName": "Slayer Tower (top floor)",
+    "combatLevel": 111,
+    "slayerLevel": 75,
+    "npcIds": "412, 413, 1543"
+  },
+  {
+    "name": "Greater Demon",
+    "x": 2710,
+    "y": 9466,
+    "locationName": "Brimhaven Dungeon",
+    "combatLevel": 92,
+    "slayerLevel": 1,
+    "npcIds": "2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 7244, 7245, 7246, 7871, 7872, 7873"
+  },
+  {
+    "name": "Hellhound",
+    "x": 2884,
+    "y": 9798,
+    "locationName": "Taverley Dungeon",
+    "combatLevel": 122,
+    "slayerLevel": 1,
+    "npcIds": "104, 105, 3133, 7256, 7877"
+  },
+  {
+    "name": "Iron Dragon",
+    "x": 2710,
+    "y": 9466,
+    "locationName": "Brimhaven Dungeon",
+    "combatLevel": 189,
+    "slayerLevel": 1,
+    "npcIds": "272, 273, 7254, 8080"
+  },
+  {
+    "name": "Kalphite",
+    "x": 3323,
+    "y": 9502,
+    "locationName": "Kalphite Lair",
+    "combatLevel": 85,
+    "slayerLevel": 1,
+    "npcIds": "955, 956, 957, 958, 959, 961"
+  },
+  {
+    "name": "Kraken",
+    "x": 2280,
+    "y": 10001,
+    "locationName": "Kraken Cove",
+    "combatLevel": 291,
+    "slayerLevel": 87,
+    "npcIds": "494, 496"
+  },
+  {
+    "name": "Kurask",
+    "x": 2774,
+    "y": 10003,
+    "locationName": "Fremennik Slayer Dungeon",
+    "combatLevel": 106,
+    "slayerLevel": 70,
+    "npcIds": "410, 411, 7520, 7521"
+  },
+  {
+    "name": "Lizardman",
+    "x": 1477,
+    "y": 3689,
+    "locationName": "Lizardman Canyon",
+    "combatLevel": 53,
+    "slayerLevel": 1,
+    "npcIds": "6915, 6916, 6917, 6918, 6919"
+  },
+  {
+    "name": "Mutated Zygomite",
+    "x": 2412,
+    "y": 4434,
+    "locationName": "Zanaris",
+    "combatLevel": 74,
+    "slayerLevel": 57,
+    "npcIds": "533, 535, 537, 538, 637, 1024, 7797, 7798"
+  },
+  {
+    "name": "Nechryael",
+    "x": 3429,
+    "y": 3535,
+    "locationName": "Slayer Tower",
+    "combatLevel": 115,
+    "slayerLevel": 80,
+    "npcIds": "8, 11"
+  },
+  {
+    "name": "Red Dragon",
+    "x": 2710,
+    "y": 9466,
+    "locationName": "Brimhaven Dungeon",
+    "combatLevel": 152,
+    "slayerLevel": 1,
+    "npcIds": "247, 248, 249, 250, 251, 8075, 8078, 8079"
+  },
+  {
+    "name": "Skeletal Wyvern",
+    "x": 3029,
+    "y": 9582,
+    "locationName": "Asgarnian Ice Dungeon",
+    "combatLevel": 140,
+    "slayerLevel": 72,
+    "npcIds": "465, 466, 467, 468"
+  },
+  {
+    "name": "Smoke Devil",
+    "x": 2401,
+    "y": 9415,
+    "locationName": "Smoke Devil Dungeon",
+    "combatLevel": 160,
+    "slayerLevel": 93,
+    "npcIds": "498, 499, 8616, 8617"
+  },
+  {
+    "name": "Steel Dragon",
+    "x": 2714,
+    "y": 9450,
+    "locationName": "Brimhaven Dungeon",
+    "combatLevel": 246,
+    "slayerLevel": 1,
+    "npcIds": "274, 275, 7255"
+  },
+  {
+    "name": "Suqah",
+    "x": 2102,
+    "y": 3917,
+    "locationName": "Lunar Isle",
+    "combatLevel": 111,
+    "slayerLevel": 1,
+    "npcIds": "787, 788, 789, 790, 791, 792, 793"
+  },
+  {
+    "name": "Troll",
+    "x": 2893,
+    "y": 3676,
+    "locationName": "Fremennik Province (Trollheim)",
+    "combatLevel": 69,
+    "slayerLevel": 1,
+    "npcIds": "648, 649, 650, 651, 652, 653, 654, 699, 700, 701, 702, 703, 704, 705, 936, 937, 938, 939, 940, 941, 942, 4143"
+  },
+  {
+    "name": "Waterfiend",
+    "x": 1768,
+    "y": 5366,
+    "locationName": "Ancient Cavern",
+    "combatLevel": 115,
+    "slayerLevel": 1,
+    "npcIds": "2916, 2917, 5361, 5362"
+  },
+  {
+    "name": "Wyrm",
+    "x": 1310,
+    "y": 10189,
+    "locationName": "Karuulm Slayer Dungeon",
+    "combatLevel": 99,
+    "slayerLevel": 62,
+    "npcIds": "8610, 8611"
+  },
+  {
+    "name": "Elves",
+    "x": 2333,
+    "y": 3172,
+    "locationName": "Lletya / Prifddinas",
+    "combatLevel": 108,
+    "slayerLevel": 1,
+    "npcIds": "5293, 5294, 5295, 5296, 5297, 5298, 5299, 5300, 5301, 5302, 5303, 5304"
+  },
+  {
+    "name": "Spiritual Creature",
+    "x": 2870,
+    "y": 5362,
+    "locationName": "God Wars Dungeon",
+    "combatLevel": 120,
+    "slayerLevel": 63,
+    "npcIds": "2210, 2211, 2212, 2213, 2214, 2215, 2216, 2217, 2218, 2219, 2233, 2234, 2235, 2236, 2242, 2243, 2244, 3159, 3160, 3161, 3166, 3167, 3168, 11290, 11291, 11292"
+  },
+  {
+    "name": "Mithril Dragon",
+    "x": 1768,
+    "y": 5366,
+    "locationName": "Ancient Cavern",
+    "combatLevel": 304,
+    "slayerLevel": 1,
+    "npcIds": "2919, 2920, 8088, 8089"
+  },
+  {
+    "name": "Adamant Dragon",
+    "x": 1568,
+    "y": 5075,
+    "locationName": "Lithkren Vault",
+    "combatLevel": 338,
+    "slayerLevel": 1,
+    "npcIds": "8030, 8090"
+  },
+  {
+    "name": "Rune Dragon",
+    "x": 1568,
+    "y": 5075,
+    "locationName": "Lithkren Vault",
+    "combatLevel": 380,
+    "slayerLevel": 1,
+    "npcIds": "8031, 8091"
+  },
+  {
+    "name": "Hydra",
+    "x": 1310,
+    "y": 10189,
+    "locationName": "Karuulm Slayer Dungeon",
+    "combatLevel": 194,
+    "slayerLevel": 95,
+    "npcIds": "8609"
+  },
+  {
+    "name": "Fossil Island Wyvern",
+    "x": 3608,
+    "y": 10278,
+    "locationName": "Fossil Island Wyvern Cave",
+    "combatLevel": 139,
+    "slayerLevel": 66,
+    "npcIds": "7792, 7793, 7794, 7795"
+  },
+  {
+    "name": "Greater Nechryael",
+    "x": 1702,
+    "y": 10074,
+    "locationName": "Catacombs of Kourend",
+    "combatLevel": 200,
+    "slayerLevel": 80,
+    "npcIds": "8, 11, 7278, 11240"
+  },
+  {
+    "name": "Deviant Spectre",
+    "x": 1701,
+    "y": 10042,
+    "locationName": "Catacombs of Kourend",
+    "combatLevel": 169,
+    "slayerLevel": 60,
+    "npcIds": "7279"
+  },
+  {
+    "name": "Warped Jelly",
+    "x": 1673,
+    "y": 10062,
+    "locationName": "Catacombs of Kourend",
+    "combatLevel": 112,
+    "slayerLevel": 52,
+    "npcIds": "7277"
+  },
+  {
+    "name": "Black Bear",
+    "x": 3286,
+    "y": 3363,
+    "locationName": "East of Varrock",
+    "combatLevel": 19,
+    "slayerLevel": 1,
+    "npcIds": "2839"
+  },
+  {
+    "name": "Giant Bat",
+    "x": 3240,
+    "y": 9875,
+    "locationName": "Varrock Sewers",
+    "combatLevel": 27,
+    "slayerLevel": 1,
+    "npcIds": "2834, 6824"
+  },
+  {
+    "name": "Guard Dog",
+    "x": 2774,
+    "y": 3274,
+    "locationName": "Handelmort mansion (Ardougne)",
+    "combatLevel": 44,
+    "slayerLevel": 1,
+    "npcIds": "114, 7209"
+  },
+  {
+    "name": "Terrorbird",
+    "x": 2392,
+    "y": 3453,
+    "locationName": "Tree Gnome Stronghold",
+    "combatLevel": 28,
+    "slayerLevel": 1,
+    "npcIds": "5049, 5050, 5051, 5052"
+  },
+  {
+    "name": "Baby Blue Dragon",
+    "x": 2884,
+    "y": 9798,
+    "locationName": "Taverley Dungeon",
+    "combatLevel": 48,
+    "slayerLevel": 1,
+    "npcIds": "52, 53, 241, 242, 243, 8074"
+  },
+  {
+    "name": "Wyvern",
+    "x": 3058,
+    "y": 9555,
+    "locationName": "Asgarnian Ice Dungeon / Fossil Island",
+    "combatLevel": 140,
+    "slayerLevel": 66,
+    "npcIds": "465, 466, 467, 468, 7792, 7793, 7794, 7795"
+  },
+  {
+    "name": "Brutal Blue Dragon",
+    "x": 1654,
+    "y": 10092,
+    "locationName": "Catacombs of Kourend",
+    "combatLevel": 271,
+    "slayerLevel": 1,
+    "npcIds": "7273, 13795"
+  },
+  {
+    "name": "Brutal Black Dragon",
+    "x": 1614,
+    "y": 10050,
+    "locationName": "Catacombs of Kourend",
+    "combatLevel": 318,
+    "slayerLevel": 1,
+    "npcIds": "7275, 8092, 8093"
+  },
+  {
+    "name": "Maniacal Monkey",
+    "x": 2460,
+    "y": 9100,
+    "locationName": "Kruk's Dungeon (Ape Atoll)",
+    "combatLevel": 118,
+    "slayerLevel": 1,
+    "npcIds": "7117, 7118, 7119"
+  },
+  {
+    "name": "Lizardman Shaman",
+    "x": 1469,
+    "y": 3686,
+    "locationName": "Lizardman Canyon / Shayzien",
+    "combatLevel": 150,
+    "slayerLevel": 1,
+    "npcIds": "6766, 6767, 6768"
+  },
+  {
+    "name": "Demonic Gorilla",
+    "x": 2130,
+    "y": 5663,
+    "locationName": "Crash Site Cavern",
+    "combatLevel": 275,
+    "slayerLevel": 1,
+    "npcIds": "7144, 7145, 7146, 7147, 7148, 7149, 7150, 7151, 7152"
+  },
+  {
+    "name": "Sulphur Lizard",
+    "x": 1294,
+    "y": 10178,
+    "locationName": "Karuulm Slayer Dungeon",
+    "combatLevel": 50,
+    "slayerLevel": 44,
+    "npcIds": "8614, 8615"
+  },
+  {
+    "name": "Warped Creature",
+    "x": 1673,
+    "y": 10062,
+    "locationName": "Catacombs of Kourend",
+    "combatLevel": 100,
+    "slayerLevel": 1,
+    "npcIds": "7532, 7533"
+  }
+]

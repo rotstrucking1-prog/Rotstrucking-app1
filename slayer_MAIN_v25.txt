@@ -1708,7 +1708,7 @@ var SLAYER_CREATURE_MAP = {
     85: "Fossil Island Wyvern",
     86: "Skeleton",
     87: "Shade",
-    88: "Earth Warrior",
+    88: "Earth Warrior"
 };
 
 // Wrapper: findMonster + apply TASK_LOCATION_OVERRIDES if needed

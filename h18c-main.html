@@ -353,6 +353,7 @@ var lastCannonReloadTick = 0;
 var cannonSetupWait = 0;
 var cannonSetupPhase = 0;
 var cannonReloading = false;
+var protectPrayerOn = false;
 
 // v24: Arrow crafting
 var arrowCraftPhase = &quot;idle&quot;;
@@ -1201,28 +1202,59 @@ function useSpecialAttack() {
 }
 
 function activatePrayer(monsterName) {
-    if (!cfgVal(&quot;usePrayer&quot;, false)) return;
-    // Activate protection prayer based on monster type
-    // Most slayer monsters use melee; some use ranged/magic
-    try {
-        var prayerWidget = Game.info.widget.getWidget(541, 22); // Protect from Melee
-        if (prayerWidget) {
-            // Prayer already handled via prayer flicking -- just ensure protect melee is on
-        }
-    } catch(e) {}
+    if (!cfgVal(&quot;usePrayer&quot;, false)) return false;
+    if (protectPrayerOn) return false;
+    var currentPray = Client.getBoostedSkillLevels(Skill.PRAYER);
+    if (currentPray &lt;= 0) return false;
+    if (!currentTaskMonster) return false;
+    var prayerKey = currentTaskMonster.prayer;
+    if (!prayerKey) return false;
+    return activateSpecificPrayer(prayerKey);
 }
 
 function activateSpecificPrayer(prayerName) {
-    if (!prayerName) return;
+    if (!prayerName) return false;
+    if (protectPrayerOn) return false;
     try {
         var prayerData = dbLookup(PRAYERS, prayerName);
+        if (!prayerData) {
+            botMsg(&quot;[PRAYER] Unknown prayer: &quot; + prayerName, &quot;SlayerBot&quot;);
+            return false;
+        }
+        var widget = Game.info.widget.getWidget(541, prayerData.widgetChild);
+        if (widget) {
+            Utility.invokeLater(function() {
+                Game.interact.widget.click(widget);
+            }, Utility.getDelay());
+            protectPrayerOn = true;
+            botMsg(&quot;[PRAYER] Activated &quot; + prayerName, &quot;SlayerBot&quot;);
+            return true;
+        }
+        botMsg(&quot;[PRAYER] Widget not found for &quot; + prayerName, &quot;SlayerBot&quot;);
+    } catch(e) {
+        botMsg(&quot;[PRAYER] Error: &quot; + e, &quot;SlayerBot&quot;);
+    }
+    return false;
+}
+
+function deactivatePrayer() {
+    if (!protectPrayerOn) return;
+    if (!currentTaskMonster) { protectPrayerOn = false; return; }
+    var prayerKey = currentTaskMonster.prayer;
+    if (!prayerKey) { protectPrayerOn = false; return; }
+    try {
+        var prayerData = dbLookup(PRAYERS, prayerKey);
         if (prayerData) {
             var widget = Game.info.widget.getWidget(541, prayerData.widgetChild);
             if (widget) {
-                // Activate the prayer widget
+                Utility.invokeLater(function() {
+                    Game.interact.widget.click(widget);
+                }, Utility.getDelay());
+                botMsg(&quot;[PRAYER] Deactivated &quot; + prayerKey, &quot;SlayerBot&quot;);
             }
         }
     } catch(e) {}
+    protectPrayerOn = false;
 }
 
 // =============================================================================
@@ -4341,6 +4373,25 @@ function handleFightTask() {
         }
     }
 
+    // === PRIORITY 13: Activate protection prayer ===
+    // Use monster&#x27;s .prayer field from MONSTER_DB (e.g., &quot;PROTECT_FROM_MELEE&quot;)
+    // Only click once -- protectPrayerOn flag prevents toggling off
+    if (cfgVal(&quot;usePrayer&quot;, false) &amp;&amp; !protectPrayerOn &amp;&amp; currentTaskMonster &amp;&amp; currentTaskMonster.prayer) {
+        var curPrayPts = Client.getBoostedSkillLevels(Skill.PRAYER);
+        if (curPrayPts &gt; 0) {
+            if (activateSpecificPrayer(currentTaskMonster.prayer)) {
+                return;
+            }
+        }
+    }
+    // Re-activate prayer if it ran out and we just drank a prayer pot
+    if (cfgVal(&quot;usePrayer&quot;, false) &amp;&amp; protectPrayerOn) {
+        var curPrayCheck = Client.getBoostedSkillLevels(Skill.PRAYER);
+        if (curPrayCheck &lt;= 0) {
+            protectPrayerOn = false;
+        }
+    }
+
     // === PRIORITY 14d: Block attacks while cannon is reloading ===
     // Brad&#x27;s spec: wait until &quot;You load the cannon with X cannonballs&quot; chat msg before attacking
     if (cannonReloading) {
@@ -4769,6 +4820,9 @@ function handleTaskComplete() {
     lastCannonReloadTick = 0;
     aggroResetTick = 0;
     cannonReloading = false;
+
+    // Deactivate protection prayer on task complete (save prayer points)
+    deactivatePrayer();
 
     // Reset potion timers
     ticksSinceAntifire = 0;

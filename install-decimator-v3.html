@@ -11,47 +11,46 @@ h1 { color: #ff4444; font-size: 2em; margin-bottom: 5px; }
 .sub { color: #888; margin-bottom: 30px; }
 .step { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; margin: 15px 0; text-align: left; }
 .step-num { color: #ff4444; font-weight: bold; font-size: 1.2em; }
-.cmd-box { background: #0d1117; border: 1px solid #ff4444; border-radius: 8px; padding: 15px; margin: 15px 0; font-family: 'Consolas', monospace; font-size: 13px; word-break: break-all; color: #58a6ff; cursor: pointer; position: relative; }
-.copy-btn { display: inline-block; background: #ff4444; color: white; border: none; padding: 15px 40px; font-size: 1.3em; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 20px 0; }
+.cmd-box { background: #0d1117; border: 1px solid #ff4444; border-radius: 8px; padding: 15px; margin: 10px 0; font-family: 'Consolas', monospace; font-size: 14px; word-break: break-all; color: #58a6ff; }
+.copy-btn { display: inline-block; background: #ff4444; color: white; border: none; padding: 15px 40px; font-size: 1.3em; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 10px 0; }
 .copy-btn:hover { background: #ff6666; }
 .copied { background: #22c55e !important; }
+.label { color: #aaa; font-size: 0.9em; margin-top: 15px; margin-bottom: 5px; }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>☠️ ROAT PKZ DECIMATOR v3.0</h1>
+<h1>☠️ DECIMATOR v3.0</h1>
 <p class="sub">Tick-Perfect NH Tribrid Bot</p>
 
 <div class="step">
-<span class="step-num">Step 1:</span> Copy the install command below
+<span class="step-num">Step 1:</span> Copy COMMAND 1 → paste in PowerShell → Enter
 </div>
 
-<div class="cmd-box" id="cmdBox" onclick="copyCmd()">
-powershell -Command "mkdir '$env:USERPROFILE\Desktop\RoatBot' -Force; Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/roatpkz_decimator_v3.py' -OutFile '$env:USERPROFILE\Desktop\RoatBot\roatpkz_decimator_v3.py'; $ws = New-Object -ComObject WScript.Shell; $sc = $ws.CreateShortcut('$env:USERPROFILE\Desktop\Roat Pkz Decimator v3.lnk'); $sc.TargetPath = 'pythonw'; $sc.Arguments = '\"$env:USERPROFILE\Desktop\RoatBot\roatpkz_decimator_v3.py\"'; $sc.Save(); Write-Host 'DONE - Decimator v3 is on your Desktop!' -ForegroundColor Green"
-</div>
-
-<button class="copy-btn" id="copyBtn" onclick="copyCmd()">📋 COPY INSTALL COMMAND</button>
+<p class="label">COMMAND 1 — Download the bot:</p>
+<div class="cmd-box" id="cmd1">mkdir ~\Desktop\RoatBot -Force; iwr https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/roatpkz_decimator_v3.py -OutFile ~\Desktop\RoatBot\bot.py</div>
+<button class="copy-btn" id="btn1" onclick="copyCmd('cmd1','btn1')">📋 COPY COMMAND 1</button>
 
 <div class="step">
-<span class="step-num">Step 2:</span> Open <b>PowerShell as Admin</b> (right-click Start → Windows PowerShell Admin)
+<span class="step-num">Step 2:</span> Copy COMMAND 2 → paste in PowerShell → Enter
 </div>
 
-<div class="step">
-<span class="step-num">Step 3:</span> Right-click in PowerShell to paste → press Enter
-</div>
+<p class="label">COMMAND 2 — Create desktop launcher:</p>
+<div class="cmd-box" id="cmd2">Set-Content ~\Desktop\RoatBot\Decimator.bat '@echo off`npythonw "%~dp0bot.py"' ; Copy-Item ~\Desktop\RoatBot\Decimator.bat ~\Desktop\</div>
+<button class="copy-btn" id="btn2" onclick="copyCmd('cmd2','btn2')">📋 COPY COMMAND 2</button>
 
 <div class="step">
-<span class="step-num">Step 4:</span> Double-click <b>"Roat Pkz Decimator v3"</b> on your Desktop
+<span class="step-num">Step 3:</span> Double-click <b>"Decimator.bat"</b> on your Desktop!
 </div>
 
 <script>
-function copyCmd() {
-  var cmd = document.getElementById('cmdBox').textContent;
+function copyCmd(id, btnId) {
+  var cmd = document.getElementById(id).textContent;
   navigator.clipboard.writeText(cmd).then(function() {
-    var btn = document.getElementById('copyBtn');
+    var btn = document.getElementById(btnId);
     btn.textContent = '✅ COPIED!';
     btn.classList.add('copied');
-    setTimeout(function() { btn.textContent = '📋 COPY INSTALL COMMAND'; btn.classList.remove('copied'); }, 3000);
+    setTimeout(function() { btn.textContent = '📋 COPY'; btn.classList.remove('copied'); }, 3000);
   });
 }
 </script>

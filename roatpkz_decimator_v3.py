@@ -443,17 +443,30 @@ class ScreenReader:
     def find_window(self) -> bool:
         """Find the Roat Pkz game window (NOT regular RuneLite)."""
         try:
-            for w in gw.getAllWindows():
-                title = w.title.lower()
-                # Match Roat Pkz specifically — NOT regular RuneLite
-                if "roat" in title:
-                    if w.width > 500 and w.height > 400:
-                        self.window_rect = (w.left, w.top, w.width, w.height)
-                        self.window_obj = w
-                        return True
-        except Exception:
-            pass
+            all_wins = gw.getAllWindows()
+            # First pass: show all windows with size for debugging
+            print("=== ALL WINDOWS ===")
+            for w in all_wins:
+                if w.width > 200 and w.height > 200 and w.title.strip():
+                    print(f"  [{w.width}x{w.height}] '{w.title}'")
+            print("===================")
+            # Match order: "roat" first, then "pkz", then any "runelite"
+            for keyword in ["roat", "pkz", "runelite"]:
+                for w in all_wins:
+                    title = w.title.lower()
+                    if keyword in title:
+                        if w.width > 500 and w.height > 400:
+                            self.window_rect = (w.left, w.top, w.width, w.height)
+                            self.window_obj = w
+                            print(f">>> MATCHED WINDOW: '{w.title}' at ({w.left},{w.top}) {w.width}x{w.height}")
+                            return True
+        except Exception as e:
+            print(f"Window search error: {e}")
+        print(">>> NO GAME WINDOW FOUND!")
         return False
+
+    # Alias so both names work
+    find_game_window = find_window
 
     def focus_game(self):
         """Bring Roat Pkz window to foreground before any click/key action."""
@@ -1210,7 +1223,7 @@ class CombatBrain:
     def lock_target(self):
         """Lock onto nearest opponent — called when user presses the button."""
         # Re-calibrate in case window moved
-        self.screen.find_game_window()
+        self.screen.find_window()
         self.calibrate_ui()
         frame = self.screen.capture()
         if frame is None:
@@ -1244,10 +1257,23 @@ class CombatBrain:
 
     def run(self):
         """Main bot loop — runs until stopped."""
-        # Calibrate UI positions from window rect
-        self.screen.find_game_window()
+        # STEP 1: Find game window — MUST succeed before anything else
+        print("\n=== DECIMATOR v3.0 STARTUP ===")
+        print("Looking for Roat Pkz window...")
+        found = self.screen.find_window()
+        if not found:
+            self.log("❌ COULD NOT FIND GAME WINDOW — make sure Roat Pkz is open!")
+            print("\n⚠️  Open Roat Pkz client first, then run this again.")
+            print("    Bot looks for window titles containing: roat, pkz, or runelite")
+            return
+        # STEP 2: Calibrate UI positions
         self.calibrate_ui()
-        self.log(f"📐 Inv origin: {self.inv_origin} | Prayer origin: {self.prayer_origin}")
+        print(f"📐 Window: {self.screen.window_rect}")
+        print(f"📐 Inv origin: {self.inv_origin}")
+        print(f"📐 Prayer origin: {self.prayer_origin}")
+        if self.inv_origin == (0, 0):
+            self.log("⚠️ WARNING: Inv origin is (0,0) — calibration may have failed!")
+        print("=== STARTUP COMPLETE ===\n")
         self.log("🟢 Bot v3.0 STARTED — tick-perfect decimator")
         self.log(f"⚔️ Melee: {self.player.melee_weapon} ({WEAPON_DB.get(self.player.melee_weapon, {}).get('speed', '?')}t)")
         self.log(f"🏹 Range: {self.player.range_weapon} ({WEAPON_DB.get(self.player.range_weapon, {}).get('speed', '?')}t)")

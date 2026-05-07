@@ -196,6 +196,13 @@ INV_SLOT_H = 36
 INV_START_X = 0   # relative to inventory widget top-left
 INV_START_Y = 0
 
+# Inventory/Prayer widget position relative to game window top-left
+# Standard RuneLite: inventory panel is ~195px from right edge, ~253px from top
+INV_PANEL_OFFSET_X = -195   # negative = from right edge
+INV_PANEL_OFFSET_Y = 253
+PRAYER_PANEL_OFFSET_X = -195
+PRAYER_PANEL_OFFSET_Y = 253   # same as inventory when tab selected
+
 # ============================================================
 #  TICK TRACKER — The heart of the bot
 # ============================================================
@@ -865,6 +872,18 @@ class CombatBrain:
             self.combat_log.pop(0)
         print(entry)
 
+    # ---- CALIBRATE UI — set inv/prayer origins from window position ----
+
+    def calibrate_ui(self):
+        """Calculate inventory/prayer absolute positions from game window rect."""
+        if not self.screen.window_rect:
+            return
+        wx, wy, ww, wh = self.screen.window_rect
+        # Inventory widget top-left (absolute screen coords)
+        self.inv_origin = (wx + ww + INV_PANEL_OFFSET_X, wy + INV_PANEL_OFFSET_Y)
+        # Prayer widget top-left (absolute screen coords)
+        self.prayer_origin = (wx + ww + PRAYER_PANEL_OFFSET_X, wy + PRAYER_PANEL_OFFSET_Y)
+
     # ---- Inventory slot absolute position ----
 
     def inv_slot_pos(self, slot: int) -> Tuple[int, int]:
@@ -1190,6 +1209,9 @@ class CombatBrain:
 
     def lock_target(self):
         """Lock onto nearest opponent — called when user presses the button."""
+        # Re-calibrate in case window moved
+        self.screen.find_game_window()
+        self.calibrate_ui()
         frame = self.screen.capture()
         if frame is None:
             self.log("❌ Can't capture screen")
@@ -1222,6 +1244,10 @@ class CombatBrain:
 
     def run(self):
         """Main bot loop — runs until stopped."""
+        # Calibrate UI positions from window rect
+        self.screen.find_game_window()
+        self.calibrate_ui()
+        self.log(f"📐 Inv origin: {self.inv_origin} | Prayer origin: {self.prayer_origin}")
         self.log("🟢 Bot v3.0 STARTED — tick-perfect decimator")
         self.log(f"⚔️ Melee: {self.player.melee_weapon} ({WEAPON_DB.get(self.player.melee_weapon, {}).get('speed', '?')}t)")
         self.log(f"🏹 Range: {self.player.range_weapon} ({WEAPON_DB.get(self.player.range_weapon, {}).get('speed', '?')}t)")

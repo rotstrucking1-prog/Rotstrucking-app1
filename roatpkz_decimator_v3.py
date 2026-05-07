@@ -429,21 +429,45 @@ class ScreenReader:
     def __init__(self):
         self.sct = mss.mss()
         self.window_rect = None  # (x, y, w, h) of Roat Pkz window
+        self.window_obj = None   # pygetwindow object — for .activate()
         self.last_frame = None
         self.frame_time = 0.0
 
     def find_window(self) -> bool:
-        """Find the Roat Pkz game window."""
+        """Find the Roat Pkz game window (NOT regular RuneLite)."""
         try:
             for w in gw.getAllWindows():
                 title = w.title.lower()
-                if "roat" in title or "runelite" in title:
+                # Match Roat Pkz specifically — NOT regular RuneLite
+                if "roat" in title:
                     if w.width > 500 and w.height > 400:
                         self.window_rect = (w.left, w.top, w.width, w.height)
+                        self.window_obj = w
                         return True
         except Exception:
             pass
         return False
+
+    def focus_game(self):
+        """Bring Roat Pkz window to foreground before any click/key action."""
+        try:
+            if self.window_obj:
+                if not self.window_obj.isActive:
+                    self.window_obj.activate()
+                    time.sleep(0.05)  # Small delay for OS to bring window up
+                # Refresh window rect in case it moved
+                self.window_rect = (self.window_obj.left, self.window_obj.top,
+                                    self.window_obj.width, self.window_obj.height)
+        except Exception:
+            # If activate fails, try minimize+restore as fallback
+            try:
+                if self.window_obj:
+                    self.window_obj.minimize()
+                    time.sleep(0.1)
+                    self.window_obj.restore()
+                    time.sleep(0.15)
+            except Exception:
+                pass
 
     def capture(self) -> Optional[np.ndarray]:
         """Capture current game frame."""
@@ -702,10 +726,11 @@ class ScreenReader:
 class HumanMouse:
     """Bezier curve mouse movement that beats ML anti-cheat detection."""
 
-    def __init__(self):
+    def __init__(self, screen_reader=None):
         self.mouse = MouseController()
         self.kbd = KeyboardController()
         self.last_move_time = 0.0
+        self.screen_reader = screen_reader  # For focus_game() before actions
 
     def _bezier_points(self, start: Tuple[int, int], end: Tuple[int, int],
                         num_points: int = 20) -> List[Tuple[int, int]]:
@@ -761,6 +786,9 @@ class HumanMouse:
 
     def click(self, x: int = None, y: int = None, button: str = "left", speed: str = "fast"):
         """Click at position (or current position if no coords)."""
+        # ALWAYS focus game window before clicking
+        if self.screen_reader:
+            self.screen_reader.focus_game()
         if x is not None and y is not None:
             self.move_to(x, y, speed=speed)
         btn = Button.left if button == "left" else Button.right
@@ -771,6 +799,9 @@ class HumanMouse:
 
     def rapid_click_slots(self, slot_coords: List[Tuple[int, int]]):
         """Rapid-fire click multiple inventory slots — for gear switches."""
+        # Focus game before gear switch
+        if self.screen_reader:
+            self.screen_reader.focus_game()
         for i, (sx, sy) in enumerate(slot_coords):
             # Add tiny random offset to each slot click
             ox = random.randint(-3, 3)
@@ -783,6 +814,9 @@ class HumanMouse:
 
     def press_fkey(self, key_num: int):
         """Press an F-key (for tab switching)."""
+        # Focus game before pressing F-keys
+        if self.screen_reader:
+            self.screen_reader.focus_game()
         fkeys = {1: Key.f1, 2: Key.f2, 3: Key.f3, 4: Key.f4, 5: Key.f5,
                  6: Key.f6, 7: Key.f7, 8: Key.f8, 9: Key.f9}
         if key_num in fkeys:
@@ -805,7 +839,7 @@ class CombatBrain:
         self.target = TargetState()
         self.player = PlayerState()
         self.screen = ScreenReader()
-        self.mouse = HumanMouse()
+        self.mouse = HumanMouse(screen_reader=self.screen)
 
         # Fight state
         self.fighting = False

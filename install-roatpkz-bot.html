@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roat Pkz PVP Bot v2.0 — Installer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d1a;color:#e0e0e0;font-family:'Segoe UI',Consolas,monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:30px 20px}
+h1{color:#e94560;font-size:28px;margin-bottom:5px}
+.sub{color:#888;font-size:14px;margin-bottom:25px}
+.step{background:#1a1a2e;border:1px solid #16213e;border-radius:12px;padding:20px;margin:10px 0;width:100%;max-width:700px}
+.step h2{color:#0f3460;font-size:16px;margin-bottom:10px}
+.step p{color:#aaa;font-size:13px;line-height:1.5;margin-bottom:10px}
+.code-box{position:relative;background:#0d0d1a;border:1px solid #333;border-radius:8px;padding:15px;margin:10px 0;overflow-x:auto}
+.code-box pre{color:#00ff41;font-family:Consolas,'Courier New',monospace;font-size:12px;white-space:pre-wrap;word-break:break-all}
+.copy-btn{position:absolute;top:8px;right:8px;background:#e94560;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:bold;cursor:pointer;z-index:10}
+.copy-btn:hover{background:#ff6b81}
+.copy-btn.copied{background:#00ff41;color:#000}
+.note{background:#16213e;border-left:3px solid #e94560;padding:10px 15px;border-radius:0 8px 8px 0;margin:10px 0}
+.note strong{color:#e94560}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.feat{background:#16213e;border-radius:6px;padding:8px 12px;font-size:12px;color:#ccc}
+.feat span{color:#00ff41;margin-right:5px}
+</style>
+</head>
+<body>
+
+<h1>ROAT PKZ PVP BOT v2.0</h1>
+<p class="sub">Main NH Tribrid — One-Click Installer</p>
+
+<div class="step">
+<h2>FEATURES</h2>
+<div class="features">
+<div class="feat"><span>&#9733;</span> Auto-detect game window</div>
+<div class="feat"><span>&#9733;</span> Bezier curve mouse (beats ML)</div>
+<div class="feat"><span>&#9733;</span> NH Tribrid combat brain</div>
+<div class="feat"><span>&#9733;</span> Combo eating (food+karamb+brew)</div>
+<div class="feat"><span>&#9733;</span> 1-tick gear switching</div>
+<div class="feat"><span>&#9733;</span> Smart KO spec detection</div>
+<div class="feat"><span>&#9733;</span> Prayer switching</div>
+<div class="feat"><span>&#9733;</span> GUI control panel</div>
+<div class="feat"><span>&#9733;</span> F12 emergency stop</div>
+<div class="feat"><span>&#9733;</span> Human-like reaction timing</div>
+</div>
+</div>
+
+<div class="step">
+<h2>STEP 1 — Install (one time)</h2>
+<p>Open <strong>PowerShell as Administrator</strong> and paste this entire block:</p>
+<div class="code-box">
+<button class="copy-btn" onclick="copyCode('install-code',this)">COPY</button>
+<pre id="install-code"># Roat Pkz PVP Bot v2.0 Installer
+$ErrorActionPreference = "Stop"
+$dir = "$env:USERPROFILE\RoatPkzBot"
+Write-Host "`n=== ROAT PKZ PVP BOT v2.0 INSTALLER ===" -ForegroundColor Red
+Write-Host "Installing to: $dir`n" -ForegroundColor Gray
+
+# Create directory
+if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+
+# Check Python
+$py = $null
+foreach ($p in @("python", "python3", "py")) {
+    try { $v = &amp; $p --version 2>&amp;1; if ($v -match "3\.\d+") { $py = $p; break } } catch {}
+}
+if (!$py) {
+    Write-Host "[!] Python 3 not found. Installing..." -ForegroundColor Yellow
+    winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements
+    $env:PATH += ";$env:LOCALAPPDATA\Programs\Python\Python312;$env:LOCALAPPDATA\Programs\Python\Python312\Scripts"
+    $py = "python"
+}
+Write-Host "[OK] Python: $py" -ForegroundColor Green
+
+# Install dependencies
+Write-Host "`n[2/3] Installing Python packages..." -ForegroundColor Cyan
+&amp; $py -m pip install --upgrade pip --quiet
+&amp; $py -m pip install opencv-python numpy mss pynput pygetwindow Pillow --quiet
+Write-Host "[OK] All packages installed" -ForegroundColor Green
+
+# Download bot script
+Write-Host "`n[3/3] Downloading bot script..." -ForegroundColor Cyan
+$url = "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/roatpkz_pvp_bot_v2.py"
+Invoke-WebRequest -Uri $url -OutFile "$dir\roatpkz_pvp_bot_v2.py" -UseBasicParsing
+Write-Host "[OK] Bot downloaded to $dir" -ForegroundColor Green
+
+# Create desktop shortcut
+$shell = New-Object -ComObject WScript.Shell
+$shortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\Roat Pkz Bot.lnk")
+$shortcut.TargetPath = (Get-Command $py).Source
+$shortcut.Arguments = "`"$dir\roatpkz_pvp_bot_v2.py`""
+$shortcut.WorkingDirectory = $dir
+$shortcut.Description = "Roat Pkz PVP Bot v2.0"
+$shortcut.Save()
+Write-Host "[OK] Desktop shortcut created" -ForegroundColor Green
+
+# Create run.bat
+"@echo off`n$py `"$dir\roatpkz_pvp_bot_v2.py`"`npause" | Out-File -FilePath "$dir\run.bat" -Encoding ASCII
+Write-Host "[OK] run.bat created" -ForegroundColor Green
+
+Write-Host "`n========================================" -ForegroundColor Red
+Write-Host "  INSTALLATION COMPLETE!" -ForegroundColor Green
+Write-Host "  Double-click 'Roat Pkz Bot' on desktop" -ForegroundColor White
+Write-Host "  Or run: $dir\run.bat" -ForegroundColor Gray
+Write-Host "========================================`n" -ForegroundColor Red</pre>
+</div>
+</div>
+
+<div class="step">
+<h2>STEP 2 — Run</h2>
+<p>1. Make sure <strong>Roat Pkz</strong> is open and you're logged in</p>
+<p>2. Double-click <strong>"Roat Pkz Bot"</strong> on your desktop</p>
+<p>3. The GUI control panel will appear — click <strong>START</strong></p>
+<p>4. Enter a fight — the bot handles everything automatically</p>
+<p>5. Press <strong>F12</strong> at any time for emergency stop</p>
+</div>
+
+<div class="step">
+<h2>UPDATE</h2>
+<p>To update the bot, paste this in PowerShell:</p>
+<div class="code-box">
+<button class="copy-btn" onclick="copyCode('update-code',this)">COPY</button>
+<pre id="update-code">$dir = "$env:USERPROFILE\RoatPkzBot"
+$url = "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/roatpkz_pvp_bot_v2.py"
+Invoke-WebRequest -Uri $url -OutFile "$dir\roatpkz_pvp_bot_v2.py" -UseBasicParsing
+Write-Host "Updated!" -ForegroundColor Green</pre>
+</div>
+</div>
+
+<div class="note">
+<strong>ANTI-CHEAT NOTES:</strong> This bot uses external screen reading only — never injects into the client.
+Mouse movements follow randomized Bezier curves with variable speed profiles.
+Reaction times are randomized 120-280ms (human range). F12 = instant kill switch.
+</div>
+
+<script>
+function copyCode(id, btn) {
+    const code = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'COPIED!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+    });
+}
+</script>
+
+</body>
+</html>

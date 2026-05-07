@@ -3,32 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>☠️ Decimator v3.0 Install</title>
+<title>Decimator v3.0 HOTFIX 5</title>
 <style>
-body { background: #111; color: #eee; font-family: Arial, sans-serif; padding: 30px; }
-h1 { color: #ff4444; }
-.cmd { background: #0d1117; border: 2px solid #ff4444; border-radius: 8px; padding: 15px; font-family: Consolas, monospace; font-size: 14px; color: #58a6ff; margin: 10px 0; position: relative; word-break: break-all; }
-.step { color: #ff4444; font-weight: bold; font-size: 18px; margin-top: 25px; }
-.note { color: #888; font-size: 13px; }
-button { background: #ff4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 15px; cursor: pointer; margin-top: 5px; }
-button:hover { background: #cc3333; }
-.done { color: #4ade80; }
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',sans-serif;max-width:800px;margin:0 auto;padding:20px}
+h1{color:#ff6b6b;text-align:center}
+.step{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin:16px 0}
+.step h3{color:#58a6ff;margin-top:0}
+.cmd{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:13px;word-break:break-all;position:relative;margin:8px 0}
+.copy-btn{display:block;background:#238636;color:white;border:none;padding:14px 28px;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;text-align:center;margin:12px auto;width:90%}
+.copy-btn:hover{background:#2ea043}
+.copy-btn:active{background:#196c2e}
 </style>
 </head>
 <body>
-<h1>☠️ Roat Pkz Decimator v3.0</h1>
-<p class="note">Open <b>Admin PowerShell</b> on your PC. Copy each command and paste.</p>
+<h1>DECIMATOR v3.0 - HOTFIX 5</h1>
+<p style="text-align:center;color:#8b949e">Manual Target Mode - No More Spam Clicking</p>
 
-<p class="step">STEP 1 — Install packages + download bot:</p>
-<div class="cmd" id="cmd1">pip install mss pyautogui keyboard Pillow numpy pynput pygetwindow opencv-python; mkdir -Force ~\Desktop\RoatBot; iwr https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/roatpkz_decimator_v3.py -OutFile ~\Desktop\RoatBot\bot.py</div>
-<button onclick="navigator.clipboard.writeText(document.getElementById('cmd1').innerText);this.textContent='✅ Copied!'">📋 Copy Command 1</button>
+<div class="step">
+<h3>What is Fixed</h3>
+<ul>
+<li>Bot sits completely IDLE until you press F9</li>
+<li>No more spam clicking or emergency eating</li>
+<li>HP/Prayer/Spec forced to 100% (no false reads)</li>
+<li>Press F9 near opponent then it locks and fights</li>
+<li>F12 = emergency stop</li>
+</ul>
+</div>
 
-<p class="step">STEP 2 — Run the bot:</p>
-<div class="cmd" id="cmd2">cd ~\Desktop\RoatBot; python bot.py</div>
-<button onclick="navigator.clipboard.writeText(document.getElementById('cmd2').innerText);this.textContent='✅ Copied!'">📋 Copy Command 2</button>
+<div class="step">
+<h3>Step 1 - Download (paste into PowerShell)</h3>
+<div class="cmd" id="cmd1">Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/roatpkz_pvp_bot_v3.py" -OutFile "$env:USERPROFILE\Desktop\RoatBot\bot.py"</div>
+<button class="copy-btn" onclick="copyCmd('cmd1',this)">COPY DOWNLOAD COMMAND</button>
+</div>
 
-<p class="step done">✅ That's it! Bot GUI will open. Click TARGET LOCK to engage.</p>
-<p class="note">F12 = emergency stop at any time.</p>
-<p class="note">v3.0 fixes: Bot now focuses Roat Pkz window before EVERY click/key — no more browser spam.</p>
+<div class="step">
+<h3>Step 2 - Run (paste into PowerShell)</h3>
+<div class="cmd" id="cmd2">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py</div>
+<button class="copy-btn" onclick="copyCmd('cmd2',this)">COPY RUN COMMAND</button>
+</div>
+
+<div class="step">
+<h3>How to Use</h3>
+<ol>
+<li>Run bot - it says IDLE Press F9</li>
+<li>Walk up to an opponent in Roat Pkz</li>
+<li>Press F9 - bot locks and fights</li>
+<li>When target dies - bot goes idle again</li>
+<li>Press F12 to stop at any time</li>
+</ol>
+</div>
+
+<script>
+function copyCmd(id,btn){
+  var t=document.getElementById(id).innerText;
+  navigator.clipboard.writeText(t).then(function(){
+    btn.textContent='COPIED!';btn.style.background='#196c2e';
+    setTimeout(function(){btn.textContent='COPY';btn.style.background='#238636'},2000);
+  });
+}
+</script>
 </body>
 </html>

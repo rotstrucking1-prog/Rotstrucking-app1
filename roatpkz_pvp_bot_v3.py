@@ -507,26 +507,44 @@ class ScreenReader:
     # ---- HP / Prayer / Spec orbs (top-left of viewport) ----
 
     def _read_orb(self, frame: np.ndarray, orb_y_offset: int) -> float:
-        """Read a minimap orb percentage (HP, Prayer, or Spec)."""
-        wx, wy, ww, wh = self.window_rect
-        # Orbs are in the minimap area — right side of fixed-mode client
-        # HP orb is roughly at viewport_right - 208, viewport_top + 55
-        orb_x = ww - 208
-        orb_y = 55 + orb_y_offset
+        """Read a minimap orb percentage (HP, Prayer, or Spec).
+        Returns 100.0 (assume healthy) if orb can't be reliably detected."""
+        try:
+            if not self.window_rect:
+                return 100.0
+            wx, wy, ww, wh = self.window_rect
+            # Orbs are in the minimap area — right side of fixed-mode client
+            # HP orb is roughly at viewport_right - 208, viewport_top + 55
+            orb_x = ww - 208
+            orb_y = 55 + orb_y_offset
 
-        # Read the green bar fill width (each orb has a 27px wide bar)
-        bar_w = 27
-        bar_h = 5
-        bar_region = frame[orb_y:orb_y + bar_h, orb_x:orb_x + bar_w]
+            # Bounds check
+            if orb_x < 0 or orb_y < 0 or orb_x + 27 > frame.shape[1] or orb_y + 5 > frame.shape[0]:
+                return 100.0  # Out of bounds — assume healthy
 
-        if bar_region.size == 0:
-            return 100.0
+            bar_w = 27
+            bar_h = 5
+            bar_region = frame[orb_y:orb_y + bar_h, orb_x:orb_x + bar_w]
 
-        # Green channel > 100 and Red < 100 = green portion
-        green_mask = (bar_region[:, :, 1] > 100) & (bar_region[:, :, 2] < 100)
-        green_pixels = np.sum(green_mask)
-        total_pixels = bar_w * bar_h
-        return (green_pixels / total_pixels) * 100.0 if total_pixels > 0 else 100.0
+            if bar_region.size == 0:
+                return 100.0
+
+            # Green channel > 100 and Red < 100 = green portion (HP remaining)
+            green_mask = (bar_region[:, :, 1] > 100) & (bar_region[:, :, 2] < 100)
+            # Red channel > 100 and Green < 100 = red portion (HP lost)
+            red_mask = (bar_region[:, :, 2] > 100) & (bar_region[:, :, 1] < 100)
+            green_pixels = int(np.sum(green_mask))
+            red_pixels = int(np.sum(red_mask))
+            identifiable = green_pixels + red_pixels
+
+            # If we can't identify enough orb pixels, reading is unreliable
+            # Assume healthy rather than triggering emergency eat spam
+            if identifiable < 10:
+                return 100.0
+
+            return (green_pixels / identifiable) * 100.0
+        except Exception:
+            return 100.0  # Any error = assume healthy
 
     def read_our_hp(self, frame: np.ndarray) -> float:
         return self._read_orb(frame, 0)
@@ -991,6 +1009,15 @@ class CombatBrain:
 
     def eat(self, combo: bool = False):
         """Eat food. If combo=True, eats food + karambwan + brew on same tick."""
+        # Rate-limit eating — minimum 1.8 seconds between eat attempts (3 game ticks)
+        now = time.time()
+        if not hasattr(self, '_last_eat_time'):
+            self._last_eat_time = 0.0
+        if now - self._last_eat_time < 1.8:
+            return  # Too soon — skip
+        self._last_eat_time = now
+
+        self.screen.focus_game()
         self.mouse.press_fkey(1)  # inventory tab
         time.sleep(0.02)
 
@@ -1090,9 +1117,11 @@ class CombatBrain:
             return
 
         # ---- READ ALL STATE ----
-        self.player.hp_percent = self.screen.read_our_hp(frame)
-        self.player.prayer_percent = self.screen.read_our_prayer(frame)
-        self.player.spec_percent = self.screen.read_our_spec(frame)
+        # HOTFIX 5: Force all to 100% — orb positions not calibrated for Roat Pkz yet
+        # Once Brad sends a screenshot, we'll map the real orb pixel locations
+        self.player.hp_percent = 100.0
+        self.player.prayer_percent = 100.0
+        self.player.spec_percent = 100.0
 
         # Track target
         if self.target.locked:
@@ -1309,14 +1338,14 @@ class CombatBrain:
         if self.inv_origin == (0, 0):
             self.log("⚠️ WARNING: Inv origin is (0,0) — calibration may have failed!")
         print("=== STARTUP COMPLETE ===\n")
-        self.log("🟢 Bot v3.0 STARTED — AUTO-TARGETING MODE")
-        self.log("👁️ Scanning for opponents... anyone who attacks you gets DECIMATED")
+        self.log("🟢 Bot v3.0 HOTFIX 5 — MANUAL TARGET MODE")
+        self.log("💤 Bot is IDLE — does NOTHING until you press F9 near an opponent")
         self.log(f"⚔️ Melee: {self.player.melee_weapon} | 🏹 Range: {self.player.range_weapon} | 🔮 Mage: {self.player.mage_weapon}")
         self.log(f"💥 Spec: {self.player.spec_weapon} (max hit: {self.player.max_hit_with_spec()})")
         self.log("F12 = emergency stop")
 
         self._bot_active = True
-        scan_count = 0
+        self._idle_logged = False
 
         while self._bot_active:
             try:
@@ -1325,28 +1354,26 @@ class CombatBrain:
                 if self.fighting and self.target.locked:
                     # === IN COMBAT — run combat tick ===
                     self.combat_tick()
+                    self._idle_logged = False
 
                     # Check if target was lost (not seen for 3 seconds)
                     if self.target.last_seen_time and (time.time() - self.target.last_seen_time > 3.0):
-                        self.log("💀 Target gone — scanning for next opponent...")
+                        self.log("💀 Target gone — press F9 to lock a new target")
                         self.unlock_target()
                 else:
-                    # === SCANNING — look for anyone attacking us ===
-                    # Re-calibrate periodically
-                    scan_count += 1
-                    if scan_count % 60 == 0:  # Every ~1 second
-                        self.screen.find_window()
-                        self.calibrate_ui()
-
-                    if self.auto_scan_for_target():
-                        scan_count = 0  # Reset after lock
+                    # === IDLE — waiting for F9 target lock ===
+                    # HOTFIX 5: NO auto-scan — bot does NOTHING until you press F9
+                    # This prevents spam-clicking when nobody is attacking
+                    if not self._idle_logged:
+                        self.log("💤 IDLE — Press F9 near an opponent to lock target")
+                        self._idle_logged = True
 
                 # Timing
                 elapsed = time.time() - loop_start
                 if self.fighting:
                     sleep_time = max(0.010, 0.016 - elapsed)  # 60fps during combat
                 else:
-                    sleep_time = max(0.050, 0.100 - elapsed)  # 10fps while scanning (save CPU)
+                    sleep_time = max(0.050, 0.250 - elapsed)  # 4fps while idle (minimal CPU)
                 sleep_time += random.uniform(-0.003, 0.003)
                 time.sleep(max(0.005, sleep_time))
 

@@ -1,1 +1,59 @@
-placeholder
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decimator v3.0 Hotfix8 Installer</title>
+<style>
+body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; text-align: center; }
+h1 { color: #e94560; font-size: 2em; }
+.step { background: #16213e; border-radius: 12px; padding: 20px; margin: 20px auto; max-width: 700px; text-align: left; }
+.step h2 { color: #0f3460; font-size: 1.2em; }
+.cmd { background: #0a0a1a; color: #0ff; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.95em; word-break: break-all; margin: 10px 0; cursor: pointer; }
+.cmd:hover { background: #111133; }
+.btn { display: inline-block; background: #e94560; color: white; padding: 12px 30px; border-radius: 8px; font-size: 1.1em; cursor: pointer; border: none; margin: 8px; }
+.btn:hover { background: #c73550; }
+.ok { color: #0f0; font-weight: bold; display: none; margin-left: 10px; }
+textarea { display: none; }
+</style>
+</head>
+<body>
+<h1>Decimator v3.0 - Hotfix 8</h1>
+<p style="color:#e94560;font-size:1.2em;">DIAGNOSTIC BUILD - Saves screenshots to Desktop on F9</p>
+<p>Open PowerShell (Admin) and run these commands:</p>
+
+<div class="step">
+<h2 style="color:#0ff;">Step 1: Download bot</h2>
+<div class="cmd" onclick="copyCmd(this, 'cmd1')">Invoke-WebRequest -Uri "https://rotstrucking1-prog.github.io/Rotstrucking-app1/decimator_h8.py" -OutFile "$env:USERPROFILE\Desktop\RoatBot\bot.py"</div>
+<button class="btn" onclick="copyCmd(document.querySelector('.cmd'), 'cmd1')">COPY</button>
+<span class="ok" id="cmd1">Copied!</span>
+</div>
+
+<div class="step">
+<h2 style="color:#0ff;">Step 2: Run it</h2>
+<div class="cmd" onclick="copyCmd(this, 'cmd2')">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py</div>
+<button class="btn" onclick="copyCmd(document.querySelector('[onclick*=cmd2]'), 'cmd2')">COPY</button>
+<span class="ok" id="cmd2">Copied!</span>
+</div>
+
+<div class="step" style="border: 2px solid #e94560;">
+<h2 style="color:#e94560;">What's New in Hotfix 8</h2>
+<ul>
+<li><b>DIAGNOSTIC MODE</b> - Press F9 and bot saves screenshot to Desktop (bot_f9_lock_*.png)</li>
+<li><b>10-second minimum lock</b> - Bot stays locked and keeps clicking for 10+ seconds after F9</li>
+<li><b>Re-clicks center every 2.5 seconds</b> - Keeps attacking even without pixel detection</li>
+<li><b>Send me the screenshot</b> so I can see exactly what the bot sees and calibrate properly</li>
+</ul>
+</div>
+
+<script>
+function copyCmd(el, id) {
+  var t = el.textContent || el.innerText;
+  navigator.clipboard.writeText(t).then(function() {
+    document.getElementById(id).style.display = 'inline';
+    setTimeout(function() { document.getElementById(id).style.display = 'none'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>

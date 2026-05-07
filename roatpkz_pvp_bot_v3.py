@@ -1250,31 +1250,52 @@ class CombatBrain:
     # ---- TARGET LOCK ----
 
     def lock_target(self):
-        """Lock onto nearest opponent — called when user presses the button."""
-        # Re-calibrate in case window moved
-        self.screen.find_window()
-        self.calibrate_ui()
-        frame = self.screen.capture()
-        if frame is None:
-            self.log("❌ Can't capture screen")
+        """Lock onto nearest opponent — called when user presses the button.
+        HOTFIX 5b: Just click center of game viewport. No pixel scanning.
+        Brad positions camera on opponent, presses F9, bot clicks and fights."""
+        # Re-find and focus the game window
+        if not self.screen.find_window():
+            self.log("❌ Can't find Roat Pkz window!")
+            # Print all windows to help debug
+            try:
+                import pygetwindow as gw
+                all_wins = gw.getAllWindows()
+                self.log("All open windows:")
+                for w in all_wins:
+                    if w.width > 100 and w.height > 100 and w.title.strip():
+                        self.log(f"  [{w.width}x{w.height}] '{w.title}'")
+            except:
+                pass
             return False
 
-        pos = self.screen.find_any_target(frame)
-        if pos:
-            self.target = TargetState(
-                locked=True,
-                screen_pos=pos,
-                last_seen_time=time.time(),
-            )
-            self.fighting = True
-            self.fight_start_time = time.time()
-            self.total_fights += 1
-            self.ticker.reset()
-            self.log(f"🎯 TARGET LOCKED at ({pos[0]}, {pos[1]})")
-            return True
-        else:
-            self.log("❌ No target found — move camera near an opponent")
-            return False
+        self.screen.focus_game()
+        time.sleep(0.1)
+
+        # Click CENTER of game viewport — that's where the opponent should be
+        wx, wy, ww, wh = self.screen.window_rect
+        # Viewport center (left 65% of window, top 70% — exclude minimap/inv/chat)
+        vp_center_x = wx + int(ww * 0.35)
+        vp_center_y = wy + int(wh * 0.35)
+
+        self.log(f"🎯 Window: ({wx},{wy}) {ww}x{wh}")
+        self.log(f"🎯 Clicking viewport center: ({vp_center_x}, {vp_center_y})")
+
+        # Click to attack
+        self.mouse.move_to(vp_center_x, vp_center_y, speed="fast")
+        time.sleep(0.05)
+        self.mouse.click()
+
+        self.target = TargetState(
+            locked=True,
+            screen_pos=(vp_center_x, vp_center_y),
+            last_seen_time=time.time(),
+        )
+        self.fighting = True
+        self.fight_start_time = time.time()
+        self.total_fights += 1
+        self.ticker.reset()
+        self.log(f"🎯 TARGET LOCKED — attacking at ({vp_center_x}, {vp_center_y})")
+        return True
 
     def unlock_target(self):
         """Release target lock."""

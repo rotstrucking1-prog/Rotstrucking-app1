@@ -829,6 +829,27 @@ class ScreenReader:
         cx = int(np.mean(coords[1]))
         return (cx, cy + 20)
 
+    def detect_opponent_overlay(self, frame: np.ndarray) -> bool:
+        """Detect opponent info overlay in top-left of viewport.
+        In RuneLite, when in combat the opponent's name + HP bar appears
+        in the top-left area (~5-200px from left, ~25-60px from top).
+        The HP bar is green/red. If we see it, we're in combat."""
+        if frame is None or frame.shape[0] < 80 or frame.shape[1] < 220:
+            return False
+        # Scan top-left region where opponent overlay appears
+        # RuneLite overlay: roughly x=5-200, y=25-60 (may vary slightly)
+        region = frame[20:70, 5:210]
+        if region.size == 0:
+            return False
+        # Look for the HP bar — bright green or bright red pixels
+        # frame is BGRA from mss, so: [0]=B, [1]=G, [2]=R
+        green_px = (region[:, :, 1] > 100) & (region[:, :, 2] < 80) & (region[:, :, 0] < 80)
+        red_px = (region[:, :, 2] > 100) & (region[:, :, 1] < 80) & (region[:, :, 0] < 80)
+        bar_pixels = int(np.count_nonzero(green_px)) + int(np.count_nonzero(red_px))
+        # HP bar is ~100+ pixels wide x ~5 pixels tall = ~500 colored pixels
+        # A real bar should have at least ~30 pixels
+        return bar_pixels >= 25
+
 # ============================================================
 #  MOUSE CONTROLLER — Humanized Bezier movement
 # ============================================================
@@ -1189,12 +1210,14 @@ class CombatBrain:
 
         # ---- READ ALL STATE ----
         # HOTFIX 5: Force all to 100% — orb positions not calibrated for Roat Pkz yet
-        # Once Brad sends a screenshot, we'll map the real orb pixel locations
         self.player.hp_percent = 100.0
         self.player.prayer_percent = 100.0
         self.player.spec_percent = 100.0
 
-        # Track target
+        # HOTFIX 7: Use opponent info overlay (top-left) as primary combat signal
+        overlay_visible = self.screen.detect_opponent_overlay(frame)
+
+        # Track target via character HP bar (secondary)
         if self.target.locked:
             new_pos = self.screen.find_target_near(frame, self.target.screen_pos)
             if new_pos:
@@ -1206,14 +1229,13 @@ class CombatBrain:
                 if opp_hp >= 0:
                     self.target.prev_hp = self.target.hp_percent
                     self.target.hp_percent = opp_hp
-                    # Detect if they ate (HP went UP)
                     self.target.is_eating = opp_hp > self.target.prev_hp + 3
 
                 # Read their overhead prayer
                 self.target.overhead_prayer = self.screen.read_overhead_prayer(frame, new_pos)
 
                 # Read their attack style
-                our_center = (frame.shape[1] // 2, frame.shape[0] // 2)  # we're always center
+                our_center = (frame.shape[1] // 2, frame.shape[0] // 2)
                 style, speed = self.screen.detect_opponent_style(frame, new_pos, our_center)
                 if style != CombatStyle.UNKNOWN:
                     if style == self.target.detected_style:
@@ -1228,15 +1250,47 @@ class CombatBrain:
                     self.ticker.sync_from_hitsplat(time.time())
                     self.ticker.register_opp_attack(speed)
 
+            elif overlay_visible:
+                # Can't find HP bar above character, but overlay says we're in combat
+                # Keep target alive — re-click center to maintain engagement
+                self.target.last_seen_time = time.time()
+                if not hasattr(self, '_last_reclick') or time.time() - self._last_reclick > 2.5:
+                    # Re-click center every ~2.5s to keep attacking
+                    wx, wy, ww, wh = self.screen.window_rect
+                    cx = wx + int(ww * 0.45)
+                    cy = wy + int(wh * 0.40)
+                    self.mouse.move_to(cx + random.randint(-15, 15),
+                                       cy + random.randint(-15, 15), speed="fast")
+                    time.sleep(0.03)
+                    self.mouse.click()
+                    self._last_reclick = time.time()
+                    self.log("🔄 Re-clicking target (overlay visible, tracking lost)")
             else:
-                # Lost target
+                # No overlay AND no HP bar — truly lost
                 if time.time() - self.target.last_seen_time > 3.0:
                     self.log("❌ Target lost!")
                     self.target.locked = False
                     return
 
         if not self.target.is_valid():
-            return
+            # HOTFIX 7: Even if target object isn't valid, if overlay is showing
+            # we're being attacked — re-engage
+            if overlay_visible and not self.target.locked:
+                self.log("⚠️ Opponent overlay detected — auto re-engaging!")
+                self.target.locked = True
+                self.target.last_seen_time = time.time()
+                # Click center to attack
+                wx, wy, ww, wh = self.screen.window_rect
+                cx = wx + int(ww * 0.45)
+                cy = wy + int(wh * 0.40)
+                self.mouse.move_to(cx + random.randint(-10, 10),
+                                   cy + random.randint(-10, 10), speed="fast")
+                time.sleep(0.03)
+                self.mouse.click()
+                self._last_reclick = time.time()
+                self.fighting = True
+            else:
+                return
 
         # ---- TICK TIMING ----
         ticks_to_our_atk = self.ticker.ticks_until_our_attack()
@@ -1454,11 +1508,30 @@ class CombatBrain:
                         self.log("💀 Target gone — press F9 to lock a new target")
                         self.unlock_target()
                 else:
-                    # === IDLE — waiting for F9 target lock ===
-                    # HOTFIX 5: NO auto-scan — bot does NOTHING until you press F9
-                    # This prevents spam-clicking when nobody is attacking
-                    if not self._idle_logged:
-                        self.log("💤 IDLE — Press F9 near an opponent to lock target")
+                    # === IDLE — waiting for F9 or auto-detect via overlay ===
+                    # HOTFIX 7: Also check opponent overlay — if someone attacks Brad,
+                    # the overlay appears even without F9. Auto-engage.
+                    idle_frame = self.screen.capture()
+                    if idle_frame is not None and self.screen.detect_opponent_overlay(idle_frame):
+                        self.log("⚡ ATTACKED! Opponent overlay detected — auto-engaging!")
+                        self.screen.focus_game()
+                        time.sleep(0.05)
+                        wx, wy, ww, wh = self.screen.window_rect
+                        cx = wx + int(ww * 0.45)
+                        cy = wy + int(wh * 0.40)
+                        self.mouse.move_to(cx + random.randint(-10, 10),
+                                           cy + random.randint(-10, 10), speed="fast")
+                        time.sleep(0.03)
+                        self.mouse.click()
+                        self.target = TargetState()
+                        self.target.locked = True
+                        self.target.screen_pos = (cx, cy)
+                        self.target.last_seen_time = time.time()
+                        self.fighting = True
+                        self._last_reclick = time.time()
+                        self._idle_logged = False
+                    elif not self._idle_logged:
+                        self.log("💤 IDLE — Press F9 or wait (auto-detects attackers)")
                         self._idle_logged = True
 
                 # Timing

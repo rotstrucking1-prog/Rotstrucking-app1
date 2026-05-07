@@ -474,7 +474,7 @@ class ScreenReader:
             # Match order: "roat" first, then "pkz", then any "runelite"
             for keyword in ["roat", "pkz", "runelite"]:
                 for hwnd, title, x, y, w, h in found_wins:
-                    if keyword in title.lower():
+                    if keyword in title.lower() and "decimator" not in title.lower():
                         if w > 500 and h > 400:
                             self.window_rect = (x, y, w, h)
                             self._hwnd = hwnd  # Store hwnd for direct win32 focus
@@ -500,7 +500,7 @@ class ScreenReader:
                     print(f"  [{w.width}x{w.height}] '{w.title}'")
             for keyword in ["roat", "pkz", "runelite"]:
                 for w in all_wins:
-                    if keyword in w.title.lower() and w.width > 500 and w.height > 400:
+                    if keyword in w.title.lower() and "decimator" not in w.title.lower() and w.width > 500 and w.height > 400:
                         self.window_rect = (w.left, w.top, w.width, w.height)
                         self.window_obj = w
                         self._hwnd = None

@@ -36,6 +36,7 @@ import os
 import json
 import threading
 import ctypes
+import ctypes.wintypes
 import struct
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, List, Dict
@@ -437,31 +438,77 @@ class ScreenReader:
         self.sct = mss.mss()
         self.window_rect = None  # (x, y, w, h) of Roat Pkz window
         self.window_obj = None   # pygetwindow object — for .activate()
+        self._hwnd = None        # win32 window handle — for reliable focus
         self.last_frame = None
         self.frame_time = 0.0
 
     def find_window(self) -> bool:
-        """Find the Roat Pkz game window (NOT regular RuneLite)."""
+        """Find the Roat Pkz game window using win32 API (reliable) + pygetwindow fallback."""
+        # === METHOD 1: win32 API EnumWindows — most reliable ===
+        try:
+            found_wins = []
+            def _enum_cb(hwnd, _):
+                if ctypes.windll.user32.IsWindowVisible(hwnd):
+                    length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+                    if length > 0:
+                        buf = ctypes.create_unicode_buffer(length + 1)
+                        ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
+                        title = buf.value
+                        if title.strip():
+                            rect = ctypes.wintypes.RECT()
+                            ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+                            w = rect.right - rect.left
+                            h = rect.bottom - rect.top
+                            if w > 200 and h > 200:
+                                found_wins.append((hwnd, title, rect.left, rect.top, w, h))
+                return True
+
+            WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+            ctypes.windll.user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
+
+            print("=== ALL WINDOWS (win32) ===")
+            for hwnd, title, x, y, w, h in found_wins:
+                print(f"  [{w}x{h}] hwnd={hwnd} '{title}'")
+            print("===========================")
+
+            # Match order: "roat" first, then "pkz", then any "runelite"
+            for keyword in ["roat", "pkz", "runelite"]:
+                for hwnd, title, x, y, w, h in found_wins:
+                    if keyword in title.lower():
+                        if w > 500 and h > 400:
+                            self.window_rect = (x, y, w, h)
+                            self._hwnd = hwnd  # Store hwnd for direct win32 focus
+                            # Also get pygetwindow obj as backup
+                            try:
+                                for gw_win in gw.getAllWindows():
+                                    if gw_win.title == title:
+                                        self.window_obj = gw_win
+                                        break
+                            except Exception:
+                                self.window_obj = None
+                            print(f">>> MATCHED: '{title}' hwnd={hwnd} at ({x},{y}) {w}x{h}")
+                            return True
+        except Exception as e:
+            print(f"win32 window search error: {e}")
+
+        # === METHOD 2: pygetwindow fallback ===
         try:
             all_wins = gw.getAllWindows()
-            # First pass: show all windows with size for debugging
-            print("=== ALL WINDOWS ===")
+            print("=== FALLBACK: pygetwindow ===")
             for w in all_wins:
                 if w.width > 200 and w.height > 200 and w.title.strip():
                     print(f"  [{w.width}x{w.height}] '{w.title}'")
-            print("===================")
-            # Match order: "roat" first, then "pkz", then any "runelite"
             for keyword in ["roat", "pkz", "runelite"]:
                 for w in all_wins:
-                    title = w.title.lower()
-                    if keyword in title:
-                        if w.width > 500 and w.height > 400:
-                            self.window_rect = (w.left, w.top, w.width, w.height)
-                            self.window_obj = w
-                            print(f">>> MATCHED WINDOW: '{w.title}' at ({w.left},{w.top}) {w.width}x{w.height}")
-                            return True
+                    if keyword in w.title.lower() and w.width > 500 and w.height > 400:
+                        self.window_rect = (w.left, w.top, w.width, w.height)
+                        self.window_obj = w
+                        self._hwnd = None
+                        print(f">>> MATCHED (fallback): '{w.title}' at ({w.left},{w.top}) {w.width}x{w.height}")
+                        return True
         except Exception as e:
-            print(f"Window search error: {e}")
+            print(f"pygetwindow fallback error: {e}")
+
         print(">>> NO GAME WINDOW FOUND!")
         return False
 
@@ -469,15 +516,39 @@ class ScreenReader:
     find_game_window = find_window
 
     def focus_game(self):
-        """Bring Roat Pkz window to foreground before any click/key action."""
+        """Bring Roat Pkz window to foreground before any click/key action.
+        Uses win32 API directly — pygetwindow.activate() is unreliable."""
         try:
-            if self.window_obj:
-                if not self.window_obj.isActive:
-                    self.window_obj.activate()
-                    time.sleep(0.05)  # Small delay for OS to bring window up
+            # Prefer stored hwnd from find_window(), fallback to FindWindowW
+            hwnd = getattr(self, '_hwnd', None)
+            if not hwnd and self.window_obj:
+                try:
+                    hwnd = ctypes.windll.user32.FindWindowW(None, self.window_obj.title)
+                except Exception:
+                    pass
+            if hwnd or self.window_obj:
+                if hwnd:
+                    # ShowWindow(hwnd, SW_RESTORE=9) in case minimized
+                    ctypes.windll.user32.ShowWindow(hwnd, 9)
+                    # SetForegroundWindow — the reliable way
+                    ctypes.windll.user32.SetForegroundWindow(hwnd)
+                    time.sleep(0.1)
+                else:
+                    # Fallback to pygetwindow
+                    try:
+                        self.window_obj.activate()
+                        time.sleep(0.1)
+                    except Exception:
+                        pass
                 # Refresh window rect in case it moved
-                self.window_rect = (self.window_obj.left, self.window_obj.top,
-                                    self.window_obj.width, self.window_obj.height)
+                if hwnd:
+                    rect = ctypes.wintypes.RECT()
+                    ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect))
+                    self.window_rect = (rect.left, rect.top,
+                                        rect.right - rect.left, rect.bottom - rect.top)
+                elif self.window_obj:
+                    self.window_rect = (self.window_obj.left, self.window_obj.top,
+                                        self.window_obj.width, self.window_obj.height)
         except Exception:
             # If activate fails, try minimize+restore as fallback
             try:
@@ -1273,9 +1344,10 @@ class CombatBrain:
 
         # Click CENTER of game viewport — that's where the opponent should be
         wx, wy, ww, wh = self.screen.window_rect
-        # Viewport center (left 65% of window, top 70% — exclude minimap/inv/chat)
-        vp_center_x = wx + int(ww * 0.35)
-        vp_center_y = wy + int(wh * 0.35)
+        # True viewport center: ~45% from left (avoid minimap on right), ~40% from top
+        # Standard RuneLite: game viewport fills left ~75% of window, top ~70%
+        vp_center_x = wx + int(ww * 0.45)
+        vp_center_y = wy + int(wh * 0.40)
 
         self.log(f"🎯 Window: ({wx},{wy}) {ww}x{wh}")
         self.log(f"🎯 Clicking viewport center: ({vp_center_x}, {vp_center_y})")

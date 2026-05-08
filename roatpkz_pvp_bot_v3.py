@@ -1272,7 +1272,6 @@ class CombatBrain:
                 # Keep target alive — re-click center to maintain engagement
                 self.target.last_seen_time = time.time()
                 if not hasattr(self, '_last_reclick') or time.time() - self._last_reclick > 2.5:
-                    # Re-click center every ~2.5s to keep attacking
                     wx, wy, ww, wh = self.screen.window_rect
                     cx = wx + int(ww * 0.45)
                     cy = wy + int(wh * 0.52)
@@ -1281,7 +1280,6 @@ class CombatBrain:
                     time.sleep(0.03)
                     self.mouse.click()
                     self._last_reclick = time.time()
-                    self.log("🔄 Re-clicking target (overlay visible, tracking lost)")
             else:
                 # No overlay AND no HP bar — truly lost
                 if time.time() - self.target.last_seen_time > 15.0:
@@ -1529,354 +1527,40 @@ class CombatBrain:
                     self.combat_tick()
                     self._idle_logged = False
 
-                    # HOTFIX 8: Stay locked minimum 10 seconds. Re-click every 2.5s.
-                    lock_age = time.time() - getattr(self, '_lock_time', time.time())
-                    if lock_age < 10.0:
-                        # Within minimum lock period -- keep fighting, re-click periodically
-                        if not hasattr(self, '_last_reclick') or time.time() - self._last_reclick > 2.5:
-                            wx, wy, ww, wh = self.screen.window_rect
-                            cx = wx + int(ww * 0.45) + random.randint(-8, 8)
-                            cy = wy + int(wh * 0.52) + random.randint(-8, 8)
-                            self.mouse.move_to(cx, cy, speed="fast")
-                            time.sleep(0.03)
-                            self.mouse.click()
-                            self._last_reclick = time.time()
-                            self.target.last_seen_time = time.time()
-                    else:
-                        # After 10s, check overlay to decide if still in combat
-                        check_frame = self.screen.capture()
-                        still_fighting = check_frame is not None and self.screen.detect_opponent_overlay(check_frame)
-                        if still_fighting:
-                            self.target.last_seen_time = time.time()
-                            self._lock_time = time.time()
-                            if not hasattr(self, '_last_reclick') or time.time() - self._last_reclick > 2.5:
-                                wx, wy, ww, wh = self.screen.window_rect
-                                cx = wx + int(ww * 0.45) + random.randint(-8, 8)
-                                cy = wy + int(wh * 0.52) + random.randint(-8, 8)
-                                self.mouse.move_to(cx, cy, speed="fast")
-                                time.sleep(0.03)
-                                self.mouse.click()
-                                self._last_reclick = time.time()
-                        elif self.target.last_seen_time and (time.time() - self.target.last_seen_time > 5.0):
-                            self.log("Target gone -- press F9 to lock new target")
-                            self.unlock_target()
+                    # HOTFIX 10: Single click only. Wait to be attacked.
+                    # Bot does NOT re-click. F9 clicked once, now we wait.
+                    lock_age = time.time() - getattr(self, "_lock_time", time.time())
+                    if lock_age > 30.0:
+                        # 30s timeout — unlock if nothing happened
+                        self.log("30s timeout -- no combat. Press F9 to try again.")
+                        self.unlock_target()
+
                 else:
-                    # === IDLE — waiting for F9 or auto-detect via overlay ===
-                    # HOTFIX 7: Also check opponent overlay — if someone attacks Brad,
-                    # the overlay appears even without F9. Auto-engage.
-                    idle_frame = self.screen.capture()
-                    if idle_frame is not None and self.screen.detect_opponent_overlay(idle_frame):
-                        self.log("⚡ ATTACKED! Opponent overlay detected — auto-engaging!")
-                        self.screen.focus_game()
-                        time.sleep(0.05)
-                        wx, wy, ww, wh = self.screen.window_rect
-                        cx = wx + int(ww * 0.45)
-                        cy = wy + int(wh * 0.52)
-                        self.mouse.move_to(cx + random.randint(-10, 10),
-                                           cy + random.randint(-10, 10), speed="fast")
-                        time.sleep(0.03)
-                        self.mouse.click()
-                        self.target = TargetState()
-                        self.target.locked = True
-                        self.target.screen_pos = (cx, cy)
-                        self.target.last_seen_time = time.time()
-                        self.fighting = True
-                        self._last_reclick = time.time()
-                        self._idle_logged = False
-                    elif not self._idle_logged:
-                        self.log("💤 IDLE — Press F9 or wait (auto-detects attackers)")
+                    # === IDLE — waiting for F9 ===
+                    if not self._idle_logged:
+                        self.log("IDLE -- walk up to opponent and press F9")
                         self._idle_logged = True
 
-                # Timing
+                # Tick delay
                 elapsed = time.time() - loop_start
-                if self.fighting:
-                    sleep_time = max(0.010, 0.016 - elapsed)  # 60fps during combat
-                else:
-                    sleep_time = max(0.050, 0.250 - elapsed)  # 4fps while idle (minimal CPU)
-                sleep_time += random.uniform(-0.003, 0.003)
-                time.sleep(max(0.005, sleep_time))
+                sleep_time = max(0.05, 0.6 - elapsed)
+                time.sleep(sleep_time)
 
+            except KeyboardInterrupt:
+                break
             except Exception as e:
-                self.log(f"⚠️ Error: {e}")
-                time.sleep(0.1)
+                self.log(f"Loop error: {e}")
+                time.sleep(1)
 
-# ============================================================
-#  GUI — Control Panel with TARGET LOCK button
-# ============================================================
-class BotGUI:
-    def __init__(self, brain: CombatBrain):
-        self.brain = brain
-        self.root = None
-        self.running = False
-        self.combat_thread = None
+        self.log("Bot stopped.")
 
-        # F12 emergency stop listener
-        self.key_listener = Listener(on_press=self._on_key)
-        self.key_listener.daemon = True
-        self.key_listener.start()
 
-    def _on_key(self, key):
-        try:
-            if key == Key.f12:
-                self.emergency_stop()
-            elif key == Key.f9:
-                # F9 = quick target lock
-                if self.running:
-                    self.brain.lock_target()
-        except Exception:
-            pass
+# ---- ENTRY POINT ----
 
-    def emergency_stop(self):
-        self.running = False
-        self.brain.fighting = False
-        self.brain._bot_active = False
-        self.brain.unlock_target()
-        self.brain.log("🛑 F12 EMERGENCY STOP")
-        if self.root:
-            try:
-                self.status_label.config(text="STOPPED", foreground="red")
-            except Exception:
-                pass
-
-    def start_bot(self):
-        if self.running:
-            return
-        self.running = True
-        self.brain._bot_active = True
-        self.brain.log("✅ Bot ACTIVE — auto-targeting anyone who attacks you")
-        self.status_label.config(text="👁️ SCANNING — waiting for opponent...", foreground="yellow")
-        # Start main loop in thread
-        self.combat_thread = threading.Thread(target=self.brain.run, daemon=True)
-        self.combat_thread.start()
-
-    def stop_bot(self):
-        self.running = False
-        self.brain.fighting = False
-        self.brain._bot_active = False
-        self.brain.unlock_target()
-        self.status_label.config(text="STOPPED", foreground="red")
-
-    def target_lock(self):
-        """THE BUTTON — starts auto-targeting mode, or force-locks nearest target."""
-        if not self.running:
-            self.start_bot()
-            return
-
-        if self.brain.target.locked:
-            # Already locked — unlock and go back to scanning
-            self.brain.fighting = False
-            self.brain.unlock_target()
-            self.lock_btn.config(text="🎯 TARGET LOCK")
-            self.status_label.config(text="👁️ SCANNING — waiting for opponent...", foreground="yellow")
-        else:
-            # Force manual lock on nearest target
-            if self.brain.lock_target():
-                self.lock_btn.config(text="🔓 UNLOCK TARGET")
-                self.status_label.config(text="🔥 FIGHTING — DECIMATING TARGET", foreground="green")
-
-    def update_display(self):
-        """Update GUI labels every 100ms."""
-        if not self.root:
-            return
-
-        try:
-            # Tick info
-            ticks_us = self.brain.ticker.ticks_until_our_attack()
-            ticks_them = self.brain.ticker.ticks_until_opp_attack()
-            secs_us = self.brain.ticker.seconds_until_our_attack()
-            secs_them = self.brain.ticker.seconds_until_opp_attack()
-
-            tick_text = f"Our atk: {ticks_us}t ({secs_us:.1f}s) | Their atk: {ticks_them}t ({secs_them:.1f}s)"
-            self.tick_label.config(text=tick_text)
-
-            # HP info
-            hp_text = (f"Our HP: {self.brain.player.hp_percent:.0f}% | "
-                       f"Prayer: {self.brain.player.prayer_percent:.0f}% | "
-                       f"Spec: {self.brain.player.spec_percent:.0f}%")
-            self.hp_label.config(text=hp_text)
-
-            # Target info
-            if self.brain.target.locked:
-                t = self.brain.target
-                tgt_text = (f"Target HP: {t.hp_percent:.0f}% | "
-                           f"Pray: {t.overhead_prayer.value} | "
-                           f"Style: {t.detected_style.value} | "
-                           f"Speed: {t.detected_weapon_speed}t")
-                self.target_label.config(text=tgt_text)
-
-                # Best action
-                best = t.best_attack_style()
-                action_text = f"→ HIT WITH: {best.value.upper()} (through their {t.overhead_prayer.value} prayer)"
-                if t.is_in_ko_range(self.brain.player.max_hit_with_spec()):
-                    action_text = f"💀 KO RANGE — SPEC WITH {self.brain.player.spec_weapon.upper()}!"
-                self.action_label.config(text=action_text)
-            else:
-                self.target_label.config(text="No target locked")
-                if self.running:
-                    self.action_label.config(text="👁️ Auto-scanning for opponents...")
-                    self.status_label.config(text="👁️ SCANNING — waiting for opponent...", foreground="yellow")
-                else:
-                    self.action_label.config(text="Press START to begin auto-targeting")
-
-            # Combat log (last 8 entries)
-            log_text = "\n".join(self.brain.combat_log[-8:])
-            self.log_text.config(state="normal")
-            self.log_text.delete("1.0", "end")
-            self.log_text.insert("1.0", log_text)
-            self.log_text.config(state="disabled")
-
-            # Stats
-            stats_text = f"Fights: {self.brain.total_fights} | Kills: {self.brain.total_kills}"
-            self.stats_label.config(text=stats_text)
-
-        except Exception:
-            pass
-
-        if self.root:
-            self.root.after(100, self.update_display)
-
-    def build_gui(self):
-        self.root = tk.Tk()
-        self.root.title("ROAT PKZ DECIMATOR v3.0")
-        self.root.geometry("520x700")
-        self.root.configure(bg="#1a1a2e")
-        self.root.attributes("-topmost", True)
-
-        style = ttk.Style()
-        style.theme_use("clam")
-
-        # Title
-        title = tk.Label(self.root, text="☠️ ROAT PKZ DECIMATOR v3.0 ☠️",
-                         font=("Consolas", 16, "bold"), fg="#e94560", bg="#1a1a2e")
-        title.pack(pady=10)
-
-        # THE BUTTON
-        self.lock_btn = tk.Button(
-            self.root, text="🎯 TARGET LOCK", font=("Consolas", 20, "bold"),
-            bg="#e94560", fg="white", activebackground="#ff2e63",
-            command=self.target_lock, height=2, width=20
-        )
-        self.lock_btn.pack(pady=10)
-
-        # Status
-        self.status_label = tk.Label(self.root, text="IDLE", font=("Consolas", 12, "bold"),
-                                      fg="gray", bg="#1a1a2e")
-        self.status_label.pack()
-
-        # Tick counter
-        tick_frame = tk.LabelFrame(self.root, text="⏱ TICK ENGINE", font=("Consolas", 10),
-                                    fg="#0f3460", bg="#1a1a2e", labelanchor="n")
-        tick_frame.pack(fill="x", padx=10, pady=5)
-        self.tick_label = tk.Label(tick_frame, text="Waiting for sync...",
-                                    font=("Consolas", 10), fg="#16c79a", bg="#1a1a2e")
-        self.tick_label.pack(pady=3)
-
-        # Our stats
-        hp_frame = tk.LabelFrame(self.root, text="🫀 OUR STATUS", font=("Consolas", 10),
-                                  fg="#0f3460", bg="#1a1a2e", labelanchor="n")
-        hp_frame.pack(fill="x", padx=10, pady=5)
-        self.hp_label = tk.Label(hp_frame, text="HP: -- | Prayer: -- | Spec: --",
-                                  font=("Consolas", 10), fg="#16c79a", bg="#1a1a2e")
-        self.hp_label.pack(pady=3)
-
-        # Target info
-        tgt_frame = tk.LabelFrame(self.root, text="🎯 TARGET", font=("Consolas", 10),
-                                   fg="#0f3460", bg="#1a1a2e", labelanchor="n")
-        tgt_frame.pack(fill="x", padx=10, pady=5)
-        self.target_label = tk.Label(tgt_frame, text="No target",
-                                      font=("Consolas", 10), fg="#e94560", bg="#1a1a2e")
-        self.target_label.pack(pady=3)
-        self.action_label = tk.Label(tgt_frame, text="",
-                                      font=("Consolas", 11, "bold"), fg="#ffbd39", bg="#1a1a2e")
-        self.action_label.pack(pady=3)
-
-        # Weapon config
-        cfg_frame = tk.LabelFrame(self.root, text="⚙️ LOADOUT", font=("Consolas", 10),
-                                   fg="#0f3460", bg="#1a1a2e", labelanchor="n")
-        cfg_frame.pack(fill="x", padx=10, pady=5)
-
-        weapons = [
-            ("Melee:", "melee_weapon", self.brain.player.melee_weapon),
-            ("Range:", "range_weapon", self.brain.player.range_weapon),
-            ("Mage:", "mage_weapon", self.brain.player.mage_weapon),
-            ("Spec:", "spec_weapon", self.brain.player.spec_weapon),
-        ]
-        self.weapon_vars = {}
-        weapon_names = sorted(WEAPON_DB.keys())
-        for label_text, attr, default in weapons:
-            row = tk.Frame(cfg_frame, bg="#1a1a2e")
-            row.pack(fill="x", padx=5, pady=1)
-            tk.Label(row, text=label_text, font=("Consolas", 9), fg="#aaa", bg="#1a1a2e",
-                     width=7, anchor="e").pack(side="left")
-            var = tk.StringVar(value=default)
-            self.weapon_vars[attr] = var
-            combo = ttk.Combobox(row, textvariable=var, values=weapon_names, width=25, state="readonly")
-            combo.pack(side="left", padx=5)
-
-        # Apply loadout button
-        tk.Button(cfg_frame, text="Apply Loadout", font=("Consolas", 9),
-                  bg="#0f3460", fg="white", command=self.apply_loadout).pack(pady=5)
-
-        # Stats
-        self.stats_label = tk.Label(self.root, text="Fights: 0 | Kills: 0",
-                                     font=("Consolas", 10), fg="#aaa", bg="#1a1a2e")
-        self.stats_label.pack(pady=3)
-
-        # Combat log
-        log_frame = tk.LabelFrame(self.root, text="📋 COMBAT LOG", font=("Consolas", 10),
-                                   fg="#0f3460", bg="#1a1a2e", labelanchor="n")
-        log_frame.pack(fill="both", expand=True, padx=10, pady=5)
-        self.log_text = tk.Text(log_frame, font=("Consolas", 8), bg="#0d1117", fg="#16c79a",
-                                 height=8, state="disabled", wrap="word")
-        self.log_text.pack(fill="both", expand=True, padx=3, pady=3)
-
-        # Hotkey info
-        tk.Label(self.root, text="F9 = Quick Lock | F12 = Emergency Stop",
-                 font=("Consolas", 9), fg="#555", bg="#1a1a2e").pack(pady=5)
-
-        self.update_display()
-        self.root.mainloop()
-
-    def apply_loadout(self):
-        """Apply weapon selections from GUI dropdowns."""
-        for attr, var in self.weapon_vars.items():
-            setattr(self.brain.player, attr, var.get())
-        self.brain.log(f"✅ Loadout applied: melee={self.brain.player.melee_weapon}, "
-                       f"range={self.brain.player.range_weapon}, "
-                       f"mage={self.brain.player.mage_weapon}, "
-                       f"spec={self.brain.player.spec_weapon}")
-
-# ============================================================
-#  MAIN ENTRY POINT
-# ============================================================
 def main():
-    print("=" * 60)
-    print("  ☠️  ROAT PKZ DECIMATOR v3.0  ☠️")
-    print("  Tick-perfect NH tribrid combat bot")
-    print("=" * 60)
-    print()
-    print("  ONE BUTTON. FULL SEND. TARGET DIES.")
-    print()
-    print("  Controls:")
-    print("    🎯 TARGET LOCK button — lock onto nearest opponent")
-    print("    F9  — quick target lock (keyboard shortcut)")
-    print("    F12 — emergency stop (kills everything)")
-    print()
-    print("  Tick Engine:")
-    print(f"    Game tick: {TICK_DURATION}s ({TICK_MS}ms)")
-    print(f"    Weapons in database: {len(WEAPON_DB)}")
-    print(f"    Spec weapons ranked: {len(SPEC_PRIORITY)}")
-    print()
-
-    brain = CombatBrain()
-
-    if HAS_GUI:
-        gui = BotGUI(brain)
-        gui.build_gui()
-    else:
-        print("No GUI available — running headless")
-        brain.lock_target()
-        brain.run()
+    root = tk.Tk()
+    bot = DecimatorBot(root)
+    root.mainloop()
 
 if __name__ == "__main__":
     main()

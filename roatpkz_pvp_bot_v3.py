@@ -368,7 +368,7 @@ class TargetState:
     prev_hp: float = 100.0                       # previous HP reading
 
     def is_valid(self) -> bool:
-        return self.locked and (time.time() - self.last_seen_time) < 3.0
+        return self.locked and (time.time() - self.last_seen_time) < 15.0
 
     def is_in_ko_range(self, our_max_hit: int) -> bool:
         """Can we potentially KO them with a spec?"""
@@ -474,7 +474,7 @@ class ScreenReader:
             # Match order: "roat" first, then "pkz", then any "runelite"
             for keyword in ["roat", "pkz", "runelite"]:
                 for hwnd, title, x, y, w, h in found_wins:
-                    if keyword in title.lower():
+                    if keyword in title.lower() and "decimator" not in title.lower():
                         if w > 500 and h > 400:
                             self.window_rect = (x, y, w, h)
                             self._hwnd = hwnd  # Store hwnd for direct win32 focus
@@ -500,7 +500,7 @@ class ScreenReader:
                     print(f"  [{w.width}x{w.height}] '{w.title}'")
             for keyword in ["roat", "pkz", "runelite"]:
                 for w in all_wins:
-                    if keyword in w.title.lower() and w.width > 500 and w.height > 400:
+                    if keyword in w.title.lower() and "decimator" not in w.title.lower() and w.width > 500 and w.height > 400:
                         self.window_rect = (w.left, w.top, w.width, w.height)
                         self.window_obj = w
                         self._hwnd = None
@@ -832,23 +832,40 @@ class ScreenReader:
     def detect_opponent_overlay(self, frame: np.ndarray) -> bool:
         """Detect opponent info overlay in top-left of viewport.
         In RuneLite, when in combat the opponent's name + HP bar appears
-        in the top-left area (~5-200px from left, ~25-60px from top).
-        The HP bar is green/red. If we see it, we're in combat."""
-        if frame is None or frame.shape[0] < 80 or frame.shape[1] < 220:
+        in the top-left area. The HP bar is green/red."""
+        if frame is None or frame.shape[0] < 100 or frame.shape[1] < 250:
             return False
-        # Scan top-left region where opponent overlay appears
-        # RuneLite overlay: roughly x=5-200, y=25-60 (may vary slightly)
-        region = frame[20:70, 5:210]
+        # Scan a generous region — top 120px, left 250px of captured window
+        region = frame[0:120, 0:250]
         if region.size == 0:
             return False
-        # Look for the HP bar — bright green or bright red pixels
-        # frame is BGRA from mss, so: [0]=B, [1]=G, [2]=R
-        green_px = (region[:, :, 1] > 100) & (region[:, :, 2] < 80) & (region[:, :, 0] < 80)
-        red_px = (region[:, :, 2] > 100) & (region[:, :, 1] < 80) & (region[:, :, 0] < 80)
+        # BGR format from OpenCV — look for HP bar colors
+        # Green HP bar: high green channel
+        green_px = (region[:, :, 1] > 80) & (region[:, :, 2] < 100) & (region[:, :, 0] < 100)
+        # Red HP bar: high red channel  
+        red_px = (region[:, :, 2] > 80) & (region[:, :, 1] < 100) & (region[:, :, 0] < 100)
         bar_pixels = int(np.count_nonzero(green_px)) + int(np.count_nonzero(red_px))
-        # HP bar is ~100+ pixels wide x ~5 pixels tall = ~500 colored pixels
-        # A real bar should have at least ~30 pixels
-        return bar_pixels >= 25
+        return bar_pixels >= 15
+
+    def save_diagnostic(self, frame: np.ndarray, label: str = "diag"):
+        """Save a diagnostic screenshot to Desktop so Brad can see what bot captures."""
+        if frame is None:
+            return
+        try:
+            import os
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+            path = os.path.join(desktop, f"bot_{label}_{int(time.time())}.png")
+            cv2.imwrite(path, frame)
+            # Also save the top-left region separately for overlay analysis
+            tl_region = frame[0:120, 0:250]
+            tl_path = os.path.join(desktop, f"bot_{label}_topleft_{int(time.time())}.png")
+            cv2.imwrite(tl_path, tl_region)
+            print(f"[DIAG] Saved screenshot: {path}")
+            print(f"[DIAG] Saved top-left crop: {tl_path}")
+            print(f"[DIAG] Frame size: {frame.shape[1]}x{frame.shape[0]}")
+            print(f"[DIAG] Window rect: {self.window_rect}")
+        except Exception as e:
+            print(f"[DIAG] Failed to save: {e}")
 
 # ============================================================
 #  MOUSE CONTROLLER — Humanized Bezier movement
@@ -1258,7 +1275,7 @@ class CombatBrain:
                     # Re-click center every ~2.5s to keep attacking
                     wx, wy, ww, wh = self.screen.window_rect
                     cx = wx + int(ww * 0.45)
-                    cy = wy + int(wh * 0.40)
+                    cy = wy + int(wh * 0.52)
                     self.mouse.move_to(cx + random.randint(-15, 15),
                                        cy + random.randint(-15, 15), speed="fast")
                     time.sleep(0.03)
@@ -1267,7 +1284,7 @@ class CombatBrain:
                     self.log("🔄 Re-clicking target (overlay visible, tracking lost)")
             else:
                 # No overlay AND no HP bar — truly lost
-                if time.time() - self.target.last_seen_time > 3.0:
+                if time.time() - self.target.last_seen_time > 15.0:
                     self.log("❌ Target lost!")
                     self.target.locked = False
                     return
@@ -1282,7 +1299,7 @@ class CombatBrain:
                 # Click center to attack
                 wx, wy, ww, wh = self.screen.window_rect
                 cx = wx + int(ww * 0.45)
-                cy = wy + int(wh * 0.40)
+                cy = wy + int(wh * 0.52)
                 self.mouse.move_to(cx + random.randint(-10, 10),
                                    cy + random.randint(-10, 10), speed="fast")
                 time.sleep(0.03)
@@ -1375,13 +1392,11 @@ class CombatBrain:
     # ---- TARGET LOCK ----
 
     def lock_target(self):
-        """Lock onto nearest opponent — called when user presses the button.
-        HOTFIX 5b: Just click center of game viewport. No pixel scanning.
-        Brad positions camera on opponent, presses F9, bot clicks and fights."""
+        """Lock onto nearest opponent. F9 pressed.
+        HOTFIX 8: Saves diagnostic screenshot + stays locked minimum 10 seconds."""
         # Re-find and focus the game window
         if not self.screen.find_window():
-            self.log("❌ Can't find Roat Pkz window!")
-            # Print all windows to help debug
+            self.log("!! Can't find Roat Pkz window!")
             try:
                 import pygetwindow as gw
                 all_wins = gw.getAllWindows()
@@ -1394,20 +1409,29 @@ class CombatBrain:
             return False
 
         self.screen.focus_game()
-        time.sleep(0.1)
+        time.sleep(0.15)
 
-        # Click CENTER of game viewport — that's where the opponent should be
+        # HOTFIX 8: Capture and save diagnostic screenshot BEFORE clicking
+        diag_frame = self.screen.capture()
+        if diag_frame is not None:
+            self.screen.save_diagnostic(diag_frame, "f9_lock")
+            overlay = self.screen.detect_opponent_overlay(diag_frame)
+            self.log(f"[DIAG] Overlay detected: {overlay}")
+            self.log(f"[DIAG] Frame shape: {diag_frame.shape}")
+        else:
+            self.log("[DIAG] capture() returned None!")
+
+        # Click CENTER of game viewport
         wx, wy, ww, wh = self.screen.window_rect
-        # True viewport center: ~45% from left (avoid minimap on right), ~40% from top
-        # Standard RuneLite: game viewport fills left ~75% of window, top ~70%
         vp_center_x = wx + int(ww * 0.45)
-        vp_center_y = wy + int(wh * 0.40)
+        vp_center_y = wy + int(wh * 0.52)
 
-        self.log(f"🎯 Window: ({wx},{wy}) {ww}x{wh}")
-        self.log(f"🎯 Clicking viewport center: ({vp_center_x}, {vp_center_y})")
+        self.log(f"Window: ({wx},{wy}) {ww}x{wh}")
+        self.log(f"Clicking viewport center: ({vp_center_x}, {vp_center_y})")
 
         # Click to attack
-        self.mouse.move_to(vp_center_x, vp_center_y, speed="fast")
+        self.mouse.move_to(vp_center_x + random.randint(-5, 5),
+                           vp_center_y + random.randint(-5, 5), speed="fast")
         time.sleep(0.05)
         self.mouse.click()
 
@@ -1418,9 +1442,11 @@ class CombatBrain:
         )
         self.fighting = True
         self.fight_start_time = time.time()
+        self._lock_time = time.time()  # HOTFIX 8: minimum lock duration
         self.total_fights += 1
         self.ticker.reset()
-        self.log(f"🎯 TARGET LOCKED — attacking at ({vp_center_x}, {vp_center_y})")
+        self._last_reclick = time.time()
+        self.log(f"TARGET LOCKED at ({vp_center_x}, {vp_center_y}) -- Screenshots saved to Desktop")
         return True
 
     def unlock_target(self):
@@ -1503,10 +1529,37 @@ class CombatBrain:
                     self.combat_tick()
                     self._idle_logged = False
 
-                    # Check if target was lost (not seen for 3 seconds)
-                    if self.target.last_seen_time and (time.time() - self.target.last_seen_time > 3.0):
-                        self.log("💀 Target gone — press F9 to lock a new target")
-                        self.unlock_target()
+                    # HOTFIX 8: Stay locked minimum 10 seconds. Re-click every 2.5s.
+                    lock_age = time.time() - getattr(self, '_lock_time', time.time())
+                    if lock_age < 10.0:
+                        # Within minimum lock period -- keep fighting, re-click periodically
+                        if not hasattr(self, '_last_reclick') or time.time() - self._last_reclick > 2.5:
+                            wx, wy, ww, wh = self.screen.window_rect
+                            cx = wx + int(ww * 0.45) + random.randint(-8, 8)
+                            cy = wy + int(wh * 0.52) + random.randint(-8, 8)
+                            self.mouse.move_to(cx, cy, speed="fast")
+                            time.sleep(0.03)
+                            self.mouse.click()
+                            self._last_reclick = time.time()
+                            self.target.last_seen_time = time.time()
+                    else:
+                        # After 10s, check overlay to decide if still in combat
+                        check_frame = self.screen.capture()
+                        still_fighting = check_frame is not None and self.screen.detect_opponent_overlay(check_frame)
+                        if still_fighting:
+                            self.target.last_seen_time = time.time()
+                            self._lock_time = time.time()
+                            if not hasattr(self, '_last_reclick') or time.time() - self._last_reclick > 2.5:
+                                wx, wy, ww, wh = self.screen.window_rect
+                                cx = wx + int(ww * 0.45) + random.randint(-8, 8)
+                                cy = wy + int(wh * 0.52) + random.randint(-8, 8)
+                                self.mouse.move_to(cx, cy, speed="fast")
+                                time.sleep(0.03)
+                                self.mouse.click()
+                                self._last_reclick = time.time()
+                        elif self.target.last_seen_time and (time.time() - self.target.last_seen_time > 5.0):
+                            self.log("Target gone -- press F9 to lock new target")
+                            self.unlock_target()
                 else:
                     # === IDLE — waiting for F9 or auto-detect via overlay ===
                     # HOTFIX 7: Also check opponent overlay — if someone attacks Brad,
@@ -1518,7 +1571,7 @@ class CombatBrain:
                         time.sleep(0.05)
                         wx, wy, ww, wh = self.screen.window_rect
                         cx = wx + int(ww * 0.45)
-                        cy = wy + int(wh * 0.40)
+                        cy = wy + int(wh * 0.52)
                         self.mouse.move_to(cx + random.randint(-10, 10),
                                            cy + random.randint(-10, 10), speed="fast")
                         time.sleep(0.03)

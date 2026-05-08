@@ -1,28 +1,750 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Decimator v4.1h1 Install</title>
-<style>body{background:#111;color:#0f0;font-family:monospace;padding:20px;max-width:900px;margin:0 auto}
-h1{color:#0ff;text-align:center}pre{background:#000;border:1px solid #0f0;padding:15px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;font-size:13px}
-.btn{display:block;background:#00aa00;color:#000;text-align:center;padding:18px;font-size:20px;font-weight:bold;border:none;border-radius:8px;cursor:pointer;margin:15px 0;width:100%}
-.btn:hover{background:#00ff00}.section{margin:20px 0;padding:15px;border:1px solid #333;border-radius:8px}
-.step{color:#0ff;font-size:16px;margin:10px 0}</style></head>
-<body><h1>🎮 DECIMATOR v4.1-hotfix1</h1>
-<h2 style="color:#ff0;text-align:center">COLOR MARKER EDITION — Corner+Edge Detection Fix</h2>
-<div class="section"><p class="step">STEP 1 — Copy this ONE command, paste into PowerShell:</p>
-<pre id="cmd">Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/decimator_v4.py" -OutFile "$env:USERPROFILE\Desktop\RoatBot\bot.py" ; Write-Host "DECIMATOR v4.1h1 INSTALLED" -ForegroundColor Green</pre>
-<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY INSTALL COMMAND</button></div>
-<div class="section"><p class="step">STEP 2 — Install packages (one time only):</p>
-<pre id="pip">cd $env:USERPROFILE\Desktop\RoatBot ; C:\Python314\python.exe -m pip install pyautogui pillow pynput</pre>
-<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('pip').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY PIP COMMAND</button></div>
-<div class="section"><p class="step">STEP 3 — Calibrate (REQUIRED first time):</p>
-<pre id="cal">cd $env:USERPROFILE\Desktop\RoatBot ; C:\Python314\python.exe bot.py --calibrate</pre>
-<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('cal').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY CALIBRATE COMMAND</button>
-<p style="color:#ff0">→ Point mouse to: 1) Top-left of slot 1 → Enter  2) Bottom-right of slot 28 → Enter  3) Ice Barrage spell → Enter  4) Spec bar → Enter</p></div>
-<div class="section"><p class="step">STEP 4 — Run bot:</p>
-<pre id="run">cd $env:USERPROFILE\Desktop\RoatBot ; C:\Python314\python.exe bot.py</pre>
-<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('run').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY RUN COMMAND</button></div>
-<div class="section"><h3 style="color:#0ff">What's Fixed in h1:</h3>
-<ul><li>🎨 Corner+Edge sampling — detects ALL tagged items (not just one)</li>
-<li>📊 Debug output shows exactly which slots detected per color</li>
-<li>🎯 Wider color ranges for semi-transparent RuneLite tag overlays</li>
-<li>🔑 F1=Combat/Spec | F2=Inventory | F4=Spellbook</li></ul></div>
-</body></html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decimator v4.2 Install</title>
+<style>
+body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+h1 { color: #ff4444; text-align: center; }
+h2 { color: #ffaa00; }
+.step { background: #16213e; border-left: 4px solid #ff4444; padding: 15px; margin: 15px 0; border-radius: 4px; }
+.code-box { background: #0d1117; border: 1px solid #333; padding: 15px; border-radius: 4px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; font-family: monospace; font-size: 12px; position: relative; }
+.copy-btn { display: block; margin: 10px auto; padding: 18px 50px; font-size: 22px; font-weight: bold; background: #ff4444; color: white; border: none; border-radius: 8px; cursor: pointer; }
+.copy-btn:hover { background: #cc0000; }
+.copy-btn.copied { background: #00cc44; }
+.cmd { background: #0d1117; padding: 10px; border-radius: 4px; font-family: monospace; margin: 8px 0; }
+</style>
+</head>
+<body>
+<h1>DECIMATOR v4.2</h1>
+<p style="text-align:center;color:#aaa;">PVP Assist Tool - Color Marker Edition + Debug Grid</p>
+
+<div class="step">
+<h2>Step 1: Copy the Code</h2>
+<button class="copy-btn" onclick="copyCode(this)">COPY DECIMATOR v4.2</button>
+<div class="code-box" id="code">#!/usr/bin/env python3
+&quot;&quot;&quot;
+ROAT PKZ DECIMATOR v4.2 — PVP Assist Tool (Color Marker Edition)
+================================================================
+Detects RuneLite inventory tag colors to find gear pieces.
+Blue=Q(Mage) Red=W(Melee) Green=E(Range) Yellow=R(Spec)
+
+HOTKEYS:
+  Q = Magic switch (equip blue items + F4 spellbook + click Ice Barrage)
+  W = Melee switch (equip red items + F1 combat tab)
+  E = Range switch (equip green items + F2 inventory tab)
+  R = Spec combo (equip yellow spec weapon + F1 combat tab + click spec bar + click target)
+  F12 = Pause / Resume
+
+CALIBRATE: python bot.py --calibrate
+  3-point calibration for exact slot sizing
+
+DEBUG:    python bot.py --debug
+  Screenshots game, draws grid overlay on all 28 slots, labels detected colors.
+  Saves debug_grid.png so you can verify alignment.
+
+REQUIREMENTS: pip install pyautogui pillow pynput
+&quot;&quot;&quot;
+
+import pyautogui
+import time
+import sys
+import os
+import ctypes
+import json
+import threading
+from PIL import Image, ImageGrab, ImageDraw, ImageFont
+from pynput import keyboard
+
+# --- SPEED ---
+pyautogui.PAUSE = 0
+pyautogui.FAILSAFE = False
+
+# --- COLOR DEFINITIONS ---
+# RuneLite tag colors are semi-transparent overlays at slot edges/corners.
+# These ranges are intentionally wide to catch blended pixels.
+COLOR_RANGES = {
+    &quot;blue&quot;:   {&quot;r&quot;: (0, 140),   &quot;g&quot;: (0, 140),   &quot;b&quot;: (120, 255)},
+    &quot;red&quot;:    {&quot;r&quot;: (120, 255), &quot;g&quot;: (0, 120),    &quot;b&quot;: (0, 120)},
+    &quot;green&quot;:  {&quot;r&quot;: (0, 140),   &quot;g&quot;: (120, 255),  &quot;b&quot;: (0, 140)},
+    &quot;yellow&quot;: {&quot;r&quot;: (150, 255), &quot;g&quot;: (150, 255),  &quot;b&quot;: (0, 120)},
+}
+
+# Color display names for debug
+COLOR_DRAW = {
+    &quot;blue&quot;:   (0, 120, 255),
+    &quot;red&quot;:    (255, 40, 40),
+    &quot;green&quot;:  (40, 220, 40),
+    &quot;yellow&quot;: (255, 220, 0),
+    None:     (128, 128, 128),
+}
+
+# --- INVENTORY GRID ---
+INV_COLS = 4
+INV_ROWS = 7
+INV_SLOTS = 28
+
+# Standard RuneLite inventory layout (relative to game window top-left).
+# These are the DEFAULT values — calibration overrides them.
+# x_start/y_start = top-left pixel of slot 0.
+# pitch_x/pitch_y = distance from one slot&#x27;s left edge to the next slot&#x27;s left edge.
+# slot_w/slot_h = clickable area of one slot (for color sampling bounds).
+INV_GRID = {
+    &quot;x_start&quot;: 563,  # left edge of slot 0
+    &quot;y_start&quot;: 213,  # top edge of slot 0
+    &quot;pitch_x&quot;: 42,   # pixels from slot N left to slot N+1 left (horizontally)
+    &quot;pitch_y&quot;: 36,   # pixels from slot N top to slot N+1 top (vertically)
+    &quot;slot_w&quot;: 36,     # pixel width of the actual slot box (for sampling)
+    &quot;slot_h&quot;: 32,     # pixel height of the actual slot box (for sampling)
+}
+
+# Special click positions relative to game window
+SPEC_BAR_RELATIVE = {&quot;x&quot;: 643, &quot;y&quot;: 423}
+ICE_BARRAGE_RELATIVE = {&quot;x&quot;: 687, &quot;y&quot;: 375}
+TARGET_RELATIVE = {&quot;x&quot;: 345, &quot;y&quot;: 268}
+
+# --- STATE ---
+paused = False
+running = True
+game_hwnd = None
+game_rect = None
+switch_lock = threading.Lock()
+
+# --- WIN32 HELPERS ---
+if sys.platform == &quot;win32&quot;:
+    import ctypes.wintypes
+    user32 = ctypes.windll.user32
+    EnumWindows = user32.EnumWindows
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+    GetWindowTextW = user32.GetWindowTextW
+    GetWindowTextLengthW = user32.GetWindowTextLengthW
+    IsWindowVisible = user32.IsWindowVisible
+    SetForegroundWindow = user32.SetForegroundWindow
+    GetForegroundWindow = user32.GetForegroundWindow
+    GetWindowRect = user32.GetWindowRect
+
+def find_game_window():
+    &quot;&quot;&quot;Find Roat Pkz window — excludes our own windows.&quot;&quot;&quot;
+    global game_hwnd, game_rect
+    results = []
+    def callback(hwnd, lParam):
+        if IsWindowVisible(hwnd):
+            length = GetWindowTextLengthW(hwnd)
+            if length &gt; 0:
+                buf = ctypes.create_unicode_buffer(length + 1)
+                GetWindowTextW(hwnd, buf, length + 1)
+                title = buf.value.lower()
+                if (&quot;roat&quot; in title or &quot;pkz&quot; in title) and &quot;decimator&quot; not in title:
+                    results.append(hwnd)
+        return True
+    EnumWindows(EnumWindowsProc(callback), 0)
+    if results:
+        game_hwnd = results[0]
+        rect = ctypes.wintypes.RECT()
+        GetWindowRect(game_hwnd, ctypes.byref(rect))
+        game_rect = (rect.left, rect.top, rect.right, rect.bottom)
+        return True
+    return False
+
+def is_game_focused():
+    if game_hwnd is None:
+        return False
+    return GetForegroundWindow() == game_hwnd
+
+def focus_game():
+    if game_hwnd:
+        try:
+            SetForegroundWindow(game_hwnd)
+            time.sleep(0.05)
+        except:
+            pass
+
+# --- SLOT POSITION HELPERS ---
+
+def get_slot_origin(slot_index):
+    &quot;&quot;&quot;Get the relative (to game window) top-left corner of a slot.&quot;&quot;&quot;
+    col = slot_index % INV_COLS
+    row = slot_index // INV_COLS
+    x = INV_GRID[&quot;x_start&quot;] + col * INV_GRID[&quot;pitch_x&quot;]
+    y = INV_GRID[&quot;y_start&quot;] + row * INV_GRID[&quot;pitch_y&quot;]
+    return (x, y)
+
+def get_slot_center_screen(slot_index):
+    &quot;&quot;&quot;Get absolute screen coordinates for center of inventory slot 0-27.&quot;&quot;&quot;
+    if game_rect is None:
+        return None
+    rx, ry = get_slot_origin(slot_index)
+    cx = rx + INV_GRID[&quot;slot_w&quot;] // 2
+    cy = ry + INV_GRID[&quot;slot_h&quot;] // 2
+    return (game_rect[0] + cx, game_rect[1] + cy)
+
+# --- INVENTORY COLOR SCANNING ---
+
+def detect_slot_color(img, slot_index):
+    &quot;&quot;&quot;Check what color marker tag is on this slot.
+    Samples CORNERS + EDGES of the slot where tag color is most visible
+    (item sprite covers the center, tag color shows around the edges).
+    Returns &#x27;blue&#x27;,&#x27;red&#x27;,&#x27;green&#x27;,&#x27;yellow&#x27; or None.
+    &quot;&quot;&quot;
+    sx, sy = get_slot_origin(slot_index)
+    w = INV_GRID[&quot;slot_w&quot;]
+    h = INV_GRID[&quot;slot_h&quot;]
+
+    # Build sample points: 4 corners (3x3 blocks) + 4 edge midpoints (3px each)
+    sample_points = []
+
+    # Corners — 3x3 pixel blocks at each corner
+    for dy in range(3):
+        for dx in range(3):
+            sample_points.append((sx + dx, sy + dy))              # top-left
+            sample_points.append((sx + w - 3 + dx, sy + dy))      # top-right
+            sample_points.append((sx + dx, sy + h - 3 + dy))      # bottom-left
+            sample_points.append((sx + w - 3 + dx, sy + h - 3 + dy))  # bottom-right
+
+    # Edge midpoints — 3 pixels each
+    mid_x = sx + w // 2
+    mid_y = sy + h // 2
+    for d in [-1, 0, 1]:
+        sample_points.append((mid_x + d, sy))          # top edge mid
+        sample_points.append((mid_x + d, sy + h - 1))  # bottom edge mid
+        sample_points.append((sx, mid_y + d))           # left edge mid
+        sample_points.append((sx + w - 1, mid_y + d))   # right edge mid
+
+    color_counts = {&quot;blue&quot;: 0, &quot;red&quot;: 0, &quot;green&quot;: 0, &quot;yellow&quot;: 0}
+    total_sampled = 0
+
+    for px, py in sample_points:
+        try:
+            r, g, b = img.getpixel((px, py))[:3]
+        except:
+            continue
+        total_sampled += 1
+        for color_name, ranges in COLOR_RANGES.items():
+            if (ranges[&quot;r&quot;][0] &lt;= r &lt;= ranges[&quot;r&quot;][1] and
+                ranges[&quot;g&quot;][0] &lt;= g &lt;= ranges[&quot;g&quot;][1] and
+                ranges[&quot;b&quot;][0] &lt;= b &lt;= ranges[&quot;b&quot;][1]):
+                color_counts[color_name] += 1
+                break
+
+    if total_sampled == 0:
+        return None
+
+    # Need at least 8% of sampled pixels matching
+    threshold = max(total_sampled * 0.08, 3)
+    best = max(color_counts, key=color_counts.get)
+    if color_counts[best] &gt;= threshold:
+        return best
+    return None
+
+def scan_inventory():
+    &quot;&quot;&quot;Screenshot game area and detect color-tagged slots.
+    Returns dict: {&#x27;blue&#x27;: [slot_indices], &#x27;red&#x27;: [...], ...}
+    &quot;&quot;&quot;
+    if game_rect is None:
+        find_game_window()
+    if game_rect is None:
+        return {}
+
+    # Refresh window position
+    rect = ctypes.wintypes.RECT()
+    GetWindowRect(game_hwnd, ctypes.byref(rect))
+    global game_rect
+    game_rect = (rect.left, rect.top, rect.right, rect.bottom)
+
+    # Screenshot just the game window
+    try:
+        img = ImageGrab.grab(bbox=game_rect)
+    except Exception as e:
+        print(f&quot;  Screenshot error: {e}&quot;)
+        return {}
+
+    result = {&quot;blue&quot;: [], &quot;red&quot;: [], &quot;green&quot;: [], &quot;yellow&quot;: []}
+    for slot in range(INV_SLOTS):
+        color = detect_slot_color(img, slot)
+        if color:
+            result[color].append(slot)
+
+    # Debug output
+    tagged = sum(len(v) for v in result.values())
+    if tagged &gt; 0:
+        parts = []
+        for c in [&quot;blue&quot;, &quot;red&quot;, &quot;green&quot;, &quot;yellow&quot;]:
+            if result[c]:
+                parts.append(f&quot;{c}:{result[c]}&quot;)
+        print(f&quot;  [SCAN] Found {tagged} tagged slots: {&#x27;, &#x27;.join(parts)}&quot;)
+    else:
+        print(&quot;  [SCAN] No tagged slots found&quot;)
+
+    return result
+
+# --- CLICKING ---
+
+def fast_click(x, y):
+    &quot;&quot;&quot;Instant move + click.&quot;&quot;&quot;
+    ctypes.windll.user32.SetCursorPos(int(x), int(y))
+    time.sleep(0.008)
+    pyautogui.click()
+
+def click_slots(slot_list):
+    &quot;&quot;&quot;Click a list of inventory slots rapidly.&quot;&quot;&quot;
+    for slot in slot_list:
+        center = get_slot_center_screen(slot)
+        if center:
+            fast_click(center[0], center[1])
+            time.sleep(0.035)
+
+def click_relative(rel_x, rel_y):
+    &quot;&quot;&quot;Click a position relative to game window.&quot;&quot;&quot;
+    if game_rect is None:
+        return
+    screen_x = game_rect[0] + rel_x
+    screen_y = game_rect[1] + rel_y
+    fast_click(screen_x, screen_y)
+
+# --- SWITCH FUNCTIONS ---
+
+def do_mage_switch():
+    &quot;&quot;&quot;Q — Equip all blue items + open spellbook + pre-select Ice Barrage.&quot;&quot;&quot;
+    if not switch_lock.acquire(blocking=False):
+        return
+    try:
+        if not is_game_focused():
+            return
+        print(&quot;[Q] MAGE SWITCH&quot;)
+        find_game_window()
+        inv = scan_inventory()
+        blue_slots = inv.get(&quot;blue&quot;, [])
+        if blue_slots:
+            focus_game()
+            click_slots(blue_slots)
+        time.sleep(0.02)
+        pyautogui.press(&quot;F4&quot;)
+        time.sleep(0.08)
+        click_relative(ICE_BARRAGE_RELATIVE[&quot;x&quot;], ICE_BARRAGE_RELATIVE[&quot;y&quot;])
+        print(f&quot;  -&gt; Equipped {len(blue_slots)} mage items + Ice Barrage ready&quot;)
+    finally:
+        switch_lock.release()
+
+def do_melee_switch():
+    &quot;&quot;&quot;W — Equip all red items + open combat tab.&quot;&quot;&quot;
+    if not switch_lock.acquire(blocking=False):
+        return
+    try:
+        if not is_game_focused():
+            return
+        print(&quot;[W] MELEE SWITCH&quot;)
+        find_game_window()
+        inv = scan_inventory()
+        red_slots = inv.get(&quot;red&quot;, [])
+        if red_slots:
+            focus_game()
+            click_slots(red_slots)
+        time.sleep(0.02)
+        pyautogui.press(&quot;F1&quot;)
+        print(f&quot;  -&gt; Equipped {len(red_slots)} melee items&quot;)
+    finally:
+        switch_lock.release()
+
+def do_range_switch():
+    &quot;&quot;&quot;E — Equip all green items + open inventory tab.&quot;&quot;&quot;
+    if not switch_lock.acquire(blocking=False):
+        return
+    try:
+        if not is_game_focused():
+            return
+        print(&quot;[E] RANGE SWITCH&quot;)
+        find_game_window()
+        inv = scan_inventory()
+        green_slots = inv.get(&quot;green&quot;, [])
+        if green_slots:
+            focus_game()
+            click_slots(green_slots)
+        time.sleep(0.02)
+        pyautogui.press(&quot;F2&quot;)
+        print(f&quot;  -&gt; Equipped {len(green_slots)} range items&quot;)
+    finally:
+        switch_lock.release()
+
+def do_spec_combo():
+    &quot;&quot;&quot;R — Full spec KO combo.&quot;&quot;&quot;
+    if not switch_lock.acquire(blocking=False):
+        return
+    try:
+        if not is_game_focused():
+            return
+        print(&quot;[R] SPEC COMBO&quot;)
+        find_game_window()
+        inv = scan_inventory()
+        yellow_slots = inv.get(&quot;yellow&quot;, [])
+        focus_game()
+        if yellow_slots:
+            click_slots(yellow_slots)
+            time.sleep(0.02)
+        pyautogui.press(&quot;F1&quot;)
+        time.sleep(0.06)
+        click_relative(SPEC_BAR_RELATIVE[&quot;x&quot;], SPEC_BAR_RELATIVE[&quot;y&quot;])
+        time.sleep(0.04)
+        click_relative(SPEC_BAR_RELATIVE[&quot;x&quot;], SPEC_BAR_RELATIVE[&quot;y&quot;])
+        time.sleep(0.04)
+        click_relative(TARGET_RELATIVE[&quot;x&quot;], TARGET_RELATIVE[&quot;y&quot;])
+        print(f&quot;  -&gt; Spec weapon equipped + spec bar + attack!&quot;)
+    finally:
+        switch_lock.release()
+
+# --- KEYBOARD LISTENER ---
+
+def on_key_press(key):
+    global paused, running
+    try:
+        if key == keyboard.Key.f12:
+            paused = not paused
+            state = &quot;PAUSED&quot; if paused else &quot;ACTIVE&quot;
+            print(f&quot;\n[F12] {state}&quot;)
+            return
+        if paused:
+            return
+        if hasattr(key, &#x27;char&#x27;) and key.char:
+            k = key.char.lower()
+            if k == &#x27;q&#x27;:
+                threading.Thread(target=do_mage_switch, daemon=True).start()
+            elif k == &#x27;w&#x27;:
+                threading.Thread(target=do_melee_switch, daemon=True).start()
+            elif k == &#x27;e&#x27;:
+                threading.Thread(target=do_range_switch, daemon=True).start()
+            elif k == &#x27;r&#x27;:
+                threading.Thread(target=do_spec_combo, daemon=True).start()
+    except:
+        pass
+
+# --- CALIBRATION MODE (3-POINT) ---
+
+def calibrate():
+    &quot;&quot;&quot;Interactive 3-point calibration for exact slot spacing.
+    Point 1: Center of slot 1 (top-left slot)
+    Point 2: Center of slot 2 (one slot right of slot 1)
+    Point 3: Center of slot 5 (one slot below slot 1)
+    From these 3 points we derive exact pitch_x, pitch_y, slot positions.
+    &quot;&quot;&quot;
+    print(&quot;\n&quot; + &quot;=&quot; * 50)
+    print(&quot;  DECIMATOR v4.2 CALIBRATION (3-Point)&quot;)
+    print(&quot;=&quot; * 50)
+    print(&quot;\nMake sure Roat Pkz is open with INVENTORY tab visible (F2).&quot;)
+    print(&quot;You&#x27;ll point your mouse to 5 positions.\n&quot;)
+
+    if not find_game_window():
+        print(&quot;ERROR: Can&#x27;t find Roat Pkz window!&quot;)
+        return
+
+    print(f&quot;Found game window at {game_rect}&quot;)
+    cal = {}
+
+    # Point 1: Center of slot 1
+    input(&quot;\n1. Move mouse to the CENTER of inventory SLOT 1 (top-left slot), press ENTER: &quot;)
+    mx1, my1 = pyautogui.position()
+    cal[&quot;slot1_cx&quot;] = mx1 - game_rect[0]
+    cal[&quot;slot1_cy&quot;] = my1 - game_rect[1]
+    print(f&quot;   Slot 1 center: ({cal[&#x27;slot1_cx&#x27;]}, {cal[&#x27;slot1_cy&#x27;]})&quot;)
+
+    # Point 2: Center of slot 2
+    input(&quot;\n2. Move mouse to the CENTER of inventory SLOT 2 (one right of slot 1), press ENTER: &quot;)
+    mx2, my2 = pyautogui.position()
+    cal[&quot;slot2_cx&quot;] = mx2 - game_rect[0]
+    cal[&quot;slot2_cy&quot;] = my2 - game_rect[1]
+    pitch_x = cal[&quot;slot2_cx&quot;] - cal[&quot;slot1_cx&quot;]
+    print(f&quot;   Slot 2 center: ({cal[&#x27;slot2_cx&#x27;]}, {cal[&#x27;slot2_cy&#x27;]}) -&gt; pitch_x = {pitch_x}&quot;)
+
+    # Point 3: Center of slot 5 (first slot of row 2)
+    input(&quot;\n3. Move mouse to the CENTER of inventory SLOT 5 (directly below slot 1), press ENTER: &quot;)
+    mx3, my3 = pyautogui.position()
+    cal[&quot;slot5_cx&quot;] = mx3 - game_rect[0]
+    cal[&quot;slot5_cy&quot;] = my3 - game_rect[1]
+    pitch_y = cal[&quot;slot5_cy&quot;] - cal[&quot;slot1_cy&quot;]
+    print(f&quot;   Slot 5 center: ({cal[&#x27;slot5_cx&#x27;]}, {cal[&#x27;slot5_cy&#x27;]}) -&gt; pitch_y = {pitch_y}&quot;)
+
+    # Derive slot dimensions (slot box is ~85% of pitch — rest is gap)
+    cal[&quot;pitch_x&quot;] = pitch_x
+    cal[&quot;pitch_y&quot;] = pitch_y
+    cal[&quot;slot_w&quot;] = max(int(pitch_x * 0.85), 20)
+    cal[&quot;slot_h&quot;] = max(int(pitch_y * 0.85), 20)
+    # Top-left of slot 0 = center minus half slot size
+    cal[&quot;x_start&quot;] = cal[&quot;slot1_cx&quot;] - cal[&quot;slot_w&quot;] // 2
+    cal[&quot;y_start&quot;] = cal[&quot;slot1_cy&quot;] - cal[&quot;slot_h&quot;] // 2
+
+    print(f&quot;\n   Derived: pitch=({pitch_x},{pitch_y}) slot_size=({cal[&#x27;slot_w&#x27;]}x{cal[&#x27;slot_h&#x27;]})&quot;)
+    print(f&quot;   Grid origin: ({cal[&#x27;x_start&#x27;]}, {cal[&#x27;y_start&#x27;]})&quot;)
+
+    # Point 4: Ice Barrage
+    print(&quot;\n4. Now open your SPELLBOOK (F4) and point to ICE BARRAGE.&quot;)
+    input(&quot;   Move mouse to ICE BARRAGE spell, press ENTER: &quot;)
+    mx, my = pyautogui.position()
+    cal[&quot;ice_barrage_x&quot;] = mx - game_rect[0]
+    cal[&quot;ice_barrage_y&quot;] = my - game_rect[1]
+    print(f&quot;   Ice Barrage: ({cal[&#x27;ice_barrage_x&#x27;]}, {cal[&#x27;ice_barrage_y&#x27;]})&quot;)
+
+    # Point 5: Spec bar
+    print(&quot;\n5. Now open COMBAT TAB (F1) and point to the SPEC BAR.&quot;)
+    input(&quot;   Move mouse to center of SPECIAL ATTACK bar, press ENTER: &quot;)
+    mx, my = pyautogui.position()
+    cal[&quot;spec_bar_x&quot;] = mx - game_rect[0]
+    cal[&quot;spec_bar_y&quot;] = my - game_rect[1]
+    print(f&quot;   Spec Bar: ({cal[&#x27;spec_bar_x&#x27;]}, {cal[&#x27;spec_bar_y&#x27;]})&quot;)
+
+    # Save
+    cal_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), &quot;calibration.json&quot;)
+    with open(cal_path, &quot;w&quot;) as f:
+        json.dump(cal, f, indent=2)
+
+    print(f&quot;\n{&#x27;=&#x27; * 50}&quot;)
+    print(f&quot;  CALIBRATION SAVED to {cal_path}&quot;)
+    print(f&quot;  Pitch: {pitch_x}px horizontal, {pitch_y}px vertical&quot;)
+    print(f&quot;  Slot box: {cal[&#x27;slot_w&#x27;]}x{cal[&#x27;slot_h&#x27;]}&quot;)
+    print(f&quot;{&#x27;=&#x27; * 50}&quot;)
+    print(&quot;\nNow run:  python bot.py --debug&quot;)
+    print(&quot;to verify the grid lines up with your inventory slots.&quot;)
+
+def load_calibration():
+    &quot;&quot;&quot;Load saved calibration if available.&quot;&quot;&quot;
+    global INV_GRID, ICE_BARRAGE_RELATIVE, SPEC_BAR_RELATIVE
+    cal_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), &quot;calibration.json&quot;)
+    if os.path.exists(cal_path):
+        try:
+            with open(cal_path) as f:
+                cal = json.load(f)
+            if &quot;pitch_x&quot; in cal:
+                # v4.2 calibration format
+                INV_GRID[&quot;x_start&quot;] = cal[&quot;x_start&quot;]
+                INV_GRID[&quot;y_start&quot;] = cal[&quot;y_start&quot;]
+                INV_GRID[&quot;pitch_x&quot;] = cal[&quot;pitch_x&quot;]
+                INV_GRID[&quot;pitch_y&quot;] = cal[&quot;pitch_y&quot;]
+                INV_GRID[&quot;slot_w&quot;] = cal[&quot;slot_w&quot;]
+                INV_GRID[&quot;slot_h&quot;] = cal[&quot;slot_h&quot;]
+            elif &quot;inv_x_start&quot; in cal:
+                # v4.1 calibration format (backwards compatible)
+                INV_GRID[&quot;x_start&quot;] = cal[&quot;inv_x_start&quot;]
+                INV_GRID[&quot;y_start&quot;] = cal[&quot;inv_y_start&quot;]
+                INV_GRID[&quot;pitch_x&quot;] = cal[&quot;slot_w&quot;]  # old format lumped gap into slot
+                INV_GRID[&quot;pitch_y&quot;] = cal[&quot;slot_h&quot;]
+                INV_GRID[&quot;slot_w&quot;] = int(cal[&quot;slot_w&quot;] * 0.85)
+                INV_GRID[&quot;slot_h&quot;] = int(cal[&quot;slot_h&quot;] * 0.85)
+            if &quot;ice_barrage_x&quot; in cal:
+                ICE_BARRAGE_RELATIVE[&quot;x&quot;] = cal[&quot;ice_barrage_x&quot;]
+                ICE_BARRAGE_RELATIVE[&quot;y&quot;] = cal[&quot;ice_barrage_y&quot;]
+            if &quot;spec_bar_x&quot; in cal:
+                SPEC_BAR_RELATIVE[&quot;x&quot;] = cal[&quot;spec_bar_x&quot;]
+                SPEC_BAR_RELATIVE[&quot;y&quot;] = cal[&quot;spec_bar_y&quot;]
+            print(f&quot;  Calibration loaded: pitch=({INV_GRID[&#x27;pitch_x&#x27;]},{INV_GRID[&#x27;pitch_y&#x27;]}) slot=({INV_GRID[&#x27;slot_w&#x27;]}x{INV_GRID[&#x27;slot_h&#x27;]})&quot;)
+            return True
+        except Exception as e:
+            print(f&quot;  Calibration load error: {e}&quot;)
+    return False
+
+# --- DEBUG MODE ---
+
+def debug_grid():
+    &quot;&quot;&quot;Screenshot the game, draw grid overlay on all 28 slots, show detected colors.
+    Saves debug_grid.png next to bot.py.
+    &quot;&quot;&quot;
+    print(&quot;\n&quot; + &quot;=&quot; * 50)
+    print(&quot;  DEBUG GRID OVERLAY&quot;)
+    print(&quot;=&quot; * 50)
+
+    if not find_game_window():
+        print(&quot;ERROR: Can&#x27;t find Roat Pkz window!&quot;)
+        return
+
+    print(f&quot;Game window: {game_rect}&quot;)
+    print(f&quot;Grid config: x_start={INV_GRID[&#x27;x_start&#x27;]} y_start={INV_GRID[&#x27;y_start&#x27;]}&quot;)
+    print(f&quot;  pitch_x={INV_GRID[&#x27;pitch_x&#x27;]} pitch_y={INV_GRID[&#x27;pitch_y&#x27;]}&quot;)
+    print(f&quot;  slot_w={INV_GRID[&#x27;slot_w&#x27;]} slot_h={INV_GRID[&#x27;slot_h&#x27;]}&quot;)
+
+    # Screenshot game window
+    try:
+        img = ImageGrab.grab(bbox=game_rect)
+    except Exception as e:
+        print(f&quot;Screenshot error: {e}&quot;)
+        return
+
+    draw = ImageDraw.Draw(img)
+
+    # Try to load a font for labels
+    try:
+        font = ImageFont.truetype(&quot;arial.ttf&quot;, 11)
+    except:
+        try:
+            font = ImageFont.truetype(&quot;/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf&quot;, 11)
+        except:
+            font = ImageFont.load_default()
+
+    print(&quot;\nSlot grid analysis:&quot;)
+    print(&quot;-&quot; * 60)
+
+    for slot in range(INV_SLOTS):
+        sx, sy = get_slot_origin(slot)
+        w = INV_GRID[&quot;slot_w&quot;]
+        h = INV_GRID[&quot;slot_h&quot;]
+
+        # Detect color for this slot
+        color = detect_slot_color(img, slot)
+        draw_color = COLOR_DRAW.get(color, (128, 128, 128))
+
+        # Draw rectangle around slot
+        line_width = 3 if color else 1
+        for i in range(line_width):
+            draw.rectangle(
+                [sx - i, sy - i, sx + w + i, sy + h + i],
+                outline=draw_color
+            )
+
+        # Label: slot number + color
+        label = f&quot;{slot + 1}&quot;
+        if color:
+            label += f&quot; {color[0].upper()}&quot;
+        draw.text((sx + 2, sy + 2), label, fill=draw_color, font=font)
+
+        # Also sample and print the actual corner pixel colors for debugging
+        col = slot % INV_COLS
+        row = slot // INV_COLS
+        try:
+            tl_pixel = img.getpixel((sx + 1, sy + 1))[:3]
+            tr_pixel = img.getpixel((sx + w - 2, sy + 1))[:3]
+            bl_pixel = img.getpixel((sx + 1, sy + h - 2))[:3]
+            br_pixel = img.getpixel((sx + w - 2, sy + h - 2))[:3]
+        except:
+            tl_pixel = tr_pixel = bl_pixel = br_pixel = (0, 0, 0)
+
+        color_str = color if color else &quot;---&quot;
+        print(f&quot;  Slot {slot + 1:2d} (r{row+1}c{col+1}) @ ({sx},{sy}): {color_str:6s}  &quot;
+              f&quot;TL={tl_pixel} TR={tr_pixel} BL={bl_pixel} BR={br_pixel}&quot;)
+
+    # Save debug image
+    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), &quot;debug_grid.png&quot;)
+    img.save(out_path)
+    print(&quot;-&quot; * 60)
+
+    # Summary
+    results = {}
+    for slot in range(INV_SLOTS):
+        c = detect_slot_color(img, slot)
+        if c:
+            if c not in results:
+                results[c] = []
+            results[c].append(slot + 1)
+
+    print(f&quot;\nSummary:&quot;)
+    if results:
+        for c in [&quot;blue&quot;, &quot;red&quot;, &quot;green&quot;, &quot;yellow&quot;]:
+            if c in results:
+                print(f&quot;  {c.upper()}: slots {results[c]}&quot;)
+    else:
+        print(&quot;  NO TAGGED SLOTS DETECTED&quot;)
+        print(&quot;  Check: Are inventory tags enabled in RuneLite? Is the inventory tab open?&quot;)
+
+    print(f&quot;\nDebug image saved: {out_path}&quot;)
+    print(&quot;Open it to verify the grid rectangles line up with your inventory slots.&quot;)
+    print(&quot;If they&#x27;re OFF, run:  python bot.py --calibrate&quot;)
+
+# --- MAIN ---
+
+def main():
+    print(&quot;=&quot; * 50)
+    print(&quot;  ROAT PKZ DECIMATOR v4.2&quot;)
+    print(&quot;  Color Marker PVP Assist Tool&quot;)
+    print(&quot;=&quot; * 50)
+
+    # Load calibration
+    load_calibration()
+
+    # Check for flags BEFORE finding game window
+    if len(sys.argv) &gt; 1:
+        if sys.argv[1] == &quot;--calibrate&quot;:
+            if not find_game_window():
+                print(&quot;\nERROR: Can&#x27;t find Roat Pkz window!&quot;)
+                return
+            calibrate()
+            return
+        elif sys.argv[1] == &quot;--debug&quot;:
+            find_game_window()
+            debug_grid()
+            return
+
+    # Normal mode
+    if not find_game_window():
+        print(&quot;\nWARNING: Roat Pkz window not found!&quot;)
+        print(&quot;Start the game and the bot will auto-detect it.&quot;)
+    else:
+        print(f&quot;\n  Game window found at {game_rect}&quot;)
+
+    print(&quot;\n  HOTKEYS:&quot;)
+    print(&quot;    Q = Mage switch (blue) + Ice Barrage&quot;)
+    print(&quot;    W = Melee switch (red) + combat tab&quot;)
+    print(&quot;    E = Range switch (green) + inventory tab&quot;)
+    print(&quot;    R = SPEC COMBO (yellow) + spec bar + attack&quot;)
+    print(&quot;    F12 = Pause / Resume&quot;)
+    print(&quot;\n  TOOLS:&quot;)
+    print(&quot;    python bot.py --calibrate    (3-point inventory calibration)&quot;)
+    print(&quot;    python bot.py --debug        (screenshot + grid overlay)&quot;)
+    print(&quot;\n  COLOR TAGS (RuneLite Inventory Tags):&quot;)
+    print(&quot;    Blue = Mage | Red = Melee | Green = Range | Yellow = Spec&quot;)
+    print(&quot;\n  Ready! Listening for hotkeys...&quot;)
+    print(&quot;  (Only fires when Roat Pkz is focused)&quot;)
+    print(&quot;=&quot; * 50)
+
+    # Start keyboard listener
+    listener = keyboard.Listener(on_press=on_key_press)
+    listener.start()
+
+    try:
+        while running:
+            find_game_window()
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print(&quot;\nShutting down...&quot;)
+    finally:
+        listener.stop()
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</div>
+</div>
+
+<div class="step">
+<h2>Step 2: Paste into bot.py</h2>
+<div class="cmd">1. Open Notepad (or any text editor)<br>
+2. Paste the code (Ctrl+V)<br>
+3. Save As: <b>%USERPROFILE%\Desktop\RoatBot\bot.py</b><br>
+4. Make sure "Save as type" = "All Files"</div>
+</div>
+
+<div class="step">
+<h2>Step 3: Calibrate (REQUIRED first time)</h2>
+<div class="cmd">Open PowerShell and run:<br><br>
+cd $env:USERPROFILE\Desktop\RoatBot<br>
+C:\Python314\python.exe bot.py --calibrate</div>
+<p>Point mouse to: center of slot 1, center of slot 2, center of slot 5, Ice Barrage, spec bar.</p>
+</div>
+
+<div class="step">
+<h2>Step 4: Debug (verify grid alignment)</h2>
+<div class="cmd">C:\Python314\python.exe bot.py --debug</div>
+<p>This screenshots your game and draws colored boxes around all 28 slots. Open <b>debug_grid.png</b> to check if the boxes line up with your inventory. If they&apos;re off, re-calibrate.</p>
+</div>
+
+<div class="step">
+<h2>Step 5: Run</h2>
+<div class="cmd">C:\Python314\python.exe bot.py</div>
+<p>Q=Mage(blue) W=Melee(red) E=Range(green) R=Spec(yellow) F12=Pause</p>
+</div>
+
+<script>
+function copyCode(btn) {
+    var code = document.getElementById("code").textContent;
+    navigator.clipboard.writeText(code).then(function() {
+        btn.textContent = "COPIED!";
+        btn.classList.add("copied");
+        setTimeout(function() { btn.textContent = "COPY DECIMATOR v4.2"; btn.classList.remove("copied"); }, 3000);
+    });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decimator v4.2 — One-Click Install</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { color: #ff4444; font-size: 2em; margin-bottom: 5px; }
+h2 { color: #ffaa00; font-size: 1.3em; margin: 25px 0 10px; }
+.subtitle { color: #888; margin-bottom: 30px; }
+.step { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin: 15px 0; }
+.step-num { display: inline-block; background: #ff4444; color: white; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; font-weight: bold; margin-right: 10px; }
+.cmd-box { background: #111; border: 1px solid #444; border-radius: 6px; padding: 15px; margin: 10px 0; font-family: 'Consolas', monospace; font-size: 13px; word-break: break-all; white-space: pre-wrap; color: #0f0; position: relative; }
+.copy-btn { position: absolute; top: 8px; right: 8px; background: #ff4444; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+.copy-btn:hover { background: #ff6666; }
+.copy-btn.copied { background: #00aa00; }
+.note { background: #1a1a00; border: 1px solid #554400; border-radius: 6px; padding: 12px; margin: 10px 0; color: #ffcc00; }
+.warn { background: #1a0000; border: 1px solid #550000; border-radius: 6px; padding: 12px; margin: 10px 0; color: #ff6666; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎯 Decimator v4.2</h1>
+<p class="subtitle">Roat Pkz PVP Assist Bot — One-Click Installer</p>
+
+<div class="step">
+<p><span class="step-num">1</span><strong>Open PowerShell as Admin</strong></p>
+<p style="color:#888; margin-top:8px;">Right-click Start → "Windows PowerShell (Admin)" → Yes</p>
+</div>
+
+<div class="step">
+<p><span class="step-num">2</span><strong>Copy & paste this ENTIRE command into PowerShell:</strong></p>
+<div class="cmd-box" id="install-cmd">Invoke-WebRequest -Uri "https://rotstrucking1-prog.github.io/Rotstrucking-app1/decimator/install.ps1" -OutFile "$env:TEMP\install-decimator.ps1"; Set-ExecutionPolicy Bypass -Scope Process -Force; & "$env:TEMP\install-decimator.ps1"<button class="copy-btn" onclick="copyCmd(this, 'install-cmd')">📋 COPY</button></div>
+</div>
+
+<div class="step">
+<p><span class="step-num">3</span><strong>That's it! The installer will:</strong></p>
+<ul style="margin: 10px 0 0 20px; color: #aaa; line-height: 1.8;">
+<li>✅ Create <code>C:\RoatBot\</code> folder</li>
+<li>✅ Download bot.py</li>
+<li>✅ Install Python packages (pyautogui, pillow, pynput)</li>
+<li>✅ Create desktop shortcuts: <strong>Decimator RUN</strong>, <strong>Decimator CALIBRATE</strong>, <strong>Decimator DEBUG</strong></li>
+<li>✅ Create <code>update.bat</code> — double-click anytime to pull latest version</li>
+</ul>
+</div>
+
+<h2>📂 After Install</h2>
+<div class="step">
+<p>You'll have these on your Desktop:</p>
+<ul style="margin: 10px 0 0 20px; line-height: 2;">
+<li>🎯 <strong>Decimator RUN</strong> — runs the bot</li>
+<li>📐 <strong>Decimator CALIBRATE</strong> — set up inventory grid (first time only)</li>
+<li>🔍 <strong>Decimator DEBUG</strong> — screenshot + grid overlay to verify slots</li>
+</ul>
+<p style="color:#888; margin-top:10px;">Bot folder: <code>C:\RoatBot\</code></p>
+</div>
+
+<h2>🔄 Updating</h2>
+<div class="step">
+<p>When I send you an update, just double-click <strong>update.bat</strong> on your Desktop — it pulls the latest bot.py from GitHub automatically.</p>
+</div>
+
+<div class="warn">⚠️ Make sure Roat Pkz is open and your inventory is visible before running calibration or the bot.</div>
+</div>
+
+<script>
+function copyCmd(btn, id) {
+  var el = document.getElementById(id);
+  var text = el.textContent.replace('📋 COPY', '').trim();
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = '✅ COPIED';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = '📋 COPY'; btn.classList.remove('copied'); }, 3000);
+  });
+}
+</script>
+</body>
+</html>

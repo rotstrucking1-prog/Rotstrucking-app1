@@ -241,6 +241,7 @@ def scan_inventory():
     &quot;&quot;&quot;Screenshot game area and detect color-tagged slots.
     Returns dict: {&#x27;blue&#x27;: [slot_indices], &#x27;red&#x27;: [...], ...}
     &quot;&quot;&quot;
+    global game_rect, game_hwnd
     if game_rect is None:
         find_game_window()
     if game_rect is None:
@@ -249,7 +250,6 @@ def scan_inventory():
     # Refresh window position
     rect = ctypes.wintypes.RECT()
     GetWindowRect(game_hwnd, ctypes.byref(rect))
-    global game_rect
     game_rect = (rect.left, rect.top, rect.right, rect.bottom)
 
     # Screenshot just the game window

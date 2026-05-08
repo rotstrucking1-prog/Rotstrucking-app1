@@ -3,59 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Decimator v4.1 — Color Marker Edition</title>
+<title>Decimator v4.1 Install</title>
 <style>
-body{background:#0a0a0a;color:#00ff88;font-family:'Courier New',monospace;padding:20px;margin:0}
-h1{color:#ff4444;text-align:center;font-size:28px;margin-bottom:5px}
-h2{color:#ffaa00;text-align:center;font-size:16px;margin-top:0}
-.box{background:#111;border:2px solid #333;border-radius:10px;padding:20px;margin:20px auto;max-width:800px}
-.cmd{background:#000;border:1px solid #00ff88;border-radius:5px;padding:15px;margin:10px 0;font-size:13px;word-break:break-all;white-space:pre-wrap;max-height:400px;overflow-y:auto}
-.btn{display:block;width:100%;padding:18px;font-size:20px;font-weight:bold;border:none;border-radius:8px;cursor:pointer;margin:10px 0;font-family:inherit}
-.btn-green{background:#00ff88;color:#000}
-.btn-green:hover{background:#00cc66}
-.btn-blue{background:#4488ff;color:#fff}
-.btn-blue:hover{background:#3366dd}
-.step{color:#ffaa00;font-size:18px;margin:15px 0 5px}
-.note{color:#888;font-size:13px}
-.ok{color:#00ff88}
-.warn{color:#ff4444}
+body{background:#0a0a0a;color:#00ff88;font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto}
+h1{color:#ff4444;text-align:center}
+h2{color:#ffaa00}
+.box{background:#111;border:2px solid #333;border-radius:10px;padding:20px;margin:15px 0}
+.cmd{background:#000;border:1px solid #444;padding:15px;border-radius:8px;font-family:Consolas,monospace;font-size:14px;color:#0f0;word-break:break-all;margin:10px 0}
+.btn{display:block;width:100%;padding:15px;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin:10px 0}
+.btn-green{background:#00aa44;color:#fff}
+.btn-blue{background:#2266cc;color:#fff}
+.step{color:#ffaa00;font-size:18px;font-weight:bold;margin-top:15px}
+.ok{color:#00ff88;font-weight:bold}
 </style>
 </head>
 <body>
 <h1>⚔️ DECIMATOR v4.1</h1>
-<h2>Color Marker Edition — PVP Assist Tool</h2>
+<h2 style="text-align:center">Color Marker PVP Assist</h2>
 
 <div class="box">
-<p class="step">STEP 1: Install (one-time)</p>
-<p class="note">Open PowerShell as Admin, paste this:</p>
-<div class="cmd" id="cmd1">cd $env:USERPROFILE\Desktop; if(!(Test-Path RoatBot)){mkdir RoatBot}; cd RoatBot; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/decimator_v4.py" -OutFile "bot.py"; C:\Python314\python.exe -m pip install pyautogui pillow pynput pygetwindow 2>$null; Write-Host "DECIMATOR v4.1 INSTALLED" -ForegroundColor Green</div>
+<p class="step">STEP 1: Install (paste in PowerShell)</p>
+<div class="cmd" id="cmd1">cd $env:USERPROFILE\Desktop; if(!(Test-Path RoatBot)){mkdir RoatBot}; cd RoatBot; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/decimator_v4.py" -OutFile "bot.py"; C:\Python314\python.exe -m pip install opencv-python numpy pillow pynput; Write-Host "DECIMATOR v4.1 INSTALLED" -ForegroundColor Green</div>
 <button class="btn btn-green" onclick="navigator.clipboard.writeText(document.getElementById('cmd1').textContent).then(()=>this.textContent='✅ COPIED — PASTE IN POWERSHELL')">📋 COPY INSTALL COMMAND</button>
 
-<p class="step">STEP 2: Run</p>
-<div class="cmd" id="cmd2">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py</div>
-<button class="btn btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('cmd2').textContent).then(()=>this.textContent='✅ COPIED')">📋 COPY RUN COMMAND</button>
+<p class="step">STEP 2: Calibrate (first time only)</p>
+<div class="cmd" id="cmd2">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py --calibrate</div>
+<button class="btn btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('cmd2').textContent).then(()=>this.textContent='✅ COPIED')">📋 COPY CALIBRATE COMMAND</button>
 
-<p class="step">STEP 3: Calibrate (first time only)</p>
-<div class="cmd" id="cmd3">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py --calibrate</div>
-<button class="btn btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('cmd3').textContent).then(()=>this.textContent='✅ COPIED')">📋 COPY CALIBRATE COMMAND</button>
+<p class="step">STEP 3: Run</p>
+<div class="cmd" id="cmd3">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py</div>
+<button class="btn btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('cmd3').textContent).then(()=>this.textContent='✅ COPIED')">📋 COPY RUN COMMAND</button>
 </div>
 
 <div class="box">
-<p class="step">⌨️ HOTKEYS</p>
-<p><span class="ok">Q</span> = Mage switch (🔵 blue items + Ice Barrage)</p>
-<p><span class="ok">W</span> = Melee switch (🔴 red items)</p>
-<p><span class="ok">E</span> = Range switch (🟢 green items)</p>
-<p><span class="warn">R</span> = SPEC COMBO (🟡 yellow item + spec bar + click target)</p>
+<p class="step">🎨 Color Tag Setup (RuneLite Inventory Tags)</p>
+<p>🔵 Blue = Mage gear (Q switch)</p>
+<p>🔴 Red = Melee gear (W switch)</p>
+<p>🟢 Green = Range gear (E switch)</p>
+<p>🟡 Yellow = Spec weapon (R combo)</p>
+</div>
+
+<div class="box">
+<p class="step">⌨️ Hotkeys</p>
+<p><span class="ok">Q</span> = Mage switch + Ice Barrage pre-select</p>
+<p><span class="ok">W</span> = Melee switch + combat tab</p>
+<p><span class="ok">E</span> = Range switch</p>
+<p style="color:#ff4444;font-weight:bold">R = SPEC COMBO (spec weapon + spec bar + click)</p>
 <p><span class="ok">F12</span> = Pause / Resume</p>
-
-<p class="step">🎨 COLOR SETUP</p>
-<p>In RuneLite Inventory Tags plugin:</p>
-<p>🔵 Blue = Magic gear &nbsp; 🔴 Red = Melee gear</p>
-<p>🟢 Green = Range gear &nbsp; 🟡 Yellow = Spec weapon</p>
-
-<p class="step">⚡ SPEED</p>
-<p>~30-45ms per item click — instant mouse jumps, no slow movement</p>
-<p>Full 5-piece switch in under 200ms</p>
 </div>
 </body>
 </html>

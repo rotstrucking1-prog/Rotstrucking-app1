@@ -58,8 +58,8 @@ except ImportError as e:
     sys.exit(1)
 
 try:
-    import tkinter as tk
-    from tkinter import ttk
+    # tkinter removed in hotfix12 — no GUI window = no self-targeting risk
+    pass
     HAS_GUI = True
 except ImportError:
     HAS_GUI = False
@@ -203,6 +203,17 @@ INV_PANEL_OFFSET_X = -195   # negative = from right edge
 INV_PANEL_OFFSET_Y = 253
 PRAYER_PANEL_OFFSET_X = -195
 PRAYER_PANEL_OFFSET_Y = 253   # same as inventory when tab selected
+
+# ============================================================
+#  KO COMBO POSITIONS (relative to game window)
+#  F4 = spellbook, F1 = combat tab
+# ============================================================
+# Vengeance spell position in Lunar spellbook (relative to window dimensions)
+VENGE_REL_X = 0.80   # % from left edge of window
+VENGE_REL_Y = 0.78   # % from top edge of window
+# Spec bar at bottom of combat tab (F1)
+SPEC_BAR_REL_X = 0.87  # center of right panel
+SPEC_BAR_REL_Y = 0.96  # very bottom of panel
 
 # ============================================================
 #  TICK TRACKER — The heart of the bot
@@ -1268,18 +1279,8 @@ class CombatBrain:
                     self.ticker.register_opp_attack(speed)
 
             elif overlay_visible:
-                # Can't find HP bar above character, but overlay says we're in combat
-                # Keep target alive — re-click center to maintain engagement
+                # Overlay says we're in combat — keep target alive but DO NOT re-click
                 self.target.last_seen_time = time.time()
-                if not hasattr(self, '_last_reclick') or time.time() - self._last_reclick > 2.5:
-                    wx, wy, ww, wh = self.screen.window_rect
-                    cx = wx + int(ww * 0.45)
-                    cy = wy + int(wh * 0.52)
-                    self.mouse.move_to(cx + random.randint(-15, 15),
-                                       cy + random.randint(-15, 15), speed="fast")
-                    time.sleep(0.03)
-                    self.mouse.click()
-                    self._last_reclick = time.time()
             else:
                 # No overlay AND no HP bar — truly lost
                 if time.time() - self.target.last_seen_time > 15.0:
@@ -1451,7 +1452,57 @@ class CombatBrain:
         """Release target lock."""
         self.target = TargetState()
         self.fighting = False
-        self.log("🔓 Target unlocked")
+        self.log("TARGET UNLOCKED")
+
+    def ko_combo(self):
+        """KO COMBO: Vengeance + AGS Spec on same tick.
+        F10 pressed. Brad's exact flow:
+        1. F4 (spellbook) -> click Vengeance (red circle)
+        2. F1 (combat tab) -> click spec bar at bottom
+        3. Click opponent
+        """
+        if not self.screen.window_rect:
+            self.log("!! No game window found!")
+            return
+        self.screen.focus_game()
+        time.sleep(0.05)
+        wx, wy, ww, wh = self.screen.window_rect
+
+        # Save diagnostic screenshot BEFORE combo
+        diag_frame = self.screen.capture()
+        if diag_frame is not None:
+            self.screen.save_diagnostic(diag_frame, "ko_combo")
+
+        # Step 1: Cast Vengeance -- F4 opens spellbook
+        self.mouse.press_fkey(4)
+        time.sleep(random.uniform(0.06, 0.10))
+        venge_x = wx + int(ww * VENGE_REL_X) + random.randint(-3, 3)
+        venge_y = wy + int(wh * VENGE_REL_Y) + random.randint(-3, 3)
+        self.mouse.move_to(venge_x, venge_y, speed="instant")
+        time.sleep(0.02)
+        self.mouse.click()
+        print(f"[KO] VENGE cast at ({venge_x}, {venge_y})")
+        time.sleep(random.uniform(0.06, 0.10))
+
+        # Step 2: Spec bar -- F1 opens combat tab
+        self.mouse.press_fkey(1)
+        time.sleep(random.uniform(0.06, 0.10))
+        spec_x = wx + int(ww * SPEC_BAR_REL_X) + random.randint(-3, 3)
+        spec_y = wy + int(wh * SPEC_BAR_REL_Y) + random.randint(-3, 3)
+        self.mouse.move_to(spec_x, spec_y, speed="instant")
+        time.sleep(0.02)
+        self.mouse.click()
+        print(f"[KO] SPEC BAR clicked at ({spec_x}, {spec_y})")
+        time.sleep(random.uniform(0.06, 0.10))
+
+        # Step 3: Click opponent (center of viewport)
+        vp_center_x = wx + int(ww * 0.45) + random.randint(-8, 8)
+        vp_center_y = wy + int(wh * 0.52) + random.randint(-8, 8)
+        self.mouse.move_to(vp_center_x, vp_center_y, speed="fast")
+        time.sleep(0.02)
+        self.mouse.click()
+        print(f"[KO] AGS SPEC -> opponent at ({vp_center_x}, {vp_center_y})")
+        print("[KO] === KO COMBO FIRED -- Venge + AGS Spec ===")
 
     # ---- MAIN LOOP ----
 
@@ -1476,16 +1527,16 @@ class CombatBrain:
         return False
 
     def run(self):
-        """Main bot loop — auto-detects and fights anyone who attacks."""
-        # STEP 1: Find game window
-        print("\n=== DECIMATOR v3.0 STARTUP ===")
+        """Main bot loop. F9=engage, F10=KO combo, F12=stop."""
+        print("")
+        print("=== DECIMATOR v3.0 -- HOTFIX 12 ===")
         print("Looking for Roat Pkz window...")
 
-        # Show ALL window titles for debugging
         try:
             import subprocess
             result = subprocess.run(
-                ['powershell', '-c', 'Get-Process | Where-Object {$_.MainWindowTitle} | Select-Object MainWindowTitle | Format-Table -AutoSize'],
+                ['powershell', '-c',
+                 'Get-Process | Where-Object {$_.MainWindowTitle} | Select-Object MainWindowTitle | Format-Table -AutoSize'],
                 capture_output=True, text=True, timeout=5
             )
             print("=== OPEN WINDOWS ===")
@@ -1496,52 +1547,64 @@ class CombatBrain:
 
         found = self.screen.find_window()
         if not found:
-            self.log("❌ COULD NOT FIND GAME WINDOW — make sure Roat Pkz is open!")
-            print("\n⚠️  Open Roat Pkz client first, then run this again.")
-            print("    Bot looks for window titles containing: roat, pkz, or runelite")
+            print("")
+            print("!! COULD NOT FIND GAME WINDOW -- make sure Roat Pkz is open!")
+            print("   Bot looks for window titles containing: roat, pkz, or runelite")
             return
 
-        # STEP 2: Calibrate UI positions
         self.calibrate_ui()
-        print(f"✅ Window found: {self.screen.window_rect}")
-        print(f"📐 Inv origin: {self.inv_origin}")
-        print(f"📐 Prayer origin: {self.prayer_origin}")
-        if self.inv_origin == (0, 0):
-            self.log("⚠️ WARNING: Inv origin is (0,0) — calibration may have failed!")
-        print("=== STARTUP COMPLETE ===\n")
-        self.log("🟢 Bot v3.0 HOTFIX 5 — MANUAL TARGET MODE")
-        self.log("💤 Bot is IDLE — does NOTHING until you press F9 near an opponent")
-        self.log(f"⚔️ Melee: {self.player.melee_weapon} | 🏹 Range: {self.player.range_weapon} | 🔮 Mage: {self.player.mage_weapon}")
-        self.log(f"💥 Spec: {self.player.spec_weapon} (max hit: {self.player.max_hit_with_spec()})")
-        self.log("F12 = emergency stop")
+        print(f"Window found: {self.screen.window_rect}")
+        print(f"Inv origin: {self.inv_origin}")
+        print("")
+        print("=== CONTROLS ===")
+        print("  F9  = Click opponent (single click, then wait)")
+        print("  F10 = KO COMBO (Vengeance + AGS Spec)")
+        print("  F12 = Emergency stop")
+        print("================")
+        print("")
+        print("IDLE -- walk up to opponent and press F9")
+        print("")
 
         self._bot_active = True
         self._idle_logged = False
+
+        # Set up keyboard listener for F9/F10/F12
+        def on_key_press(key):
+            try:
+                if key == Key.f9:
+                    print("[F9] ENGAGE -- clicking opponent...")
+                    self.lock_target()
+                elif key == Key.f10:
+                    print("[F10] KO COMBO -- Venge + Spec!")
+                    self.ko_combo()
+                elif key == Key.f12:
+                    print("[F12] EMERGENCY STOP")
+                    self._bot_active = False
+                    return False
+            except Exception as e:
+                print(f"Key handler error: {e}")
+
+        listener = Listener(on_press=on_key_press)
+        listener.daemon = True
+        listener.start()
 
         while self._bot_active:
             try:
                 loop_start = time.time()
 
                 if self.fighting and self.target.locked:
-                    # === IN COMBAT — run combat tick ===
                     self.combat_tick()
                     self._idle_logged = False
 
-                    # HOTFIX 10: Single click only. Wait to be attacked.
-                    # Bot does NOT re-click. F9 clicked once, now we wait.
                     lock_age = time.time() - getattr(self, "_lock_time", time.time())
                     if lock_age > 30.0:
-                        # 30s timeout — unlock if nothing happened
-                        self.log("30s timeout -- no combat. Press F9 to try again.")
+                        print("30s timeout -- press F9 to try again.")
                         self.unlock_target()
 
                 else:
-                    # === IDLE — waiting for F9 ===
                     if not self._idle_logged:
-                        self.log("IDLE -- walk up to opponent and press F9")
                         self._idle_logged = True
 
-                # Tick delay
                 elapsed = time.time() - loop_start
                 sleep_time = max(0.05, 0.6 - elapsed)
                 time.sleep(sleep_time)
@@ -1549,18 +1612,18 @@ class CombatBrain:
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                self.log(f"Loop error: {e}")
+                print(f"Loop error: {e}")
                 time.sleep(1)
 
-        self.log("Bot stopped.")
+        listener.stop()
+        print("Bot stopped.")
 
 
 # ---- ENTRY POINT ----
 
 def main():
-    root = tk.Tk()
-    bot = DecimatorBot(root)
-    root.mainloop()
+    bot = CombatBrain()
+    bot.run()
 
 if __name__ == "__main__":
     main()

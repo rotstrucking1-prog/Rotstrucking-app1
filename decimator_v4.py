@@ -34,10 +34,11 @@ pyautogui.FAILSAFE = False
 
 # ─── COLOR DEFINITIONS ───
 COLOR_RANGES = {
-    "blue":   {"r": (0, 120),   "g": (0, 120),   "b": (140, 255)},
-    "red":    {"r": (140, 255), "g": (0, 100),    "b": (0, 100)},
-    "green":  {"r": (0, 120),   "g": (140, 255),  "b": (0, 120)},
-    "yellow": {"r": (180, 255), "g": (180, 255),  "b": (0, 100)},
+    # Widened ranges — RuneLite tags are semi-transparent overlays that blend with item sprites
+    "blue":   {"r": (0, 140),   "g": (0, 140),   "b": (120, 255)},
+    "red":    {"r": (120, 255), "g": (0, 120),    "b": (0, 120)},
+    "green":  {"r": (0, 140),   "g": (120, 255),  "b": (0, 140)},
+    "yellow": {"r": (150, 255), "g": (150, 255),  "b": (0, 120)},
 }
 
 # ─── INVENTORY GRID CONSTANTS ───
@@ -141,46 +142,62 @@ def get_slot_region(slot_index):
 
 def detect_slot_color(img, slot_index):
     """Check what color marker tag is on this slot.
-    Samples the center 60% of the slot to avoid edge noise.
+    Samples CORNERS + EDGES of the slot where tag color is most visible
+    (item sprite covers the center, tag color shows around the edges).
     Returns 'blue','red','green','yellow' or None.
     """
     col = slot_index % INV_COLS
     row = slot_index // INV_COLS
     sx = INV_RELATIVE["x_start"] + col * (INV_RELATIVE["slot_w"] + INV_RELATIVE["pad_x"])
     sy = INV_RELATIVE["y_start"] + row * (INV_RELATIVE["slot_h"] + INV_RELATIVE["pad_y"])
-    # Sample center 60%
-    margin_x = int(INV_RELATIVE["slot_w"] * 0.2)
-    margin_y = int(INV_RELATIVE["slot_h"] * 0.2)
-    sample_x1 = sx + margin_x
-    sample_y1 = sy + margin_y
-    sample_x2 = sx + INV_RELATIVE["slot_w"] - margin_x
-    sample_y2 = sy + INV_RELATIVE["slot_h"] - margin_y
+    w = INV_RELATIVE["slot_w"]
+    h = INV_RELATIVE["slot_h"]
 
-    if sample_x2 <= sample_x1 or sample_y2 <= sample_y1:
-        return None
+    # Sample points: all 4 corners (3x3 blocks) + edge midpoints
+    sample_points = []
+
+    # Corners — 3x3 pixel blocks at each corner
+    for cy in [sy, sy + 1, sy + 2]:
+        for cx in [sx, sx + 1, sx + 2]:
+            sample_points.append((cx, cy))  # top-left
+        for cx in [sx + w - 3, sx + w - 2, sx + w - 1]:
+            sample_points.append((cx, cy))  # top-right
+    for cy in [sy + h - 3, sy + h - 2, sy + h - 1]:
+        for cx in [sx, sx + 1, sx + 2]:
+            sample_points.append((cx, cy))  # bottom-left
+        for cx in [sx + w - 3, sx + w - 2, sx + w - 1]:
+            sample_points.append((cx, cy))  # bottom-right
+
+    # Edge midpoints — 3 pixels each
+    mid_x = sx + w // 2
+    mid_y = sy + h // 2
+    for dx in [-1, 0, 1]:
+        sample_points.append((mid_x + dx, sy))          # top edge mid
+        sample_points.append((mid_x + dx, sy + h - 1))  # bottom edge mid
+        sample_points.append((sx, mid_y + dx))            # left edge mid
+        sample_points.append((sx + w - 1, mid_y + dx))    # right edge mid
 
     color_counts = {"blue": 0, "red": 0, "green": 0, "yellow": 0}
     total_sampled = 0
 
-    for py in range(sample_y1, sample_y2, 2):
-        for px in range(sample_x1, sample_x2, 2):
-            try:
-                r, g, b = img.getpixel((px, py))[:3]
-            except:
-                continue
-            total_sampled += 1
-            for color_name, ranges in COLOR_RANGES.items():
-                if (ranges["r"][0] <= r <= ranges["r"][1] and
-                    ranges["g"][0] <= g <= ranges["g"][1] and
-                    ranges["b"][0] <= b <= ranges["b"][1]):
-                    color_counts[color_name] += 1
-                    break
+    for px, py in sample_points:
+        try:
+            r, g, b = img.getpixel((px, py))[:3]
+        except:
+            continue
+        total_sampled += 1
+        for color_name, ranges in COLOR_RANGES.items():
+            if (ranges["r"][0] <= r <= ranges["r"][1] and
+                ranges["g"][0] <= g <= ranges["g"][1] and
+                ranges["b"][0] <= b <= ranges["b"][1]):
+                color_counts[color_name] += 1
+                break
 
     if total_sampled == 0:
         return None
 
-    # Need at least 15% of pixels matching to count as tagged
-    threshold = total_sampled * 0.15
+    # Need at least 8% of sampled pixels matching (lower threshold for edge sampling)
+    threshold = max(total_sampled * 0.08, 3)
     best = max(color_counts, key=color_counts.get)
     if color_counts[best] >= threshold:
         return best
@@ -212,6 +229,17 @@ def scan_inventory():
         color = detect_slot_color(img, slot)
         if color:
             result[color].append(slot)
+
+    # Debug output
+    tagged = sum(len(v) for v in result.values())
+    if tagged > 0:
+        parts = []
+        for c in ["blue", "red", "green", "yellow"]:
+            if result[c]:
+                parts.append(f"{c}:{result[c]}")
+        print(f"  [SCAN] Found {tagged} tagged slots: {', '.join(parts)}")
+    else:
+        print("  [SCAN] No tagged slots found — check calibration or tag colors")
 
     return result
 

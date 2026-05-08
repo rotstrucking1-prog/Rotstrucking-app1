@@ -1,55 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Decimator v4.1 Install</title>
-<style>
-body{background:#0a0a0a;color:#00ff88;font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto}
-h1{color:#ff4444;text-align:center}
-h2{color:#ffaa00}
-.box{background:#111;border:2px solid #333;border-radius:10px;padding:20px;margin:15px 0}
-.cmd{background:#000;border:1px solid #444;padding:15px;border-radius:8px;font-family:Consolas,monospace;font-size:14px;color:#0f0;word-break:break-all;margin:10px 0}
-.btn{display:block;width:100%;padding:15px;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin:10px 0}
-.btn-green{background:#00aa44;color:#fff}
-.btn-blue{background:#2266cc;color:#fff}
-.step{color:#ffaa00;font-size:18px;font-weight:bold;margin-top:15px}
-.ok{color:#00ff88;font-weight:bold}
-</style>
-</head>
-<body>
-<h1>⚔️ DECIMATOR v4.1</h1>
-<h2 style="text-align:center">Color Marker PVP Assist</h2>
-
-<div class="box">
-<p class="step">STEP 1: Install (paste in PowerShell)</p>
-<div class="cmd" id="cmd1">cd $env:USERPROFILE\Desktop; if(!(Test-Path RoatBot)){mkdir RoatBot}; cd RoatBot; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/decimator_v4.py" -OutFile "bot.py"; C:\Python314\python.exe -m pip install opencv-python numpy pillow pynput; Write-Host "DECIMATOR v4.1 INSTALLED" -ForegroundColor Green</div>
-<button class="btn btn-green" onclick="navigator.clipboard.writeText(document.getElementById('cmd1').textContent).then(()=>this.textContent='✅ COPIED — PASTE IN POWERSHELL')">📋 COPY INSTALL COMMAND</button>
-
-<p class="step">STEP 2: Calibrate (first time only)</p>
-<div class="cmd" id="cmd2">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py --calibrate</div>
-<button class="btn btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('cmd2').textContent).then(()=>this.textContent='✅ COPIED')">📋 COPY CALIBRATE COMMAND</button>
-
-<p class="step">STEP 3: Run</p>
-<div class="cmd" id="cmd3">cd $env:USERPROFILE\Desktop\RoatBot; C:\Python314\python.exe bot.py</div>
-<button class="btn btn-blue" onclick="navigator.clipboard.writeText(document.getElementById('cmd3').textContent).then(()=>this.textContent='✅ COPIED')">📋 COPY RUN COMMAND</button>
-</div>
-
-<div class="box">
-<p class="step">🎨 Color Tag Setup (RuneLite Inventory Tags)</p>
-<p>🔵 Blue = Mage gear (Q switch)</p>
-<p>🔴 Red = Melee gear (W switch)</p>
-<p>🟢 Green = Range gear (E switch)</p>
-<p>🟡 Yellow = Spec weapon (R combo)</p>
-</div>
-
-<div class="box">
-<p class="step">⌨️ Hotkeys</p>
-<p><span class="ok">Q</span> = Mage switch + Ice Barrage pre-select</p>
-<p><span class="ok">W</span> = Melee switch + combat tab</p>
-<p><span class="ok">E</span> = Range switch</p>
-<p style="color:#ff4444;font-weight:bold">R = SPEC COMBO (spec weapon + spec bar + click)</p>
-<p><span class="ok">F12</span> = Pause / Resume</p>
-</div>
-</body>
-</html>
+<html><head><meta charset="utf-8"><title>Decimator v4.1h1 Install</title>
+<style>body{background:#111;color:#0f0;font-family:monospace;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#0ff;text-align:center}pre{background:#000;border:1px solid #0f0;padding:15px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;font-size:13px}
+.btn{display:block;background:#00aa00;color:#000;text-align:center;padding:18px;font-size:20px;font-weight:bold;border:none;border-radius:8px;cursor:pointer;margin:15px 0;width:100%}
+.btn:hover{background:#00ff00}.section{margin:20px 0;padding:15px;border:1px solid #333;border-radius:8px}
+.step{color:#0ff;font-size:16px;margin:10px 0}</style></head>
+<body><h1>🎮 DECIMATOR v4.1-hotfix1</h1>
+<h2 style="color:#ff0;text-align:center">COLOR MARKER EDITION — Corner+Edge Detection Fix</h2>
+<div class="section"><p class="step">STEP 1 — Copy this ONE command, paste into PowerShell:</p>
+<pre id="cmd">Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rotstrucking1-prog/Rotstrucking-app1/main/decimator_v4.py" -OutFile "$env:USERPROFILE\Desktop\RoatBot\bot.py" ; Write-Host "DECIMATOR v4.1h1 INSTALLED" -ForegroundColor Green</pre>
+<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY INSTALL COMMAND</button></div>
+<div class="section"><p class="step">STEP 2 — Install packages (one time only):</p>
+<pre id="pip">cd $env:USERPROFILE\Desktop\RoatBot ; C:\Python314\python.exe -m pip install pyautogui pillow pynput</pre>
+<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('pip').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY PIP COMMAND</button></div>
+<div class="section"><p class="step">STEP 3 — Calibrate (REQUIRED first time):</p>
+<pre id="cal">cd $env:USERPROFILE\Desktop\RoatBot ; C:\Python314\python.exe bot.py --calibrate</pre>
+<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('cal').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY CALIBRATE COMMAND</button>
+<p style="color:#ff0">→ Point mouse to: 1) Top-left of slot 1 → Enter  2) Bottom-right of slot 28 → Enter  3) Ice Barrage spell → Enter  4) Spec bar → Enter</p></div>
+<div class="section"><p class="step">STEP 4 — Run bot:</p>
+<pre id="run">cd $env:USERPROFILE\Desktop\RoatBot ; C:\Python314\python.exe bot.py</pre>
+<button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('run').textContent).then(()=>this.textContent='COPIED ✅')">📋 COPY RUN COMMAND</button></div>
+<div class="section"><h3 style="color:#0ff">What's Fixed in h1:</h3>
+<ul><li>🎨 Corner+Edge sampling — detects ALL tagged items (not just one)</li>
+<li>📊 Debug output shows exactly which slots detected per color</li>
+<li>🎯 Wider color ranges for semi-transparent RuneLite tag overlays</li>
+<li>🔑 F1=Combat/Spec | F2=Inventory | F4=Spellbook</li></ul></div>
+</body></html>

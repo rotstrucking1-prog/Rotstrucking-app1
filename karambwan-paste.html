@@ -52,10 +52,8 @@ pre { background: #0a0a1a; color: #0f0; padding: 15px; border-radius: 8px; overf
 
 <div class="tab-section">
 <div class="tab-label">🔧 UTILITIES TAB</div>
-<pre id="utils-code">// ═══════════════════════════════════════════
-// ONE TICK KARAMBWAN — UTILITIES
-// Nothing needed — simple script
-// ═══════════════════════════════════════════
+<pre id="utils-code">// ONE TICK KARAMBWAN - UTILITIES
+// Nothing needed - simple script
 </pre>
 <button class="copy-btn utils" onclick="copyCode('utils-code', this)">📋 COPY UTILITIES</button>
 <div class="success" id="utils-code-success">✅ Copied!</div>
@@ -63,10 +61,8 @@ pre { background: #0a0a1a; color: #0f0; padding: 15px; border-radius: 8px; overf
 
 <div class="tab-section">
 <div class="tab-label">⚡ MAIN TAB</div>
-<pre id="main-code">// ═══════════════════════════════════════════
-// ONE TICK KARAMBWAN — MAIN
-// Rogues&#x27; Den 1-tick cooking
-// ═══════════════════════════════════════════
+<pre id="main-code">// ONE TICK KARAMBWAN - MAIN
+// Rogues Den 1-tick cooking
 
 var RAW_KARAMBWAN = 3142;
 var FIRE_ID = 43475;
@@ -124,7 +120,7 @@ function OnGameTick() {
         return;
     }
 
-    // Rate limit — 1 action per tick
+    // Rate limit - 1 action per tick
     if (tickCount - lastActionTick &lt; 1) return;
 
     // Find the fire

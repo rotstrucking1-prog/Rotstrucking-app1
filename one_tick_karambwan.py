@@ -105,17 +105,19 @@ def clicker_loop():
     global running, cook_count
     while alive:
         if running and karambwan_spot and fire_spot:
-            # Click karambwan in inventory (selects "Use")
+            # Step 1: Click karambwan ONCE (selects "Use")
             click_at(karambwan_spot[0], karambwan_spot[1])
-            time.sleep(DELAY + random.random() * 0.02)
+            # Small pause between clicks (50-70ms)
+            time.sleep(0.05 + random.random() * 0.02)
             if not running:
                 continue
-            # Click fire (uses karambwan on fire)
+            # Step 2: Click fire ONCE (uses karambwan on fire)
             click_at(fire_spot[0], fire_spot[1])
-            time.sleep(DELAY + random.random() * 0.02)
             cook_count += 1
             if cook_count % 28 == 0:
                 print(f"    Cooked ~{cook_count} karambwans")
+            # Step 3: Wait for game tick (~600ms) before next cook
+            time.sleep(0.55 + random.random() * 0.1)
         else:
             time.sleep(0.01)
 

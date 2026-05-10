@@ -61,96 +61,56 @@ pre { background: #0a0a1a; color: #0f0; padding: 15px; border-radius: 8px; overf
 
 <div class="tab-section">
 <div class="tab-label">⚡ MAIN TAB</div>
-<pre id="main-code">// ONE TICK KARAMBWAN - MAIN
-// Rogues Den 1-tick cooking
+<pre id="main-code">var RAW = 3142;
+var FIRE = 43475;
+var on = false;
+var cnt = 0;
+var lt = 0;
+var tc = 0;
 
-var RAW_KARAMBWAN = 3142;
-var FIRE_ID = 43475;
+function botMsg(m) { Game.sendGameMessage(&quot;[K] &quot; + m); }
 
-var cooking = false;
-var cookCount = 0;
-var lastActionTick = 0;
-var tickCount = 0;
-var debugShown = false;
-
-function botMsg(msg) {
-    Game.sendGameMessage(&quot;[KARAM] &quot; + msg);
-}
-
-function cfgVal(name, def) {
-    try {
-        var raw = config[name].getValue();
-        if (raw === null || raw === undefined) return def;
-        var s = &quot;&quot; + raw;
-        if (s === &quot;false&quot;) return &quot;false&quot;;
-        if (s === &quot;true&quot;) return &quot;true&quot;;
-        return s;
-    } catch(e) {
-        return def;
-    }
-}
-
-function OnStart() {
-    botMsg(&quot;One Tick Karambwan loaded! Flip Start Cooking ON.&quot;);
-}
+function OnStart() { botMsg(&quot;Karambwan cooker loaded&quot;); }
 
 function OnGameTick() {
-    tickCount++;
-
-    // Debug - show once so Brad knows ticks are firing
-    if (!debugShown) {
-        debugShown = true;
-        botMsg(&quot;Tick engine running. Checking config...&quot;);
-    }
-
-    var enabled = cfgVal(&quot;enabled&quot;, &quot;false&quot;);
-
-    if (enabled !== &quot;true&quot;) {
-        if (cooking) {
-            cooking = false;
-            botMsg(&quot;Stopped. Cooked &quot; + cookCount + &quot; total.&quot;);
-        }
+    tc++;
+    var go = false;
+    try { go = (&quot;&quot; + config.enabled.getValue()) === &quot;true&quot;; } catch(e) {}
+    if (!go) {
+        if (on) { botMsg(&quot;OFF - cooked &quot; + cnt); on = false; }
         return;
     }
-
-    if (!cooking) {
-        cooking = true;
-        cookCount = 0;
-        botMsg(&quot;Started! Looking for fire and karambwans...&quot;);
+    if (!on) { on = true; cnt = 0; botMsg(&quot;ON&quot;); }
+    var has = false;
+    try { has = Game.info.inventory.hasItem(RAW, 1); } catch(e) {
+        try { has = Game.info.inventory.hasItem(RAW); } catch(e2) {}
     }
-
-    // Check if we have raw karambwans
-    var hasRaw = false;
-    try {
-        hasRaw = Game.info.inventory.hasItem(RAW_KARAMBWAN, 1);
-    } catch(e1) {
-        try {
-            hasRaw = Game.info.inventory.hasItem(RAW_KARAMBWAN);
-        } catch(e2) {
-            botMsg(&quot;ERROR checking inventory: &quot; + e2);
-            return;
-        }
-    }
-
-    if (!hasRaw) {
-        botMsg(&quot;Out of raw karambwans! Cooked &quot; + cookCount + &quot; total.&quot;);
+    if (!has) {
+        botMsg(&quot;Done! &quot; + cnt + &quot; cooked&quot;);
         try { config.enabled.setValue(false); } catch(e) {}
-        cooking = false;
+        on = false;
         return;
     }
-
-    // Rate limit - 1 action per tick
-    if (tickCount - lastActionTick &lt; 1) return;
-
-    // Find the eternal fire
-    var fire = null;
+    if (tc - lt &lt; 1) return;
+    var f = null;
     try {
-        var objects = Game.info.object.getAll();
-        botMsg(&quot;Objects found: &quot; + objects.length);
-        for (var i = 0; i &lt; objects.length; i++) {
-            var obj = objects[i];
-            try {
-      </pre>
+        var obs = Game.info.object.getAll();
+        for (var i = 0; i &lt; obs.length; i++) {
+            if (obs[i].getId() === FIRE) { f = obs[i]; break; }
+        }
+    } catch(e) { botMsg(&quot;ERR obj: &quot; + e); return; }
+    if (f === null) { botMsg(&quot;No fire found&quot;); return; }
+    try {
+        Game.interact.inventory.useItem(RAW);
+        Game.interact.object.interact(f, MenuAction.GAME_OBJECT_FIRST_OPTION);
+        lt = tc;
+        cnt++;
+        if (cnt % 28 === 0) botMsg(&quot;Cooked &quot; + cnt);
+    } catch(e) { botMsg(&quot;ERR cook: &quot; + e); }
+}
+
+function OnChatMessage(event) {}
+</pre>
 <button class="copy-btn main" onclick="copyCode('main-code', this)">📋 COPY MAIN</button>
 <div class="success" id="main-code-success">✅ Copied!</div>
 </div>

@@ -25,8 +25,8 @@ import random
 
 # ── Args ──
 parser = argparse.ArgumentParser(description="One Tick Karambwan Cooker")
-parser.add_argument("--delay", type=float, default=0.06,
-                    help="Seconds between each click (default 0.06 = ~60ms)")
+parser.add_argument("--delay", type=float, default=0.15,
+                    help="Seconds between each click (default 0.15 = ~150ms)")
 args = parser.parse_args()
 
 DELAY = args.delay

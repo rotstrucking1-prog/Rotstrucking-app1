@@ -66,12 +66,12 @@ pre { background: #0a0a1a; color: #0f0; padding: 15px; border-radius: 8px; overf
 
 var RAW_KARAMBWAN = 3142;
 var FIRE_ID = 43475;
-var COOKED_KARAMBWAN = 3228;
 
 var cooking = false;
 var cookCount = 0;
 var lastActionTick = 0;
 var tickCount = 0;
+var debugShown = false;
 
 function botMsg(msg) {
     Game.sendGameMessage(&quot;[KARAM] &quot; + msg);
@@ -82,7 +82,8 @@ function cfgVal(name, def) {
         var raw = config[name].getValue();
         if (raw === null || raw === undefined) return def;
         var s = &quot;&quot; + raw;
-        if (s === &quot;false&quot; || s === &quot;true&quot;) return s;
+        if (s === &quot;false&quot;) return &quot;false&quot;;
+        if (s === &quot;true&quot;) return &quot;true&quot;;
         return s;
     } catch(e) {
         return def;
@@ -90,17 +91,24 @@ function cfgVal(name, def) {
 }
 
 function OnStart() {
-    botMsg(&quot;One Tick Karambwan loaded! Flip &#x27;Start Cooking&#x27; ON to begin.&quot;);
+    botMsg(&quot;One Tick Karambwan loaded! Flip Start Cooking ON.&quot;);
 }
 
 function OnGameTick() {
     tickCount++;
 
+    // Debug - show once so Brad knows ticks are firing
+    if (!debugShown) {
+        debugShown = true;
+        botMsg(&quot;Tick engine running. Checking config...&quot;);
+    }
+
     var enabled = cfgVal(&quot;enabled&quot;, &quot;false&quot;);
+
     if (enabled !== &quot;true&quot;) {
         if (cooking) {
             cooking = false;
-            botMsg(&quot;Stopped.&quot;);
+            botMsg(&quot;Stopped. Cooked &quot; + cookCount + &quot; total.&quot;);
         }
         return;
     }
@@ -108,14 +116,25 @@ function OnGameTick() {
     if (!cooking) {
         cooking = true;
         cookCount = 0;
-        botMsg(&quot;Started! Stand next to the fire in Rogues&#x27; Den.&quot;);
+        botMsg(&quot;Started! Looking for fire and karambwans...&quot;);
     }
 
     // Check if we have raw karambwans
-    var hasRaw = Game.info.inventory.hasItem(RAW_KARAMBWAN);
+    var hasRaw = false;
+    try {
+        hasRaw = Game.info.inventory.hasItem(RAW_KARAMBWAN, 1);
+    } catch(e1) {
+        try {
+            hasRaw = Game.info.inventory.hasItem(RAW_KARAMBWAN);
+        } catch(e2) {
+            botMsg(&quot;ERROR checking inventory: &quot; + e2);
+            return;
+        }
+    }
+
     if (!hasRaw) {
         botMsg(&quot;Out of raw karambwans! Cooked &quot; + cookCount + &quot; total.&quot;);
-        config.enabled.setValue(false);
+        try { config.enabled.setValue(false); } catch(e) {}
         cooking = false;
         return;
     }
@@ -123,37 +142,15 @@ function OnGameTick() {
     // Rate limit - 1 action per tick
     if (tickCount - lastActionTick &lt; 1) return;
 
-    // Find the fire
-    var objects = Game.info.object.getAll();
+    // Find the eternal fire
     var fire = null;
-    for (var i = 0; i &lt; objects.length; i++) {
-        if (objects[i].getId() === FIRE_ID) {
-            fire = objects[i];
-            break;
-        }
-    }
-
-    if (fire === null) {
-        botMsg(&quot;Can&#x27;t see the fire! Stand in Rogues&#x27; Den.&quot;);
-        return;
-    }
-
-    // 1-tick cook: Use raw karambwan on fire
-    Game.interact.inventory.useItem(RAW_KARAMBWAN);
-    Game.interact.object.interact(fire, MenuAction.GAME_OBJECT_FIRST_OPTION);
-
-    lastActionTick = tickCount;
-    cookCount++;
-
-    if (cookCount % 28 === 0) {
-        botMsg(&quot;Cooked ~&quot; + cookCount + &quot; karambwans&quot;);
-    }
-}
-
-function OnChatMessage(event) {
-    // Track successful cooks if needed
-}
-</pre>
+    try {
+        var objects = Game.info.object.getAll();
+        botMsg(&quot;Objects found: &quot; + objects.length);
+        for (var i = 0; i &lt; objects.length; i++) {
+            var obj = objects[i];
+            try {
+      </pre>
 <button class="copy-btn main" onclick="copyCode('main-code', this)">📋 COPY MAIN</button>
 <div class="success" id="main-code-success">✅ Copied!</div>
 </div>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Tick Karambwan — DZ Script</title>
+<style>
+body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #eee; }
+h1 { color: #ff6b35; text-align: center; }
+h2 { color: #ffd700; margin-top: 30px; }
+.tab-section { background: #16213e; border-radius: 10px; padding: 15px; margin: 15px 0; border: 1px solid #333; }
+.tab-label { font-size: 18px; font-weight: bold; color: #00ff88; margin-bottom: 10px; }
+pre { background: #0a0a1a; color: #0f0; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre; font-size: 12px; max-height: 400px; overflow-y: auto; }
+.copy-btn { display: block; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+.copy-btn.config { background: #e74c3c; }
+.copy-btn.utils { background: #3498db; }
+.copy-btn.main { background: #27ae60; }
+.copy-btn:active { transform: scale(0.98); }
+.instructions { background: #1e3a5f; border-radius: 10px; padding: 20px; margin: 20px 0; }
+.instructions ol li { margin: 8px 0; line-height: 1.6; }
+.success { text-align: center; color: #0f0; font-weight: bold; margin-top: 5px; display: none; }
+</style>
+</head>
+<body>
+<h1>🍤 One Tick Karambwan</h1>
+<h2>Rogues' Den 1-Tick Cooker</h2>
+
+<div class="instructions">
+<h3>📋 Setup</h3>
+<ol>
+<li>Create a <strong>NEW package</strong> on DeadZone (or use existing empty one)</li>
+<li>Copy each tab below and paste into the matching DZ tab</li>
+<li>Stand next to the <strong>eternal fire in Rogues' Den</strong></li>
+<li>Have <strong>raw karambwans</strong> in your inventory</li>
+<li>Enable the plugin, flip <strong>"Start Cooking"</strong> ON in the CONFIG sidebar</li>
+</ol>
+</div>
+
+<div class="tab-section">
+<div class="tab-label">📋 CONFIG TAB</div>
+<pre id="config-code">var config = {
+    enabled: {
+        type: &quot;BOOLEAN&quot;,
+        label: &quot;Start Cooking&quot;,
+        value: false
+    }
+};
+</pre>
+<button class="copy-btn config" onclick="copyCode('config-code', this)">📋 COPY CONFIG</button>
+<div class="success" id="config-code-success">✅ Copied!</div>
+</div>
+
+<div class="tab-section">
+<div class="tab-label">🔧 UTILITIES TAB</div>
+<pre id="utils-code">// ═══════════════════════════════════════════
+// ONE TICK KARAMBWAN — UTILITIES
+// Nothing needed — simple script
+// ═══════════════════════════════════════════
+</pre>
+<button class="copy-btn utils" onclick="copyCode('utils-code', this)">📋 COPY UTILITIES</button>
+<div class="success" id="utils-code-success">✅ Copied!</div>
+</div>
+
+<div class="tab-section">
+<div class="tab-label">⚡ MAIN TAB</div>
+<pre id="main-code">// ═══════════════════════════════════════════
+// ONE TICK KARAMBWAN — MAIN
+// Rogues&#x27; Den 1-tick cooking
+// ═══════════════════════════════════════════
+
+var RAW_KARAMBWAN = 3142;
+var FIRE_ID = 43475;
+var COOKED_KARAMBWAN = 3228;
+
+var cooking = false;
+var cookCount = 0;
+var lastActionTick = 0;
+var tickCount = 0;
+
+function botMsg(msg) {
+    Game.sendGameMessage(&quot;[KARAM] &quot; + msg);
+}
+
+function cfgVal(name, def) {
+    try {
+        var raw = config[name].getValue();
+        if (raw === null || raw === undefined) return def;
+        var s = &quot;&quot; + raw;
+        if (s === &quot;false&quot; || s === &quot;true&quot;) return s;
+        return s;
+    } catch(e) {
+        return def;
+    }
+}
+
+function OnGameTick() {
+    tickCount++;
+
+    var enabled = cfgVal(&quot;enabled&quot;, &quot;false&quot;);
+    if (enabled !== &quot;true&quot;) {
+        if (cooking) {
+            cooking = false;
+            botMsg(&quot;Stopped.&quot;);
+        }
+        return;
+    }
+
+    if (!cooking) {
+        cooking = true;
+        cookCount = 0;
+        botMsg(&quot;Started! Stand next to the fire in Rogues&#x27; Den.&quot;);
+    }
+
+    // Check if we have raw karambwans
+    var hasRaw = Game.info.inventory.hasItem(RAW_KARAMBWAN);
+    if (!hasRaw) {
+        botMsg(&quot;Out of raw karambwans! Cooked &quot; + cookCount + &quot; total.&quot;);
+        config.enabled.setValue(false);
+        cooking = false;
+        return;
+    }
+
+    // Rate limit — 1 action per tick
+    if (tickCount - lastActionTick &lt; 1) return;
+
+    // Find the fire
+    var objects = Game.info.object.getAll();
+    var fire = null;
+    for (var i = 0; i &lt; objects.length; i++) {
+        if (objects[i].getId() === FIRE_ID) {
+            fire = objects[i];
+            break;
+        }
+    }
+
+    if (fire === null) {
+        botMsg(&quot;Can&#x27;t see the fire! Stand in Rogues&#x27; Den.&quot;);
+        return;
+    }
+
+    // 1-tick cook: Use raw karambwan on fire
+    Game.interact.inventory.useItem(RAW_KARAMBWAN);
+    Game.interact.object.interact(fire, MenuAction.GAME_OBJECT_FIRST_OPTION);
+
+    lastActionTick = tickCount;
+    cookCount++;
+
+    if (cookCount % 28 === 0) {
+        botMsg(&quot;Cooked ~&quot; + cookCount + &quot; karambwans&quot;);
+    }
+}
+
+function OnChatMessage(event) {
+    // Track successful cooks if needed
+}
+</pre>
+<button class="copy-btn main" onclick="copyCode('main-code', this)">📋 COPY MAIN</button>
+<div class="success" id="main-code-success">✅ Copied!</div>
+</div>
+
+<script>
+function copyCode(id, btn) {
+    var el = document.getElementById(id);
+    var text = el.textContent;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+            var s = document.getElementById(id + '-success');
+            s.style.display = 'block';
+            setTimeout(function() { s.style.display = 'none'; }, 2000);
+        });
+    } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        var s = document.getElementById(id + '-success');
+        s.style.display = 'block';
+        setTimeout(function() { s.style.display = 'none'; }, 2000);
+    }
+}
+</script>
+</body>
+</html>

@@ -107,8 +107,8 @@ def clicker_loop():
         if running and karambwan_spot and fire_spot:
             # Step 1: Click karambwan ONCE (selects "Use")
             click_at(karambwan_spot[0], karambwan_spot[1])
-            # Small pause between clicks (50-70ms)
-            time.sleep(0.05 + random.random() * 0.02)
+            # Wait for "Use" to register before clicking fire (200-250ms)
+            time.sleep(0.20 + random.random() * 0.05)
             if not running:
                 continue
             # Step 2: Click fire ONCE (uses karambwan on fire)

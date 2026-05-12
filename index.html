@@ -505,6 +505,7 @@
         
         <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
           <p>📊 Dashboard updates from your master spreadsheet</p>
+          <p style="margin-top: 4px; color: #00d4ff; font-size: 11px;">Last Updated: May 12, 2026</p>
           <p style="margin-top: 8px;">Use the <strong>ADD</strong> tab to log loads, fuel, and expenses</p>
           <p style="margin-top: 8px;">Or <strong>text me</strong> updates and I'll handle it 🚛</p>
         </div>
@@ -727,7 +728,7 @@
           <div id="rollingCosts" style="background: rgba(0, 255, 136, 0.05); border-left: 3px solid #00ff88; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
             <h3 style="color: #00ff88; font-size: 12px; margin-bottom: 8px;">🚛 TRUCK ROLLING (On the Road)</h3>
             <div style="font-size: 18px; color: #ffb300; font-weight: bold; margin-bottom: 8px;" id="rollingTotal">$0.00</div>
-            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel (<span id="fuelPriceLabel">$4.63</span>/gal ÷ 5.5 MPG × <span id="monthlyMilesLabel">5,872</span> mi): <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
+            <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">⛽ Fuel (<span id="fuelPriceLabel">$5.00</span>/gal ÷ 5.5 MPG × <span id="monthlyMilesLabel">5,872</span> mi): <span id="fuelCost" style="color: #00ff88;">$0.00</span></div>
             <div style="font-size: 9px; color: #555; margin-bottom: 6px; margin-left: 12px;">Last logged in sheet: $3.339/gal (Sep 2025) — log new fuel stop to update</div>
             <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🛣️ Tolls (avg from bank): <span id="tollsCost" style="color: #00ff88;">$0.00</span></div>
             <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">🔧 Maintenance (~$170/wk × 4 weeks): <span id="maintCost" style="color: #00ff88;">$0.00</span></div>
@@ -744,7 +745,7 @@
           </div>
           
           <div style="background: rgba(0, 212, 255, 0.1); padding: 12px; border-radius: 4px; margin-top: 16px; text-align: center;">
-            <div style="font-size: 11px; color: #888; margin-bottom: 8px;">TOTAL APRIL 2026</div>
+            <div style="font-size: 11px; color: #888; margin-bottom: 8px;">TOTAL MAY 2026</div>
             <div style="font-size: 20px; color: #00ffc8; font-weight: bold;" id="grandTotal">$0.00</div>
           </div>
         </div>
@@ -1068,10 +1069,10 @@
     
     // Load dashboard data
     function loadDashboard() {
-      document.getElementById('ytd-income').textContent = '$1.04M';
-      document.getElementById('ytd-profit').textContent = '$320K';
-      document.getElementById('fuel-cost').textContent = '$47.1K';
-      document.getElementById('fuel-ppg').textContent = '$4.65'; // Mudflap actual paid avg Apr 2026 (3 fills: $4.43–$4.89)
+      document.getElementById('ytd-income').textContent = '$1.13M';
+      document.getElementById('ytd-profit').textContent = '$17.5K';
+      document.getElementById('fuel-cost').textContent = '$108.4K';
+      document.getElementById('fuel-ppg').textContent = '$5.00'; // Current fuel price May 2026
 
       // === BRAD'S EXACT RPM FORMULA ===
       // (CPM × monthly miles) + fixed monthly bills = total you need
@@ -1082,11 +1083,11 @@
 
       // ── FUEL ──
       const lastRecordedFuelPrice = 3.339; // Last logged in Fuel sheet: Sep 19, 2025 - Holladay, TN
-      const currentFuelPrice = 4.65;       // REAL: Mudflap weighted avg Apr 2026 (3 fills: $4.43–$4.89/gal)
+      const currentFuelPrice = 5.00;       // REAL: Current fuel price May 2026
       const mpg = 5.5;                     // truck MPG
       const fuelCPM = currentFuelPrice / mpg; // $/mile driven
 
-      // ── ACTUAL MONTHLY MILES (from Omnitracs GPS data Jan–Apr 2026) ──
+      // ── ACTUAL MONTHLY MILES (from Omnitracs GPS data) ──
       // Jan 5,505 | Feb 3,292 | Mar 4,895 | Apr partial 1,008 → avg full months = 4,564/mo
       // Using 5,872 (14,683 mi ÷ 2.5 active months) as rolling avg
       const actualMonthlyMiles = 5872; // real Omnitracs average
@@ -1139,7 +1140,7 @@
     
     // Load monthly costs
     function loadMonthlyCosts() {
-      // For April 2026, display estimated/calculated costs
+      // For May 2026, display estimated/calculated costs
       // These would normally come from the API querying Google Sheets
       
       // Personal home expenses
@@ -1147,9 +1148,9 @@
       
       // Business rolling costs — fuel calculated from real price/MPG × actual monthly miles
       const lastRecordedFuelPriceC = 3.339; // Last in Fuel sheet: Sep 19 2025 Holladay TN
-      const currentFuelPriceC = 4.65;       // REAL: Mudflap weighted avg Apr 2026 (3 fills: $4.43–$4.89/gal)
+      const currentFuelPriceC = 5.00;       // REAL: Current fuel price May 2026
       const truckMPG = 5.5;
-      const avgMonthlyMiles = 5872;  // actual Omnitracs avg (Jan–Apr 2026)
+      const avgMonthlyMiles = 5872;  // actual Omnitracs avg
       const fuelCost = (currentFuelPriceC / truckMPG) * avgMonthlyMiles; // ~$4,940 (real Mudflap price)
       const tollsCost = 450;
       // Maintenance: estimated as weekly avg × 4 weeks (from bank data)
@@ -1304,7 +1305,7 @@
       resultsDiv.innerHTML = '<p style="color: #888; font-size: 12px; text-align: center; padding: 20px;">Loading available loads...</p>';
       
       // FUEL CALC CONSTANTS — Brad's spec
-      const FUEL_PRICE_PER_GAL = 4.63;  // REAL: Mudflap actual paid avg (Apr 2026)
+      const FUEL_PRICE_PER_GAL = 5.00;  // REAL: Current fuel price May 2026
       const MPG = 5.5;                   // Truck MPG (Brad confirmed)
       const FUEL_COST_PER_MILE = FUEL_PRICE_PER_GAL / MPG; // $/mile all-in
       

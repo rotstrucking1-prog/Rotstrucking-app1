@@ -299,7 +299,11 @@ loader.load('tree-model.glb?v=8', function(gltf){
     const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, Math.random()*Math.PI*2);
     slopeQuat.multiply(yRotQuat);
     t.quaternion.copy(slopeQuat);
-    t.position.set(x, h + 0.433 * scale, z);
+    // Position at terrain, then lift along LOCAL up axis (works correctly on slopes)
+    t.position.set(x, h, z);
+    const treeLocalUp = new THREE.Vector3(0, 0.433 * scale, 0);
+    treeLocalUp.applyQuaternion(slopeQuat);
+    t.position.add(treeLocalUp);
     t.castShadow = true;
     scene.add(t);
     treesPlaced++;
@@ -366,7 +370,10 @@ loader.load('iron-ore-deposit.glb?v=8', function(gltf){
     var oreYRotQuat = new THREE.Quaternion().setFromAxisAngle(oreUp, Math.random()*Math.PI*2);
     oreSlopeQuat.multiply(oreYRotQuat);
     ore.quaternion.copy(oreSlopeQuat);
-    ore.position.set(x, h + 0.254 * scale, z);
+    ore.position.set(x, h, z);
+    const oreLocalUp = new THREE.Vector3(0, 0.254 * scale, 0);
+    oreLocalUp.applyQuaternion(oreSlopeQuat);
+    ore.position.add(oreLocalUp);
     ore.castShadow = true;
     scene.add(ore);
     oresPlaced++;
@@ -513,8 +520,11 @@ loader.load('deer-model.glb?v=1', function(gltf){
     deerSlopeQuat.multiply(deerYRotQuat);
     deer.quaternion.copy(deerSlopeQuat);
     
-    // Position with foot offset (model Y: -0.5 to 0.5, feet at -0.5)
-    deer.position.set(x, h + 0.5 * scale, z);
+    // Position with foot offset — translate along LOCAL up axis for correct slope positioning
+    deer.position.set(x, h, z);
+    const deerLocalUp = new THREE.Vector3(0, 0.5 * scale, 0);
+    deerLocalUp.applyQuaternion(deerSlopeQuat);
+    deer.position.add(deerLocalUp);
     
     scene.add(deer);
     deerModels.push(deer);
@@ -716,7 +726,10 @@ loader.load('grass-model.glb?v=8', function(gltf){
     const grassYRotQuat = new THREE.Quaternion().setFromAxisAngle(grassUp, Math.random()*Math.PI*2);
     grassSlopeQuat.multiply(grassYRotQuat);
     g.quaternion.copy(grassSlopeQuat);
-    g.position.set(x, h + 0.106 * scale, z);
+    g.position.set(x, h, z);
+    const grassLocalUp = new THREE.Vector3(0, 0.106 * scale, 0);
+    grassLocalUp.applyQuaternion(grassSlopeQuat);
+    g.position.add(grassLocalUp);
     scene.add(g);
     grassPlaced++;
   }
@@ -1207,7 +1220,7 @@ function animate(){
   
   if(playerModel){
     playerModel.position.copy(playerPos);
-    playerModel.rotation.y = characterYaw + Math.PI;  // +PI offset so model faces forward (away from camera)
+    playerModel.rotation.y = characterYaw + Math.PI * 0.5;  // PI/2 offset — model faces along X axis, rotated to match camera forward
   }
   playerPlaceholder.position.copy(playerPos);
   
@@ -1337,8 +1350,6 @@ function animate(){
     if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
       deerPos.x = newX;
       deerPos.z = newZ;
-      // Update Y: terrain height + foot offset
-      deerPos.y = newH + 0.5 * data.scale;
       
       // Align to slope + face heading direction
       const normal = getTerrainNormal(newX, newZ);
@@ -1347,6 +1358,11 @@ function animate(){
       const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, data.heading + Math.PI);
       slopeQuat.multiply(yRotQuat);
       data.model.quaternion.copy(slopeQuat);
+      // Position at terrain, then lift along LOCAL up (correct on slopes)
+      deerPos.set(newX, newH, newZ);
+      const deerUp = new THREE.Vector3(0, 0.5 * data.scale, 0);
+      deerUp.applyQuaternion(slopeQuat);
+      deerPos.add(deerUp);
     } else {
       // Reverse direction at boundaries
       data.heading += Math.PI + (Math.random() - 0.5) * 0.5;

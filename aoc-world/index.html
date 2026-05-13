@@ -47,14 +47,23 @@ window.addEventListener('unhandledrejection', function(e){
   var ld = document.getElementById('loading');
   if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Load error: ' + (e.reason || 'unknown'); }
 });
-// Safety timeout - if still loading after 20s, show what happened
+// Safety timeout - if still loading after 15s, show what happened
 setTimeout(function(){
   var ld = document.getElementById('loading');
   if(ld && ld.style.display !== 'none'){
     var p = ld.querySelector('p');
-    if(p && p.textContent === 'Loading world...') p.textContent = 'Still loading... (CDN may be slow)';
+    if(p && p.textContent === 'Loading world...') p.textContent = 'Still loading... (slow connection?)';
   }
-}, 20000);
+}, 15000);
+
+// Force start if stuck after 40s
+setTimeout(function(){
+  if(document.getElementById('loading').style.display !== 'none'){
+    console.warn('Force-starting world after timeout');
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('click-to-play').style.display = 'flex';
+  }
+}, 40000);
 </script>
 </head>
 <body>
@@ -365,7 +374,7 @@ loader.load('iron-ore-deposit.glb', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-gltfLoader.load('aoc-world/bass-model.glb', function(gltf){
+loader.load('bass-model.glb', function(gltf){
   const bassTemplate = gltf.scene;
   bassTemplate.traverse(function(child){
     if(child.isMesh){
@@ -443,7 +452,7 @@ gltfLoader.load('aoc-world/bass-model.glb', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 53);
-loader.load('aoc-world/fishing-pole-model.glb', function(gltf){
+loader.load('fishing-pole-model.glb', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   fishingPoleModel.traverse(function(child){

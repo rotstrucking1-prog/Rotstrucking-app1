@@ -277,9 +277,9 @@ loader.load('tree-model.glb?v=8', function(gltf){
     const h = getHeight(x,z);
     if(h < -2 || h > 28) continue;
     const t = treeTemplate.clone();
-    const scale = 0.8 + Math.random()*1.2;
+    const scale = 1.6 + Math.random()*2.4;
     t.scale.set(scale, scale, scale);
-    t.position.set(x, h, z);
+    t.position.set(x, h + 0.433 * scale, z);
     t.rotation.y = Math.random()*Math.PI*2;
     t.castShadow = true;
     scene.add(t);
@@ -340,7 +340,7 @@ loader.load('iron-ore-deposit.glb?v=8', function(gltf){
     var ore = oreTemplate.clone();
     var scale = 0.7 + Math.random()*1.0;
     ore.scale.set(scale, scale, scale);
-    ore.position.set(x, h, z);
+    ore.position.set(x, h + 0.254 * scale, z);
     ore.rotation.y = Math.random()*Math.PI*2;
     ore.castShadow = true;
     scene.add(ore);
@@ -602,7 +602,7 @@ loader.load('grass-model.glb?v=8', function(gltf){
     const g = grassTemplate.clone();
     const scale = 0.5 + Math.random()*0.7;
     g.scale.set(scale, scale, scale);
-    g.position.set(x, h, z);
+    g.position.set(x, h + 0.106 * scale, z);
     g.rotation.y = Math.random()*Math.PI*2;
     scene.add(g);
     grassPlaced++;

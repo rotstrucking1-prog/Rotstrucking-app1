@@ -683,7 +683,7 @@ function animate(){
   
   if(playerModel){
     playerModel.position.copy(playerPos);
-    playerModel.rotation.y = playerYaw;
+    playerModel.rotation.y = playerYaw + Math.PI;
   }
   playerPlaceholder.position.copy(playerPos);
   

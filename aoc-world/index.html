@@ -1067,7 +1067,7 @@ function animate(){
     const sin = Math.sin(playerYaw);
     const cos = Math.cos(playerYaw);
     playerPos.x += (moveX*cos - moveZ*sin) * speed;
-    playerPos.z += (moveX*sin + moveZ*cos) * speed;
+    playerPos.z -= (moveX*sin + moveZ*cos) * speed;
   }
   lastMoveX = moveX;
   lastMoveZ = moveZ;

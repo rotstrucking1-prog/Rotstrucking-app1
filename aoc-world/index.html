@@ -123,15 +123,15 @@ scene.fog = new THREE.FogExp2(0x87CEEB, 0.0015);
 const ambientLight = new THREE.AmbientLight(0x6688cc, 0.5);
 scene.add(ambientLight);
 
-const sunLight = new THREE.DirectionalLight(0xffeedd, 1.5);
-sunLight.position.set(200, 300, 150);
+const sunLight = new THREE.DirectionalLight(0xffeedd, 2.5);  // Brighter light from sun
+sunLight.position.set(400, 600, 300);  // Very far away
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(2048, 2048);
-sunLight.shadow.camera.left = -200;
-sunLight.shadow.camera.right = 200;
-sunLight.shadow.camera.top = 200;
-sunLight.shadow.camera.bottom = -200;
-sunLight.shadow.camera.far = 800;
+sunLight.shadow.camera.left = -500;
+sunLight.shadow.camera.right = 500;
+sunLight.shadow.camera.top = 500;
+sunLight.shadow.camera.bottom = -500;
+sunLight.shadow.camera.far = 1500;
 sunLight.shadow.bias = -0.001;
 scene.add(sunLight);
 
@@ -455,9 +455,11 @@ var sunTexture = null;
 sunTexture = new THREE.TextureLoader().load('sun-texture.jpg?v=1');
 sunTexture.encoding = THREE.sRGBEncoding;
 
-loader.load('sun-model.glb', function(gltf){
+loader.load('sun-model.glb?v=3', function(gltf){
   sunModel = gltf.scene;
-  sunModel.scale.set(80, 80, 80);  // Large sun in the sky
+  sunModel.scale.set(100, 100, 100);  // Very large sun, far away
+  // Position sun fixed in the world, really far away and high
+  sunModel.position.set(400, 600, 300);
   sunModel.traverse(function(child){
     if(child.isMesh){
       child.castShadow = false;
@@ -466,8 +468,8 @@ loader.load('sun-model.glb', function(gltf){
       child.material = new THREE.MeshBasicMaterial({
         map: sunTexture,
         toneMapped: false,  // Prevent tonemapping to keep sun bright
-        emissive: 0xffaa00,
-        emissiveIntensity: 1.5
+        emissive: 0xffff00,
+        emissiveIntensity: 2.0
       });
     }
   });
@@ -481,16 +483,7 @@ loader.load('sun-model.glb', function(gltf){
   checkReady();
 });
 
-// Position sun in the sky during render loop
-function updateSunPosition(){
-  if(sunModel && camera){
-    // Keep sun far away relative to camera direction, high in sky
-    var camDir = new THREE.Vector3();
-    camera.getWorldDirection(camDir);
-    sunModel.position.copy(camera.position).addScaledVector(camDir, 300);
-    sunModel.position.y = Math.max(sunModel.position.y, 250);  // Force high in sky
-  }
-}
+// Sun position is now fixed (not following camera anymore)
 
 // Terrain counts as loaded
 assetsLoaded++;
@@ -639,8 +632,6 @@ let fps = 0;
 function animate(){
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
-  
-  updateSunPosition();  // Keep sun in the sky
   
   frameCount++;
   fpsTime += dt;

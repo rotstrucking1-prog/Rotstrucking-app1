@@ -134,7 +134,7 @@ function checkReady(){
 // ===== LIGHTING =====
 // Load Brad's sky texture as panoramic background
 const skyLoader = new THREE.TextureLoader();
-const skyTex = skyLoader.load('sky-texture.jpg?v=1', function(){
+const skyTex = skyLoader.load('aoc-world/sky-texture.jpg?v=1', function(){
   // Once loaded, apply it
   scene.background = skyTex;
 }, undefined, function(){
@@ -190,7 +190,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=2');
+const grassTex = texLoader.load('aoc-world/grass-texture.jpg?v=2');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(40, 40);
@@ -221,7 +221,7 @@ waterGeo.rotateX(-Math.PI/2);
 
 // Load Brad's water texture with tiling and animation support
 const waterTexLoader = new THREE.TextureLoader();
-const waterTex = waterTexLoader.load('water-texture.jpg?v=1');
+const waterTex = waterTexLoader.load('aoc-world/water-texture.jpg?v=1');
 waterTex.wrapS = THREE.RepeatWrapping;
 waterTex.wrapT = THREE.RepeatWrapping;
 waterTex.repeat.set(8, 8);
@@ -244,7 +244,7 @@ scene.add(water);
 
 // ===== TREES (Brad's GLB Model) =====
 updateLoading('Loading tree model...', 30);
-loader.load('tree-model.glb', function(gltf){
+loader.load('aoc-world/tree-model.glb', function(gltf){
   const treeTemplate = gltf.scene;
   const treeCount = 350;
   const dummy = new THREE.Object3D();
@@ -318,7 +318,7 @@ updateLoading('Rocks placed...', 45);
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-loader.load('iron-ore-deposit.glb', function(gltf){
+loader.load('aoc-world/iron-ore-deposit.glb', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   var dummy = new THREE.Object3D();
@@ -374,7 +374,7 @@ loader.load('iron-ore-deposit.glb', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-loader.load('bass-model.glb', function(gltf){
+loader.load('aoc-world/bass-model.glb', function(gltf){
   const bassTemplate = gltf.scene;
   bassTemplate.traverse(function(child){
     if(child.isMesh){
@@ -452,7 +452,7 @@ loader.load('bass-model.glb', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 53);
-loader.load('fishing-pole-model.glb', function(gltf){
+loader.load('aoc-world/fishing-pole-model.glb', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   fishingPoleModel.traverse(function(child){
@@ -533,7 +533,7 @@ const playerPlaceholder = new THREE.Mesh(
 scene.add(playerPlaceholder);
 
 updateLoading('Loading character model...', 50);
-loader.load('character-model.glb', function(gltf){
+loader.load('aoc-world/character-model.glb', function(gltf){
   playerModel = gltf.scene;
   playerModel.scale.set(1, 1, 1);
   playerModel.traverse(function(child){
@@ -559,7 +559,7 @@ loader.load('character-model.glb', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-loader.load('grass-model.glb', function(gltf){
+loader.load('aoc-world/grass-model.glb', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 2000;
   const dummy = new THREE.Object3D();
@@ -617,10 +617,10 @@ loader.load('grass-model.glb', function(gltf){
 updateLoading('Loading sun...', 85);
 var sunModel = null;
 var sunTexture = null;
-sunTexture = new THREE.TextureLoader().load('sun-texture.jpg?v=1');
+sunTexture = new THREE.TextureLoader().load('aoc-world/sun-texture.jpg?v=1');
 sunTexture.encoding = THREE.sRGBEncoding;
 
-loader.load('sun-model.glb?v=3', function(gltf){
+loader.load('aoc-world/sun-model.glb?v=3', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(100, 100, 100);  // Very large sun, far away
   // Position sun fixed in the world, really far away and high

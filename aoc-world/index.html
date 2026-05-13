@@ -96,7 +96,7 @@ const loader = new GLTFLoader();
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 4;
+const totalAssets = 5;
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -243,6 +243,63 @@ for(let i=0;i<100;i++){
   scene.add(rock);
 }
 updateLoading('Rocks placed...', 45);
+
+// ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
+updateLoading('Loading iron ore deposits...', 47);
+loader.load('iron-ore-deposit.glb', function(gltf){
+  var oreTemplate = gltf.scene;
+  var oreCount = 80;
+  var dummy = new THREE.Object3D();
+  var oreMeshes = [];
+  oreTemplate.traverse(function(child){
+    if(child.isMesh) oreMeshes.push(child);
+  });
+  if(oreMeshes.length > 0){
+    oreMeshes.forEach(function(mesh){
+      var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), oreCount);
+      instMesh.castShadow = true;
+      instMesh.receiveShadow = true;
+      for(var i=0;i<oreCount;i++){
+        var x = (Math.random()-0.5)*WORLD_SIZE*0.85;
+        var z = (Math.random()-0.5)*WORLD_SIZE*0.85;
+        var h = getHeight(x,z);
+        if(h < 2 || h > 25){
+          dummy.position.set(9999,9999,9999);
+        } else {
+          var scale = 0.7 + Math.random()*1.0;
+          dummy.position.set(x, h, z);
+          dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+          dummy.scale.set(scale, scale, scale);
+        }
+        dummy.updateMatrix();
+        instMesh.setMatrixAt(i, dummy.matrix);
+      }
+      instMesh.instanceMatrix.needsUpdate = true;
+      scene.add(instMesh);
+    });
+  } else {
+    for(var i=0;i<oreCount;i++){
+      var x = (Math.random()-0.5)*WORLD_SIZE*0.85;
+      var z = (Math.random()-0.5)*WORLD_SIZE*0.85;
+      var h = getHeight(x,z);
+      if(h < 2 || h > 25) continue;
+      var ore = oreTemplate.clone();
+      var scale = 0.7+Math.random()*1.0;
+      ore.scale.set(scale,scale,scale);
+      ore.position.set(x, h, z);
+      ore.rotation.y = Math.random()*Math.PI*2;
+      ore.castShadow = true;
+      scene.add(ore);
+    }
+  }
+  assetsLoaded++;
+  updateLoading('Iron ore veins discovered!', 48);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Iron ore load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
 
 // ===== PLAYER =====
 let playerModel = null;

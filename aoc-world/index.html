@@ -145,18 +145,28 @@ for(let i=0;i<verts.length;i+=3){
 }
 terrainGeo.computeVertexNormals();
 
+// Load Brad's grass texture and tile it across terrain
+const texLoader = new THREE.TextureLoader();
+const grassTex = texLoader.load('grass-texture.jpg');
+grassTex.wrapS = THREE.RepeatWrapping;
+grassTex.wrapT = THREE.RepeatWrapping;
+grassTex.repeat.set(40, 40);
+grassTex.minFilter = THREE.LinearMipmapLinearFilter;
+grassTex.magFilter = THREE.LinearFilter;
+grassTex.anisotropy = 4;
+
+// Vertex colors for elevation blending (rocky hills, dirt paths)
 const colors = new Float32Array(verts.length);
 for(let i=0;i<verts.length;i+=3){
   const h = verts[i+1];
-  const norm = (h+30)/60;
-  if(h < -5){colors[i]=0.15;colors[i+1]=0.35;colors[i+2]=0.15}
-  else if(h < 5){colors[i]=0.2+norm*0.15;colors[i+1]=0.45+norm*0.15;colors[i+2]=0.15}
-  else if(h < 15){colors[i]=0.35;colors[i+1]=0.5;colors[i+2]=0.2}
-  else{colors[i]=0.45;colors[i+1]=0.42;colors[i+2]=0.3}
+  if(h < -3){colors[i]=0.6;colors[i+1]=0.75;colors[i+2]=0.6}
+  else if(h < 8){colors[i]=1.0;colors[i+1]=1.0;colors[i+2]=1.0}
+  else if(h < 18){const t=(h-8)/10;colors[i]=1.0-t*0.35;colors[i+1]=1.0-t*0.3;colors[i+2]=1.0-t*0.4}
+  else{colors[i]=0.65;colors[i+1]=0.6;colors[i+2]=0.45}
 }
 terrainGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-const terrainMat = new THREE.MeshLambertMaterial({vertexColors:true});
+const terrainMat = new THREE.MeshLambertMaterial({map:grassTex, vertexColors:true});
 const terrain = new THREE.Mesh(terrainGeo, terrainMat);
 terrain.receiveShadow = true;
 scene.add(terrain);

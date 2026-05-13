@@ -1230,31 +1230,36 @@ function animate(){
   animTime += dt;
   const moveSpeed = Math.sqrt(lastMoveX*lastMoveX + lastMoveZ*lastMoveZ);
   if(playerModel && moveSpeed > 0.01){
-    const animSpeed = isSprinting ? 8 : 4; // Faster animation when sprinting
+    const animSpeed = isSprinting ? 14 : 8; // Step frequency
     const animPhase = (animTime * animSpeed) % (Math.PI * 2);
     
-    playerModel.traverse(function(child){
-      if(child.isBone || child.isObject3D){
-        const boneName = child.name.toLowerCase();
-        
-        // Left leg swing
-        if(boneName.includes('left_leg') || boneName.includes('leftleg')){
-          child.rotation.x = Math.sin(animPhase) * 0.6;
-        }
-        // Right leg swing (opposite phase)
-        if(boneName.includes('right_leg') || boneName.includes('rightleg')){
-          child.rotation.x = Math.sin(animPhase + Math.PI) * 0.6;
-        }
-        // Left arm swing
-        if(boneName.includes('left_arm') || boneName.includes('leftarm')){
-          child.rotation.z = Math.sin(animPhase + Math.PI) * 0.5;
-        }
-        // Right arm swing (opposite)
-        if(boneName.includes('right_arm') || boneName.includes('rightarm')){
-          child.rotation.z = Math.sin(animPhase) * 0.5;
-        }
-      }
-    });
+    // --- Vertical bob (bouncy running feel) ---
+    const bobHeight = isSprinting ? 0.35 : 0.2;
+    const bob = Math.abs(Math.sin(animPhase)) * bobHeight;
+    playerModel.position.y = playerPos.y + bob;
+    
+    // --- Forward lean (tilt into the run) ---
+    const leanAngle = isSprinting ? 0.15 : 0.08; // radians
+    // Lean is around local X axis relative to movement direction
+    // We apply it as rotation on the X axis after setting Y rotation
+    const facingAngle = characterYaw - Math.PI * 0.5;
+    playerModel.rotation.y = facingAngle;
+    playerModel.rotation.x = leanAngle;
+    
+    // --- Side-to-side sway (subtle weight shift) ---
+    const swayAmount = isSprinting ? 0.06 : 0.04;
+    playerModel.rotation.z = Math.sin(animPhase) * swayAmount;
+    
+    // --- Scale squash/stretch for impact feel ---
+    const squash = 1.0 + Math.sin(animPhase * 2) * 0.03;
+    playerModel.scale.set(3 / squash, 3 * squash, 3 / squash);
+  } else if(playerModel) {
+    // Idle — reset to neutral pose
+    playerModel.position.y = playerPos.y;
+    playerModel.rotation.y = characterYaw - Math.PI * 0.5;
+    playerModel.rotation.x = 0;
+    playerModel.rotation.z = 0;
+    playerModel.scale.set(3, 3, 3);
   }
   
   // Update bass swimming — wandering pattern

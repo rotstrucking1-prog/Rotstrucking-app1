@@ -399,19 +399,19 @@ loader.load('bass-model.glb?v=8', function(gltf){
       if(rand < 0.05) {
         // NPC-0004: Overgrown Bass (5% chance) — 0.45-0.55
         npcId = 'NPC-0004';
-        fishScale = 6.0 + Math.random() * 2.0;
+        fishScale = 4.5 + Math.random() * 1.5;
       } else if(rand < 0.35) {
         // NPC-0001: Baby Bass (30% chance) — 0.08-0.12
         npcId = 'NPC-0001';
-        fishScale = 1.0 + Math.random() * 0.5;
+        fishScale = 0.75 + Math.random() * 0.375;
       } else if(rand < 0.75) {
         // NPC-0002: Medium Bass (40% chance) — 0.18-0.25
         npcId = 'NPC-0002';
-        fishScale = 2.0 + Math.random() * 1.0;
+        fishScale = 1.5 + Math.random() * 0.75;
       } else {
         // NPC-0003: Full Grown Bass (25% chance) — 0.30-0.40
         npcId = 'NPC-0003';
-        fishScale = 3.5 + Math.random() * 1.5;
+        fishScale = 2.625 + Math.random() * 1.125;
       }
       
       bass.scale.set(fishScale, fishScale, fishScale);
@@ -436,10 +436,10 @@ loader.load('bass-model.glb?v=8', function(gltf){
   
   // === TEST FISH: 4 bass right near player spawn for visibility testing ===
   const testPositions = [
-    {x: 2, z: 3, scale: 1.2, name: 'Baby'},
-    {x: -2, z: 5, scale: 2.5, name: 'Medium'},
-    {x: 3, z: 7, scale: 4.0, name: 'Full Grown'},
-    {x: -3, z: 9, scale: 7.0, name: 'Overgrown'}
+    {x: 2, z: 3, scale: 0.9, name: 'Baby'},
+    {x: -2, z: 5, scale: 1.875, name: 'Medium'},
+    {x: 3, z: 7, scale: 3.0, name: 'Full Grown'},
+    {x: -3, z: 9, scale: 5.25, name: 'Overgrown'}
   ];
   for(const tp of testPositions){
     const testBass = bassTemplate.clone();
@@ -1120,7 +1120,7 @@ function animate(){
   
   if(playerModel){
     playerModel.position.copy(playerPos);
-    playerModel.rotation.y = characterYaw + Math.PI;
+    playerModel.rotation.y = characterYaw;
   }
   playerPlaceholder.position.copy(playerPos);
   

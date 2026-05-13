@@ -350,6 +350,7 @@ let playerMixer = null;
 let playerAnimations = {};
 const playerPos = new THREE.Vector3(0, getHeight(0,0), 0);
 let playerYaw = 0;
+let characterYaw = 0;
 let playerVelY = 0;
 const playerSpeed = 12;
 const sprintMult = 1.8;
@@ -655,9 +656,11 @@ function animate(){
   if(moveX || moveZ){
     const len = Math.sqrt(moveX*moveX+moveZ*moveZ);
     if(len>1){moveX/=len;moveZ/=len}
+    // Update character facing based on movement direction
+    characterYaw = Math.atan2(moveX, -moveZ);
     const speed = playerSpeed * (isSprinting ? sprintMult : 1) * dt;
-    const sin = Math.sin(playerYaw);
-    const cos = Math.cos(playerYaw);
+    const sin = Math.sin(characterYaw);
+    const cos = Math.cos(characterYaw);
     playerPos.x += (moveX*cos - moveZ*sin) * speed;
     playerPos.z += (moveX*sin + moveZ*cos) * speed;
   }
@@ -683,7 +686,7 @@ function animate(){
   
   if(playerModel){
     playerModel.position.copy(playerPos);
-    playerModel.rotation.y = playerYaw + Math.PI;
+    playerModel.rotation.y = characterYaw + Math.PI;
   }
   playerPlaceholder.position.copy(playerPos);
   

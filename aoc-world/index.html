@@ -175,9 +175,28 @@ updateLoading('Terrain generated...', 20);
 // ===== WATER =====
 const waterGeo = new THREE.PlaneGeometry(WORLD_SIZE*2, WORLD_SIZE*2);
 waterGeo.rotateX(-Math.PI/2);
-const waterMat = new THREE.MeshPhongMaterial({color:0x2266aa,transparent:true,opacity:0.6,shininess:100});
+
+// Load Brad's water texture with tiling and animation support
+const waterTexLoader = new THREE.TextureLoader();
+const waterTex = waterTexLoader.load('water-texture.jpg?v=1');
+waterTex.wrapS = THREE.RepeatWrapping;
+waterTex.wrapT = THREE.RepeatWrapping;
+waterTex.repeat.set(8, 8);
+waterTex.minFilter = THREE.LinearMipmapLinearFilter;
+waterTex.magFilter = THREE.LinearFilter;
+waterTex.anisotropy = 4;
+
+const waterMat = new THREE.MeshPhongMaterial({
+  map: waterTex,
+  color: 0x4488cc,
+  transparent: true,
+  opacity: 0.7,
+  shininess: 120,
+  side: THREE.DoubleSide
+});
 const water = new THREE.Mesh(waterGeo, waterMat);
 water.position.y = -6;
+water.userData.isWater = true;
 scene.add(water);
 
 // ===== TREES (Brad's GLB Model) =====
@@ -637,6 +656,12 @@ function animate(){
   sunLight.target.position.copy(playerPos);
   
   water.position.y = -6 + Math.sin(clock.elapsedTime*0.5)*0.3;
+  
+  // Animate water texture — scroll in two directions for ripple effect
+  if(water.material.map){
+    water.material.map.offset.x += 0.001;
+    water.material.map.offset.y += 0.0008;
+  }
   
   document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);
   document.getElementById('hud-fps').textContent = 'FPS: '+fps;

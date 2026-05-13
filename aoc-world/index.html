@@ -254,7 +254,12 @@ loader.load('aoc-world/tree-model.glb', function(gltf){
   });
   if(treeMeshes.length > 0){
     treeMeshes.forEach(function(mesh){
-      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material, treeCount);
+      const treeMat = mesh.material.clone();
+      treeMat.metalness = 0;
+      treeMat.roughness = 0.8;
+      if(treeMat.metalnessMap) treeMat.metalnessMap = null;
+      if(treeMat.roughnessMap) treeMat.roughnessMap = null;
+      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), treeMat, treeCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
       for(let i=0;i<treeCount;i++){
@@ -328,7 +333,12 @@ loader.load('aoc-world/iron-ore-deposit.glb', function(gltf){
   });
   if(oreMeshes.length > 0){
     oreMeshes.forEach(function(mesh){
-      var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material, oreCount);
+      var oreMat = mesh.material.clone();
+      oreMat.metalness = 0;
+      oreMat.roughness = 0.7;
+      if(oreMat.metalnessMap) oreMat.metalnessMap = null;
+      if(oreMat.roughnessMap) oreMat.roughnessMap = null;
+      var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), oreMat, oreCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
       for(var i=0;i<oreCount;i++){
@@ -380,7 +390,8 @@ loader.load('aoc-world/bass-model.glb', function(gltf){
     if(child.isMesh){
       child.castShadow = true;
       child.receiveShadow = true;
-      // Using GLB embedded texture
+      // Keep GLB texture but fix metalness for proper lighting
+      if(child.material) { child.material.metalness = 0; child.material.roughness = 0.7; if(child.material.metalnessMap) child.material.metalnessMap = null; if(child.material.roughnessMap) child.material.roughnessMap = null; }
     }
   });
   
@@ -457,7 +468,7 @@ loader.load('aoc-world/fishing-pole-model.glb', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   fishingPoleModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;if(child.material){child.material.metalness=0;child.material.roughness=0.7;if(child.material.metalnessMap)child.material.metalnessMap=null;if(child.material.roughnessMap)child.material.roughnessMap=null;}}
   });
   // Don't add to scene yet - will be added when equipped
   assetsLoaded++;
@@ -538,7 +549,7 @@ loader.load('aoc-world/character-model.glb', function(gltf){
   playerModel = gltf.scene;
   playerModel.scale.set(1, 1, 1);
   playerModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;if(child.material){child.material.metalness=0;child.material.roughness=0.7;if(child.material.metalnessMap)child.material.metalnessMap=null;if(child.material.roughnessMap)child.material.roughnessMap=null;}}
   });
   scene.add(playerModel);
   if(gltf.animations && gltf.animations.length > 0){
@@ -570,7 +581,12 @@ loader.load('aoc-world/grass-model.glb', function(gltf){
   });
   if(grassMeshes.length > 0){
     grassMeshes.forEach(function(mesh){
-      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material, grassCount);
+      const grassMat = mesh.material.clone();
+      grassMat.metalness = 0;
+      grassMat.roughness = 0.8;
+      if(grassMat.metalnessMap) grassMat.metalnessMap = null;
+      if(grassMat.roughnessMap) grassMat.roughnessMap = null;
+      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), grassMat, grassCount);
       instMesh.castShadow = false;
       instMesh.receiveShadow = true;
       for(let i=0;i<grassCount;i++){
@@ -630,7 +646,9 @@ loader.load('aoc-world/sun-model.glb?v=3', function(gltf){
     if(child.isMesh){
       child.castShadow = false;
       child.receiveShadow = false;
-      // Using GLB embedded texture
+      // Keep GLB texture but make unlit so sun always glows
+      var sunMap = child.material.map;
+      child.material = new THREE.MeshBasicMaterial({map: sunMap, color: 0xffffcc, toneMapped: false});
     }
   });
   scene.add(sunModel);

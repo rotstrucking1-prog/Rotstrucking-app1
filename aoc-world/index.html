@@ -67,7 +67,7 @@ const loader = new THREE.GLTFLoader ? new THREE.GLTFLoader() : new THREE.GLTF2Lo
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 3; // terrain, character, grass
+const totalAssets = 4; // terrain, character, grass, trees
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -143,41 +143,71 @@ const water = new THREE.Mesh(waterGeo, waterMat);
 water.position.y = -6;
 scene.add(water);
 
-// ===== TREES =====
-function createTree(x,z){
-  const group = new THREE.Group();
-  const h = getHeight(x,z);
-  if(h < -3 || h > 20) return null;
+// ===== TREES (Brad's GLB Model) =====
+let treeInstances = [];
+updateLoading('Loading tree model...', 30);
+loader.load('tree-model.glb', function(gltf){
+  const treeTemplate = gltf.scene;
+  const treeCount = 350;
+  const dummy = new THREE.Object3D();
   
-  const trunkH = 3 + Math.random()*4;
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.3, 0.5, trunkH, 6),
-    new THREE.MeshLambertMaterial({color:0x8B4513})
-  );
-  trunk.position.y = trunkH/2;
-  trunk.castShadow = true;
-  group.add(trunk);
+  // Find all meshes in the tree model to instance them
+  let treeMeshes = [];
+  treeTemplate.traverse(function(child){
+    if(child.isMesh) treeMeshes.push(child);
+  });
   
-  const leafR = 2 + Math.random()*2;
-  const leaves = new THREE.Mesh(
-    new THREE.SphereGeometry(leafR, 6, 5),
-    new THREE.MeshLambertMaterial({color:new THREE.Color().setHSL(0.25+Math.random()*0.1, 0.6, 0.25+Math.random()*0.15)})
-  );
-  leaves.position.y = trunkH + leafR*0.5;
-  leaves.castShadow = true;
-  group.add(leaves);
+  if(treeMeshes.length > 0){
+    treeMeshes.forEach(function(mesh){
+      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), treeCount);
+      instMesh.castShadow = true;
+      instMesh.receiveShadow = true;
+      
+      for(let i=0;i<treeCount;i++){
+        const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
+        const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
+        const h = getHeight(x,z);
+        
+        if(h < -3 || h > 20){
+          dummy.position.set(9999,9999,9999);
+        } else {
+          const scale = 0.8 + Math.random()*1.2;
+          dummy.position.set(x, h, z);
+          dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+          dummy.scale.set(scale, scale, scale);
+        }
+        dummy.updateMatrix();
+        instMesh.setMatrixAt(i, dummy.matrix);
+      }
+      instMesh.instanceMatrix.needsUpdate = true;
+      scene.add(instMesh);
+      treeInstances.push(instMesh);
+    });
+  } else {
+    // Fallback: clone whole scene
+    for(let i=0;i<350;i++){
+      const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
+      const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
+      const h = getHeight(x,z);
+      if(h < -3 || h > 20) continue;
+      const t = treeTemplate.clone();
+      const scale = 0.8+Math.random()*1.2;
+      t.scale.set(scale,scale,scale);
+      t.position.set(x, h, z);
+      t.rotation.y = Math.random()*Math.PI*2;
+      t.castShadow = true;
+      scene.add(t);
+    }
+  }
   
-  group.position.set(x, h, z);
-  return group;
-}
-
-for(let i=0;i<350;i++){
-  const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
-  const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
-  const tree = createTree(x,z);
-  if(tree) scene.add(tree);
-}
-updateLoading('Trees placed...', 35);
+  assetsLoaded++;
+  updateLoading('Trees planted!', 40);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Tree load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
 
 // ===== ROCKS =====
 for(let i=0;i<100;i++){

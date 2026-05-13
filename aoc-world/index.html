@@ -1055,6 +1055,7 @@ function animate(){
     if(keys['KeyD']||keys['ArrowRight']) moveX = 1;
   }
   
+  moveX = -moveX; // Swap left/right to match camera perspective
   if(moveX || moveZ){
     const len = Math.sqrt(moveX*moveX+moveZ*moveZ);
     if(len>1){moveX/=len;moveZ/=len}

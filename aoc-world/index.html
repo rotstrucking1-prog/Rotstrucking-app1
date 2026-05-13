@@ -135,7 +135,7 @@ function checkReady(){
 // ===== LIGHTING =====
 // Load Brad's sky texture as panoramic background
 const skyLoader = new THREE.TextureLoader();
-const skyTex = skyLoader.load('sky-texture.jpg?v=5', function(){
+const skyTex = skyLoader.load('sky-texture.jpg?v=6', function(){
   // Once loaded, apply it
   scene.background = skyTex;
 }, undefined, function(){
@@ -191,7 +191,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=5');
+const grassTex = texLoader.load('grass-texture.jpg?v=6');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(40, 40);
@@ -222,7 +222,7 @@ waterGeo.rotateX(-Math.PI/2);
 
 // Load Brad's water texture with tiling and animation support
 const waterTexLoader = new THREE.TextureLoader();
-const waterTex = waterTexLoader.load('water-texture.jpg?v=5');
+const waterTex = waterTexLoader.load('water-texture.jpg?v=6');
 waterTex.wrapS = THREE.RepeatWrapping;
 waterTex.wrapT = THREE.RepeatWrapping;
 waterTex.repeat.set(8, 8);
@@ -245,12 +245,12 @@ scene.add(water);
 
 // ===== TREES (Brad's GLB Model) =====
 updateLoading('Loading tree model...', 30);
-loader.load('tree-model.glb?v=5', function(gltf){
+loader.load('tree-model.glb?v=6', function(gltf){
   const treeTemplate = gltf.scene;
   const treeCount = 350;
   const dummy = new THREE.Object3D();
   let treeMeshes = [];
-  const treeTex = new THREE.TextureLoader().load('tree-texture.jpg?v=5');
+  const treeTex = new THREE.TextureLoader().load('tree-texture.jpg?v=6');
   treeTex.flipY = false;
   treeTex.colorSpace = THREE.SRGBColorSpace;
   treeTemplate.traverse(function(child){
@@ -258,7 +258,7 @@ loader.load('tree-model.glb?v=5', function(gltf){
   });
   if(treeMeshes.length > 0){
     treeMeshes.forEach(function(mesh){
-      const treeMat = new THREE.MeshLambertMaterial({map: treeTex, color: 0x228B22});
+      const treeMat = new THREE.MeshLambertMaterial({map: treeTex, color: 0xffffff});
       const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), treeMat, treeCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
@@ -323,12 +323,12 @@ updateLoading('Rocks placed...', 45);
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-loader.load('iron-ore-deposit.glb?v=5', function(gltf){
+loader.load('iron-ore-deposit.glb?v=6', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   var dummy = new THREE.Object3D();
   var oreMeshes = [];
-  var oreTex = new THREE.TextureLoader().load('iron-ore-texture.jpg?v=5');
+  var oreTex = new THREE.TextureLoader().load('iron-ore-texture.jpg?v=6');
   oreTex.flipY = false;
   oreTex.colorSpace = THREE.SRGBColorSpace;
   oreTemplate.traverse(function(child){
@@ -336,7 +336,7 @@ loader.load('iron-ore-deposit.glb?v=5', function(gltf){
   });
   if(oreMeshes.length > 0){
     oreMeshes.forEach(function(mesh){
-      var oreMat = new THREE.MeshLambertMaterial({map: oreTex, color: 0xCD853F});
+      var oreMat = new THREE.MeshLambertMaterial({map: oreTex, color: 0xffffff});
       var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), oreMat, oreCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
@@ -383,16 +383,16 @@ loader.load('iron-ore-deposit.glb?v=5', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-loader.load('bass-model.glb?v=5', function(gltf){
+loader.load('bass-model.glb?v=6', function(gltf){
   const bassTemplate = gltf.scene;
-  const bassTex = new THREE.TextureLoader().load('bass-texture.jpg?v=5');
+  const bassTex = new THREE.TextureLoader().load('bass-texture.jpg?v=6');
   bassTex.flipY = false;
   bassTex.colorSpace = THREE.SRGBColorSpace;
   bassTemplate.traverse(function(child){
     if(child.isMesh){
       child.castShadow = true;
       child.receiveShadow = true;
-      child.material = new THREE.MeshLambertMaterial({map: bassTex, color: 0xD2B48C});
+      child.material = new THREE.MeshLambertMaterial({map: bassTex, color: 0xffffff});
     }
   });
   
@@ -465,14 +465,14 @@ loader.load('bass-model.glb?v=5', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 53);
-loader.load('fishing-pole-model.glb?v=5', function(gltf){
+loader.load('fishing-pole-model.glb?v=6', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
-  var poleTex = new THREE.TextureLoader().load('fishing-pole-texture.jpg?v=5');
+  var poleTex = new THREE.TextureLoader().load('fishing-pole-texture.jpg?v=6');
   poleTex.flipY = false;
   poleTex.colorSpace = THREE.SRGBColorSpace;
   fishingPoleModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshLambertMaterial({map:poleTex, color: 0x8B4513});}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshLambertMaterial({map:poleTex, color: 0xffffff});}
   });
   // Don't add to scene yet - will be added when equipped
   assetsLoaded++;
@@ -549,14 +549,14 @@ const playerPlaceholder = new THREE.Mesh(
 scene.add(playerPlaceholder);
 
 updateLoading('Loading character model...', 50);
-loader.load('character-model.glb?v=5', function(gltf){
+loader.load('character-model.glb?v=6', function(gltf){
   playerModel = gltf.scene;
   playerModel.scale.set(1, 1, 1);
-  var charTex = new THREE.TextureLoader().load('character-texture.jpg?v=5');
+  var charTex = new THREE.TextureLoader().load('character-texture.jpg?v=6');
   charTex.flipY = false;
   charTex.colorSpace = THREE.SRGBColorSpace;
   playerModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshLambertMaterial({map:charTex, color: 0xFFDBB4});}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshLambertMaterial({map:charTex, color: 0xffffff});}
   });
   scene.add(playerModel);
   if(gltf.animations && gltf.animations.length > 0){
@@ -578,12 +578,12 @@ loader.load('character-model.glb?v=5', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-loader.load('grass-model.glb?v=5', function(gltf){
+loader.load('grass-model.glb?v=6', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 2000;
   const dummy = new THREE.Object3D();
   let grassMeshes = [];
-  const grassModelTex = new THREE.TextureLoader().load('grass-model-texture.jpg?v=5');
+  const grassModelTex = new THREE.TextureLoader().load('grass-model-texture.jpg?v=6');
   grassModelTex.flipY = false;
   grassModelTex.colorSpace = THREE.SRGBColorSpace;
   grassTemplate.traverse(function(child){
@@ -591,7 +591,7 @@ loader.load('grass-model.glb?v=5', function(gltf){
   });
   if(grassMeshes.length > 0){
     grassMeshes.forEach(function(mesh){
-      const grassMat = new THREE.MeshLambertMaterial({map: grassModelTex, color: 0x3CB371});
+      const grassMat = new THREE.MeshLambertMaterial({map: grassModelTex, color: 0xffffff});
       const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), grassMat, grassCount);
       instMesh.castShadow = false;
       instMesh.receiveShadow = true;
@@ -640,10 +640,10 @@ loader.load('grass-model.glb?v=5', function(gltf){
 updateLoading('Loading sun...', 85);
 var sunModel = null;
 var sunTexture = null;
-sunTexture = new THREE.TextureLoader().load('sun-texture.jpg?v=5');
+sunTexture = new THREE.TextureLoader().load('sun-texture.jpg?v=6');
 sunTexture.colorSpace = THREE.SRGBColorSpace;
 
-loader.load('sun-model.glb?v=5', function(gltf){
+loader.load('sun-model.glb?v=6', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(100, 100, 100);  // Very large sun, far away
   // Position sun fixed in the world, really far away and high
@@ -653,7 +653,7 @@ loader.load('sun-model.glb?v=5', function(gltf){
       child.castShadow = false;
       child.receiveShadow = false;
       // Load sun texture externally and make unlit so sun always glows
-      var sunColorTex = new THREE.TextureLoader().load('sun-model-texture.jpg?v=5');
+      var sunColorTex = new THREE.TextureLoader().load('sun-model-texture.jpg?v=6');
       sunColorTex.flipY = false;
       sunColorTex.colorSpace = THREE.SRGBColorSpace;
       child.material = new THREE.MeshBasicMaterial({map: sunColorTex, toneMapped: false});

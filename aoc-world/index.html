@@ -14,7 +14,7 @@ canvas{display:block;width:100%;height:100%}
 #bar-wrap{width:300px;height:8px;background:#333;border-radius:4px;margin-top:15px;overflow:hidden}
 #bar{height:100%;width:0%;background:linear-gradient(90deg,#f0a030,#ff6030);transition:width .3s}
 #hud{position:fixed;bottom:15px;left:15px;color:#fff;font-size:13px;text-shadow:1px 1px 2px #000;pointer-events:none;z-index:10;opacity:0.8}
-#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;pointer-events:none;z-index:10;opacity:0.5}
+#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;pointer-events:none;z-index:10;opacity:1}
 #crosshair::before,#crosshair::after{content:'';position:absolute;background:#fff}
 #crosshair::before{width:2px;height:20px;left:9px;top:0}
 #crosshair::after{width:20px;height:2px;top:9px;left:0}
@@ -361,6 +361,8 @@ let thirdPerson = true;
 let cameraDistance = 8;
 let cameraPitch = 0.3;
 
+const CHAR_HEIGHT_OFFSET = 0.8;  // Offset to keep character feet on ground
+
 const playerPlaceholder = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.4, 1.2, 4, 8),
   new THREE.MeshLambertMaterial({color:0xff6600, visible:false})
@@ -669,8 +671,8 @@ function animate(){
   playerPos.y += playerVelY * dt;
   
   const groundH = getHeight(playerPos.x, playerPos.z);
-  if(playerPos.y <= groundH){
-    playerPos.y = groundH;
+  if(playerPos.y <= groundH + CHAR_HEIGHT_OFFSET){
+    playerPos.y = groundH + CHAR_HEIGHT_OFFSET;
     playerVelY = 0;
     isGrounded = true;
   }
@@ -703,8 +705,8 @@ function animate(){
     );
   }
   
-  sunLight.position.set(playerPos.x+200, 300, playerPos.z+150);
-  sunLight.target.position.copy(playerPos);
+  // Sun stays fixed in world, doesn't follow player
+  sunLight.target.position.set(400, 200, 300);
   
   water.position.y = -6 + Math.sin(clock.elapsedTime*0.5)*0.3;
   

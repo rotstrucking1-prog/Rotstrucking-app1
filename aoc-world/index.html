@@ -434,6 +434,36 @@ loader.load('bass-model.glb?v=8', function(gltf){
     }
   }
   
+  // === TEST FISH: 4 bass right near player spawn for visibility testing ===
+  const testPositions = [
+    {x: 2, z: 3, scale: 1.2, name: 'Baby'},
+    {x: -2, z: 5, scale: 2.5, name: 'Medium'},
+    {x: 3, z: 7, scale: 4.0, name: 'Full Grown'},
+    {x: -3, z: 9, scale: 7.0, name: 'Overgrown'}
+  ];
+  for(const tp of testPositions){
+    const testBass = bassTemplate.clone();
+    testBass.position.set(tp.x, 0.3, tp.z); // Floating above ground near spawn
+    testBass.scale.set(tp.scale, tp.scale, tp.scale);
+    scene.add(testBass);
+    bassModels.push(testBass);
+    bassSwimData.push({
+      model: testBass,
+      npcId: 'TEST',
+      sizeMultiplier: tp.scale,
+      centerX: tp.x,
+      centerZ: tp.z,
+      angle: 0,
+      radius: 1.5,
+      speed: 0.005,
+      bobOffset: Math.random() * Math.PI * 2,
+      xp: 0,
+      catchMin: 99, catchMax: 99
+    });
+    debugLog('🐟 TEST ' + tp.name + ' bass at (' + tp.x + ', 0.3, ' + tp.z + ') scale=' + tp.scale);
+  }
+  // === END TEST FISH ===
+
   debugLog('🐟 Bass spawned: ' + bassModels.length + '/' + bassCount);
   assetsLoaded++;
   updateLoading('Bass spawned!', 52);

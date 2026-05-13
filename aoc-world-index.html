@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Architect of Creation - World Prototype</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:#000;font-family:Arial,sans-serif;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+#loading{position:fixed;top:0;left:0;width:100%;height:100%;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;color:#fff}
+#loading h1{font-size:2em;margin-bottom:10px;color:#f0a030}
+#loading p{font-size:1.1em;color:#aaa}
+#bar-wrap{width:300px;height:8px;background:#333;border-radius:4px;margin-top:15px;overflow:hidden}
+#bar{height:100%;width:0%;background:linear-gradient(90deg,#f0a030,#ff6030);transition:width .3s}
+#hud{position:fixed;bottom:15px;left:15px;color:#fff;font-size:13px;text-shadow:1px 1px 2px #000;pointer-events:none;z-index:10;opacity:0.8}
+#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;pointer-events:none;z-index:10;opacity:1}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:#fff}
+#crosshair::before{width:2px;height:20px;left:9px;top:0}
+#crosshair::after{width:20px;height:2px;top:9px;left:0}
+#click-to-play{position:fixed;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;z-index:50;background:rgba(0,0,0,0.3);cursor:pointer}
+#click-to-play span{background:rgba(0,0,0,0.7);color:#f0a030;padding:20px 40px;border-radius:10px;font-size:1.4em;border:2px solid #f0a030}
+#controls{position:fixed;top:10px;right:10px;color:#fff;font-size:12px;text-shadow:1px 1px 2px #000;z-index:10;opacity:0.6;text-align:right;line-height:1.6}
+#joystick-zone{position:fixed;bottom:30px;left:30px;width:140px;height:140px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.2);display:none;z-index:20}
+#joystick-thumb{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(240,160,48,0.8);left:45px;top:45px;pointer-events:none}
+.touch-btn{position:fixed;width:60px;height:60px;border-radius:50%;background:rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.3);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;z-index:20;-webkit-user-select:none;user-select:none}
+#btn-jump{bottom:30px;right:30px}
+#btn-sprint{bottom:100px;right:30px}
+#btn-camera{bottom:30px;right:100px}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script>
+// Catch module-level errors (modules fail silently without this)
+window.addEventListener('error', function(e){
+  var ld = document.getElementById('loading');
+  if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Error: ' + e.message; }
+});
+window.addEventListener('unhandledrejection', function(e){
+  var ld = document.getElementById('loading');
+  if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Load error: ' + (e.reason || 'unknown'); }
+});
+// Safety timeout - if still loading after 20s, show what happened
+setTimeout(function(){
+  var ld = document.getElementById('loading');
+  if(ld && ld.style.display !== 'none'){
+    var p = ld.querySelector('p');
+    if(p && p.textContent === 'Loading world...') p.textContent = 'Still loading... (CDN may be slow)';
+  }
+}, 20000);
+</script>
+</head>
+<body>
+<div id="loading">
+  <h1>Architect of Creation</h1>
+  <p id="load-text">Loading world...</p>
+  <div id="bar-wrap"><div id="bar"></div></div>
+</div>
+<div id="click-to-play"><span>Click to Play</span></div>
+<div id="crosshair"></div>
+<div id="hud">
+  <div id="hud-pos">Position: 0, 0, 0</div>
+  <div id="hud-fps">FPS: 0</div>
+  <div id="hud-mode">Camera: 3rd Person</div>
+</div>
+<div id="controls">WASD - Move | Shift - Sprint | Space - Jump<br>Mouse - Look | V - Toggle Camera | Scroll - Zoom</div>
+<div id="joystick-zone"><div id="joystick-thumb"></div></div>
+<div class="touch-btn" id="btn-jump">Jump</div>
+<div class="touch-btn" id="btn-sprint">Run</div>
+<div class="touch-btn" id="btn-camera">Cam</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// ===== SCENE =====
+const scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,2000);
+const clock = new THREE.Clock();
+const loader = new GLTFLoader();
+
+// ===== LOADING MANAGER =====
+let assetsLoaded = 0;
+const totalAssets = 5;
+function updateLoading(txt,pct){
+  document.getElementById('load-text').textContent = txt;
+  document.getElementById('bar').style.width = pct+'%';
+}
+
+// ===== LIGHTING =====
+// Load Brad's sky texture as panoramic background
+const skyLoader = new THREE.TextureLoader();
+const skyTex = skyLoader.load('sky-texture.jpg?v=1', function(){
+  // Once loaded, apply it
+  scene.background = skyTex;
+}, undefined, function(){
+  // Fallback to blue if sky fails to load
+  console.warn('Sky texture failed to load, using fallback blue');
+  scene.background = new THREE.Color(0x87CEEB);
+});
+
+// Map equirectangular texture to proper format
+skyTex.mapping = THREE.EquirectangularReflectionMapping;
+skyTex.encoding = THREE.sRGBEncoding;
+
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.0015);
+
+const ambientLight = new THREE.AmbientLight(0x6688cc, 0.5);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffeedd, 2.5);  // Brighter light from sun
+sunLight.position.set(400, 600, 300);  // Very far away
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.left = -500;
+sunLight.shadow.camera.right = 500;
+sunLight.shadow.camera.top = 500;
+sunLight.shadow.camera.bottom = -500;
+sunLight.shadow.camera.far = 1500;
+sunLight.shadow.bias = -0.001;
+scene.add(sunLight);
+
+const hemiLight = new THREE.HemisphereLight(0x88bbff, 0x445522, 0.6);
+scene.add(hemiLight);
+
+// ===== TERRAIN =====
+const WORLD_SIZE = 800;
+const TERRAIN_SEG = 200;
+const terrainGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, TERRAIN_SEG, TERRAIN_SEG);
+terrainGeo.rotateX(-Math.PI/2);
+
+function getHeight(x, z) {
+  let h = 0;
+  h += Math.sin(x*0.008)*Math.cos(z*0.008)*12;
+  h += Math.sin(x*0.02+1.3)*Math.cos(z*0.015+0.7)*5;
+  h += Math.sin(x*0.05)*Math.cos(z*0.04)*2;
+  h += Math.sin(x*0.003)*Math.cos(z*0.004)*25;
+  return h;
+}
+
+const verts = terrainGeo.attributes.position.array;
+for(let i=0;i<verts.length;i+=3){
+  verts[i+1] = getHeight(verts[i], verts[i+2]);
+}
+terrainGeo.computeVertexNormals();
+
+// Load Brad's grass texture and tile it across terrain
+const texLoader = new THREE.TextureLoader();
+const grassTex = texLoader.load('grass-texture.jpg?v=2');
+grassTex.wrapS = THREE.RepeatWrapping;
+grassTex.wrapT = THREE.RepeatWrapping;
+grassTex.repeat.set(40, 40);
+grassTex.minFilter = THREE.LinearMipmapLinearFilter;
+grassTex.magFilter = THREE.LinearFilter;
+grassTex.anisotropy = 4;
+
+// Vertex colors for elevation blending (rocky hills, dirt paths)
+const colors = new Float32Array(verts.length);
+for(let i=0;i<verts.length;i+=3){
+  const h = verts[i+1];
+  if(h < -3){colors[i]=0.6;colors[i+1]=0.75;colors[i+2]=0.6}
+  else if(h < 8){colors[i]=1.0;colors[i+1]=1.0;colors[i+2]=1.0}
+  else if(h < 18){const t=(h-8)/10;colors[i]=1.0-t*0.35;colors[i+1]=1.0-t*0.3;colors[i+2]=1.0-t*0.4}
+  else{colors[i]=0.65;colors[i+1]=0.6;colors[i+2]=0.45}
+}
+terrainGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+const terrainMat = new THREE.MeshLambertMaterial({map:grassTex, vertexColors:true});
+const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+terrain.receiveShadow = true;
+scene.add(terrain);
+updateLoading('Terrain generated...', 20);
+
+// ===== WATER =====
+const waterGeo = new THREE.PlaneGeometry(WORLD_SIZE*2, WORLD_SIZE*2);
+waterGeo.rotateX(-Math.PI/2);
+
+// Load Brad's water texture with tiling and animation support
+const waterTexLoader = new THREE.TextureLoader();
+const waterTex = waterTexLoader.load('water-texture.jpg?v=1');
+waterTex.wrapS = THREE.RepeatWrapping;
+waterTex.wrapT = THREE.RepeatWrapping;
+waterTex.repeat.set(8, 8);
+waterTex.minFilter = THREE.LinearMipmapLinearFilter;
+waterTex.magFilter = THREE.LinearFilter;
+waterTex.anisotropy = 4;
+
+const waterMat = new THREE.MeshPhongMaterial({
+  map: waterTex,
+  color: 0x4488cc,
+  transparent: true,
+  opacity: 0.7,
+  shininess: 120,
+  side: THREE.DoubleSide
+});
+const water = new THREE.Mesh(waterGeo, waterMat);
+water.position.y = -6;
+water.userData.isWater = true;
+scene.add(water);
+
+// ===== TREES (Brad's GLB Model) =====
+updateLoading('Loading tree model...', 30);
+loader.load('tree-model.glb', function(gltf){
+  const treeTemplate = gltf.scene;
+  const treeCount = 350;
+  const dummy = new THREE.Object3D();
+  let treeMeshes = [];
+  treeTemplate.traverse(function(child){
+    if(child.isMesh) treeMeshes.push(child);
+  });
+  if(treeMeshes.length > 0){
+    treeMeshes.forEach(function(mesh){
+      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), treeCount);
+      instMesh.castShadow = true;
+      instMesh.receiveShadow = true;
+      for(let i=0;i<treeCount;i++){
+        const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
+        const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
+        const h = getHeight(x,z);
+        if(h < -3 || h > 20){
+          dummy.position.set(9999,9999,9999);
+        } else {
+          const scale = 0.8 + Math.random()*1.2;
+          dummy.position.set(x, h, z);
+          dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+          dummy.scale.set(scale, scale, scale);
+        }
+        dummy.updateMatrix();
+        instMesh.setMatrixAt(i, dummy.matrix);
+      }
+      instMesh.instanceMatrix.needsUpdate = true;
+      scene.add(instMesh);
+    });
+  } else {
+    for(let i=0;i<350;i++){
+      const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
+      const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
+      const h = getHeight(x,z);
+      if(h < -3 || h > 20) continue;
+      const t = treeTemplate.clone();
+      const scale = 0.8+Math.random()*1.2;
+      t.scale.set(scale,scale,scale);
+      t.position.set(x, h, z);
+      t.rotation.y = Math.random()*Math.PI*2;
+      t.castShadow = true;
+      scene.add(t);
+    }
+  }
+  assetsLoaded++;
+  updateLoading('Trees planted!', 40);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Tree load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
+// ===== ROCKS =====
+for(let i=0;i<100;i++){
+  const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
+  const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
+  const h = getHeight(x,z);
+  const s = 0.5+Math.random()*2.5;
+  const rock = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(s, 1),
+    new THREE.MeshLambertMaterial({color:new THREE.Color().setHSL(0,0,0.35+Math.random()*0.2)})
+  );
+  rock.position.set(x, h+s*0.3, z);
+  rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+  rock.castShadow = true;
+  scene.add(rock);
+}
+updateLoading('Rocks placed...', 45);
+
+// ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
+updateLoading('Loading iron ore deposits...', 47);
+loader.load('iron-ore-deposit.glb', function(gltf){
+  var oreTemplate = gltf.scene;
+  var oreCount = 80;
+  var dummy = new THREE.Object3D();
+  var oreMeshes = [];
+  oreTemplate.traverse(function(child){
+    if(child.isMesh) oreMeshes.push(child);
+  });
+  if(oreMeshes.length > 0){
+    oreMeshes.forEach(function(mesh){
+      var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), oreCount);
+      instMesh.castShadow = true;
+      instMesh.receiveShadow = true;
+      for(var i=0;i<oreCount;i++){
+        var x = (Math.random()-0.5)*WORLD_SIZE*0.85;
+        var z = (Math.random()-0.5)*WORLD_SIZE*0.85;
+        var h = getHeight(x,z);
+        if(h < 2 || h > 25){
+          dummy.position.set(9999,9999,9999);
+        } else {
+          var scale = 0.7 + Math.random()*1.0;
+          dummy.position.set(x, h, z);
+          dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+          dummy.scale.set(scale, scale, scale);
+        }
+        dummy.updateMatrix();
+        instMesh.setMatrixAt(i, dummy.matrix);
+      }
+      instMesh.instanceMatrix.needsUpdate = true;
+      scene.add(instMesh);
+    });
+  } else {
+    for(var i=0;i<oreCount;i++){
+      var x = (Math.random()-0.5)*WORLD_SIZE*0.85;
+      var z = (Math.random()-0.5)*WORLD_SIZE*0.85;
+      var h = getHeight(x,z);
+      if(h < 2 || h > 25) continue;
+      var ore = oreTemplate.clone();
+      var scale = 0.7+Math.random()*1.0;
+      ore.scale.set(scale,scale,scale);
+      ore.position.set(x, h, z);
+      ore.rotation.y = Math.random()*Math.PI*2;
+      ore.castShadow = true;
+      scene.add(ore);
+    }
+  }
+  assetsLoaded++;
+  updateLoading('Iron ore veins discovered!', 48);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Iron ore load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
+// Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
+gltfLoader.load('aoc-world/bass-model.glb', function(gltf){
+  const bassTemplate = gltf.scene;
+  bassTemplate.traverse(function(child){
+    if(child.isMesh){
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  
+  // Spawn bass throughout water areas
+  for(let i = 0; i < bassCount; i++){
+    let x, z, h;
+    let attempts = 0;
+    do {
+      x = (Math.random() - 0.5) * WORLD_SIZE * 0.9;
+      z = (Math.random() - 0.5) * WORLD_SIZE * 0.9;
+      h = getHeight(x, z);
+      attempts++;
+    } while((h > 0.8 || h < -1.5) && attempts < 10); // Only water (-1.5 to 0.8)
+    
+    if(h > -1.5 && h < 0.8){
+      const bass = bassTemplate.clone();
+      bass.position.set(x, h, z);
+      bass.rotation.y = Math.random() * Math.PI * 2;
+      
+      // Select bass variant with separate NPC IDs
+      let fishScale;
+      let npcId;
+      const rand = Math.random();
+      if(rand < 0.05) {
+        // NPC-0004: Overgrown Bass (5% chance) — 0.45-0.55
+        npcId = 'NPC-0004';
+        fishScale = 0.45 + Math.random() * 0.1;
+      } else if(rand < 0.35) {
+        // NPC-0001: Baby Bass (30% chance) — 0.08-0.12
+        npcId = 'NPC-0001';
+        fishScale = 0.08 + Math.random() * 0.04;
+      } else if(rand < 0.75) {
+        // NPC-0002: Medium Bass (40% chance) — 0.18-0.25
+        npcId = 'NPC-0002';
+        fishScale = 0.18 + Math.random() * 0.07;
+      } else {
+        // NPC-0003: Full Grown Bass (25% chance) — 0.30-0.40
+        npcId = 'NPC-0003';
+        fishScale = 0.30 + Math.random() * 0.1;
+      }
+      
+      bass.scale.set(fishScale, fishScale, fishScale);
+      bass.userData.npcId = npcId;
+      scene.add(bass);
+      bassModels.push(bass);
+      
+      // Swimming behavior
+      bassSwimData.push({
+        model: bass,
+        npcId: npcId,
+        sizeMultiplier: fishScale,
+        startX: x,
+        startZ: z,
+        swimSpeed: 1.5 + Math.random() * 1.5,
+        swimRadius: 3 + Math.random() * 6,
+        speed: 1.5 + Math.random() * 1.5,
+        time: Math.random() * Math.PI * 2
+      });
+    }
+  }
+  
+  assetsLoaded++;
+  updateLoading('Bass spawned!', 52);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Bass load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
+// ===== BASS NPCS (NPC-0001) =====
+let bassModels = [];
+const bassCount = 50; // 50 fish spread throughout water
+let bassSwimData = []; // Track swim paths
+
+// ===== PLAYER =====
+let playerModel = null;
+let playerMixer = null;
+let playerAnimations = {};
+const playerPos = new THREE.Vector3(0, getHeight(0,0), 0);
+let playerYaw = 0;
+let characterYaw = 0;
+let playerVelY = 0;
+const playerSpeed = 12;
+const sprintMult = 1.8;
+const jumpForce = 12;
+const gravity = -30;
+let isGrounded = true;
+let isSprinting = false;
+let thirdPerson = true;
+let cameraDistance = 8;
+let cameraPitch = 0.3;
+
+// Procedural animation tracking
+let animTime = 0;
+let lastMoveX = 0;
+let lastMoveZ = 0;
+const CHAR_HEIGHT_OFFSET = 0.8;  // Offset to keep character feet on ground
+
+// ===== PLAYER SKILLS =====
+let playerSkills = {
+  fishing: 1  // Start at skill level 1
+};
+let playerCaughtFish = 0;  // Total fish caught
+
+// ===== FISHING SYSTEM =====
+let fishingEquipped = false;
+let fishingState = 'idle';  // idle, casting, waiting, reeling
+let fishingCastTime = 0;
+let fishingStartTime = 0;
+const FISH_DETECTION_RANGE = 30;  // Range to detect fish for bobber
+
+// Fishing bobber and line objects
+let fishingPole = null;
+let fishingBobber = null;
+let fishingLine = null;
+let fishingLineGeometry = null;
+let bobberX = 0, bobberZ = 0;
+let bobberDistance = 0;
+let nearbyFish = null;  // Reference to fish near bobber
+let fishArrivalTime = 0;
+let fishCaughtTime = 0;
+let castStartPos = new THREE.Vector3();
+let catchRate = 0;
+let fishNpcId = 0;
+let fishSizeMultiplier = 0;
+
+const playerPlaceholder = new THREE.Mesh(
+  new THREE.CapsuleGeometry(0.4, 1.2, 4, 8),
+  new THREE.MeshLambertMaterial({color:0xff6600, visible:false})
+);
+scene.add(playerPlaceholder);
+
+updateLoading('Loading character model...', 50);
+loader.load('character-model.glb', function(gltf){
+  playerModel = gltf.scene;
+  playerModel.scale.set(1, 1, 1);
+  playerModel.traverse(function(child){
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true}
+  });
+  scene.add(playerModel);
+  if(gltf.animations && gltf.animations.length > 0){
+    playerMixer = new THREE.AnimationMixer(playerModel);
+    gltf.animations.forEach(function(clip){
+      playerAnimations[clip.name] = playerMixer.clipAction(clip);
+    });
+    var first = gltf.animations[0];
+    if(first) playerMixer.clipAction(first).play();
+  }
+  assetsLoaded++;
+  updateLoading('Character loaded!', 65);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Character load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
+// ===== GRASS INSTANCES =====
+updateLoading('Loading grass model...', 55);
+loader.load('grass-model.glb', function(gltf){
+  const grassTemplate = gltf.scene;
+  const grassCount = 2000;
+  const dummy = new THREE.Object3D();
+  let grassMeshes = [];
+  grassTemplate.traverse(function(child){
+    if(child.isMesh) grassMeshes.push(child);
+  });
+  if(grassMeshes.length > 0){
+    grassMeshes.forEach(function(mesh){
+      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), grassCount);
+      instMesh.castShadow = false;
+      instMesh.receiveShadow = true;
+      for(let i=0;i<grassCount;i++){
+        const x = (Math.random()-0.5)*WORLD_SIZE*0.85;
+        const z = (Math.random()-0.5)*WORLD_SIZE*0.85;
+        const h = getHeight(x,z);
+        if(h < -4){
+          dummy.position.set(9999,9999,9999);
+        } else {
+          const scale = 0.6 + Math.random()*0.8;
+          dummy.position.set(x, h, z);
+          dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+          dummy.scale.set(scale, scale, scale);
+        }
+        dummy.updateMatrix();
+        instMesh.setMatrixAt(i, dummy.matrix);
+      }
+      instMesh.instanceMatrix.needsUpdate = true;
+      scene.add(instMesh);
+    });
+  } else {
+    for(let i=0;i<500;i++){
+      const x = (Math.random()-0.5)*WORLD_SIZE*0.85;
+      const z = (Math.random()-0.5)*WORLD_SIZE*0.85;
+      const h = getHeight(x,z);
+      if(h < -4) continue;
+      const g = grassTemplate.clone();
+      const scale = 0.6+Math.random()*0.8;
+      g.scale.set(scale,scale,scale);
+      g.position.set(x, h, z);
+      g.rotation.y = Math.random()*Math.PI*2;
+      scene.add(g);
+    }
+  }
+  assetsLoaded++;
+  updateLoading('Grass planted!', 80);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Grass load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
+// ===== SUN MODEL =====
+updateLoading('Loading sun...', 85);
+var sunModel = null;
+var sunTexture = null;
+sunTexture = new THREE.TextureLoader().load('sun-texture.jpg?v=1');
+sunTexture.encoding = THREE.sRGBEncoding;
+
+loader.load('sun-model.glb?v=3', function(gltf){
+  sunModel = gltf.scene;
+  sunModel.scale.set(100, 100, 100);  // Very large sun, far away
+  // Position sun fixed in the world, really far away and high
+  sunModel.position.set(400, 600, 300);
+  sunModel.traverse(function(child){
+    if(child.isMesh){
+      child.castShadow = false;
+      child.receiveShadow = false;
+      // Apply sun texture with emissive glow
+      child.material = new THREE.MeshBasicMaterial({
+        map: sunTexture,
+        toneMapped: false,  // Prevent tonemapping to keep sun bright
+        emissive: 0xffff00,
+        emissiveIntensity: 2.0
+      });
+    }
+  });
+  scene.add(sunModel);
+  assetsLoaded++;
+  updateLoading('Sun positioned!', 90);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Sun load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
+// Sun position is now fixed (not following camera anymore)
+
+// Terrain counts as loaded
+assetsLoaded++;
+
+let worldReady = false;
+function checkReady(){
+  if(worldReady) return;
+  if(assetsLoaded >= totalAssets){
+    worldReady = true;
+    updateLoading('Ready!', 100);
+    setTimeout(function(){
+      document.getElementById('loading').style.display = 'none';
+      if('ontouchstart' in window){
+        showTouchControls();
+      } else {
+        document.getElementById('click-to-play').style.display = 'flex';
+      }
+    }, 500);
+  }
+}
+checkReady();
+
+setTimeout(function(){
+  if(!worldReady){
+    console.warn('Force-starting world');
+    assetsLoaded = totalAssets;
+    checkReady();
+  }
+}, 15000);
+
+// ===== FISHING FUNCTIONS =====
+function createFishingPole(){
+  // Create a simple fishing pole (stick with handle)
+  const poleGeo = new THREE.CylinderGeometry(0.05, 0.05, 4, 8);
+  const poleMat = new THREE.MeshStandardMaterial({color: 0x8b4513, roughness: 0.7});
+  fishingPole = new THREE.Mesh(poleGeo, poleMat);
+  fishingPole.castShadow = true;
+  fishingPole.visible = false;
+  scene.add(fishingPole);
+  return fishingPole;
+}
+
+function createFishingBobber(){
+  // Round bobber
+  const bobberGeo = new THREE.SphereGeometry(0.08, 8, 8);
+  const bobberMat = new THREE.MeshStandardMaterial({color: 0xff6600, emissive: 0xff4400, emissiveIntensity: 0.5});
+  fishingBobber = new THREE.Mesh(bobberGeo, bobberMat);
+  fishingBobber.castShadow = true;
+  fishingBobber.visible = false;
+  scene.add(fishingBobber);
+  return fishingBobber;
+}
+
+function createFishingLine(){
+  // Thin line geometry from pole to bobber
+  fishingLineGeometry = new THREE.BufferGeometry();
+  const positions = new Float32Array([
+    0, 0, 0,  // pole tip
+    0, -5, 0  // bobber (will update each frame)
+  ]);
+  fishingLineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const lineMat = new THREE.LineBasicMaterial({color: 0xcccccc, linewidth: 1});
+  fishingLine = new THREE.Line(fishingLineGeometry, lineMat);
+  fishingLine.visible = false;
+  scene.add(fishingLine);
+  return fishingLine;
+}
+
+function equipFishingPole(){
+  if(!fishingPole) createFishingPole();
+  if(!fishingBobber) createFishingBobber();
+  if(!fishingLine) createFishingLine();
+  
+  fishingEquipped = true;
+  fishingPole.visible = true;
+  // Position pole in right hand of player (offset from player position)
+  updateFishingPolePosition();
+}
+
+function unequipFishingPole(){
+  fishingEquipped = false;
+  fishingState = 'idle';
+  if(fishingPole) fishingPole.visible = false;
+  if(fishingBobber) fishingBobber.visible = false;
+  if(fishingLine) fishingLine.visible = false;
+}
+
+function updateFishingPolePosition(){
+  if(!fishingPole || !fishingEquipped) return;
+  
+  // Position pole at player's right shoulder
+  const poleOffsetRight = 0.6;
+  const poleOffsetUp = 1.5;
+  fishingPole.position.set(
+    playerPos.x + Math.sin(characterYaw) * poleOffsetRight,
+    playerPos.y + poleOffsetUp,
+    playerPos.z + Math.cos(characterYaw) * poleOffsetRight
+  );
+  fishingPole.rotation.z = 0.4;  // Slight angle
+}
+
+function castFishingLine(){
+  if(fishingState !== 'idle') return;
+  
+  fishingState = 'casting';
+  fishingCastTime = 0;
+  castStartPos.copy(fishingPole.position);
+  
+  // Random distance cast (based on "cast strength" - could be mouse input later)
+  bobberDistance = 15 + Math.random() * 20;  // 15-35 units away
+  
+  // Random spot in front of player
+  const castAngle = playerYaw + (Math.random() - 0.5) * 0.8;
+  bobberX = playerPos.x + Math.cos(castAngle) * bobberDistance;
+  bobberZ = playerPos.z + Math.sin(castAngle) * bobberDistance;
+  
+  // Must hit water
+  const waterY = -6;
+  if(getHeight(bobberX, bobberZ) > waterY + 1){
+    // Land - recast to water nearby
+    for(let i=0; i<5; i++){
+      const testAngle = playerYaw + (Math.random() - 0.5) * 1.5;
+      const testDist = 15 + Math.random() * 20;
+      bobberX = playerPos.x + Math.cos(testAngle) * testDist;
+      bobberZ = playerPos.z + Math.sin(testAngle) * testDist;
+      if(getHeight(bobberX, bobberZ) <= waterY + 1) break;
+    }
+  }
+  
+  fishingBobber.visible = true;
+  fishingLine.visible = true;
+}
+
+function findFishNearBobber(){
+  // Find a random bass near the bobber
+  let nearby = [];
+  
+  bassSwimData.forEach(function(data, idx){
+    const dx = data.model.position.x - bobberX;
+    const dz = data.model.position.z - bobberZ;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    
+    if(dist < FISH_DETECTION_RANGE){
+      nearby.push({idx: idx, dist: dist, data: data});
+    }
+  });
+  
+  if(nearby.length === 0) return null;
+  
+  // Randomly pick one of the nearby fish
+  const chosen = nearby[Math.floor(Math.random() * nearby.length)];
+  return chosen;
+}
+
+function calculateCatchRate(npcId){
+  // Catch rates based on NPC ID and skill level
+  const skill = playerSkills.fishing;
+  const skillFactor = skill / 100;  // 0.01 to 1.0
+  
+  let baseRate = 0;
+  switch(npcId){
+    case 1: baseRate = 0.03 + (0.52 * skillFactor); break;  // Baby: 3% → 55%
+    case 2: baseRate = 0.0255 + (0.4425 * skillFactor); break;  // Medium: 2.55% → 47%
+    case 3: baseRate = 0.0225 + (0.39 * skillFactor); break;  // Full Grown: 2.25% → 41.25%
+    case 4: baseRate = 0.0165 + (0.286 * skillFactor); break;  // Overgrown: 1.65% → 30.25%
+    default: baseRate = 0.03;
+  }
+  
+  // Always a chance to fail, even at max skill
+  baseRate = Math.min(baseRate, 0.99);
+  return baseRate;
+}
+
+function attemptCatch(){
+  if(!nearbyFish) return false;
+  
+  const rate = calculateCatchRate(fishNpcId);
+  return Math.random() < rate;
+}
+
+function successfulCatch(){
+  // Grant XP based on fish type
+  let xpGain = 10;
+  switch(fishNpcId){
+    case 1: xpGain = 10; break;  // Baby Bass
+    case 2: xpGain = 20; break;  // Medium Bass
+    case 3: xpGain = 30; break;  // Full Grown Bass
+    case 4: xpGain = 65; break;  // Overgrown Bass
+  }
+  
+  playerSkills.fishing = Math.min(100, playerSkills.fishing + xpGain / 100);
+  playerCaughtFish++;
+  
+  // Remove fish from world (it's caught)
+  if(nearbyFish){
+    scene.remove(nearbyFish.data.model);
+    bassSwimData.splice(nearbyFish.idx, 1);
+  }
+  
+  return xpGain;
+}
+
+function failedCatch(){
+  // Fish escapes and swims away
+  if(nearbyFish){
+    nearbyFish.data.swimRadius = 50;  // Swim away fast
+    nearbyFish.data.speed = 0.8;
+  }
+}
+
+function resetFishing(){
+  fishingState = 'idle';
+  nearbyFish = null;
+  fishingBobber.visible = false;
+  fishingLine.visible = false;
+  fishingCastTime = 0;
+  fishArrivalTime = 0;
+}
+
+// ===== INPUT =====
+const keys = {};
+let mouseLocked = false;
+let isMobile = 'ontouchstart' in window;
+
+document.getElementById('click-to-play').addEventListener('click', function(){
+  renderer.domElement.requestPointerLock();
+  document.getElementById('click-to-play').style.display = 'none';
+});
+
+document.addEventListener('pointerlockchange', function(){
+  mouseLocked = !!document.pointerLockElement;
+  if(!mouseLocked && !isMobile){
+    document.getElementById('click-to-play').style.display = 'flex';
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  keys[e.code]=true;
+  if(e.code==='KeyV') thirdPerson=!thirdPerson;
+  if(e.code==='KeyR') {
+    fishingEquipped ? unequipFishingPole() : equipFishingPole();
+  }
+});
+document.addEventListener('keyup', function(e){keys[e.code]=false});
+document.addEventListener('mousemove', function(e){
+  if(!mouseLocked) return;
+  playerYaw -= e.movementX*0.003;
+  cameraPitch -= e.movementY*0.003;
+  cameraPitch = Math.max(-1.2, Math.min(1.2, cameraPitch));
+});
+
+document.addEventListener('click', function(e){
+  if(!fishingEquipped) return;
+  
+  if(fishingState === 'idle'){
+    castFishingLine();
+  } else if(fishingState === 'waiting' && nearbyFish && fishCaughtTime > 0.5){
+    // Attempt reel
+    if(attemptCatch()){
+      const xp = successfulCatch();
+      console.log('Caught fish (NPC-'+fishNpcId+')! +'+xp+' XP. Skill: '+Math.round(playerSkills.fishing));
+    } else {
+      failedCatch();
+      console.log('Fish escaped!');
+    }
+    resetFishing();
+  }
+});
+
+// Touch controls
+let joystickActive = false;
+let joystickX = 0, joystickY = 0;
+let touchLookId = null;
+let lastTouchX = 0, lastTouchY = 0;
+
+function showTouchControls(){
+  document.getElementById('joystick-zone').style.display = 'block';
+  ['btn-jump','btn-sprint','btn-camera'].forEach(function(id){
+    document.getElementById(id).style.display = 'flex';
+  });
+  document.getElementById('controls').style.display = 'none';
+}
+
+const jZone = document.getElementById('joystick-zone');
+const jThumb = document.getElementById('joystick-thumb');
+
+jZone.addEventListener('touchstart', function(e){
+  e.preventDefault();
+  joystickActive = true;
+}, {passive:false});
+jZone.addEventListener('touchmove', function(e){
+  e.preventDefault();
+  const t = e.touches[0];
+  const rect = jZone.getBoundingClientRect();
+  const cx = rect.left+70, cy = rect.top+70;
+  let dx = t.clientX-cx, dy = t.clientY-cy;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  if(dist>60){dx*=60/dist;dy*=60/dist}
+  jThumb.style.left = (45+dx)+'px';
+  jThumb.style.top = (45+dy)+'px';
+  joystickX = dx/60;
+  joystickY = dy/60;
+}, {passive:false});
+jZone.addEventListener('touchend', function(e){
+  joystickActive = false;
+  joystickX=0;joystickY=0;
+  jThumb.style.left='45px';jThumb.style.top='45px';
+});
+
+document.addEventListener('touchstart', function(e){
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t = e.changedTouches[i];
+    if(t.clientX > window.innerWidth*0.4 && t.clientY < window.innerHeight*0.7){
+      touchLookId = t.identifier;
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+    }
+  }
+}, {passive:true});
+document.addEventListener('touchmove', function(e){
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t = e.changedTouches[i];
+    if(t.identifier === touchLookId){
+      playerYaw -= (t.clientX-lastTouchX)*0.005;
+      cameraPitch -= (t.clientY-lastTouchY)*0.005;
+      cameraPitch = Math.max(-1.2, Math.min(1.2, cameraPitch));
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+    }
+  }
+}, {passive:true});
+document.addEventListener('touchend', function(e){
+  for(let i=0;i<e.changedTouches.length;i++){
+    if(e.changedTouches[i].identifier === touchLookId) touchLookId = null;
+  }
+});
+
+document.getElementById('btn-jump').addEventListener('touchstart', function(e){
+  e.preventDefault();
+  if(isGrounded){playerVelY=jumpForce;isGrounded=false}
+});
+let sprintTouch = false;
+document.getElementById('btn-sprint').addEventListener('touchstart', function(e){e.preventDefault();sprintTouch=true});
+document.getElementById('btn-sprint').addEventListener('touchend', function(){sprintTouch=false});
+document.getElementById('btn-camera').addEventListener('touchstart', function(e){e.preventDefault();thirdPerson=!thirdPerson});
+
+document.addEventListener('wheel', function(e){
+  if(thirdPerson){
+    cameraDistance += e.deltaY*0.01;
+    cameraDistance = Math.max(3, Math.min(20, cameraDistance));
+  }
+});
+
+// ===== GAME LOOP =====
+let frameCount = 0;
+let fpsTime = 0;
+let fps = 0;
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  
+  frameCount++;
+  fpsTime += dt;
+  if(fpsTime >= 0.5){fps=Math.round(frameCount/fpsTime);frameCount=0;fpsTime=0}
+  
+  let moveX = 0, moveZ = 0;
+  isSprinting = keys['ShiftLeft'] || keys['ShiftRight'] || sprintTouch;
+  
+  if(isMobile && joystickActive){
+    moveX = joystickX;
+    moveZ = joystickY;
+  } else {
+    if(keys['KeyW']||keys['ArrowUp']) moveZ = -1;
+    if(keys['KeyS']||keys['ArrowDown']) moveZ = 1;
+    if(keys['KeyA']||keys['ArrowLeft']) moveX = -1;
+    if(keys['KeyD']||keys['ArrowRight']) moveX = 1;
+  }
+  
+  if(moveX || moveZ){
+    const len = Math.sqrt(moveX*moveX+moveZ*moveZ);
+    if(len>1){moveX/=len;moveZ/=len}
+    // Smoothly rotate body towards camera direction when moving
+    let angleDiff = playerYaw - characterYaw;
+    while(angleDiff > Math.PI) angleDiff -= 2*Math.PI;
+    while(angleDiff < -Math.PI) angleDiff += 2*Math.PI;
+    characterYaw += angleDiff * 0.15; // Smooth rotation towards camera direction
+    const speed = playerSpeed * (isSprinting ? sprintMult : 1) * dt;
+    const sin = Math.sin(playerYaw);
+    const cos = Math.cos(playerYaw);
+    playerPos.x += (moveX*cos - moveZ*sin) * speed;
+    playerPos.z += (moveX*sin + moveZ*cos) * speed;
+  }
+  lastMoveX = moveX;
+  lastMoveZ = moveZ;
+  
+  if((keys['Space'] || false) && isGrounded){
+    playerVelY = jumpForce;
+    isGrounded = false;
+  }
+  
+  playerVelY += gravity * dt;
+  playerPos.y += playerVelY * dt;
+  
+  const groundH = getHeight(playerPos.x, playerPos.z);
+  if(playerPos.y <= groundH + CHAR_HEIGHT_OFFSET){
+    playerPos.y = groundH + CHAR_HEIGHT_OFFSET;
+    playerVelY = 0;
+    isGrounded = true;
+  }
+  
+  const bound = WORLD_SIZE*0.48;
+  playerPos.x = Math.max(-bound, Math.min(bound, playerPos.x));
+  playerPos.z = Math.max(-bound, Math.min(bound, playerPos.z));
+  
+  if(playerModel){
+    playerModel.position.copy(playerPos);
+    playerModel.rotation.y = characterYaw + Math.PI;
+  }
+  playerPlaceholder.position.copy(playerPos);
+  
+  if(playerMixer) playerMixer.update(dt);
+  
+  // Procedural running animation
+  animTime += dt;
+  const moveSpeed = Math.sqrt(lastMoveX*lastMoveX + lastMoveZ*lastMoveZ);
+  if(playerModel && moveSpeed > 0.01){
+    const animSpeed = isSprinting ? 8 : 4; // Faster animation when sprinting
+    const animPhase = (animTime * animSpeed) % (Math.PI * 2);
+    
+    playerModel.traverse(function(child){
+      if(child.isBone || child.isObject3D){
+        const boneName = child.name.toLowerCase();
+        
+        // Left leg swing
+        if(boneName.includes('left_leg') || boneName.includes('leftleg')){
+          child.rotation.x = Math.sin(animPhase) * 0.6;
+        }
+        // Right leg swing (opposite phase)
+        if(boneName.includes('right_leg') || boneName.includes('rightleg')){
+          child.rotation.x = Math.sin(animPhase + Math.PI) * 0.6;
+        }
+        // Left arm swing
+        if(boneName.includes('left_arm') || boneName.includes('leftarm')){
+          child.rotation.z = Math.sin(animPhase + Math.PI) * 0.5;
+        }
+        // Right arm swing (opposite)
+        if(boneName.includes('right_arm') || boneName.includes('rightarm')){
+          child.rotation.z = Math.sin(animPhase) * 0.5;
+        }
+      }
+    });
+  }
+  
+  // Update bass (NPC-0001) swimming animations
+  bassSwimData.forEach(function(data){
+    if(data.model){
+      data.time += dt * data.swimSpeed;
+      // Circular swimming pattern
+      const offsetX = Math.cos(data.time) * data.swimRadius;
+      const offsetZ = Math.sin(data.time) * data.swimRadius;
+      data.model.position.x = data.startX + offsetX;
+      data.model.position.z = data.startZ + offsetZ;
+      // Face direction of movement
+      data.model.rotation.y = data.time + Math.PI/2;
+      // Sine wave vertical bob
+      data.model.position.y += Math.sin(data.time * 2) * 0.05;
+    }
+  });
+  
+  // ===== FISHING UPDATES =====
+  if(fishingEquipped){
+    updateFishingPolePosition();
+    
+    if(fishingState === 'casting'){
+      fishingCastTime += dt;
+      const castDuration = 0.6;
+      
+      if(fishingCastTime < castDuration){
+        // Animate bobber flying through the air
+        const castProgress = fishingCastTime / castDuration;
+        const arc = Math.sin(castProgress * Math.PI) * 3;  // Arc up then down
+        
+        fishingBobber.position.x = castStartPos.x + (bobberX - castStartPos.x) * castProgress;
+        fishingBobber.position.y = castStartPos.y - 1 + arc;
+        fishingBobber.position.z = castStartPos.z + (bobberZ - castStartPos.z) * castProgress;
+      } else {
+        // Bobber lands in water
+        fishingBobber.position.set(bobberX, -6, bobberZ);
+        fishingState = 'waiting';
+        fishingStartTime = clock.elapsedTime;
+        
+        // Look for fish near bobber
+        nearbyFish = findFishNearBobber();
+        if(nearbyFish){
+          fishNpcId = nearbyFish.data.npcId;
+          fishSizeMultiplier = nearbyFish.data.sizeMultiplier;
+          fishArrivalTime = 2 + Math.random() * 2;  // Fish takes 2-4 seconds to arrive
+        }
+      }
+    }
+    
+    if(fishingState === 'waiting'){
+      fishCaughtTime = clock.elapsedTime - fishingStartTime;
+      
+      // Bobber bobs up and down
+      const bobAmplitude = 0.3;
+      fishingBobber.position.y = -6 + Math.sin(fishCaughtTime * 3) * bobAmplitude * 0.3;
+      
+      // If fish found, swim towards bobber
+      if(nearbyFish && fishCaughtTime < fishArrivalTime){
+        const fish = nearbyFish.data;
+        const dx = bobberX - fish.model.position.x;
+        const dz = bobberZ - fish.model.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        
+        if(dist > 0.5){
+          const speed = 20 * dt;  // Swim speed
+          fish.model.position.x += (dx / dist) * speed;
+          fish.model.position.z += (dz / dist) * speed;
+          fish.model.position.y = -6 + Math.random() * 1;
+        }
+      }
+      
+      // Once fish arrives, bobber bobs more vigorously
+      if(nearbyFish && fishCaughtTime >= fishArrivalTime){
+        const bigBobAmount = 0.5 + Math.sin(fishCaughtTime * 6) * 0.3;
+        fishingBobber.position.y = -6 + bigBobAmount;
+      }
+    }
+    
+    // Update fishing line from pole tip to bobber
+    if(fishingState === 'casting' || fishingState === 'waiting'){
+      const linePositions = fishingLineGeometry.attributes.position.array;
+      // Pole tip
+      linePositions[0] = fishingPole.position.x;
+      linePositions[1] = fishingPole.position.y;
+      linePositions[2] = fishingPole.position.z;
+      // Bobber
+      linePositions[3] = fishingBobber.position.x;
+      linePositions[4] = fishingBobber.position.y;
+      linePositions[5] = fishingBobber.position.z;
+      fishingLineGeometry.attributes.position.needsUpdate = true;
+    }
+  }
+  
+  if(thirdPerson){
+    const camX = playerPos.x - Math.sin(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
+    const camY = playerPos.y + 2 + Math.sin(cameraPitch)*cameraDistance;
+    const camZ = playerPos.z - Math.cos(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
+    camera.position.set(camX, camY, camZ);
+    camera.lookAt(playerPos.x, playerPos.y+1.5, playerPos.z);
+  } else {
+    camera.position.set(playerPos.x, playerPos.y+1.7, playerPos.z);
+    const lookDist = 10;
+    camera.lookAt(
+      playerPos.x + Math.sin(playerYaw)*lookDist,
+      playerPos.y + 1.7 + Math.sin(cameraPitch)*lookDist,
+      playerPos.z + Math.cos(playerYaw)*lookDist
+    );
+  }
+  
+  // Sun stays fixed in world, doesn't follow player
+  sunLight.target.position.set(400, 200, 300);
+  
+  water.position.y = -6 + Math.sin(clock.elapsedTime*0.5)*0.3;
+  
+  // Animate water texture — scroll in two directions for ripple effect
+  if(water.material.map){
+    water.material.map.offset.x += 0.001;
+    water.material.map.offset.y += 0.0008;
+  }
+  
+  document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);
+  document.getElementById('hud-fps').textContent = 'FPS: '+fps;
+  document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');
+  document.getElementById('hud-pos').textContent += ' | Fishing: '+Math.round(playerSkills.fishing)+' | Caught: '+playerCaughtFish;
+  
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', function(){
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+</script>
+</body>
+</html>

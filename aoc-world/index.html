@@ -27,6 +27,7 @@ canvas{display:block;width:100%;height:100%}
 #btn-jump{bottom:30px;right:30px}
 #btn-sprint{bottom:100px;right:30px}
 #btn-camera{bottom:30px;right:100px}
+#btn-cast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);width:80px;height:80px;border-radius:50%;background:rgba(240,160,48,0.6);border:3px solid rgba(240,160,48,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none;transition:all 0.2s}
 </style>
 <script type="importmap">
 {
@@ -74,6 +75,7 @@ setTimeout(function(){
 <div class="touch-btn" id="btn-jump">Jump</div>
 <div class="touch-btn" id="btn-sprint">Run</div>
 <div class="touch-btn" id="btn-camera">Cam</div>
+<div id="btn-cast">Cast</div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -401,10 +403,12 @@ gltfLoader.load('aoc-world/bass-model.glb', function(gltf){
       bassSwimData.push({
         model: bass,
         npcId: npcId,
+        sizeMultiplier: fishScale,
         startX: x,
         startZ: z,
         swimSpeed: 1.5 + Math.random() * 1.5,
         swimRadius: 3 + Math.random() * 6,
+        speed: 1.5 + Math.random() * 1.5,
         time: Math.random() * Math.PI * 2
       });
     }
@@ -447,6 +451,34 @@ let animTime = 0;
 let lastMoveX = 0;
 let lastMoveZ = 0;
 const CHAR_HEIGHT_OFFSET = 0.8;  // Offset to keep character feet on ground
+
+// ===== PLAYER SKILLS =====
+let playerSkills = {
+  fishing: 1  // Start at skill level 1
+};
+let playerCaughtFish = 0;  // Total fish caught
+
+// ===== FISHING SYSTEM =====
+let fishingEquipped = false;
+let fishingState = 'idle';  // idle, casting, waiting, reeling
+let fishingCastTime = 0;
+let fishingStartTime = 0;
+const FISH_DETECTION_RANGE = 30;  // Range to detect fish for bobber
+
+// Fishing bobber and line objects
+let fishingPole = null;
+let fishingBobber = null;
+let fishingLine = null;
+let fishingLineGeometry = null;
+let bobberX = 0, bobberZ = 0;
+let bobberDistance = 0;
+let nearbyFish = null;  // Reference to fish near bobber
+let fishArrivalTime = 0;
+let fishCaughtTime = 0;
+let castStartPos = new THREE.Vector3();
+let catchRate = 0;
+let fishNpcId = 0;
+let fishSizeMultiplier = 0;
 
 const playerPlaceholder = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.4, 1.2, 4, 8),
@@ -601,6 +633,195 @@ setTimeout(function(){
   }
 }, 15000);
 
+// ===== FISHING FUNCTIONS =====
+function createFishingPole(){
+  // Create a simple fishing pole (stick with handle)
+  const poleGeo = new THREE.CylinderGeometry(0.05, 0.05, 4, 8);
+  const poleMat = new THREE.MeshStandardMaterial({color: 0x8b4513, roughness: 0.7});
+  fishingPole = new THREE.Mesh(poleGeo, poleMat);
+  fishingPole.castShadow = true;
+  fishingPole.visible = false;
+  scene.add(fishingPole);
+  return fishingPole;
+}
+
+function createFishingBobber(){
+  // Round bobber
+  const bobberGeo = new THREE.SphereGeometry(0.08, 8, 8);
+  const bobberMat = new THREE.MeshStandardMaterial({color: 0xff6600, emissive: 0xff4400, emissiveIntensity: 0.5});
+  fishingBobber = new THREE.Mesh(bobberGeo, bobberMat);
+  fishingBobber.castShadow = true;
+  fishingBobber.visible = false;
+  scene.add(fishingBobber);
+  return fishingBobber;
+}
+
+function createFishingLine(){
+  // Thin line geometry from pole to bobber
+  fishingLineGeometry = new THREE.BufferGeometry();
+  const positions = new Float32Array([
+    0, 0, 0,  // pole tip
+    0, -5, 0  // bobber (will update each frame)
+  ]);
+  fishingLineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const lineMat = new THREE.LineBasicMaterial({color: 0xcccccc, linewidth: 1});
+  fishingLine = new THREE.Line(fishingLineGeometry, lineMat);
+  fishingLine.visible = false;
+  scene.add(fishingLine);
+  return fishingLine;
+}
+
+function equipFishingPole(){
+  if(!fishingPole) createFishingPole();
+  if(!fishingBobber) createFishingBobber();
+  if(!fishingLine) createFishingLine();
+  
+  fishingEquipped = true;
+  fishingPole.visible = true;
+  // Position pole in right hand of player (offset from player position)
+  updateFishingPolePosition();
+}
+
+function unequipFishingPole(){
+  fishingEquipped = false;
+  fishingState = 'idle';
+  if(fishingPole) fishingPole.visible = false;
+  if(fishingBobber) fishingBobber.visible = false;
+  if(fishingLine) fishingLine.visible = false;
+}
+
+function updateFishingPolePosition(){
+  if(!fishingPole || !fishingEquipped) return;
+  
+  // Position pole at player's right shoulder
+  const poleOffsetRight = 0.6;
+  const poleOffsetUp = 1.5;
+  fishingPole.position.set(
+    playerPos.x + Math.sin(characterYaw) * poleOffsetRight,
+    playerPos.y + poleOffsetUp,
+    playerPos.z + Math.cos(characterYaw) * poleOffsetRight
+  );
+  fishingPole.rotation.z = 0.4;  // Slight angle
+}
+
+function castFishingLine(){
+  if(fishingState !== 'idle') return;
+  
+  fishingState = 'casting';
+  fishingCastTime = 0;
+  castStartPos.copy(fishingPole.position);
+  
+  // Random distance cast (based on "cast strength" - could be mouse input later)
+  bobberDistance = 15 + Math.random() * 20;  // 15-35 units away
+  
+  // Random spot in front of player
+  const castAngle = playerYaw + (Math.random() - 0.5) * 0.8;
+  bobberX = playerPos.x + Math.cos(castAngle) * bobberDistance;
+  bobberZ = playerPos.z + Math.sin(castAngle) * bobberDistance;
+  
+  // Must hit water
+  const waterY = -6;
+  if(getHeight(bobberX, bobberZ) > waterY + 1){
+    // Land - recast to water nearby
+    for(let i=0; i<5; i++){
+      const testAngle = playerYaw + (Math.random() - 0.5) * 1.5;
+      const testDist = 15 + Math.random() * 20;
+      bobberX = playerPos.x + Math.cos(testAngle) * testDist;
+      bobberZ = playerPos.z + Math.sin(testAngle) * testDist;
+      if(getHeight(bobberX, bobberZ) <= waterY + 1) break;
+    }
+  }
+  
+  fishingBobber.visible = true;
+  fishingLine.visible = true;
+}
+
+function findFishNearBobber(){
+  // Find a random bass near the bobber
+  let nearby = [];
+  
+  bassSwimData.forEach(function(data, idx){
+    const dx = data.model.position.x - bobberX;
+    const dz = data.model.position.z - bobberZ;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    
+    if(dist < FISH_DETECTION_RANGE){
+      nearby.push({idx: idx, dist: dist, data: data});
+    }
+  });
+  
+  if(nearby.length === 0) return null;
+  
+  // Randomly pick one of the nearby fish
+  const chosen = nearby[Math.floor(Math.random() * nearby.length)];
+  return chosen;
+}
+
+function calculateCatchRate(npcId){
+  // Catch rates based on NPC ID and skill level
+  const skill = playerSkills.fishing;
+  const skillFactor = skill / 100;  // 0.01 to 1.0
+  
+  let baseRate = 0;
+  switch(npcId){
+    case 1: baseRate = 0.03 + (0.52 * skillFactor); break;  // Baby: 3% → 55%
+    case 2: baseRate = 0.0255 + (0.4425 * skillFactor); break;  // Medium: 2.55% → 47%
+    case 3: baseRate = 0.0225 + (0.39 * skillFactor); break;  // Full Grown: 2.25% → 41.25%
+    case 4: baseRate = 0.0165 + (0.286 * skillFactor); break;  // Overgrown: 1.65% → 30.25%
+    default: baseRate = 0.03;
+  }
+  
+  // Always a chance to fail, even at max skill
+  baseRate = Math.min(baseRate, 0.99);
+  return baseRate;
+}
+
+function attemptCatch(){
+  if(!nearbyFish) return false;
+  
+  const rate = calculateCatchRate(fishNpcId);
+  return Math.random() < rate;
+}
+
+function successfulCatch(){
+  // Grant XP based on fish type
+  let xpGain = 10;
+  switch(fishNpcId){
+    case 1: xpGain = 10; break;  // Baby Bass
+    case 2: xpGain = 20; break;  // Medium Bass
+    case 3: xpGain = 30; break;  // Full Grown Bass
+    case 4: xpGain = 65; break;  // Overgrown Bass
+  }
+  
+  playerSkills.fishing = Math.min(100, playerSkills.fishing + xpGain / 100);
+  playerCaughtFish++;
+  
+  // Remove fish from world (it's caught)
+  if(nearbyFish){
+    scene.remove(nearbyFish.data.model);
+    bassSwimData.splice(nearbyFish.idx, 1);
+  }
+  
+  return xpGain;
+}
+
+function failedCatch(){
+  // Fish escapes and swims away
+  if(nearbyFish){
+    nearbyFish.data.swimRadius = 50;  // Swim away fast
+    nearbyFish.data.speed = 0.8;
+  }
+}
+
+function resetFishing(){
+  fishingState = 'idle';
+  nearbyFish = null;
+  fishingBobber.visible = false;
+  fishingLine.visible = false;
+  fishingCastTime = 0;
+  fishArrivalTime = 0;
+}
+
 // ===== INPUT =====
 const keys = {};
 let mouseLocked = false;
@@ -618,7 +839,13 @@ document.addEventListener('pointerlockchange', function(){
   }
 });
 
-document.addEventListener('keydown', function(e){keys[e.code]=true;if(e.code==='KeyV')thirdPerson=!thirdPerson});
+document.addEventListener('keydown', function(e){
+  keys[e.code]=true;
+  if(e.code==='KeyV') thirdPerson=!thirdPerson;
+  if(e.code==='KeyR') {
+    fishingEquipped ? unequipFishingPole() : equipFishingPole();
+  }
+});
 document.addEventListener('keyup', function(e){keys[e.code]=false});
 document.addEventListener('mousemove', function(e){
   if(!mouseLocked) return;
@@ -626,6 +853,54 @@ document.addEventListener('mousemove', function(e){
   cameraPitch -= e.movementY*0.003;
   cameraPitch = Math.max(-1.2, Math.min(1.2, cameraPitch));
 });
+
+// Fishing action handler (both mouse and touch)
+function handleFishingAction(){
+  if(!fishingEquipped) return;
+  
+  if(fishingState === 'idle'){
+    castFishingLine();
+  } else if(fishingState === 'waiting' && nearbyFish && fishCaughtTime > 0.5){
+    // Attempt reel
+    if(attemptCatch()){
+      const xp = successfulCatch();
+      console.log('Caught fish (NPC-'+fishNpcId+')! +'+xp+' XP. Skill: '+Math.round(playerSkills.fishing));
+    } else {
+      failedCatch();
+      console.log('Fish escaped!');
+    }
+    resetFishing();
+  }
+}
+
+document.addEventListener('click', function(e){
+  handleFishingAction();
+});
+
+// Mobile cast button
+document.getElementById('btn-cast').addEventListener('click', function(e){
+  e.stopPropagation();
+  handleFishingAction();
+});
+
+// Update cast button visibility based on fishing state
+setInterval(function(){
+  const castBtn = document.getElementById('btn-cast');
+  if(fishingEquipped){
+    castBtn.style.display = 'flex';
+    if(fishingState === 'waiting' && nearbyFish && fishCaughtTime > 0.5){
+      castBtn.textContent = 'Reel!';
+      castBtn.style.background = 'rgba(100,200,100,0.6)';
+      castBtn.style.borderColor = 'rgba(100,200,100,0.9)';
+    } else {
+      castBtn.textContent = 'Cast';
+      castBtn.style.background = 'rgba(240,160,48,0.6)';
+      castBtn.style.borderColor = 'rgba(240,160,48,0.9)';
+    }
+  } else {
+    castBtn.style.display = 'none';
+  }
+}, 100);
 
 // Touch controls
 let joystickActive = false;
@@ -828,6 +1103,82 @@ function animate(){
     }
   });
   
+  // ===== FISHING UPDATES =====
+  if(fishingEquipped){
+    updateFishingPolePosition();
+    
+    if(fishingState === 'casting'){
+      fishingCastTime += dt;
+      const castDuration = 0.6;
+      
+      if(fishingCastTime < castDuration){
+        // Animate bobber flying through the air
+        const castProgress = fishingCastTime / castDuration;
+        const arc = Math.sin(castProgress * Math.PI) * 3;  // Arc up then down
+        
+        fishingBobber.position.x = castStartPos.x + (bobberX - castStartPos.x) * castProgress;
+        fishingBobber.position.y = castStartPos.y - 1 + arc;
+        fishingBobber.position.z = castStartPos.z + (bobberZ - castStartPos.z) * castProgress;
+      } else {
+        // Bobber lands in water
+        fishingBobber.position.set(bobberX, -6, bobberZ);
+        fishingState = 'waiting';
+        fishingStartTime = clock.elapsedTime;
+        
+        // Look for fish near bobber
+        nearbyFish = findFishNearBobber();
+        if(nearbyFish){
+          fishNpcId = nearbyFish.data.npcId;
+          fishSizeMultiplier = nearbyFish.data.sizeMultiplier;
+          fishArrivalTime = 2 + Math.random() * 2;  // Fish takes 2-4 seconds to arrive
+        }
+      }
+    }
+    
+    if(fishingState === 'waiting'){
+      fishCaughtTime = clock.elapsedTime - fishingStartTime;
+      
+      // Bobber bobs up and down
+      const bobAmplitude = 0.3;
+      fishingBobber.position.y = -6 + Math.sin(fishCaughtTime * 3) * bobAmplitude * 0.3;
+      
+      // If fish found, swim towards bobber
+      if(nearbyFish && fishCaughtTime < fishArrivalTime){
+        const fish = nearbyFish.data;
+        const dx = bobberX - fish.model.position.x;
+        const dz = bobberZ - fish.model.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        
+        if(dist > 0.5){
+          const speed = 20 * dt;  // Swim speed
+          fish.model.position.x += (dx / dist) * speed;
+          fish.model.position.z += (dz / dist) * speed;
+          fish.model.position.y = -6 + Math.random() * 1;
+        }
+      }
+      
+      // Once fish arrives, bobber bobs more vigorously
+      if(nearbyFish && fishCaughtTime >= fishArrivalTime){
+        const bigBobAmount = 0.5 + Math.sin(fishCaughtTime * 6) * 0.3;
+        fishingBobber.position.y = -6 + bigBobAmount;
+      }
+    }
+    
+    // Update fishing line from pole tip to bobber
+    if(fishingState === 'casting' || fishingState === 'waiting'){
+      const linePositions = fishingLineGeometry.attributes.position.array;
+      // Pole tip
+      linePositions[0] = fishingPole.position.x;
+      linePositions[1] = fishingPole.position.y;
+      linePositions[2] = fishingPole.position.z;
+      // Bobber
+      linePositions[3] = fishingBobber.position.x;
+      linePositions[4] = fishingBobber.position.y;
+      linePositions[5] = fishingBobber.position.z;
+      fishingLineGeometry.attributes.position.needsUpdate = true;
+    }
+  }
+  
   if(thirdPerson){
     const camX = playerPos.x - Math.sin(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
     const camY = playerPos.y + 2 + Math.sin(cameraPitch)*cameraDistance;
@@ -858,6 +1209,7 @@ function animate(){
   document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);
   document.getElementById('hud-fps').textContent = 'FPS: '+fps;
   document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');
+  document.getElementById('hud-pos').textContent += ' | Fishing: '+Math.round(playerSkills.fishing)+' | Caught: '+playerCaughtFish;
   
   renderer.render(scene, camera);
 }

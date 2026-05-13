@@ -656,11 +656,14 @@ function animate(){
   if(moveX || moveZ){
     const len = Math.sqrt(moveX*moveX+moveZ*moveZ);
     if(len>1){moveX/=len;moveZ/=len}
-    // Update character facing based on movement direction
-    characterYaw = Math.atan2(moveX, -moveZ);
+    // Smoothly rotate body towards camera direction when moving
+    let angleDiff = playerYaw - characterYaw;
+    while(angleDiff > Math.PI) angleDiff -= 2*Math.PI;
+    while(angleDiff < -Math.PI) angleDiff += 2*Math.PI;
+    characterYaw += angleDiff * 0.15; // Smooth rotation towards camera direction
     const speed = playerSpeed * (isSprinting ? sprintMult : 1) * dt;
-    const sin = Math.sin(characterYaw);
-    const cos = Math.cos(characterYaw);
+    const sin = Math.sin(playerYaw);
+    const cos = Math.cos(playerYaw);
     playerPos.x += (moveX*cos - moveZ*sin) * speed;
     playerPos.z += (moveX*sin + moveZ*cos) * speed;
   }

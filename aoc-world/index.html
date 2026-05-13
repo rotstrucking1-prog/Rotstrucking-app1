@@ -249,16 +249,15 @@ loader.load('aoc-world/tree-model.glb', function(gltf){
   const treeCount = 350;
   const dummy = new THREE.Object3D();
   let treeMeshes = [];
+  const treeTex = new THREE.TextureLoader().load('aoc-world/tree-texture.jpg');
+  treeTex.flipY = false;
+  treeTex.encoding = THREE.sRGBEncoding;
   treeTemplate.traverse(function(child){
     if(child.isMesh) treeMeshes.push(child);
   });
   if(treeMeshes.length > 0){
     treeMeshes.forEach(function(mesh){
-      const treeMat = mesh.material.clone();
-      treeMat.metalness = 0;
-      treeMat.roughness = 0.8;
-      if(treeMat.metalnessMap) treeMat.metalnessMap = null;
-      if(treeMat.roughnessMap) treeMat.roughnessMap = null;
+      const treeMat = new THREE.MeshStandardMaterial({map: treeTex, metalness: 0, roughness: 0.8});
       const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), treeMat, treeCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
@@ -328,16 +327,15 @@ loader.load('aoc-world/iron-ore-deposit.glb', function(gltf){
   var oreCount = 80;
   var dummy = new THREE.Object3D();
   var oreMeshes = [];
+  var oreTex = new THREE.TextureLoader().load('aoc-world/iron-ore-texture.jpg');
+  oreTex.flipY = false;
+  oreTex.encoding = THREE.sRGBEncoding;
   oreTemplate.traverse(function(child){
     if(child.isMesh) oreMeshes.push(child);
   });
   if(oreMeshes.length > 0){
     oreMeshes.forEach(function(mesh){
-      var oreMat = mesh.material.clone();
-      oreMat.metalness = 0;
-      oreMat.roughness = 0.7;
-      if(oreMat.metalnessMap) oreMat.metalnessMap = null;
-      if(oreMat.roughnessMap) oreMat.roughnessMap = null;
+      var oreMat = new THREE.MeshStandardMaterial({map: oreTex, metalness: 0, roughness: 0.7});
       var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), oreMat, oreCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
@@ -386,12 +384,14 @@ loader.load('aoc-world/iron-ore-deposit.glb', function(gltf){
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
 loader.load('aoc-world/bass-model.glb', function(gltf){
   const bassTemplate = gltf.scene;
+  const bassTex = new THREE.TextureLoader().load('aoc-world/bass-texture.jpg');
+  bassTex.flipY = false;
+  bassTex.encoding = THREE.sRGBEncoding;
   bassTemplate.traverse(function(child){
     if(child.isMesh){
       child.castShadow = true;
       child.receiveShadow = true;
-      // Keep GLB texture but fix metalness for proper lighting
-      if(child.material) { child.material.metalness = 0; child.material.roughness = 0.7; if(child.material.metalnessMap) child.material.metalnessMap = null; if(child.material.roughnessMap) child.material.roughnessMap = null; }
+      child.material = new THREE.MeshStandardMaterial({map: bassTex, metalness: 0, roughness: 0.7});
     }
   });
   
@@ -467,8 +467,11 @@ updateLoading('Loading fishing pole...', 53);
 loader.load('aoc-world/fishing-pole-model.glb', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
+  var poleTex = new THREE.TextureLoader().load('aoc-world/fishing-pole-texture.jpg');
+  poleTex.flipY = false;
+  poleTex.encoding = THREE.sRGBEncoding;
   fishingPoleModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;if(child.material){child.material.metalness=0;child.material.roughness=0.7;if(child.material.metalnessMap)child.material.metalnessMap=null;if(child.material.roughnessMap)child.material.roughnessMap=null;}}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshStandardMaterial({map:poleTex,metalness:0,roughness:0.7});}
   });
   // Don't add to scene yet - will be added when equipped
   assetsLoaded++;
@@ -548,8 +551,11 @@ updateLoading('Loading character model...', 50);
 loader.load('aoc-world/character-model.glb', function(gltf){
   playerModel = gltf.scene;
   playerModel.scale.set(1, 1, 1);
+  var charTex = new THREE.TextureLoader().load('aoc-world/character-texture.jpg');
+  charTex.flipY = false;
+  charTex.encoding = THREE.sRGBEncoding;
   playerModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;if(child.material){child.material.metalness=0;child.material.roughness=0.7;if(child.material.metalnessMap)child.material.metalnessMap=null;if(child.material.roughnessMap)child.material.roughnessMap=null;}}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshStandardMaterial({map:charTex,metalness:0,roughness:0.7});}
   });
   scene.add(playerModel);
   if(gltf.animations && gltf.animations.length > 0){
@@ -576,16 +582,15 @@ loader.load('aoc-world/grass-model.glb', function(gltf){
   const grassCount = 2000;
   const dummy = new THREE.Object3D();
   let grassMeshes = [];
+  const grassModelTex = new THREE.TextureLoader().load('aoc-world/grass-model-texture.jpg');
+  grassModelTex.flipY = false;
+  grassModelTex.encoding = THREE.sRGBEncoding;
   grassTemplate.traverse(function(child){
     if(child.isMesh) grassMeshes.push(child);
   });
   if(grassMeshes.length > 0){
     grassMeshes.forEach(function(mesh){
-      const grassMat = mesh.material.clone();
-      grassMat.metalness = 0;
-      grassMat.roughness = 0.8;
-      if(grassMat.metalnessMap) grassMat.metalnessMap = null;
-      if(grassMat.roughnessMap) grassMat.roughnessMap = null;
+      const grassMat = new THREE.MeshStandardMaterial({map: grassModelTex, metalness: 0, roughness: 0.8});
       const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), grassMat, grassCount);
       instMesh.castShadow = false;
       instMesh.receiveShadow = true;
@@ -646,9 +651,11 @@ loader.load('aoc-world/sun-model.glb?v=3', function(gltf){
     if(child.isMesh){
       child.castShadow = false;
       child.receiveShadow = false;
-      // Keep GLB texture but make unlit so sun always glows
-      var sunMap = child.material.map;
-      child.material = new THREE.MeshBasicMaterial({map: sunMap, color: 0xffffcc, toneMapped: false});
+      // Load sun texture externally and make unlit so sun always glows
+      var sunColorTex = new THREE.TextureLoader().load('aoc-world/sun-model-texture.jpg');
+      sunColorTex.flipY = false;
+      sunColorTex.encoding = THREE.sRGBEncoding;
+      child.material = new THREE.MeshBasicMaterial({map: sunColorTex, toneMapped: false});
     }
   });
   scene.add(sunModel);

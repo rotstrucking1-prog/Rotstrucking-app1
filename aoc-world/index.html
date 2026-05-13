@@ -1220,7 +1220,7 @@ function animate(){
   
   if(playerModel){
     playerModel.position.copy(playerPos);
-    playerModel.rotation.y = characterYaw + Math.PI * 0.5;  // PI/2 offset — model faces along X axis, rotated to match camera forward
+    playerModel.rotation.y = characterYaw - Math.PI * 0.5;  // -PI/2 offset — model forward corrected
   }
   playerPlaceholder.position.copy(playerPos);
   

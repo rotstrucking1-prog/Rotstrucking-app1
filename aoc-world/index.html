@@ -451,6 +451,10 @@ loader.load('grass-model.glb', function(gltf){
 // ===== SUN MODEL =====
 updateLoading('Loading sun...', 85);
 var sunModel = null;
+var sunTexture = null;
+sunTexture = new THREE.TextureLoader().load('sun-texture.jpg?v=1');
+sunTexture.encoding = THREE.sRGBEncoding;
+
 loader.load('sun-model.glb', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(80, 80, 80);  // Large sun in the sky
@@ -458,6 +462,13 @@ loader.load('sun-model.glb', function(gltf){
     if(child.isMesh){
       child.castShadow = false;
       child.receiveShadow = false;
+      // Apply sun texture with emissive glow
+      child.material = new THREE.MeshBasicMaterial({
+        map: sunTexture,
+        toneMapped: false,  // Prevent tonemapping to keep sun bright
+        emissive: 0xffaa00,
+        emissiveIntensity: 1.5
+      });
     }
   });
   scene.add(sunModel);

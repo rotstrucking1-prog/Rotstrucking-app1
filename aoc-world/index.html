@@ -103,7 +103,21 @@ function updateLoading(txt,pct){
 }
 
 // ===== LIGHTING =====
-scene.background = new THREE.Color(0x87CEEB);
+// Load Brad's sky texture as panoramic background
+const skyLoader = new THREE.TextureLoader();
+const skyTex = skyLoader.load('sky-texture.jpg?v=1', function(){
+  // Once loaded, apply it
+  scene.background = skyTex;
+}, undefined, function(){
+  // Fallback to blue if sky fails to load
+  console.warn('Sky texture failed to load, using fallback blue');
+  scene.background = new THREE.Color(0x87CEEB);
+});
+
+// Map equirectangular texture to proper format
+skyTex.mapping = THREE.EquirectangularReflectionMapping;
+skyTex.encoding = THREE.sRGBEncoding;
+
 scene.fog = new THREE.FogExp2(0x87CEEB, 0.0015);
 
 const ambientLight = new THREE.AmbientLight(0x6688cc, 0.5);

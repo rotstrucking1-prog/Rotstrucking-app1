@@ -47,7 +47,7 @@ canvas{display:block;width:100%;height:100%}
 <div class="touch-btn" id="btn-camera">Cam</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/loaders/GLTFLoader.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.min.js"></script>
 <script>
 // ===== CORE SETUP =====
@@ -355,8 +355,11 @@ loader.load('grass-model.glb', function(gltf){
 // Terrain counts as loaded
 assetsLoaded++;
 
+var worldReady = false;
 function checkReady(){
+  if(worldReady) return;
   if(assetsLoaded >= totalAssets){
+    worldReady = true;
     updateLoading('Ready!', 100);
     setTimeout(function(){
       document.getElementById('loading').style.display = 'none';
@@ -369,6 +372,15 @@ function checkReady(){
   }
 }
 checkReady();
+
+// Safety timeout — force ready after 15 seconds even if assets fail
+setTimeout(function(){
+  if(!worldReady){
+    console.warn('Force-starting world — some assets may not have loaded');
+    assetsLoaded = totalAssets;
+    checkReady();
+  }
+}, 15000);
 
 // ===== INPUT =====
 const keys = {};

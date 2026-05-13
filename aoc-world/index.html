@@ -426,44 +426,17 @@ loader.load('bass-model.glb?v=8', function(gltf){
         sizeMultiplier: fishScale,
         startX: x,
         startZ: z,
-        swimSpeed: 1.5 + Math.random() * 1.5,
-        swimRadius: 3 + Math.random() * 6,
+        swimSpeed: 0.5 + Math.random() * 1.0,
+        heading: Math.random() * Math.PI * 2,
+        turnTimer: 0,
+        turnInterval: 3 + Math.random() * 5,
+        turnTarget: Math.random() * Math.PI * 2,
         speed: 1.5 + Math.random() * 1.5,
         time: Math.random() * Math.PI * 2
       });
     }
   }
   
-  // === TEST FISH: 4 bass right near player spawn for visibility testing ===
-  const testPositions = [
-    {x: 2, z: 3, scale: 0.9, name: 'Baby'},
-    {x: -2, z: 5, scale: 1.875, name: 'Medium'},
-    {x: 3, z: 7, scale: 3.0, name: 'Full Grown'},
-    {x: -3, z: 9, scale: 5.25, name: 'Overgrown'}
-  ];
-  for(const tp of testPositions){
-    const testBass = bassTemplate.clone();
-    testBass.position.set(tp.x, 0.3, tp.z); // Floating above ground near spawn
-    testBass.scale.set(tp.scale, tp.scale, tp.scale);
-    scene.add(testBass);
-    bassModels.push(testBass);
-    bassSwimData.push({
-      model: testBass,
-      npcId: 'TEST',
-      sizeMultiplier: tp.scale,
-      centerX: tp.x,
-      centerZ: tp.z,
-      angle: 0,
-      radius: 1.5,
-      speed: 0.005,
-      bobOffset: Math.random() * Math.PI * 2,
-      xp: 0,
-      catchMin: 99, catchMax: 99
-    });
-    debugLog('🐟 TEST ' + tp.name + ' bass at (' + tp.x + ', 0.3, ' + tp.z + ') scale=' + tp.scale);
-  }
-  // === END TEST FISH ===
-
   debugLog('🐟 Bass spawned: ' + bassModels.length + '/' + bassCount);
   assetsLoaded++;
   updateLoading('Bass spawned!', 52);
@@ -878,8 +851,8 @@ function successfulCatch(){
 function failedCatch(){
   // Fish escapes and swims away
   if(nearbyFish){
-    nearbyFish.data.swimRadius = 50;  // Swim away fast
-    nearbyFish.data.speed = 0.8;
+    nearbyFish.data.swimSpeed = 8;  // Swim away fast
+    nearbyFish.data.heading += Math.PI;  // Turn around and flee
   }
 }
 
@@ -1157,19 +1130,36 @@ function animate(){
     });
   }
   
-  // Update bass (NPC-0001) swimming animations
+  // Update bass swimming — wandering pattern
   bassSwimData.forEach(function(data){
     if(data.model){
-      data.time += dt * data.swimSpeed;
-      // Circular swimming pattern
-      const offsetX = Math.cos(data.time) * data.swimRadius;
-      const offsetZ = Math.sin(data.time) * data.swimRadius;
-      data.model.position.x = data.startX + offsetX;
-      data.model.position.z = data.startZ + offsetZ;
-      // Face direction of movement
-      data.model.rotation.y = data.time + Math.PI/2;
-      // Sine wave vertical bob
-      data.model.position.y += Math.sin(data.time * 2) * 0.05;
+      data.time += dt;
+      // Gentle direction changes on a timer
+      data.turnTimer += dt;
+      if(data.turnTimer >= data.turnInterval){
+        data.turnTimer = 0;
+        data.turnInterval = 3 + Math.random() * 5;
+        data.turnTarget = data.heading + (Math.random() - 0.5) * Math.PI * 0.8;
+      }
+      // Smoothly rotate toward turn target
+      var hDiff = data.turnTarget - data.heading;
+      while(hDiff > Math.PI) hDiff -= 2*Math.PI;
+      while(hDiff < -Math.PI) hDiff += 2*Math.PI;
+      data.heading += hDiff * 0.02;
+      // Move forward in heading direction
+      var spd = data.swimSpeed * dt;
+      data.model.position.x += Math.sin(data.heading) * spd;
+      data.model.position.z += Math.cos(data.heading) * spd;
+      // Keep in world bounds — reverse heading if near edge
+      var wb = WORLD_SIZE * 0.45;
+      if(Math.abs(data.model.position.x) > wb || Math.abs(data.model.position.z) > wb){
+        data.heading += Math.PI;
+        data.turnTarget = data.heading;
+      }
+      // Face swimming direction
+      data.model.rotation.y = data.heading;
+      // Gentle bobbing
+      data.model.position.y = 0.1 + Math.sin(data.time * 1.5) * 0.15;
     }
   });
   

@@ -254,7 +254,8 @@ loader.load('aoc-world/tree-model.glb', function(gltf){
   });
   if(treeMeshes.length > 0){
     treeMeshes.forEach(function(mesh){
-      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), treeCount);
+      const treeMat = new THREE.MeshStandardMaterial({color: 0x228B22, roughness: 0.8, metalness: 0.0});  // Forest green
+      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), treeMat, treeCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
       for(let i=0;i<treeCount;i++){
@@ -328,7 +329,8 @@ loader.load('aoc-world/iron-ore-deposit.glb', function(gltf){
   });
   if(oreMeshes.length > 0){
     oreMeshes.forEach(function(mesh){
-      var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), oreCount);
+      var oreMat = new THREE.MeshStandardMaterial({color: 0xB87333, roughness: 0.6, metalness: 0.7});  // Copper/bronze
+      var instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), oreMat, oreCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
       for(var i=0;i<oreCount;i++){
@@ -380,6 +382,7 @@ loader.load('aoc-world/bass-model.glb', function(gltf){
     if(child.isMesh){
       child.castShadow = true;
       child.receiveShadow = true;
+      child.material = new THREE.MeshStandardMaterial({color: 0xC0A080, roughness: 0.5, metalness: 0.4});  // Bronze fish
     }
   });
   
@@ -456,7 +459,7 @@ loader.load('aoc-world/fishing-pole-model.glb', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   fishingPoleModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshStandardMaterial({color:0x8B4513,roughness:0.7});}
   });
   // Don't add to scene yet - will be added when equipped
   assetsLoaded++;
@@ -537,7 +540,7 @@ loader.load('aoc-world/character-model.glb', function(gltf){
   playerModel = gltf.scene;
   playerModel.scale.set(1, 1, 1);
   playerModel.traverse(function(child){
-    if(child.isMesh){child.castShadow=true;child.receiveShadow=true}
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true;child.material=new THREE.MeshStandardMaterial({color:0xD2A679,roughness:0.6});}
   });
   scene.add(playerModel);
   if(gltf.animations && gltf.animations.length > 0){
@@ -569,7 +572,8 @@ loader.load('aoc-world/grass-model.glb', function(gltf){
   });
   if(grassMeshes.length > 0){
     grassMeshes.forEach(function(mesh){
-      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), grassCount);
+      const grassMat = new THREE.MeshLambertMaterial({color: 0x7CB342});  // Grass green
+      const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), grassMat, grassCount);
       instMesh.castShadow = false;
       instMesh.receiveShadow = true;
       for(let i=0;i<grassCount;i++){
@@ -630,12 +634,7 @@ loader.load('aoc-world/sun-model.glb?v=3', function(gltf){
       child.castShadow = false;
       child.receiveShadow = false;
       // Apply sun texture with emissive glow
-      child.material = new THREE.MeshBasicMaterial({
-        map: sunTexture,
-        toneMapped: false,  // Prevent tonemapping to keep sun bright
-        emissive: 0xffff00,
-        emissiveIntensity: 2.0
-      });
+      child.material = new THREE.MeshBasicMaterial({color:0xFFFF00,toneMapped:false,emissive:0xFFFF00,emissiveIntensity:3.0});
     }
   });
   scene.add(sunModel);

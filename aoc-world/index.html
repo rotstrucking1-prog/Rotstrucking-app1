@@ -92,6 +92,14 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ===== SCENE =====
 const scene = new THREE.Scene();
+
+// Debug logging to on-screen panel
+function debugLog(msg) {
+  const el = document.getElementById('debugLog');
+  if(el) el.innerHTML += msg + '<br>';
+  console.log('[DEBUG]', msg);
+}
+
 const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
@@ -257,12 +265,14 @@ loader.load('tree-model.glb?v=7', function(gltf){
     treeMeshes.forEach(function(mesh){
       // Use GLTF-native material — just fix metalness so it's not black
       if(mesh.material){
-        mesh.material.metalness = 0;
-        mesh.material.roughness = 0.8;
-        if(mesh.material.metalnessMap) mesh.material.metalnessMap = null;
-        if(mesh.material.roughnessMap) mesh.material.roughnessMap = null;
-        if(mesh.material.aoMap) mesh.material.aoMap = null;
-        mesh.material.needsUpdate = true;
+        const m = mesh.material;
+        debugLog('🌲 TREE mat: type=' + m.type + ' hasMap=' + !!m.map + ' metal=' + m.metalness + ' color=' + (m.color ? '#'+m.color.getHexString() : 'none'));
+        m.metalness = 0;
+        m.roughness = 0.8;
+        if(m.metalnessMap) m.metalnessMap = null;
+        if(m.roughnessMap) m.roughnessMap = null;
+        if(m.aoMap) m.aoMap = null;
+        m.needsUpdate = true;
       }
       const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material, treeCount);
       instMesh.castShadow = true;
@@ -394,7 +404,8 @@ loader.load('iron-ore-deposit.glb?v=7', function(gltf){
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
 loader.load('bass-model.glb?v=7', function(gltf){
   const bassTemplate = gltf.scene;
-  bassTemplate.traverse(function(child){
+  debugLog('🐟 BASS model loaded, traversing...');
+      bassTemplate.traverse(function(child){
     if(child.isMesh){
       child.castShadow = true;
       child.receiveShadow = true;
@@ -481,7 +492,8 @@ updateLoading('Loading fishing pole...', 53);
 loader.load('fishing-pole-model.glb?v=7', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
-  fishingPoleModel.traverse(function(child){
+  debugLog('🎣 POLE model loaded');
+        fishingPoleModel.traverse(function(child){
     if(child.isMesh){
       child.castShadow=true;child.receiveShadow=true;
       if(child.material){
@@ -610,6 +622,7 @@ loader.load('grass-model.glb?v=7', function(gltf){
   const grassCount = 2000;
   const dummy = new THREE.Object3D();
   let grassMeshes = [];
+  debugLog('🌿 GRASS model loaded');
   grassTemplate.traverse(function(child){
     if(child.isMesh) grassMeshes.push(child);
   });
@@ -679,7 +692,8 @@ loader.load('sun-model.glb?v=7', function(gltf){
   sunModel.scale.set(100, 100, 100);  // Very large sun, far away
   // Position sun fixed in the world, really far away and high
   sunModel.position.set(400, 600, 300);
-  sunModel.traverse(function(child){
+  debugLog('☀️ SUN model loaded');
+        sunModel.traverse(function(child){
     if(child.isMesh){
       child.castShadow = false;
       child.receiveShadow = false;

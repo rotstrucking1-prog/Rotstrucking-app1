@@ -385,11 +385,11 @@ loader.load('bass-model.glb?v=8', function(gltf){
       z = (Math.random() - 0.5) * WORLD_SIZE * 0.9;
       h = getHeight(x, z);
       attempts++;
-    } while((h > 2.0 || h < -3.0) && attempts < 100); // Water areas (wider range, more attempts)
+    } while(h > -7 && attempts < 200); // Water areas (wider range, more attempts)
     
-    if(h > -3.0 && h < 2.0){
+    if(h < -7){
       const bass = bassTemplate.clone();
-      bass.position.set(x, 0.1, z);  // Always at water surface
+      bass.position.set(x, -5.8, z);  // Always at water surface
       bass.rotation.y = Math.random() * Math.PI * 2;
       
       // Select bass variant with separate NPC IDs
@@ -1151,16 +1151,20 @@ function animate(){
       var spd = data.swimSpeed * dt;
       data.model.position.x += Math.sin(data.heading) * spd;
       data.model.position.z += Math.cos(data.heading) * spd;
-      // Keep in world bounds — reverse heading if near edge
+      // Keep in water — reverse heading if approaching land or world edge
       var wb = WORLD_SIZE * 0.45;
-      if(Math.abs(data.model.position.x) > wb || Math.abs(data.model.position.z) > wb){
-        data.heading += Math.PI;
+      var terrainH = getHeight(data.model.position.x, data.model.position.z);
+      if(Math.abs(data.model.position.x) > wb || Math.abs(data.model.position.z) > wb || terrainH > -7){
+        // Undo the move and reverse direction
+        data.model.position.x -= Math.sin(data.heading) * spd;
+        data.model.position.z -= Math.cos(data.heading) * spd;
+        data.heading += Math.PI + (Math.random() - 0.5) * 0.5; // Reverse with slight randomness
         data.turnTarget = data.heading;
       }
       // Face swimming direction
       data.model.rotation.y = data.heading;
       // Gentle bobbing
-      data.model.position.y = 0.1 + Math.sin(data.time * 1.5) * 0.15;
+      data.model.position.y = -5.7 + Math.sin(data.time * 1.5) * 0.2;
     }
   });
   

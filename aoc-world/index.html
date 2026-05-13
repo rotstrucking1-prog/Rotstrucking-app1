@@ -98,10 +98,28 @@ const loader = new GLTFLoader();
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 5;
+const totalAssets = 6;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
+}
+
+// World ready check - MUST be declared before any asset loading callbacks
+let worldReady = false;
+function checkReady(){
+  if(worldReady) return;
+  if(assetsLoaded >= totalAssets){
+    worldReady = true;
+    updateLoading('Ready!', 100);
+    setTimeout(function(){
+      document.getElementById('loading').style.display = 'none';
+      if('ontouchstart' in window){
+        showTouchControls();
+      } else {
+        document.getElementById('click-to-play').style.display = 'flex';
+      }
+    }, 500);
+  }
 }
 
 // ===== LIGHTING =====
@@ -423,6 +441,24 @@ gltfLoader.load('aoc-world/bass-model.glb', function(gltf){
   checkReady();
 });
 
+// ===== FISHING POLE MODEL =====
+updateLoading('Loading fishing pole...', 53);
+loader.load('aoc-world/fishing-pole-model.glb', function(gltf){
+  fishingPoleModel = gltf.scene;
+  fishingPoleModel.scale.set(1, 1, 1);
+  fishingPoleModel.traverse(function(child){
+    if(child.isMesh){child.castShadow=true;child.receiveShadow=true}
+  });
+  // Don't add to scene yet - will be added when equipped
+  assetsLoaded++;
+  updateLoading('Fishing pole loaded!', 54);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Fishing pole load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
 // ===== BASS NPCS (NPC-0001) =====
 let bassModels = [];
 const bassCount = 50; // 50 fish spread throughout water
@@ -467,6 +503,7 @@ const FISH_DETECTION_RANGE = 30;  // Range to detect fish for bobber
 
 // Fishing bobber and line objects
 let fishingPole = null;
+let fishingPoleModel = null;  // GLB model for fishing pole
 let fishingBobber = null;
 let fishingLine = null;
 let fishingLineGeometry = null;
@@ -606,23 +643,6 @@ loader.load('sun-model.glb?v=3', function(gltf){
 
 // Terrain counts as loaded
 assetsLoaded++;
-
-let worldReady = false;
-function checkReady(){
-  if(worldReady) return;
-  if(assetsLoaded >= totalAssets){
-    worldReady = true;
-    updateLoading('Ready!', 100);
-    setTimeout(function(){
-      document.getElementById('loading').style.display = 'none';
-      if('ontouchstart' in window){
-        showTouchControls();
-      } else {
-        document.getElementById('click-to-play').style.display = 'flex';
-      }
-    }, 500);
-  }
-}
 checkReady();
 
 setTimeout(function(){
@@ -672,7 +692,16 @@ function createFishingLine(){
 }
 
 function equipFishingPole(){
-  if(!fishingPole) createFishingPole();
+  if(!fishingPole){
+    if(fishingPoleModel){
+      // Use loaded model
+      fishingPole = fishingPoleModel.clone();
+      scene.add(fishingPole);
+    } else {
+      // Fallback to geometric pole
+      createFishingPole();
+    }
+  }
   if(!fishingBobber) createFishingBobber();
   if(!fishingLine) createFishingLine();
   

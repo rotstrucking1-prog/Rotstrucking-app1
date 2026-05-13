@@ -18,39 +18,49 @@ canvas{display:block;width:100%;height:100%}
 #crosshair::before,#crosshair::after{content:'';position:absolute;background:#fff}
 #crosshair::before{width:2px;height:20px;left:9px;top:0}
 #crosshair::after{width:20px;height:2px;top:9px;left:0}
-#controls{position:fixed;top:15px;right:15px;color:#fff;font-size:12px;text-shadow:1px 1px 2px #000;pointer-events:none;z-index:10;text-align:right;opacity:0.6}
-#touch-controls{position:fixed;bottom:20px;z-index:20;display:none}
-#joystick-zone{position:fixed;bottom:20px;left:20px;width:140px;height:140px;z-index:20}
-#joystick-base{width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);position:relative}
-#joystick-thumb{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.4);position:absolute;top:45px;left:45px;pointer-events:none}
-.touch-btn{position:fixed;z-index:20;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:11px;display:none;align-items:center;justify-content:center;text-align:center;user-select:none;-webkit-user-select:none}
-#btn-jump{bottom:100px;right:20px}
-#btn-sprint{bottom:25px;right:20px}
-#btn-camera{bottom:25px;right:95px}
-#click-to-play{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:500;cursor:pointer}
-#click-to-play span{color:#fff;font-size:1.5em;padding:20px 40px;border:2px solid #f0a030;border-radius:10px;background:rgba(240,160,48,0.2)}
+#click-to-play{position:fixed;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;z-index:50;background:rgba(0,0,0,0.3);cursor:pointer}
+#click-to-play span{background:rgba(0,0,0,0.7);color:#f0a030;padding:20px 40px;border-radius:10px;font-size:1.4em;border:2px solid #f0a030}
+#controls{position:fixed;top:10px;right:10px;color:#fff;font-size:12px;text-shadow:1px 1px 2px #000;z-index:10;opacity:0.6;text-align:right;line-height:1.6}
+#joystick-zone{position:fixed;bottom:30px;left:30px;width:140px;height:140px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.2);display:none;z-index:20}
+#joystick-thumb{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(240,160,48,0.8);left:45px;top:45px;pointer-events:none}
+.touch-btn{position:fixed;width:60px;height:60px;border-radius:50%;background:rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.3);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;z-index:20;-webkit-user-select:none;user-select:none}
+#btn-jump{bottom:30px;right:30px}
+#btn-sprint{bottom:100px;right:30px}
+#btn-camera{bottom:30px;right:100px}
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
-<div id="loading"><h1>Architect of Creation</h1><p id="load-text">Loading world...</p><div id="bar-wrap"><div id="bar"></div></div></div>
+<div id="loading">
+  <h1>Architect of Creation</h1>
+  <p id="load-text">Loading world...</p>
+  <div id="bar-wrap"><div id="bar"></div></div>
+</div>
+<div id="click-to-play"><span>Click to Play</span></div>
 <div id="crosshair"></div>
 <div id="hud">
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
 </div>
-<div id="controls">WASD - Move | SHIFT - Sprint<br>SPACE - Jump | V - Camera Toggle<br>Mouse - Look Around</div>
-<div id="click-to-play"><span>Click to Play</span></div>
-<div id="joystick-zone" style="display:none"><div id="joystick-base"><div id="joystick-thumb"></div></div></div>
+<div id="controls">WASD - Move | Shift - Sprint | Space - Jump<br>Mouse - Look | V - Toggle Camera | Scroll - Zoom</div>
+<div id="joystick-zone"><div id="joystick-thumb"></div></div>
 <div class="touch-btn" id="btn-jump">Jump</div>
-<div class="touch-btn" id="btn-sprint">Sprint</div>
+<div class="touch-btn" id="btn-sprint">Run</div>
 <div class="touch-btn" id="btn-camera">Cam</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.min.js"></script>
-<script>
-// ===== CORE SETUP =====
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// ===== SCENE =====
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);
@@ -63,11 +73,11 @@ document.body.appendChild(renderer.domElement);
 
 const camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,2000);
 const clock = new THREE.Clock();
-const loader = new THREE.GLTFLoader ? new THREE.GLTFLoader() : new THREE.GLTF2Loader();
+const loader = new GLTFLoader();
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 4; // terrain, character, grass, trees
+const totalAssets = 4;
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -101,7 +111,6 @@ const TERRAIN_SEG = 200;
 const terrainGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, TERRAIN_SEG, TERRAIN_SEG);
 terrainGeo.rotateX(-Math.PI/2);
 
-// Height generation
 function getHeight(x, z) {
   let h = 0;
   h += Math.sin(x*0.008)*Math.cos(z*0.008)*12;
@@ -117,7 +126,6 @@ for(let i=0;i<verts.length;i+=3){
 }
 terrainGeo.computeVertexNormals();
 
-// Terrain color based on height
 const colors = new Float32Array(verts.length);
 for(let i=0;i<verts.length;i+=3){
   const h = verts[i+1];
@@ -144,30 +152,24 @@ water.position.y = -6;
 scene.add(water);
 
 // ===== TREES (Brad's GLB Model) =====
-let treeInstances = [];
 updateLoading('Loading tree model...', 30);
 loader.load('tree-model.glb', function(gltf){
   const treeTemplate = gltf.scene;
   const treeCount = 350;
   const dummy = new THREE.Object3D();
-  
-  // Find all meshes in the tree model to instance them
   let treeMeshes = [];
   treeTemplate.traverse(function(child){
     if(child.isMesh) treeMeshes.push(child);
   });
-  
   if(treeMeshes.length > 0){
     treeMeshes.forEach(function(mesh){
       const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), treeCount);
       instMesh.castShadow = true;
       instMesh.receiveShadow = true;
-      
       for(let i=0;i<treeCount;i++){
         const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
         const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
         const h = getHeight(x,z);
-        
         if(h < -3 || h > 20){
           dummy.position.set(9999,9999,9999);
         } else {
@@ -181,10 +183,8 @@ loader.load('tree-model.glb', function(gltf){
       }
       instMesh.instanceMatrix.needsUpdate = true;
       scene.add(instMesh);
-      treeInstances.push(instMesh);
     });
   } else {
-    // Fallback: clone whole scene
     for(let i=0;i<350;i++){
       const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
       const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
@@ -199,7 +199,6 @@ loader.load('tree-model.glb', function(gltf){
       scene.add(t);
     }
   }
-  
   assetsLoaded++;
   updateLoading('Trees planted!', 40);
   checkReady();
@@ -243,14 +242,12 @@ let thirdPerson = true;
 let cameraDistance = 8;
 let cameraPitch = 0.3;
 
-// Placeholder while loading
 const playerPlaceholder = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.4, 1.2, 4, 8),
   new THREE.MeshLambertMaterial({color:0xff6600, visible:false})
 );
 scene.add(playerPlaceholder);
 
-// Load character model
 updateLoading('Loading character model...', 50);
 loader.load('character-model.glb', function(gltf){
   playerModel = gltf.scene;
@@ -259,18 +256,14 @@ loader.load('character-model.glb', function(gltf){
     if(child.isMesh){child.castShadow=true;child.receiveShadow=true}
   });
   scene.add(playerModel);
-  
-  // Check for animations
   if(gltf.animations && gltf.animations.length > 0){
     playerMixer = new THREE.AnimationMixer(playerModel);
     gltf.animations.forEach(function(clip){
       playerAnimations[clip.name] = playerMixer.clipAction(clip);
     });
-    // Try to play idle or first animation
     var first = gltf.animations[0];
     if(first) playerMixer.clipAction(first).play();
   }
-  
   assetsLoaded++;
   updateLoading('Character loaded!', 65);
   checkReady();
@@ -281,38 +274,25 @@ loader.load('character-model.glb', function(gltf){
 });
 
 // ===== GRASS INSTANCES =====
-let grassInstances = [];
-let grassTemplate = null;
-
 updateLoading('Loading grass model...', 55);
 loader.load('grass-model.glb', function(gltf){
-  grassTemplate = gltf.scene;
-  
-  // Scatter grass across terrain
+  const grassTemplate = gltf.scene;
   const grassCount = 2000;
   const dummy = new THREE.Object3D();
-  
-  // Find all meshes in the grass model to instance them
   let grassMeshes = [];
   grassTemplate.traverse(function(child){
     if(child.isMesh) grassMeshes.push(child);
   });
-  
   if(grassMeshes.length > 0){
-    // Use InstancedMesh for performance
     grassMeshes.forEach(function(mesh){
       const instMesh = new THREE.InstancedMesh(mesh.geometry.clone(), mesh.material.clone(), grassCount);
       instMesh.castShadow = false;
       instMesh.receiveShadow = true;
-      
       for(let i=0;i<grassCount;i++){
         const x = (Math.random()-0.5)*WORLD_SIZE*0.85;
         const z = (Math.random()-0.5)*WORLD_SIZE*0.85;
         const h = getHeight(x,z);
-        
-        // Only place grass on reasonable terrain (not underwater, not too steep)
-        if(h < -4) { 
-          // Place off-screen if underwater
+        if(h < -4){
           dummy.position.set(9999,9999,9999);
         } else {
           const scale = 0.6 + Math.random()*0.8;
@@ -325,10 +305,8 @@ loader.load('grass-model.glb', function(gltf){
       }
       instMesh.instanceMatrix.needsUpdate = true;
       scene.add(instMesh);
-      grassInstances.push(instMesh);
     });
   } else {
-    // Fallback: add the whole grass scene as instances manually
     for(let i=0;i<500;i++){
       const x = (Math.random()-0.5)*WORLD_SIZE*0.85;
       const z = (Math.random()-0.5)*WORLD_SIZE*0.85;
@@ -342,7 +320,6 @@ loader.load('grass-model.glb', function(gltf){
       scene.add(g);
     }
   }
-  
   assetsLoaded++;
   updateLoading('Grass planted!', 80);
   checkReady();
@@ -355,7 +332,7 @@ loader.load('grass-model.glb', function(gltf){
 // Terrain counts as loaded
 assetsLoaded++;
 
-var worldReady = false;
+let worldReady = false;
 function checkReady(){
   if(worldReady) return;
   if(assetsLoaded >= totalAssets){
@@ -373,10 +350,9 @@ function checkReady(){
 }
 checkReady();
 
-// Safety timeout — force ready after 15 seconds even if assets fail
 setTimeout(function(){
   if(!worldReady){
-    console.warn('Force-starting world — some assets may not have loaded');
+    console.warn('Force-starting world');
     assetsLoaded = totalAssets;
     checkReady();
   }
@@ -448,7 +424,6 @@ jZone.addEventListener('touchend', function(e){
   jThumb.style.left='45px';jThumb.style.top='45px';
 });
 
-// Look via right-side touch
 document.addEventListener('touchstart', function(e){
   for(let i=0;i<e.changedTouches.length;i++){
     const t = e.changedTouches[i];
@@ -486,7 +461,6 @@ document.getElementById('btn-sprint').addEventListener('touchstart', function(e)
 document.getElementById('btn-sprint').addEventListener('touchend', function(){sprintTouch=false});
 document.getElementById('btn-camera').addEventListener('touchstart', function(e){e.preventDefault();thirdPerson=!thirdPerson});
 
-// Mouse wheel for camera distance
 document.addEventListener('wheel', function(e){
   if(thirdPerson){
     cameraDistance += e.deltaY*0.01;
@@ -503,12 +477,10 @@ function animate(){
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   
-  // FPS counter
   frameCount++;
   fpsTime += dt;
   if(fpsTime >= 0.5){fps=Math.round(frameCount/fpsTime);frameCount=0;fpsTime=0}
   
-  // Movement
   let moveX = 0, moveZ = 0;
   isSprinting = keys['ShiftLeft'] || keys['ShiftRight'] || sprintTouch;
   
@@ -532,7 +504,6 @@ function animate(){
     playerPos.z += (moveX*sin + moveZ*cos) * speed;
   }
   
-  // Jump & gravity
   if((keys['Space'] || false) && isGrounded){
     playerVelY = jumpForce;
     isGrounded = false;
@@ -548,22 +519,18 @@ function animate(){
     isGrounded = true;
   }
   
-  // Keep in bounds
   const bound = WORLD_SIZE*0.48;
   playerPos.x = Math.max(-bound, Math.min(bound, playerPos.x));
   playerPos.z = Math.max(-bound, Math.min(bound, playerPos.z));
   
-  // Update player model
   if(playerModel){
     playerModel.position.copy(playerPos);
     playerModel.rotation.y = playerYaw;
   }
   playerPlaceholder.position.copy(playerPos);
   
-  // Animation mixer
   if(playerMixer) playerMixer.update(dt);
   
-  // Camera
   if(thirdPerson){
     const camX = playerPos.x - Math.sin(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
     const camY = playerPos.y + 2 + Math.sin(cameraPitch)*cameraDistance;
@@ -580,14 +547,11 @@ function animate(){
     );
   }
   
-  // Sun follows player loosely
   sunLight.position.set(playerPos.x+200, 300, playerPos.z+150);
   sunLight.target.position.copy(playerPos);
   
-  // Animate water
   water.position.y = -6 + Math.sin(clock.elapsedTime*0.5)*0.3;
   
-  // HUD
   document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);
   document.getElementById('hud-fps').textContent = 'FPS: '+fps;
   document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');

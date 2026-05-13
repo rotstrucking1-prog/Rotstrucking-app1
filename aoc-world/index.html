@@ -448,6 +448,39 @@ loader.load('grass-model.glb', function(gltf){
   checkReady();
 });
 
+// ===== SUN MODEL =====
+updateLoading('Loading sun...', 85);
+var sunModel = null;
+loader.load('sun-model.glb', function(gltf){
+  sunModel = gltf.scene;
+  sunModel.scale.set(80, 80, 80);  // Large sun in the sky
+  sunModel.traverse(function(child){
+    if(child.isMesh){
+      child.castShadow = false;
+      child.receiveShadow = false;
+    }
+  });
+  scene.add(sunModel);
+  assetsLoaded++;
+  updateLoading('Sun positioned!', 90);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Sun load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
+// Position sun in the sky during render loop
+function updateSunPosition(){
+  if(sunModel && camera){
+    // Keep sun far away relative to camera direction, high in sky
+    var camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    sunModel.position.copy(camera.position).addScaledVector(camDir, 300);
+    sunModel.position.y = Math.max(sunModel.position.y, 250);  // Force high in sky
+  }
+}
+
 // Terrain counts as loaded
 assetsLoaded++;
 
@@ -595,6 +628,8 @@ let fps = 0;
 function animate(){
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
+  
+  updateSunPosition();  // Keep sun in the sky
   
   frameCount++;
   fpsTime += dt;

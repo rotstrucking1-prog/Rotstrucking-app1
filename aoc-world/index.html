@@ -31,10 +31,29 @@ canvas{display:block;width:100%;height:100%}
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }
 }
+</script>
+<script>
+// Catch module-level errors (modules fail silently without this)
+window.addEventListener('error', function(e){
+  var ld = document.getElementById('loading');
+  if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Error: ' + e.message; }
+});
+window.addEventListener('unhandledrejection', function(e){
+  var ld = document.getElementById('loading');
+  if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Load error: ' + (e.reason || 'unknown'); }
+});
+// Safety timeout - if still loading after 20s, show what happened
+setTimeout(function(){
+  var ld = document.getElementById('loading');
+  if(ld && ld.style.display !== 'none'){
+    var p = ld.querySelector('p');
+    if(p && p.textContent === 'Loading world...') p.textContent = 'Still loading... (CDN may be slow)';
+  }
+}, 20000);
 </script>
 </head>
 <body>

@@ -138,19 +138,19 @@ function checkReady(){
   if(worldReady) return;
   if(assetsLoaded >= totalAssets){
     worldReady = true;
-    // TEST: 8 dead bears in a line at remote clear area (350, 350)
+    // TEST: 8 dead bears in a line — negative X rotations only (0-180 were wrong)
     if(deadBearTemplate){
       const testScale = 5;
-      const baseX = 350, baseZ = 340;
+      const baseX = 200, baseZ = 190;
       const tests = [
-        {offset:0,  rx:0,              label:'1: X=0'},
-        {offset:10, rx:Math.PI/4,      label:'2: X=45'},
-        {offset:20, rx:Math.PI/2,      label:'3: X=90'},
-        {offset:30, rx:Math.PI*3/4,    label:'4: X=135'},
-        {offset:40, rx:Math.PI,        label:'5: X=180'},
-        {offset:50, rx:-Math.PI*3/4,   label:'6: X=-135'},
-        {offset:60, rx:-Math.PI/2,     label:'7: X=-90'},
-        {offset:70, rx:-Math.PI/4,     label:'8: X=-45'}
+        {offset:-35, rx:-Math.PI*7/8,   label:'1: -157.5'},
+        {offset:-25, rx:-Math.PI*3/4,   label:'2: -135'},
+        {offset:-15, rx:-Math.PI*5/8,   label:'3: -112.5'},
+        {offset:-5,  rx:-Math.PI/2,     label:'4: -90'},
+        {offset:5,   rx:-Math.PI*3/8,   label:'5: -67.5'},
+        {offset:15,  rx:-Math.PI/4,     label:'6: -45'},
+        {offset:25,  rx:-Math.PI/8,     label:'7: -22.5'},
+        {offset:35,  rx:-Math.PI/6,     label:'8: -30'}
       ];
       tests.forEach(function(t){
         const tx = baseX + t.offset;
@@ -162,7 +162,7 @@ function checkReady(){
         dm.position.set(tx, h + 3.0, tz);
         dm.rotation.set(t.rx, 0, 0);
         scene.add(dm);
-        debugLog('🧪 ' + t.label);
+        debugLog('🧪 Bear ' + t.label);
       });
     }
     updateLoading('Ready!', 100);
@@ -785,8 +785,8 @@ let lootNotifications = []; // { text, timer }
 let playerModel = null;
 let playerMixer = null;
 let playerAnimations = {};
-// TEST: spawn at remote clear area for dead bear testing
-const playerPos = new THREE.Vector3(350, getHeight(350,350), 350);
+// TEST: spawn at clear area for dead bear testing
+const playerPos = new THREE.Vector3(200, getHeight(200,200), 200);
 let playerYaw = 0;
 let characterYaw = 0;
 let playerVelY = 0;

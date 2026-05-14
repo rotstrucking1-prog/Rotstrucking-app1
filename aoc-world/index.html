@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v19-carcass45s -->
+<!-- v20-despawn-respawn -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -97,7 +97,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v19</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v20</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -698,6 +698,7 @@ const DEER_RUN_SPEED = 8.0;
 
 // ===== GRIZZLY BEAR NPCS (NPC-0006 to NPC-0009) =====
 let bearModels = [];
+let bearTemplate = null;
 let bearData = [];
 const bearCount = 25;
 const BEAR_WALK_SPEED = 1.8;
@@ -1041,7 +1042,7 @@ loader.load('sun-model.glb?v=8', function(gltf){
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
 loader.load('bear-model.glb?v=1', function(gltf){
-  const bearTemplate = gltf.scene;
+  bearTemplate = gltf.scene;
   bearTemplate.traverse(function(child){
     if(child.isMesh){
       child.material = child.material.clone();
@@ -1489,8 +1490,83 @@ function bearDeath(idx){
   bd.pendingDrops = drops;
   bd.pendingXP = bd.variant.xp;
   
+  // Start 45-second despawn timer immediately at death
+  bd.carcassTimer = 45;
+  bd.fadeTimer = 0;
+  
   showLootNotification(bd.variant.name + ' killed! Skin it for loot.');
   debugLog('💀 ' + bd.variant.name + ' died! Walk up and press E to skin.');
+}
+
+function respawnBear(idx){
+  if(!bearTemplate) return;
+  // Find a valid land position
+  let x, z, h;
+  for(let attempt = 0; attempt < 100; attempt++){
+    x = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    z = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    h = getHeight(x, z);
+    if(h >= -2 && h <= 28) break;
+  }
+  // Pick random variant
+  const roll = Math.random();
+  let cumRate = 0;
+  let variant = BEAR_VARIANTS[0];
+  for(let v = 0; v < BEAR_VARIANTS.length; v++){
+    cumRate += BEAR_VARIANTS[v].spawnRate;
+    if(roll < cumRate){ variant = BEAR_VARIANTS[v]; break; }
+  }
+  const scale = variant.scaleMin + Math.random() * (variant.scaleMax - variant.scaleMin);
+  const bear = bearTemplate.clone();
+  bear.traverse(function(child){
+    if(child.isMesh){
+      child.material = child.material.clone();
+      child.material.metalness = 0;
+      child.material.roughness = 0.8;
+      if(child.material.color) child.material.color.set(0xffffff);
+      child.material.transparent = false;
+      child.material.opacity = 1;
+      child.material.needsUpdate = true;
+    }
+  });
+  bear.scale.set(scale, scale, scale);
+  const heading = Math.random() * Math.PI * 2;
+  const normal = getTerrainNormal(x, z);
+  const up = new THREE.Vector3(0, 1, 0);
+  const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+  slopeQuat.multiply(yRotQuat);
+  bear.quaternion.copy(slopeQuat);
+  bear.position.set(x, h, z);
+  const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+  bear.position.addScaledVector(localUp, BEAR_FOOT_OFFSET * scale);
+  scene.add(bear);
+  
+  // Reset bearData entry
+  bearData[idx] = {
+    model: bear,
+    variant: variant,
+    scale: scale,
+    heading: heading,
+    state: 'wandering',
+    hp: variant.hp,
+    maxHp: variant.hp,
+    walkSpeed: BEAR_WALK_SPEED + Math.random() * 0.5,
+    turnTimer: 0,
+    turnInterval: 4 + Math.random() * 4,
+    turnTarget: heading,
+    aggroTimer: 0,
+    attackTimer: 0,
+    idleTimer: 0,
+    deathTimer: 0,
+    deathProgress: 0,
+    deathQuat: null,
+    time: Math.random() * Math.PI * 2,
+    damageFlash: 0,
+    bobPhase: Math.random() * Math.PI * 2
+  };
+  bearModels[idx] = bear;
+  debugLog('🐻 Bear respawned at new location!');
 }
 
 function startSkinning(bearIdx){
@@ -1520,9 +1596,7 @@ function completeSkinning(){
   showLootNotification('Skinned ' + bd.variant.name + '! +' + bd.pendingXP + ' XP | Loot: ' + dropText);
   debugLog('🔪 Skinned ' + bd.variant.name + '! Drops: ' + dropText);
   
-  // Carcass stays for 5 minutes then fades
-  bd.carcassTimer = 45; // 45 seconds
-  bd.fadeTimer = 0;
+  // Carcass timer already running from death — no reset needed
   
   // Reset skinning state
   skinningState = 'idle';
@@ -2136,10 +2210,10 @@ function animate(){
     }
   }
   
-  // Carcass timer — skinned bears stay 5 min then fade out over 3s
+  // Carcass timer — dead bears despawn after 45 seconds then respawn as new bear
   for(let i = 0; i < bearData.length; i++){
     const bd = bearData[i];
-    if(!bd.skinned || !bd.model) continue;
+    if(bd.state !== 'dead' || !bd.model || !bd.carcassTimer) continue;
     // Count down carcass timer
     if(bd.carcassTimer > 0){
       bd.carcassTimer -= dt;
@@ -2162,6 +2236,8 @@ function animate(){
         scene.remove(bd.model);
         bd.model = null;
         bd.state = 'removed';
+        // Respawn a fresh bear at a random location
+        respawnBear(i);
       }
     }
   }

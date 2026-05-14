@@ -125,7 +125,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v30</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v31</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1176,17 +1176,32 @@ function getXPProgress(totalXP){
 }
 
 const SKILLS = [
+  // Combat skills
   { id: 'attack',       name: 'Attack',       emoji: '⚔️',  color: '#c03030' },
   { id: 'strength',     name: 'Strength',     emoji: '💪',  color: '#00b000' },
   { id: 'defense',      name: 'Defense',      emoji: '🛡️',  color: '#4040e0' },
   { id: 'hitpoints',    name: 'Hitpoints',    emoji: '❤️',  color: '#d03030' },
+  { id: 'ranged',       name: 'Ranged',       emoji: '🏹',  color: '#408040' },
+  { id: 'magic',        name: 'Magic',        emoji: '🔮',  color: '#6040c0' },
+  { id: 'prayer',       name: 'Prayer',       emoji: '🙏',  color: '#e0e040' },
+  // Gathering skills
   { id: 'fishing',      name: 'Fishing',      emoji: '🎣',  color: '#2090c0' },
   { id: 'mining',       name: 'Mining',       emoji: '⛏️',  color: '#7a5c30' },
   { id: 'woodcutting',  name: 'Woodcutting',  emoji: '🪓',  color: '#2a7a2a' },
+  { id: 'farming',      name: 'Farming',      emoji: '🌾',  color: '#60a020' },
+  { id: 'hunter',       name: 'Hunter',       emoji: '🦌',  color: '#704020' },
+  // Production skills
   { id: 'cooking',      name: 'Cooking',      emoji: '🍳',  color: '#a04080' },
   { id: 'smithing',     name: 'Smithing',     emoji: '🔨',  color: '#606060' },
   { id: 'crafting',     name: 'Crafting',     emoji: '✂️',  color: '#806020' },
-  { id: 'ranged',       name: 'Ranged',       emoji: '🏹',  color: '#408040' },
+  { id: 'fletching',    name: 'Fletching',    emoji: '🪶',  color: '#306030' },
+  { id: 'herblore',     name: 'Herblore',     emoji: '🧪',  color: '#10a060' },
+  { id: 'runecraft',    name: 'Runecraft',    emoji: '✨',  color: '#a050a0' },
+  // Support skills
+  { id: 'agility',      name: 'Agility',      emoji: '🏃',  color: '#3060c0' },
+  { id: 'thieving',     name: 'Thieving',     emoji: '🗝️',  color: '#8030a0' },
+  { id: 'slayer',       name: 'Slayer',       emoji: '💀',  color: '#202020' },
+  { id: 'firemaking',   name: 'Firemaking',   emoji: '🔥',  color: '#d06010' },
   { id: 'construction', name: 'Construction', emoji: '🏗️',  color: '#808000' }
 ];
 

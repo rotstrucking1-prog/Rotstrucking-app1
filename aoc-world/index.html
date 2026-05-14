@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v21-graphics-settings -->
+<!-- v22-texture-enhance -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -106,7 +106,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v21</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v22</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -140,6 +140,10 @@ setTimeout(function(){
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
 // ===== SCENE =====
 const scene = new THREE.Scene();
@@ -166,6 +170,11 @@ window.setGraphics = function(level) {
     gfxParticlesVisible = false;
     if(ambientParticles) ambientParticles.visible = false;
     scene.fog.density = 0.001;
+    gfxPostProcessing = false;
+    gfxBloom = false;
+    if(bloomPass) bloomPass.enabled = false;
+    if(sharpenPass) sharpenPass.enabled = false;
+    if(colorPass) colorPass.enabled = false;
   } else if(level === 'medium') {
     renderer.shadowMap.enabled = true;
     sunLight.castShadow = true;
@@ -176,6 +185,11 @@ window.setGraphics = function(level) {
     gfxParticlesVisible = true;
     if(ambientParticles) ambientParticles.visible = true;
     scene.fog.density = 0.0012;
+    gfxPostProcessing = true;
+    gfxBloom = false;
+    if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.3; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.1; colorPass.uniforms.contrast.value = 1.05; }
+    if(bloomPass) bloomPass.enabled = false;
   } else if(level === 'high') {
     renderer.shadowMap.enabled = true;
     sunLight.castShadow = true;
@@ -186,6 +200,11 @@ window.setGraphics = function(level) {
     gfxParticlesVisible = true;
     if(ambientParticles) ambientParticles.visible = true;
     scene.fog.density = 0.0012;
+    gfxPostProcessing = true;
+    gfxBloom = true;
+    if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.5; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.15; colorPass.uniforms.contrast.value = 1.08; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.15; }
   } else if(level === 'max') {
     renderer.shadowMap.enabled = true;
     sunLight.castShadow = true;
@@ -196,6 +215,11 @@ window.setGraphics = function(level) {
     gfxParticlesVisible = true;
     if(ambientParticles) ambientParticles.visible = true;
     scene.fog.density = 0.0015;
+    gfxPostProcessing = true;
+    gfxBloom = true;
+    if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.7; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.25; colorPass.uniforms.contrast.value = 1.12; colorPass.uniforms.brightness.value = 0.03; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.25; }
   }
   
   // Force material refresh after shadow toggle
@@ -223,6 +247,80 @@ document.body.appendChild(renderer.domElement);
 const camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,2000);
 const clock = new THREE.Clock();
 const loader = new GLTFLoader();
+
+// === POST-PROCESSING ===
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+// Sharpen shader
+const SharpenShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    strength: { value: 0.5 }
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    uniform float strength;
+    varying vec2 vUv;
+    void main(){
+      vec2 px = 1.0 / resolution;
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec4 n = texture2D(tDiffuse, vUv + vec2(0.0, px.y));
+      vec4 s = texture2D(tDiffuse, vUv - vec2(0.0, px.y));
+      vec4 e = texture2D(tDiffuse, vUv + vec2(px.x, 0.0));
+      vec4 w = texture2D(tDiffuse, vUv - vec2(px.x, 0.0));
+      vec4 sharp = c * (1.0 + 4.0 * strength) - (n + s + e + w) * strength;
+      gl_FragColor = clamp(sharp, 0.0, 1.0);
+    }
+  `
+};
+const sharpenPass = new ShaderPass(SharpenShader);
+composer.addPass(sharpenPass);
+
+// Color correction shader (saturation + contrast + brightness)
+const ColorCorrectionShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    saturation: { value: 1.15 },
+    contrast: { value: 1.08 },
+    brightness: { value: 0.02 }
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float saturation;
+    uniform float contrast;
+    uniform float brightness;
+    varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float lum = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+      vec3 sat = mix(vec3(lum), c.rgb, saturation);
+      vec3 con = (sat - 0.5) * contrast + 0.5;
+      vec3 bri = con + brightness;
+      gl_FragColor = vec4(clamp(bri, 0.0, 1.0), c.a);
+    }
+  `
+};
+const colorPass = new ShaderPass(ColorCorrectionShader);
+composer.addPass(colorPass);
+
+// Subtle bloom for glow on bright areas
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.15,  // strength (very subtle)
+  0.4,   // radius
+  0.85   // threshold (only bright areas)
+);
+composer.addPass(bloomPass);
+
+// Post-processing settings flags
+let gfxPostProcessing = true;
+let gfxBloom = true;
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
@@ -352,7 +450,7 @@ grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(40, 40);
 grassTex.minFilter = THREE.LinearMipmapLinearFilter;
 grassTex.magFilter = THREE.LinearFilter;
-grassTex.anisotropy = 4;
+grassTex.anisotropy = 16;
 
 // Vertex colors for elevation blending (rocky hills, dirt paths)
 const colors = new Float32Array(verts.length);
@@ -383,7 +481,7 @@ waterTex.wrapT = THREE.RepeatWrapping;
 waterTex.repeat.set(8, 8);
 waterTex.minFilter = THREE.LinearMipmapLinearFilter;
 waterTex.magFilter = THREE.LinearFilter;
-waterTex.anisotropy = 4;
+waterTex.anisotropy = 16;
 
 const waterMat = new THREE.MeshStandardMaterial({
   map: waterTex,
@@ -414,6 +512,7 @@ loader.load('tree-model.glb?v=8', function(gltf){
       if(child.material.metalnessMap) child.material.metalnessMap = null;
       if(child.material.roughnessMap) child.material.roughnessMap = null;
       if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
       child.material.needsUpdate = true;
     }
   });
@@ -465,6 +564,7 @@ loader.load('rock-pile-model.glb?v=1', function(gltf){
       child.material.metalness = 0;
       child.material.roughness = 0.8;
       if(child.material.color) child.material.color.set(0xffffff);
+      if(child.material.map) child.material.map.anisotropy = 16;
       child.castShadow = true;
     }
   });
@@ -512,6 +612,7 @@ loader.load('iron-ore-deposit.glb?v=8', function(gltf){
       if(child.material.metalnessMap) child.material.metalnessMap = null;
       if(child.material.roughnessMap) child.material.roughnessMap = null;
       if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
       child.material.needsUpdate = true;
     }
   });
@@ -565,6 +666,7 @@ loader.load('bass-model.glb?v=8', function(gltf){
         if(child.material.metalnessMap) child.material.metalnessMap = null;
         if(child.material.roughnessMap) child.material.roughnessMap = null;
         if(child.material.aoMap) child.material.aoMap = null;
+        if(child.material.map) child.material.map.anisotropy = 16;
         child.material.needsUpdate = true;
       }
     }
@@ -658,6 +760,7 @@ loader.load('deer-model.glb?v=2', function(gltf){
         if(child.material.metalnessMap) child.material.metalnessMap = null;
         if(child.material.roughnessMap) child.material.roughnessMap = null;
         if(child.material.aoMap) child.material.aoMap = null;
+        if(child.material.map) child.material.map.anisotropy = 16;
         child.material.needsUpdate = true;
       }
     }
@@ -770,6 +873,7 @@ loader.load('fishing-pole-model.glb?v=8', function(gltf){
         if(child.material.metalnessMap) child.material.metalnessMap = null;
         if(child.material.roughnessMap) child.material.roughnessMap = null;
         if(child.material.aoMap) child.material.aoMap = null;
+        if(child.material.map) child.material.map.anisotropy = 16;
         child.material.needsUpdate = true;
       }
     }
@@ -1029,6 +1133,7 @@ loader.load('character-model.glb?v=8', function(gltf){
         if(child.material.metalnessMap) child.material.metalnessMap = null;
         if(child.material.roughnessMap) child.material.roughnessMap = null;
         if(child.material.aoMap) child.material.aoMap = null;
+        if(child.material.map) child.material.map.anisotropy = 16;
         child.material.needsUpdate = true;
       }
     }
@@ -1065,6 +1170,7 @@ loader.load('grass-model.glb?v=8', function(gltf){
       if(child.material.metalnessMap) child.material.metalnessMap = null;
       if(child.material.roughnessMap) child.material.roughnessMap = null;
       if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
       child.material.needsUpdate = true;
     }
   });
@@ -1153,6 +1259,7 @@ loader.load('bear-model.glb?v=1', function(gltf){
       if(child.material.metalnessMap) child.material.metalnessMap = null;
       if(child.material.roughnessMap) child.material.roughnessMap = null;
       if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
       child.material.needsUpdate = true;
       child.castShadow = true;
     }
@@ -1243,6 +1350,7 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
       if(child.material.metalnessMap) child.material.metalnessMap = null;
       if(child.material.roughnessMap) child.material.roughnessMap = null;
       if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
       child.material.needsUpdate = true;
     }
   });
@@ -2584,7 +2692,11 @@ function animate(){
   invText += ' | Items: ' + totalItems + ' (' + usedSlots + '/28 slots)';
   document.getElementById('hud-mode').textContent += invText;
   
-  renderer.render(scene, camera);
+  if(gfxPostProcessing) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 animate();
 
@@ -2592,6 +2704,9 @@ window.addEventListener('resize', function(){
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth,window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  if(sharpenPass) sharpenPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+  if(bloomPass) bloomPass.resolution.set(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>

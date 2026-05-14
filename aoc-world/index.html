@@ -116,7 +116,7 @@ const loader = new GLTFLoader();
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 7;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer
+const totalAssets = 8;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -319,22 +319,48 @@ loader.load('tree-model.glb?v=8', function(gltf){
   checkReady();
 });
 
-// ===== ROCKS =====
-for(let i=0;i<100;i++){
-  const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
-  const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
-  const h = getHeight(x,z);
-  const s = 0.5+Math.random()*2.5;
-  const rock = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(s, 1),
-    new THREE.MeshLambertMaterial({color:new THREE.Color().setHSL(0,0,0.35+Math.random()*0.2)})
-  );
-  rock.position.set(x, h+s*0.3, z);
-  rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-  rock.castShadow = true;
-  scene.add(rock);
-}
-updateLoading('Rocks placed...', 45);
+// ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
+updateLoading('Loading rock piles...', 44);
+loader.load('rock-pile-model.glb?v=1', function(gltf){
+  const rockTemplate = gltf.scene;
+  rockTemplate.traverse(function(child){
+    if(child.isMesh){
+      child.material = child.material.clone();
+      child.material.metalness = 0;
+      child.material.roughness = 0.8;
+      if(child.material.color) child.material.color.set(0xffffff);
+      child.castShadow = true;
+    }
+  });
+  // Rock pile model: Y bottom at -0.354, center at 0. Offset = 0.354 * scale
+  const ROCK_FOOT_OFFSET = 0.354;
+  for(let i = 0; i < 100; i++){
+    const x = (Math.random()-0.5) * WORLD_SIZE * 0.9;
+    const z = (Math.random()-0.5) * WORLD_SIZE * 0.9;
+    const h = getHeight(x, z);
+    const s = 1.5 + Math.random() * 3.0; // Scale 1.5–4.5
+    const pile = rockTemplate.clone();
+    pile.scale.set(s, s, s);
+    pile.rotation.y = Math.random() * Math.PI * 2; // Random rotation for variety
+    // Slope alignment
+    const normal = getTerrainNormal(x, z);
+    const up = new THREE.Vector3(0, 1, 0);
+    const quat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+    pile.quaternion.copy(quat);
+    // Position at terrain height, then lift along local Y so base sits on ground
+    pile.position.set(x, h, z);
+    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
+    pile.position.addScaledVector(localUp, ROCK_FOOT_OFFSET * s);
+    scene.add(pile);
+  }
+  assetsLoaded++;
+  debugLog('🪨 Rock piles placed: 100');
+  updateLoading('Rock piles scattered!', 45);
+}, undefined, function(err){
+  console.warn('Rock pile load error:', err);
+  assetsLoaded++;
+});
+
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);

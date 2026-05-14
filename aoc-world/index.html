@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v22-texture-enhance -->
+<!-- v23-fix-brightness -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -106,7 +106,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v22</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v23</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -121,9 +121,9 @@ setTimeout(function(){
 <div id="settings-btn">⚙️</div>
 <div id="settings-panel">
   <h3>⚙️ Graphics</h3>
-  <div class="gfx-btn" id="gfx-low" onclick="setGraphics('low')">🟢 Low<div class="gfx-label">Best performance</div></div>
+  <div class="gfx-btn active" id="gfx-low" onclick="setGraphics('low')">🟢 Low<div class="gfx-label">Best performance</div></div>
   <div class="gfx-btn" id="gfx-medium" onclick="setGraphics('medium')">🟡 Medium<div class="gfx-label">Balanced</div></div>
-  <div class="gfx-btn active" id="gfx-high" onclick="setGraphics('high')">🟠 High<div class="gfx-label">Great visuals</div></div>
+  <div class="gfx-btn" id="gfx-high" onclick="setGraphics('high')">🟠 High<div class="gfx-label">Great visuals</div></div>
   <div class="gfx-btn" id="gfx-max" onclick="setGraphics('max')">🔴 Max<div class="gfx-label">Maximum quality</div></div>
 </div>
 <div id="satchel-btn">🎒</div>
@@ -188,7 +188,7 @@ window.setGraphics = function(level) {
     gfxPostProcessing = true;
     gfxBloom = false;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.3; }
-    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.1; colorPass.uniforms.contrast.value = 1.05; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.05; colorPass.uniforms.contrast.value = 1.0; colorPass.uniforms.brightness.value = 0.0; }
     if(bloomPass) bloomPass.enabled = false;
   } else if(level === 'high') {
     renderer.shadowMap.enabled = true;
@@ -203,8 +203,8 @@ window.setGraphics = function(level) {
     gfxPostProcessing = true;
     gfxBloom = true;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.5; }
-    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.15; colorPass.uniforms.contrast.value = 1.08; }
-    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.15; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.08; colorPass.uniforms.contrast.value = 1.0; colorPass.uniforms.brightness.value = 0.0; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.08; }
   } else if(level === 'max') {
     renderer.shadowMap.enabled = true;
     sunLight.castShadow = true;
@@ -218,8 +218,8 @@ window.setGraphics = function(level) {
     gfxPostProcessing = true;
     gfxBloom = true;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.7; }
-    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.25; colorPass.uniforms.contrast.value = 1.12; colorPass.uniforms.brightness.value = 0.03; }
-    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.25; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.12; colorPass.uniforms.contrast.value = 1.03; colorPass.uniforms.brightness.value = 0.0; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.12; }
   }
   
   // Force material refresh after shadow toggle
@@ -237,10 +237,10 @@ function debugLog(msg) {
 const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = false;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 2.0;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
@@ -285,9 +285,9 @@ composer.addPass(sharpenPass);
 const ColorCorrectionShader = {
   uniforms: {
     tDiffuse: { value: null },
-    saturation: { value: 1.15 },
-    contrast: { value: 1.08 },
-    brightness: { value: 0.02 }
+    saturation: { value: 1.0 },
+    contrast: { value: 1.0 },
+    brightness: { value: 0.0 }
   },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: `
@@ -319,8 +319,11 @@ const bloomPass = new UnrealBloomPass(
 composer.addPass(bloomPass);
 
 // Post-processing settings flags
-let gfxPostProcessing = true;
-let gfxBloom = true;
+let gfxPostProcessing = false;
+let gfxBloom = false;
+sharpenPass.enabled = false;
+colorPass.enabled = false;
+bloomPass.enabled = false;
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;

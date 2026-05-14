@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v12-ground-level-test -->
+<!-- v13-lower-bears -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -84,7 +84,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v12</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v13</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1049,7 +1049,7 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
   debugLog('💀 Dead grizzly carcass model loaded');
   // TEST v11: 6 bears AT GROUND LEVEL — all 6 face-down orientations
   const testScale = 7;
-  const DBFO = 0.5; // dead bear foot offset (bounding box Y is -0.5 to 0.5)
+  const DBFO = 0.02; // dead bear foot offset — very close to ground
   const testBears = [
     {zz:10,  rx:0,           ry:0, rz:0,           label:'A: NO ROTATION'},
     {zz:30,  rx:Math.PI,     ry:0, rz:0,           label:'B: X=180'},

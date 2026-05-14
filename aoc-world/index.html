@@ -138,25 +138,28 @@ function checkReady(){
   if(worldReady) return;
   if(assetsLoaded >= totalAssets){
     worldReady = true;
-    // TEST: 8 dead bears in a tight circle around spawn — every 45° X rotation
+    // TEST: 8 dead bears in a line at remote clear area (350, 350)
     if(deadBearTemplate){
       const testScale = 5;
+      const baseX = 350, baseZ = 340;
       const tests = [
-        {x:-8, z:-8,  rx:0,              label:'1: X=0'},
-        {x:-8, z:0,   rx:Math.PI/4,      label:'2: X=45'},
-        {x:-8, z:8,   rx:Math.PI/2,      label:'3: X=90'},
-        {x:0,  z:-8,  rx:Math.PI*3/4,    label:'4: X=135'},
-        {x:0,  z:8,   rx:Math.PI,        label:'5: X=180'},
-        {x:8,  z:-8,  rx:-Math.PI*3/4,   label:'6: X=-135'},
-        {x:8,  z:0,   rx:-Math.PI/2,     label:'7: X=-90'},
-        {x:8,  z:8,   rx:-Math.PI/4,     label:'8: X=-45'}
+        {offset:0,  rx:0,              label:'1: X=0'},
+        {offset:10, rx:Math.PI/4,      label:'2: X=45'},
+        {offset:20, rx:Math.PI/2,      label:'3: X=90'},
+        {offset:30, rx:Math.PI*3/4,    label:'4: X=135'},
+        {offset:40, rx:Math.PI,        label:'5: X=180'},
+        {offset:50, rx:-Math.PI*3/4,   label:'6: X=-135'},
+        {offset:60, rx:-Math.PI/2,     label:'7: X=-90'},
+        {offset:70, rx:-Math.PI/4,     label:'8: X=-45'}
       ];
       tests.forEach(function(t){
-        const h = getHeight(t.x, t.z);
+        const tx = baseX + t.offset;
+        const tz = baseZ;
+        const h = getHeight(tx, tz);
         const dm = deadBearTemplate.clone();
         dm.traverse(function(c){ if(c.isMesh) c.material = c.material.clone(); });
         dm.scale.set(testScale, testScale, testScale);
-        dm.position.set(t.x, h + 3.0, t.z);
+        dm.position.set(tx, h + 3.0, tz);
         dm.rotation.set(t.rx, 0, 0);
         scene.add(dm);
         debugLog('🧪 ' + t.label);
@@ -782,7 +785,8 @@ let lootNotifications = []; // { text, timer }
 let playerModel = null;
 let playerMixer = null;
 let playerAnimations = {};
-const playerPos = new THREE.Vector3(0, getHeight(0,0), 0);
+// TEST: spawn at remote clear area for dead bear testing
+const playerPos = new THREE.Vector3(350, getHeight(350,350), 350);
 let playerYaw = 0;
 let characterYaw = 0;
 let playerVelY = 0;

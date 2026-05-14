@@ -138,30 +138,7 @@ function checkReady(){
   if(worldReady) return;
   if(assetsLoaded >= totalAssets){
     worldReady = true;
-    // TEST: 8 dead bears in a line along Z, floating high for visibility
-    if(deadBearTemplate){
-      const testScale = 5;
-      const tests = [
-        {n:1, z:10,  rx:-Math.PI*7/8,   label:'1: -157.5'},
-        {n:2, z:20,  rx:-Math.PI*3/4,   label:'2: -135'},
-        {n:3, z:30,  rx:-Math.PI*5/8,   label:'3: -112.5'},
-        {n:4, z:40,  rx:-Math.PI/2,     label:'4: -90'},
-        {n:5, z:50,  rx:-Math.PI*3/8,   label:'5: -67.5'},
-        {n:6, z:60,  rx:-Math.PI/4,     label:'6: -45'},
-        {n:7, z:70,  rx:-Math.PI/8,     label:'7: -22.5'},
-        {n:8, z:80,  rx:-Math.PI/6,     label:'8: -30'}
-      ];
-      tests.forEach(function(t){
-        const h = getHeight(0, t.z);
-        const dm = deadBearTemplate.clone();
-        dm.traverse(function(c){ if(c.isMesh) c.material = c.material.clone(); });
-        dm.scale.set(testScale, testScale, testScale);
-        dm.position.set(0, h + 8.0, t.z);
-        dm.rotation.set(t.rx, 0, 0);
-        scene.add(dm);
-        debugLog('🧪 Bear ' + t.label + ' at z=' + t.z);
-      });
-    }
+    // Test bears spawned from dead bear loader callback below
     updateLoading('Ready!', 100);
     setTimeout(function(){
       document.getElementById('loading').style.display = 'none';
@@ -1068,6 +1045,28 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
     }
   });
   debugLog('💀 Dead grizzly carcass model loaded');
+  // TEST: spawn 8 dead bears immediately when model loads
+  const testScale = 5;
+  const testBears = [
+    {n:1, z:10,  rx:-Math.PI*7/8,   label:'1: -157.5'},
+    {n:2, z:20,  rx:-Math.PI*3/4,   label:'2: -135'},
+    {n:3, z:30,  rx:-Math.PI*5/8,   label:'3: -112.5'},
+    {n:4, z:40,  rx:-Math.PI/2,     label:'4: -90'},
+    {n:5, z:50,  rx:-Math.PI*3/8,   label:'5: -67.5'},
+    {n:6, z:60,  rx:-Math.PI/4,     label:'6: -45'},
+    {n:7, z:70,  rx:-Math.PI/8,     label:'7: -22.5'},
+    {n:8, z:80,  rx:-Math.PI/6,     label:'8: -30'}
+  ];
+  testBears.forEach(function(t){
+    const h = getHeight(0, t.z);
+    const dm = deadBearTemplate.clone();
+    dm.traverse(function(c){ if(c.isMesh) c.material = c.material.clone(); });
+    dm.scale.set(testScale, testScale, testScale);
+    dm.position.set(0, h + 8.0, t.z);
+    dm.rotation.set(t.rx, 0, 0);
+    scene.add(dm);
+    debugLog('🧪 Bear ' + t.label + ' at z=' + t.z);
+  });
   assetsLoaded++;
   checkReady();
 }, undefined, function(err){

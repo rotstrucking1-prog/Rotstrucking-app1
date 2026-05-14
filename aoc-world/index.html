@@ -1363,8 +1363,9 @@ function completeSkinning(){
   showLootNotification('Skinned ' + bd.variant.name + '! +' + bd.pendingXP + ' XP | Loot: ' + dropText);
   debugLog('🔪 Skinned ' + bd.variant.name + '! Drops: ' + dropText);
   
-  // Fade out the corpse over 2 seconds
-  bd.fadeTimer = 2.0;
+  // Carcass stays for 5 minutes then fades
+  bd.carcassTimer = 300; // 5 minutes in seconds
+  bd.fadeTimer = 0;
   
   // Reset skinning state
   skinningState = 'idle';
@@ -1988,12 +1989,22 @@ function animate(){
     }
   }
   
-  // Fade out skinned corpses
+  // Carcass timer — skinned bears stay 5 min then fade out over 3s
   for(let i = 0; i < bearData.length; i++){
     const bd = bearData[i];
-    if(bd.fadeTimer !== undefined && bd.fadeTimer > 0){
+    if(!bd.skinned || !bd.model) continue;
+    // Count down carcass timer
+    if(bd.carcassTimer > 0){
+      bd.carcassTimer -= dt;
+      if(bd.carcassTimer <= 0){
+        bd.fadeTimer = 3.0; // Start 3-second fade
+      }
+      continue;
+    }
+    // Fade out after carcass timer expires
+    if(bd.fadeTimer > 0){
       bd.fadeTimer -= dt;
-      const opacity = Math.max(0, bd.fadeTimer / 2.0);
+      const opacity = Math.max(0, bd.fadeTimer / 3.0);
       bd.model.traverse(function(child){
         if(child.isMesh && child.material){
           child.material.transparent = true;

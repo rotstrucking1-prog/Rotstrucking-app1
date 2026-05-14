@@ -138,28 +138,28 @@ function checkReady(){
   if(worldReady) return;
   if(assetsLoaded >= totalAssets){
     worldReady = true;
-    // TEST: spawn 8 dead grizzlies — every 45° X rotation to find back-flat
+    // TEST: 8 dead bears in a tight circle around spawn — every 45° X rotation
     if(deadBearTemplate){
-      const testScale = 7.5;
+      const testScale = 5;
       const tests = [
-        {x:8,  z:8,  rx:0,              rz:0, label:'1: X=0'},
-        {x:8,  z:20, rx:Math.PI/4,      rz:0, label:'2: X=45'},
-        {x:8,  z:32, rx:Math.PI/2,      rz:0, label:'3: X=90'},
-        {x:8,  z:44, rx:Math.PI*3/4,    rz:0, label:'4: X=135'},
-        {x:20, z:8,  rx:Math.PI,        rz:0, label:'5: X=180'},
-        {x:20, z:20, rx:-Math.PI*3/4,   rz:0, label:'6: X=-135'},
-        {x:20, z:32, rx:-Math.PI/2,     rz:0, label:'7: X=-90'},
-        {x:20, z:44, rx:-Math.PI/4,     rz:0, label:'8: X=-45'}
+        {x:-8, z:-8,  rx:0,              label:'1: X=0'},
+        {x:-8, z:0,   rx:Math.PI/4,      label:'2: X=45'},
+        {x:-8, z:8,   rx:Math.PI/2,      label:'3: X=90'},
+        {x:0,  z:-8,  rx:Math.PI*3/4,    label:'4: X=135'},
+        {x:0,  z:8,   rx:Math.PI,        label:'5: X=180'},
+        {x:8,  z:-8,  rx:-Math.PI*3/4,   label:'6: X=-135'},
+        {x:8,  z:0,   rx:-Math.PI/2,     label:'7: X=-90'},
+        {x:8,  z:8,   rx:-Math.PI/4,     label:'8: X=-45'}
       ];
       tests.forEach(function(t){
         const h = getHeight(t.x, t.z);
         const dm = deadBearTemplate.clone();
         dm.traverse(function(c){ if(c.isMesh) c.material = c.material.clone(); });
         dm.scale.set(testScale, testScale, testScale);
-        dm.position.set(t.x, h + 2.0, t.z);
-        dm.rotation.set(t.rx, 0, t.rz);
+        dm.position.set(t.x, h + 3.0, t.z);
+        dm.rotation.set(t.rx, 0, 0);
         scene.add(dm);
-        debugLog('🧪 TEST dead bear ' + t.label + ' at (' + t.x + ',' + t.z + ')');
+        debugLog('🧪 ' + t.label);
       });
     }
     updateLoading('Ready!', 100);

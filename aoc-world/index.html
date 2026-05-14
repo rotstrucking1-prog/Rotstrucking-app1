@@ -1280,7 +1280,6 @@ function performPlayerAttack(){
   if(closestIdx >= 0){
     const bd = bearData[closestIdx];
     bd.hp -= PLAYER_ATTACK_DAMAGE;
-    bd.damageFlash = 0.4; // Flash red for 0.4s
     // BLOOD SQUIRT — particles fly out from hit point
     const bloodPos = bd.model.position.clone();
     bloodPos.y += bd.scale * 0.3; // Center-mass of bear
@@ -1776,41 +1775,10 @@ function animate(){
       const terrainH = getHeight(bd.model.position.x, bd.model.position.z);
       bd.model.position.y = terrainH + BEAR_FOOT_OFFSET * bd.scale * (1 - bd.deathProgress * 0.6);
       
-      // Darken the body slightly when fully dead (looks lifeless)
-      if(bd.deathProgress >= 1.0){
-        bd.model.traverse(function(child){
-          if(child.isMesh && child.material){
-            child.material.emissiveIntensity = 0;
-            if(!child.material._deadTinted){
-              child.material.color.multiplyScalar(0.6);
-              child.material._deadTinted = true;
-            }
-          }
-        });
-      }
       return;
     }
     
-    // Damage flash (intense red pulse)
-    if(bd.damageFlash > 0){
-      bd.damageFlash -= dt;
-      const flashIntensity = bd.damageFlash > 0 ? Math.min(1, bd.damageFlash * 5) : 0;
-      bd.model.traverse(function(child){
-        if(child.isMesh && child.material){
-          if(!child.material.emissive) child.material.emissive = new THREE.Color();
-          if(flashIntensity > 0){
-            child.material.emissive.set(0xff0000);
-            child.material.emissiveIntensity = flashIntensity * 8;
-            // Briefly make material brighter
-            if(!child.material._origColor) child.material._origColor = child.material.color.clone();
-            child.material.color.lerpColors(child.material._origColor, new THREE.Color(0xff3333), flashIntensity * 0.5);
-          } else {
-            child.material.emissiveIntensity = 0;
-            if(child.material._origColor) child.material.color.copy(child.material._origColor);
-          }
-        }
-      });
-    }
+    // No color changes on hit — blood particles only
     
     const bearPos = bd.model.position;
     const dx = playerPos.x - bearPos.x;

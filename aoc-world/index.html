@@ -138,6 +138,21 @@ function checkReady(){
   if(worldReady) return;
   if(assetsLoaded >= totalAssets){
     worldReady = true;
+    // TEST: spawn a dead grizzly near the player for testing
+    if(deadBearTemplate){
+      const testX = 10, testZ = 10;
+      const testH = getHeight(testX, testZ);
+      const testDead = deadBearTemplate.clone();
+      testDead.traverse(function(child){
+        if(child.isMesh) child.material = child.material.clone();
+      });
+      const testScale = 7.5;
+      testDead.scale.set(testScale, testScale, testScale);
+      testDead.position.set(testX, testH + DEAD_BEAR_FOOT_OFFSET * testScale, testZ);
+      testDead.rotation.y = Math.PI * 0.25;
+      scene.add(testDead);
+      debugLog('🧪 TEST dead grizzly placed at (10, 10) near spawn');
+    }
     updateLoading('Ready!', 100);
     setTimeout(function(){
       document.getElementById('loading').style.display = 'none';

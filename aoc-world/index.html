@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v27-remove-grass-wind -->
+<!-- v28-texture-resolution-boost -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -106,7 +106,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v27</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v28</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -473,7 +473,7 @@ scene.add(ambientLight);
 const sunLight = new THREE.DirectionalLight(0xffeedd, 6.0);  // Brighter light from sun
 sunLight.position.set(400, 600, 300);  // Very far away
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.mapSize.set(4096, 4096);
 sunLight.shadow.camera.left = -150;
 sunLight.shadow.camera.right = 150;
 sunLight.shadow.camera.top = 150;
@@ -546,7 +546,7 @@ const texLoader = new THREE.TextureLoader();
 const grassTex = texLoader.load('grass-texture.jpg?v=8');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
-grassTex.repeat.set(40, 40);
+grassTex.repeat.set(80, 80);
 grassTex.minFilter = THREE.LinearMipmapLinearFilter;
 grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
@@ -577,7 +577,7 @@ const waterTexLoader = new THREE.TextureLoader();
 const waterTex = waterTexLoader.load('water-texture.jpg?v=8');
 waterTex.wrapS = THREE.RepeatWrapping;
 waterTex.wrapT = THREE.RepeatWrapping;
-waterTex.repeat.set(8, 8);
+waterTex.repeat.set(16, 16);
 waterTex.minFilter = THREE.LinearMipmapLinearFilter;
 waterTex.magFilter = THREE.LinearFilter;
 waterTex.anisotropy = 16;

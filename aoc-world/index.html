@@ -89,6 +89,7 @@ setTimeout(function(){
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // ===== SCENE =====
 const scene = new THREE.Scene();
@@ -505,16 +506,18 @@ loader.load('bass-model.glb?v=8', function(gltf){
   checkReady();
 });
 
-// ===== DEER NPC MODEL =====
+// ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-loader.load('deer-model.glb?v=1', function(gltf){
+loader.load('deer-model.glb?v=2', function(gltf){
   const deerTemplate = gltf.scene;
-  debugLog('🦌 DEER model loaded, traversing...');
+  const deerAnimClips = gltf.animations; // 5 animations from rigged model
+  debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
   deerTemplate.traverse(function(child){
     if(child.isMesh){
       child.castShadow = true;
       child.receiveShadow = true;
       if(child.material){
+        child.material = child.material.clone();
         child.material.metalness = 0;
         child.material.roughness = 0.8;
         if(child.material.metalnessMap) child.material.metalnessMap = null;
@@ -525,6 +528,18 @@ loader.load('deer-model.glb?v=1', function(gltf){
     }
   });
   
+  // Find animation clips by name
+  function findClip(name) {
+    for(var i = 0; i < deerAnimClips.length; i++){
+      if(deerAnimClips[i].name === name) return deerAnimClips[i];
+    }
+    return null;
+  }
+  const clipIdle = findClip('Idle_Head_Look_Around');
+  const clipWalk = findClip('Walk_InPlace_Loop');
+  const clipRun = findClip('Run_InPlace_Loop');
+  const clipGraze = findClip('Graze_Eating_Loop');
+  
   // Spawn deer on land areas
   let deerPlaced = 0;
   for(let i = 0; i < deerCount * 3 && deerPlaced < deerCount; i++){
@@ -533,7 +548,8 @@ loader.load('deer-model.glb?v=1', function(gltf){
     const h = getHeight(x, z);
     if(h < -2 || h > 28) continue; // Land only
     
-    const deer = deerTemplate.clone();
+    // Use SkeletonUtils.clone for proper skinned mesh cloning
+    const deer = SkeletonUtils.clone(deerTemplate);
     const scale = 2.5 + Math.random() * 1.5; // Scale 2.5-4.0
     deer.scale.set(scale, scale, scale);
     
@@ -546,33 +562,55 @@ loader.load('deer-model.glb?v=1', function(gltf){
     deerSlopeQuat.multiply(deerYRotQuat);
     deer.quaternion.copy(deerSlopeQuat);
     
-    // Position with foot offset — translate along LOCAL up axis for correct slope positioning
+    // Position with foot offset
     deer.position.set(x, h, z);
-    const deerLocalUp = new THREE.Vector3(0, 0.5 * scale, 0);
+    const deerLocalUp = new THREE.Vector3(0, 0.05 * scale, 0);
     deerLocalUp.applyQuaternion(deerSlopeQuat);
     deer.position.add(deerLocalUp);
     
     scene.add(deer);
     deerModels.push(deer);
     
+    // Create AnimationMixer for this deer
+    const mixer = new THREE.AnimationMixer(deer);
+    const actions = {};
+    if(clipWalk) actions.walk = mixer.clipAction(clipWalk);
+    if(clipRun) actions.run = mixer.clipAction(clipRun);
+    if(clipIdle) actions.idle = mixer.clipAction(clipIdle);
+    if(clipGraze) actions.graze = mixer.clipAction(clipGraze);
+    
+    // Set all to loop
+    Object.values(actions).forEach(function(a){ a.setLoop(THREE.LoopRepeat); });
+    
+    // Start with walk animation
+    const startState = Math.random() < 0.3 ? 'idle' : 'wandering';
+    if(startState === 'idle' && actions.idle){
+      actions.idle.play();
+    } else if(actions.walk){
+      actions.walk.play();
+    }
+    
     deerData.push({
       model: deer,
       scale: scale,
       heading: heading,
-      state: 'wandering',
+      state: startState,
       walkSpeed: 1.5 + Math.random() * 1.0,
       turnTimer: 0,
       turnInterval: 5 + Math.random() * 5,
       turnTarget: heading,
       spookTimer: 0,
+      idleTimer: startState === 'idle' ? 5 + Math.random() * 10 : 0,
       time: Math.random() * Math.PI * 2,
-      legPhase: Math.random() * Math.PI * 2
+      mixer: mixer,
+      actions: actions,
+      currentAction: startState === 'idle' ? 'idle' : 'walk'
     });
     
     deerPlaced++;
   }
   
-  debugLog('🦌 Deer spawned: ' + deerPlaced + '/' + deerCount);
+  debugLog('🦌 Deer spawned: ' + deerPlaced + '/' + deerCount + ' (rigged + animated!)');
   assetsLoaded++;
   updateLoading('Deer roaming the lands!', 56);
   checkReady();
@@ -1325,10 +1363,24 @@ function animate(){
     }
   });
   
-  // ===== DEER AI UPDATES =====
+  // ===== DEER AI UPDATES (Rigged Animation) =====
   deerData.forEach(function(data){
     if(!data.model) return;
     data.time += dt;
+    
+    // Update animation mixer
+    if(data.mixer) data.mixer.update(dt);
+    
+    // Helper: switch animation with crossfade
+    function switchDeerAnim(newAnim){
+      if(newAnim === data.currentAction) return;
+      if(!data.actions[newAnim]) return;
+      const oldAction = data.actions[data.currentAction];
+      const newAction = data.actions[newAnim];
+      if(oldAction) oldAction.fadeOut(0.3);
+      newAction.reset().fadeIn(0.3).play();
+      data.currentAction = newAnim;
+    }
     
     const deerPos = data.model.position;
     const dx = playerPos.x - deerPos.x;
@@ -1338,72 +1390,83 @@ function animate(){
     // Check if player is close enough to spook
     if(distToPlayer < DEER_SPOOK_DISTANCE && data.state !== 'spooked'){
       data.state = 'spooked';
-      data.spookTimer = 3 + Math.random() * 2; // Run for 3-5 seconds
-      // Run AWAY from player
+      data.spookTimer = 3 + Math.random() * 2;
       data.heading = Math.atan2(-dx, -dz);
       data.turnTarget = data.heading;
+      switchDeerAnim('run');
     }
     
     if(data.state === 'spooked'){
       data.spookTimer -= dt;
       if(data.spookTimer <= 0){
         data.state = 'wandering';
+        switchDeerAnim('walk');
       }
     }
     
-    // Movement speed based on state
-    const currentSpeed = data.state === 'spooked' ? DEER_RUN_SPEED : data.walkSpeed;
+    // Idle state — deer stands still, occasionally grazes
+    if(data.state === 'idle'){
+      data.idleTimer -= dt;
+      if(data.idleTimer <= 0){
+        data.state = 'wandering';
+        data.turnInterval = 5 + Math.random() * 5;
+        switchDeerAnim('walk');
+      }
+    }
     
-    // Wandering direction changes
+    // Wandering — occasionally stop to idle/graze
     if(data.state === 'wandering'){
       data.turnTimer += dt;
       if(data.turnTimer >= data.turnInterval){
         data.turnTimer = 0;
-        data.turnInterval = 5 + Math.random() * 5;
-        data.turnTarget = data.heading + (Math.random() - 0.5) * Math.PI * 0.8;
+        // 20% chance to stop and idle/graze
+        if(Math.random() < 0.2){
+          data.state = 'idle';
+          data.idleTimer = 5 + Math.random() * 10;
+          switchDeerAnim(Math.random() < 0.5 ? 'idle' : 'graze');
+        } else {
+          data.turnInterval = 5 + Math.random() * 5;
+          data.turnTarget = data.heading + (Math.random() - 0.5) * Math.PI * 0.8;
+        }
       }
     }
     
+    // Movement speed based on state (idle = no movement)
+    const currentSpeed = data.state === 'spooked' ? DEER_RUN_SPEED : (data.state === 'idle' ? 0 : data.walkSpeed);
+    
     // Smooth heading toward target
-    var hDiff = data.turnTarget - data.heading;
-    while(hDiff > Math.PI) hDiff -= 2*Math.PI;
-    while(hDiff < -Math.PI) hDiff += 2*Math.PI;
-    data.heading += hDiff * (data.state === 'spooked' ? 0.1 : 0.03);
-    
-    // Move forward
-    const spd = currentSpeed * dt;
-    const newX = deerPos.x + Math.sin(data.heading) * spd;
-    const newZ = deerPos.z + Math.cos(data.heading) * spd;
-    const newH = getHeight(newX, newZ);
-    
-    // Keep on land and in world bounds
-    const wb = WORLD_SIZE * 0.45;
-    if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-      deerPos.x = newX;
-      deerPos.z = newZ;
-      
-      // Align to slope + face heading direction
-      const normal = getTerrainNormal(newX, newZ);
-      const up = new THREE.Vector3(0, 1, 0);
-      const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-      const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, data.heading + Math.PI);
-      slopeQuat.multiply(yRotQuat);
-      data.model.quaternion.copy(slopeQuat);
-      // Position at terrain, then lift along LOCAL up (correct on slopes)
-      deerPos.set(newX, newH, newZ);
-      const deerUp = new THREE.Vector3(0, 0.5 * data.scale, 0);
-      deerUp.applyQuaternion(slopeQuat);
-      deerPos.add(deerUp);
-    } else {
-      // Reverse direction at boundaries
-      data.heading += Math.PI + (Math.random() - 0.5) * 0.5;
-      data.turnTarget = data.heading;
+    if(currentSpeed > 0){
+      var hDiff = data.turnTarget - data.heading;
+      while(hDiff > Math.PI) hDiff -= 2*Math.PI;
+      while(hDiff < -Math.PI) hDiff += 2*Math.PI;
+      data.heading += hDiff * (data.state === 'spooked' ? 0.1 : 0.03);
     }
     
-    // Walking animation — body bob (faster when spooked/running)
-    data.legPhase += dt * currentSpeed * 2.5;
-    const walkBob = Math.sin(data.legPhase) * 0.04 * data.scale;
-    deerPos.y += walkBob;
+    // Move forward
+    if(currentSpeed > 0){
+      const spd = currentSpeed * dt;
+      const newX = deerPos.x + Math.sin(data.heading) * spd;
+      const newZ = deerPos.z + Math.cos(data.heading) * spd;
+      const newH = getHeight(newX, newZ);
+      
+      const wb = WORLD_SIZE * 0.45;
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+        // Align to slope + face heading direction
+        const normal = getTerrainNormal(newX, newZ);
+        const up = new THREE.Vector3(0, 1, 0);
+        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, data.heading + Math.PI);
+        slopeQuat.multiply(yRotQuat);
+        data.model.quaternion.copy(slopeQuat);
+        deerPos.set(newX, newH, newZ);
+        const deerUp = new THREE.Vector3(0, 0.05 * data.scale, 0);
+        deerUp.applyQuaternion(slopeQuat);
+        deerPos.add(deerUp);
+      } else {
+        data.heading += Math.PI + (Math.random() - 0.5) * 0.5;
+        data.turnTarget = data.heading;
+      }
+    }
   });
   
   // ===== FISHING UPDATES =====

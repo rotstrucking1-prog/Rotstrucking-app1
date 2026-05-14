@@ -79,6 +79,8 @@ setTimeout(function(){
   <div id="hp-text" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:bold;text-shadow:1px 1px 2px #000">100 / 100 HP</div>
 </div>
 <div id="damage-flash" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);z-index:15;pointer-events:none;display:none"></div>
+<div id="skin-prompt" style="position:fixed;bottom:200px;left:50%;transform:translateX(-50%);color:#fff;font-size:18px;font-weight:bold;text-shadow:2px 2px 4px #000;z-index:20;text-align:center;pointer-events:none;display:none;background:rgba(0,0,0,0.5);padding:8px 20px;border-radius:10px;border:2px solid rgba(255,200,50,0.7)"><span id="skin-prompt-text">Press E to Skin</span><div id="skin-progress-bar" style="margin-top:6px;width:200px;height:8px;background:rgba(0,0,0,0.5);border-radius:4px;overflow:hidden;display:none"><div id="skin-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#cc6633,#ffaa44);border-radius:4px;transition:none"></div></div></div>
+<div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
   <div id="hud-pos">Position: 0, 0, 0</div>
@@ -740,6 +742,11 @@ function spawnBlood(position, count, scale){
   }
 }
 let lootDrops = []; // { position, items, mesh, timer }
+let skinningState = 'idle'; // 'idle' | 'skinning'
+let skinningTarget = -1; // bearData index
+let skinningProgress = 0; // 0 to 1
+const SKINNING_TIME = 3.0; // seconds to skin
+let nearestDeadBear = -1; // index of closest dead bear in range
 let playerInventory = {}; // item name -> count
 let playerXP = 0;
 let lastHitBearIndex = -1;
@@ -1255,6 +1262,11 @@ document.addEventListener('keydown', function(e){
   if(e.code==='KeyF') {
     performPlayerAttack();
   }
+  if(e.code==='KeyE') {
+    if(skinningState === 'idle' && nearestDeadBear >= 0){
+      startSkinning(nearestDeadBear);
+    }
+  }
 });
 
 // ===== COMBAT SYSTEM =====
@@ -1300,49 +1312,74 @@ function performPlayerAttack(){
 function bearDeath(idx){
   const bd = bearData[idx];
   bd.state = 'dead';
-  bd.deathTimer = 999; // Stay on ground forever
+  bd.deathTimer = 999; // Stay on ground until skinned
   bd.deathProgress = 0;
-  bd.deathQuat = bd.model.quaternion.clone(); // Save current rotation
+  bd.skinned = false;
+  bd.deathQuat = bd.model.quaternion.clone();
   // Big blood burst on death
   const deathBloodPos = bd.model.position.clone();
   deathBloodPos.y += bd.scale * 0.3;
   spawnBlood(deathBloodPos, 25 + Math.floor(Math.random() * 15), bd.scale * 0.2);
   
-  // Roll for drops
+  // Roll for drops but DON'T give them yet — stored for skinning
   const drops = [];
   BEAR_DROP_TABLE.forEach(function(drop){
     if(Math.random() < drop.chance){
       drops.push(drop.item);
     }
   });
+  bd.pendingDrops = drops;
+  bd.pendingXP = bd.variant.xp;
+  
+  showLootNotification(bd.variant.name + ' killed! Skin it for loot.');
+  debugLog('💀 ' + bd.variant.name + ' died! Walk up and press E to skin.');
+}
+
+function startSkinning(bearIdx){
+  if(skinningState === 'skinning') return;
+  skinningState = 'skinning';
+  skinningTarget = bearIdx;
+  skinningProgress = 0;
+  document.getElementById('skin-prompt-text').textContent = 'Skinning...';
+  document.getElementById('skin-progress-bar').style.display = 'block';
+  document.getElementById('skin-progress-fill').style.width = '0%';
+}
+
+function completeSkinning(){
+  const bd = bearData[skinningTarget];
+  bd.skinned = true;
   
   // Award XP
-  playerXP += bd.variant.xp;
+  playerXP += bd.pendingXP;
   
-  // Create loot drop at bear's position
-  if(drops.length > 0){
-    const dropGroup = new THREE.Group();
-    // Small glowing marker
-    const markerGeo = new THREE.SphereGeometry(0.5, 8, 8);
-    const markerMat = new THREE.MeshBasicMaterial({color: 0xFFDD44, transparent: true, opacity: 0.8});
-    const marker = new THREE.Mesh(markerGeo, markerMat);
-    dropGroup.add(marker);
-    dropGroup.position.copy(bd.model.position);
-    dropGroup.position.y += 1;
-    scene.add(dropGroup);
-    
-    lootDrops.push({
-      position: dropGroup.position.clone(),
-      items: drops,
-      mesh: dropGroup,
-      timer: 60 // Loot stays 60 seconds
-    });
-  }
+  // Award drops to inventory
+  const drops = bd.pendingDrops || [];
+  drops.forEach(function(item){
+    if(!playerInventory[item]) playerInventory[item] = 0;
+    playerInventory[item]++;
+  });
   
-  // Show notification
   const dropText = drops.length > 0 ? drops.join(', ') : 'Nothing';
-  showLootNotification(bd.variant.name + ' killed! +' + bd.variant.xp + ' XP | Drops: ' + dropText);
-  debugLog('💀 ' + bd.variant.name + ' died! Drops: ' + dropText);
+  showLootNotification('Skinned ' + bd.variant.name + '! +' + bd.pendingXP + ' XP | Loot: ' + dropText);
+  debugLog('🔪 Skinned ' + bd.variant.name + '! Drops: ' + dropText);
+  
+  // Fade out the corpse over 2 seconds
+  bd.fadeTimer = 2.0;
+  
+  // Reset skinning state
+  skinningState = 'idle';
+  skinningTarget = -1;
+  skinningProgress = 0;
+  document.getElementById('skin-prompt').style.display = 'none';
+  document.getElementById('skin-progress-bar').style.display = 'none';
+}
+
+function cancelSkinning(){
+  skinningState = 'idle';
+  skinningTarget = -1;
+  skinningProgress = 0;
+  document.getElementById('skin-progress-bar').style.display = 'none';
+  document.getElementById('skin-progress-fill').style.width = '0%';
 }
 
 function showLootNotification(text){
@@ -1493,6 +1530,11 @@ document.getElementById('btn-sprint').addEventListener('touchstart', function(e)
 document.getElementById('btn-sprint').addEventListener('touchend', function(){sprintTouch=false});
 document.getElementById('btn-camera').addEventListener('touchstart', function(e){e.preventDefault();thirdPerson=!thirdPerson});
 document.getElementById('btn-attack').addEventListener('touchstart', function(e){e.preventDefault();performPlayerAttack()});
+document.getElementById('btn-skin').addEventListener('touchstart', function(e){
+  e.preventDefault();
+  if(skinningState === 'idle' && nearestDeadBear >= 0) startSkinning(nearestDeadBear);
+});
+document.getElementById('btn-skin').addEventListener('touchend', function(e){e.preventDefault()});
 
 document.addEventListener('wheel', function(e){
   if(thirdPerson){
@@ -1893,6 +1935,78 @@ function animate(){
       bearPos.y += Math.abs(Math.sin(bd.bobPhase)) * bobAmount;
     }
   });
+  
+  // ===== SKINNING SYSTEM =====
+  // Find nearest dead unskinned bear
+  nearestDeadBear = -1;
+  let nearestDeadDist = 8; // Must be within 8 units to skin
+  for(let i = 0; i < bearData.length; i++){
+    const bd = bearData[i];
+    if(bd.state !== 'dead' || bd.skinned || bd.fadeTimer > 0) continue;
+    if(bd.deathProgress < 1.0) continue; // Wait for collapse animation
+    const dx = playerPos.x - bd.model.position.x;
+    const dz = playerPos.z - bd.model.position.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    if(dist < nearestDeadDist){
+      nearestDeadDist = dist;
+      nearestDeadBear = i;
+    }
+  }
+  
+  // Show/hide skin prompt
+  const skinPrompt = document.getElementById('skin-prompt');
+  const btnSkin = document.getElementById('btn-skin');
+  if(nearestDeadBear >= 0 && skinningState === 'idle'){
+    skinPrompt.style.display = 'block';
+    document.getElementById('skin-prompt-text').textContent = isMobile ? 'Tap Skin' : 'Press E to Skin';
+    document.getElementById('skin-progress-bar').style.display = 'none';
+    if(isMobile) btnSkin.style.display = 'flex';
+  } else if(skinningState !== 'skinning'){
+    skinPrompt.style.display = 'none';
+    btnSkin.style.display = 'none';
+  }
+  
+  // Skinning progress
+  if(skinningState === 'skinning'){
+    // Cancel if moved too far from target
+    const sbd = bearData[skinningTarget];
+    if(sbd){
+      const sdx = playerPos.x - sbd.model.position.x;
+      const sdz = playerPos.z - sbd.model.position.z;
+      const sdist = Math.sqrt(sdx*sdx + sdz*sdz);
+      if(sdist > 10){
+        cancelSkinning();
+        showLootNotification('Too far away — skinning cancelled');
+      } else {
+        skinningProgress += dt / SKINNING_TIME;
+        document.getElementById('skin-progress-fill').style.width = Math.min(100, skinningProgress * 100) + '%';
+        skinPrompt.style.display = 'block';
+        if(skinningProgress >= 1.0){
+          completeSkinning();
+        }
+      }
+    }
+  }
+  
+  // Fade out skinned corpses
+  for(let i = 0; i < bearData.length; i++){
+    const bd = bearData[i];
+    if(bd.fadeTimer !== undefined && bd.fadeTimer > 0){
+      bd.fadeTimer -= dt;
+      const opacity = Math.max(0, bd.fadeTimer / 2.0);
+      bd.model.traverse(function(child){
+        if(child.isMesh && child.material){
+          child.material.transparent = true;
+          child.material.opacity = opacity;
+        }
+      });
+      if(bd.fadeTimer <= 0){
+        scene.remove(bd.model);
+        bd.model = null;
+        bd.state = 'removed';
+      }
+    }
+  }
   
   // ===== BLOOD PARTICLE PHYSICS =====
   for(let bi = 0; bi < bloodParticles.length; bi++){

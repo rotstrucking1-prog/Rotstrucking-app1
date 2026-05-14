@@ -278,7 +278,7 @@ scene.add(water);
 updateLoading('Loading tree model...', 30);
 loader.load('tree-model.glb?v=8', function(gltf){
   const treeTemplate = gltf.scene;
-  const treeCount = 210;
+  const treeCount = 0; // Trees removed per Brad's request
   debugLog('🌲 TREE model loaded, meshes found');
   
   // Fix materials on template

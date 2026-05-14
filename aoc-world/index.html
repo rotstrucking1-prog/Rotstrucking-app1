@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v20-despawn-respawn -->
+<!-- v21-graphics-settings -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -29,6 +29,15 @@ canvas{display:block;width:100%;height:100%}
 #btn-sprint{bottom:100px;right:30px}
 #btn-camera{bottom:30px;right:100px}
 #btn-cast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);width:80px;height:80px;border-radius:50%;background:rgba(240,160,48,0.6);border:3px solid rgba(240,160,48,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none;transition:all 0.2s}
+#settings-btn{position:fixed;top:10px;left:10px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:25;cursor:pointer;-webkit-user-select:none;user-select:none}
+#settings-btn:active{transform:scale(0.9)}
+#settings-panel{display:none;position:fixed;top:60px;left:10px;background:rgba(0,0,0,0.85);border:2px solid rgba(255,255,255,0.2);border-radius:12px;padding:15px;z-index:30;min-width:200px}
+#settings-panel.open{display:flex;flex-direction:column;gap:8px}
+#settings-panel h3{color:#FFD700;font-size:15px;margin:0 0 5px;text-align:center;font-weight:bold}
+.gfx-btn{padding:10px 15px;border:2px solid rgba(255,255,255,0.3);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;font-weight:bold;cursor:pointer;text-align:center;-webkit-user-select:none;user-select:none;transition:all 0.15s}
+.gfx-btn:active{transform:scale(0.95)}
+.gfx-btn.active{border-color:#FFD700;background:rgba(255,215,0,0.2);color:#FFD700}
+.gfx-label{color:#aaa;font-size:11px;margin-top:2px}
 #satchel-btn{position:fixed;bottom:260px;right:15px;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,#8B5E3C,#5c3a1e);border:3px solid #a0724a;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.5);transition:transform 0.15s}
 #satchel-btn:active{transform:scale(0.9)}
 #inventory-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;background:linear-gradient(135deg,#5c3a1e,#3d2510);border:3px solid #8B6914;border-radius:8px;padding:10px 14px 14px;z-index:30;box-shadow:0 4px 24px rgba(0,0,0,0.7)}
@@ -97,7 +106,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v20</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v21</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -109,6 +118,14 @@ setTimeout(function(){
 <div class="touch-btn" id="btn-camera">Cam</div>
 <div id="btn-cast">Cast</div>
 <div id="btn-attack" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(220,50,50,0.6);border:3px solid rgba(220,50,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Attack</div>
+<div id="settings-btn">⚙️</div>
+<div id="settings-panel">
+  <h3>⚙️ Graphics</h3>
+  <div class="gfx-btn" id="gfx-low" onclick="setGraphics('low')">🟢 Low<div class="gfx-label">Best performance</div></div>
+  <div class="gfx-btn" id="gfx-medium" onclick="setGraphics('medium')">🟡 Medium<div class="gfx-label">Balanced</div></div>
+  <div class="gfx-btn active" id="gfx-high" onclick="setGraphics('high')">🟠 High<div class="gfx-label">Great visuals</div></div>
+  <div class="gfx-btn" id="gfx-max" onclick="setGraphics('max')">🔴 Max<div class="gfx-label">Maximum quality</div></div>
+</div>
 <div id="satchel-btn">🎒</div>
 <div id="inv-backdrop"></div>
 <div id="inventory-panel">
@@ -127,6 +144,65 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 // ===== SCENE =====
 const scene = new THREE.Scene();
 
+// Graphics quality settings
+let gfxWaterWaves = true;
+let gfxParticlesVisible = true;
+let gfxShadows = true;
+let gfxQuality = 'high'; // default
+
+window.setGraphics = function(level) {
+  gfxQuality = level;
+  
+  // Update button highlights
+  document.querySelectorAll('.gfx-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('gfx-' + level).classList.add('active');
+  
+  if(level === 'low') {
+    renderer.shadowMap.enabled = false;
+    sunLight.castShadow = false;
+    renderer.setPixelRatio(1);
+    renderer.toneMapping = THREE.NoToneMapping;
+    gfxWaterWaves = false;
+    gfxParticlesVisible = false;
+    if(ambientParticles) ambientParticles.visible = false;
+    scene.fog.density = 0.001;
+  } else if(level === 'medium') {
+    renderer.shadowMap.enabled = true;
+    sunLight.castShadow = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.8;
+    gfxWaterWaves = false;
+    gfxParticlesVisible = true;
+    if(ambientParticles) ambientParticles.visible = true;
+    scene.fog.density = 0.0012;
+  } else if(level === 'high') {
+    renderer.shadowMap.enabled = true;
+    sunLight.castShadow = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 2.0;
+    gfxWaterWaves = true;
+    gfxParticlesVisible = true;
+    if(ambientParticles) ambientParticles.visible = true;
+    scene.fog.density = 0.0012;
+  } else if(level === 'max') {
+    renderer.shadowMap.enabled = true;
+    sunLight.castShadow = true;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 2.2;
+    gfxWaterWaves = true;
+    gfxParticlesVisible = true;
+    if(ambientParticles) ambientParticles.visible = true;
+    scene.fog.density = 0.0015;
+  }
+  
+  // Force material refresh after shadow toggle
+  renderer.shadowMap.needsUpdate = true;
+  renderer.setSize(window.innerWidth, window.innerHeight);
+};
+
 // Debug logging to on-screen panel
 function debugLog(msg) {
   const el = document.getElementById('debugLog');
@@ -139,8 +215,8 @@ renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.NoToneMapping;
-// renderer.toneMappingExposure = 1.0;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 2.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
@@ -181,6 +257,7 @@ const skyLoader = new THREE.TextureLoader();
 const skyTex = skyLoader.load('sky-texture.jpg?v=8', function(){
   // Once loaded, apply it
   scene.background = skyTex;
+  scene.environment = skyTex;
 }, undefined, function(){
   // Fallback to blue if sky fails to load
   console.warn('Sky texture failed to load, using fallback blue');
@@ -191,7 +268,7 @@ const skyTex = skyLoader.load('sky-texture.jpg?v=8', function(){
 skyTex.mapping = THREE.EquirectangularReflectionMapping;
 skyTex.colorSpace = THREE.SRGBColorSpace;
 
-scene.fog = new THREE.FogExp2(0x87CEEB, 0.0015);
+scene.fog = new THREE.FogExp2(0x9dc4de, 0.0012);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
 scene.add(ambientLight);
@@ -200,16 +277,39 @@ const sunLight = new THREE.DirectionalLight(0xffeedd, 6.0);  // Brighter light f
 sunLight.position.set(400, 600, 300);  // Very far away
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(2048, 2048);
-sunLight.shadow.camera.left = -500;
-sunLight.shadow.camera.right = 500;
-sunLight.shadow.camera.top = 500;
-sunLight.shadow.camera.bottom = -500;
+sunLight.shadow.camera.left = -150;
+sunLight.shadow.camera.right = 150;
+sunLight.shadow.camera.top = 150;
+sunLight.shadow.camera.bottom = -150;
 sunLight.shadow.camera.far = 1500;
 sunLight.shadow.bias = -0.001;
 scene.add(sunLight);
 
 const hemiLight = new THREE.HemisphereLight(0x88bbff, 0x445522, 0.6);
 scene.add(hemiLight);
+
+// Ambient floating particles (dust/pollen)
+const particleCount = 80;
+const particleGeo = new THREE.BufferGeometry();
+const particlePositions = new Float32Array(particleCount * 3);
+const particleSpeeds = new Float32Array(particleCount);
+for(let pi = 0; pi < particleCount; pi++){
+  particlePositions[pi * 3] = (Math.random() - 0.5) * 200;
+  particlePositions[pi * 3 + 1] = Math.random() * 30 + 2;
+  particlePositions[pi * 3 + 2] = (Math.random() - 0.5) * 200;
+  particleSpeeds[pi] = 0.2 + Math.random() * 0.5;
+}
+particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+const particleMat = new THREE.PointsMaterial({
+  color: 0xffffee,
+  size: 0.6,
+  transparent: true,
+  opacity: 0.4,
+  sizeAttenuation: true,
+  depthWrite: false
+});
+const ambientParticles = new THREE.Points(particleGeo, particleMat);
+scene.add(ambientParticles);
 
 // ===== TERRAIN =====
 const WORLD_SIZE = 800;
@@ -265,14 +365,14 @@ for(let i=0;i<verts.length;i+=3){
 }
 terrainGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-const terrainMat = new THREE.MeshLambertMaterial({map:grassTex, vertexColors:true});
+const terrainMat = new THREE.MeshStandardMaterial({map:grassTex, vertexColors:true, roughness:0.85, metalness:0.0});
 const terrain = new THREE.Mesh(terrainGeo, terrainMat);
 terrain.receiveShadow = true;
 scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== WATER =====
-const waterGeo = new THREE.PlaneGeometry(WORLD_SIZE*2, WORLD_SIZE*2);
+const waterGeo = new THREE.PlaneGeometry(WORLD_SIZE*2, WORLD_SIZE*2, 60, 60);
 waterGeo.rotateX(-Math.PI/2);
 
 // Load Brad's water texture with tiling and animation support
@@ -285,12 +385,13 @@ waterTex.minFilter = THREE.LinearMipmapLinearFilter;
 waterTex.magFilter = THREE.LinearFilter;
 waterTex.anisotropy = 4;
 
-const waterMat = new THREE.MeshPhongMaterial({
+const waterMat = new THREE.MeshStandardMaterial({
   map: waterTex,
-  color: 0x4488cc,
+  color: 0x3399bb,
   transparent: true,
-  opacity: 0.7,
-  shininess: 120,
+  opacity: 0.65,
+  roughness: 0.15,
+  metalness: 0.3,
   side: THREE.DoubleSide
 });
 const water = new THREE.Mesh(waterGeo, waterMat);
@@ -1773,6 +1874,23 @@ document.getElementById('inv-close-btn').addEventListener('click', function(e){ 
 document.getElementById('inv-close-btn').addEventListener('touchstart', function(e){ e.preventDefault(); e.stopPropagation(); toggleInventory(); }, {passive:false});
 document.getElementById('inv-backdrop').addEventListener('click', function(e){ e.stopPropagation(); toggleInventory(); });
 
+document.getElementById('settings-btn').addEventListener('click', function(e){
+  e.stopPropagation();
+  document.getElementById('settings-panel').classList.toggle('open');
+});
+document.getElementById('settings-btn').addEventListener('touchstart', function(e){
+  e.preventDefault(); e.stopPropagation();
+  document.getElementById('settings-panel').classList.toggle('open');
+}, {passive:false});
+// Close settings when tapping elsewhere
+document.addEventListener('click', function(e){
+  const panel = document.getElementById('settings-panel');
+  const btn = document.getElementById('settings-btn');
+  if(panel.classList.contains('open') && !panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)){
+    panel.classList.remove('open');
+  }
+});
+
 document.addEventListener('wheel', function(e){
   if(thirdPerson){
     cameraDistance += e.deltaY*0.01;
@@ -2408,8 +2526,11 @@ function animate(){
     );
   }
   
-  // Sun stays fixed in world, doesn't follow player
-  sunLight.target.position.set(400, 200, 300);
+  // Shadow camera follows player for crisp nearby shadows
+  sunLight.target.position.set(playerPos.x, 0, playerPos.z);
+  sunLight.position.set(playerPos.x + 400, 600, playerPos.z + 300);
+  sunLight.shadow.camera.updateProjectionMatrix();
+  sunLight.target.updateMatrixWorld();
   
   water.position.y = -6 + Math.sin(clock.elapsedTime*0.5)*0.3;
   
@@ -2417,6 +2538,29 @@ function animate(){
   if(water.material.map){
     water.material.map.offset.x += 0.001;
     water.material.map.offset.y += 0.0008;
+  }
+  
+  // Water wave vertex displacement
+  if(gfxWaterWaves && water.geometry.attributes.position) {
+    const wVerts = water.geometry.attributes.position.array;
+    const wTime = clock.getElapsedTime();
+    for(let wi = 0; wi < wVerts.length; wi += 3){
+      wVerts[wi + 1] = Math.sin(wVerts[wi] * 0.03 + wTime * 1.2) * 0.35 + Math.cos(wVerts[wi + 2] * 0.025 + wTime * 0.8) * 0.3;
+    }
+    water.geometry.attributes.position.needsUpdate = true;
+    water.geometry.computeVertexNormals();
+  }
+  
+  // Animate ambient particles — float around player
+  if(ambientParticles && gfxParticlesVisible){
+    ambientParticles.position.set(playerPos.x, 0, playerPos.z);
+    const pVerts = ambientParticles.geometry.attributes.position.array;
+    for(let pi = 0; pi < pVerts.length; pi += 3){
+      pVerts[pi + 1] += particleSpeeds[pi / 3] * dt * 0.5;
+      pVerts[pi] += Math.sin(pVerts[pi + 1] * 0.1 + pVerts[pi + 2]) * dt * 0.3;
+      if(pVerts[pi + 1] > 35) pVerts[pi + 1] = 2;
+    }
+    ambientParticles.geometry.attributes.position.needsUpdate = true;
   }
   
   document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);

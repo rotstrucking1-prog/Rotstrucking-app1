@@ -1319,12 +1319,12 @@ function performPlayerAttack(){
   
   if(closestIdx >= 0){
     const bd = bearData[closestIdx];
-    bd.hp -= PLAYER_ATTACK_DAMAGE;
+    bd.hp = 0; // INSTANT KILL — one hit drops the bear
     // BLOOD SQUIRT — particles fly out from hit point
     const bloodPos = bd.model.position.clone();
     bloodPos.y += bd.scale * 0.3; // Center-mass of bear
     spawnBlood(bloodPos, 12 + Math.floor(Math.random() * 8), bd.scale * 0.15);
-    debugLog('⚔️ Hit ' + bd.variant.name + ' for ' + PLAYER_ATTACK_DAMAGE + ' dmg! HP: ' + Math.max(0,bd.hp) + '/' + bd.maxHp);
+    debugLog('⚔️ INSTANT KILL ' + bd.variant.name + '!');
     
     // Make bear aggro if not already
     if(bd.state === 'wandering' || bd.state === 'idle'){

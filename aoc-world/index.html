@@ -51,6 +51,25 @@ canvas{display:block;width:100%;height:100%}
 .inv-icon{font-size:22px;line-height:1}
 .inv-name{font-size:7px;color:#ccc;text-align:center;line-height:1;margin-top:1px;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inv-count{position:absolute;bottom:1px;right:3px;font-size:11px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000}
+#skills-btn{position:fixed;bottom:330px;right:15px;width:56px;height:56px;border-radius:6px;background:linear-gradient(180deg,#5c3a1a,#3a2210);border:3px solid #8b6914;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,200,80,0.2);transition:transform 0.15s}
+#skills-btn:active{transform:scale(0.9)}
+#skills-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:29}
+#skills-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;background:linear-gradient(170deg,#2c1e0e,#1a1008,#2c1e0e);border:4px solid #8b6914;border-radius:4px;padding:12px 14px 14px;z-index:30;box-shadow:0 0 0 2px #3a2210,0 0 0 5px rgba(139,105,20,0.3),0 8px 32px rgba(0,0,0,0.8);max-height:85vh;overflow-y:auto}
+#skills-panel::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(139,105,20,0.03) 2px,rgba(139,105,20,0.03) 4px);pointer-events:none;border-radius:4px}
+#skills-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:6px;border-bottom:2px solid #5c3a1a;padding-bottom:6px}
+#skills-header span:first-child{color:#FFD700;font-size:17px;font-weight:bold;text-shadow:1px 1px 3px #000,0 0 6px rgba(255,200,50,0.3);letter-spacing:1px}
+#skills-close{color:#a08050;font-size:20px;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:3px}
+#skills-close:hover{color:#FFD700;background:rgba(139,105,20,0.2)}
+#skills-total{color:#d4a017;font-size:13px;text-align:center;margin-bottom:8px;text-shadow:1px 1px 2px #000;letter-spacing:0.5px;font-weight:bold}
+#skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:100%}
+.skill-box{background:linear-gradient(180deg,rgba(60,40,15,0.7),rgba(30,20,5,0.8));border:2px solid #5c3a1a;border-radius:3px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;min-width:88px;cursor:default;transition:border-color 0.2s,background 0.2s}
+.skill-box:hover{border-color:#8b6914;background:linear-gradient(180deg,rgba(80,55,20,0.7),rgba(50,30,10,0.8))}
+.skill-emoji{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5))}
+.skill-name{font-size:10px;color:#b89a60;margin-top:2px;text-align:center;text-transform:uppercase;letter-spacing:0.5px}
+.skill-level{font-size:17px;font-weight:bold;color:#FFD700;text-shadow:1px 1px 3px #000,0 0 4px rgba(255,200,50,0.2)}
+.skill-xp-bar{width:100%;height:5px;background:rgba(0,0,0,0.6);border:1px solid #3a2210;border-radius:2px;margin-top:3px;overflow:hidden}
+.skill-xp-fill{height:100%;background:linear-gradient(90deg,#8b6914,#d4a017,#FFD700);border-radius:1px;transition:width 0.3s}
+.skill-xp-text{font-size:8px;color:#8b7040;margin-top:2px;text-align:center}
 </style>
 <script type="importmap">
 {
@@ -106,7 +125,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v29</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v30</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -134,6 +153,17 @@ setTimeout(function(){
     <span id="inv-close-btn">✕</span>
   </div>
   <div id="inv-grid"></div>
+</div>
+
+<div id="skills-btn">⚔️</div>
+<div id="skills-backdrop"></div>
+<div id="skills-panel">
+  <div id="skills-header">
+    <span>⚔️ Skills</span>
+    <span id="skills-close">✕</span>
+  </div>
+  <div id="skills-total">Total Level: 12</div>
+  <div id="skills-grid"></div>
 </div>
 
 <script type="module">
@@ -423,7 +453,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 10;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly
+const totalAssets = 11;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1002,6 +1032,16 @@ const DEER_RUN_SPEED = 8.0;
 
 // ===== GRIZZLY BEAR NPCS (NPC-0006 to NPC-0009) =====
 let bearModels = [];
+// ===== GREATER SKELETAL DREUGH =====
+const DREUGH_COUNT = 20;
+const DREUGH_SCALE_MIN = 4.0;
+const DREUGH_SCALE_MAX = 7.0;
+const DREUGH_WALK_SPEED = 1.2;
+const DREUGH_FOOT_OFFSET = 0.5; // Y range -0.5 to 0.5
+let dreughTemplate = null;
+let dreughData = [];
+let dreughModels = [];
+
 let bearTemplate = null;
 let bearData = [];
 const bearCount = 25;
@@ -1110,9 +1150,89 @@ let lastMoveZ = 0;
 const CHAR_HEIGHT_OFFSET = 1.5;  // Model Y range: -0.5 to 0.5 → at scale 3, feet at -1.5 below origin
 
 // ===== PLAYER SKILLS =====
-let playerSkills = {
-  fishing: 1  // Start at skill level 1
-};
+// ===== XP LEVEL TABLE =====
+// Level 1 = 0 XP, Level 2 = 100 XP, Level 100 = 13,600,000 XP (exponential curve)
+const XP_TABLE = [0]; // index 0 unused
+XP_TABLE[1] = 0;
+for(let lvl = 2; lvl <= 100; lvl++){
+  XP_TABLE[lvl] = Math.floor(100 * Math.pow(136000, (lvl - 2) / 98));
+}
+
+function getLevel(totalXP){
+  for(let l = 100; l >= 2; l--){
+    if(totalXP >= XP_TABLE[l]) return l;
+  }
+  return 1;
+}
+
+function getXPProgress(totalXP){
+  const lvl = getLevel(totalXP);
+  if(lvl >= 100) return { level: 100, xpIntoLevel: 0, xpNeeded: 0, percent: 100 };
+  const xpForCurrent = XP_TABLE[lvl];
+  const xpForNext = XP_TABLE[lvl + 1];
+  const xpInto = totalXP - xpForCurrent;
+  const xpNeeded = xpForNext - xpForCurrent;
+  return { level: lvl, xpIntoLevel: xpInto, xpNeeded: xpNeeded, percent: Math.floor(xpInto / xpNeeded * 100) };
+}
+
+const SKILLS = [
+  { id: 'attack',       name: 'Attack',       emoji: '⚔️',  color: '#c03030' },
+  { id: 'strength',     name: 'Strength',     emoji: '💪',  color: '#00b000' },
+  { id: 'defense',      name: 'Defense',      emoji: '🛡️',  color: '#4040e0' },
+  { id: 'hitpoints',    name: 'Hitpoints',    emoji: '❤️',  color: '#d03030' },
+  { id: 'fishing',      name: 'Fishing',      emoji: '🎣',  color: '#2090c0' },
+  { id: 'mining',       name: 'Mining',       emoji: '⛏️',  color: '#7a5c30' },
+  { id: 'woodcutting',  name: 'Woodcutting',  emoji: '🪓',  color: '#2a7a2a' },
+  { id: 'cooking',      name: 'Cooking',      emoji: '🍳',  color: '#a04080' },
+  { id: 'smithing',     name: 'Smithing',     emoji: '🔨',  color: '#606060' },
+  { id: 'crafting',     name: 'Crafting',     emoji: '✂️',  color: '#806020' },
+  { id: 'ranged',       name: 'Ranged',       emoji: '🏹',  color: '#408040' },
+  { id: 'construction', name: 'Construction', emoji: '🏗️',  color: '#808000' }
+];
+
+let playerSkills = {};
+SKILLS.forEach(function(s){ playerSkills[s.id] = 0; });
+playerSkills.hitpoints = XP_TABLE[10] || 0; // Hitpoints starts at level 10
+
+let skillsOpen = false;
+
+function getTotalLevel(){
+  let total = 0;
+  SKILLS.forEach(function(s){ total += getLevel(playerSkills[s.id]); });
+  return total;
+}
+
+function renderSkillsPanel(){
+  const grid = document.getElementById('skills-grid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  SKILLS.forEach(function(s){
+    const xp = playerSkills[s.id];
+    const prog = getXPProgress(xp);
+    const box = document.createElement('div');
+    box.className = 'skill-box';
+    box.innerHTML = '<div class="skill-emoji">' + s.emoji + '</div>' +
+      '<div class="skill-name">' + s.name + '</div>' +
+      '<div class="skill-level" style="color:' + s.color + '">' + prog.level + '</div>' +
+      '<div class="skill-xp-bar"><div class="skill-xp-fill" style="width:' + prog.percent + '%;background:' + s.color + '"></div></div>' +
+      '<div class="skill-xp-text">' + xp.toLocaleString() + ' / ' + (prog.level >= 100 ? 'MAX' : XP_TABLE[prog.level + 1].toLocaleString()) + ' XP</div>';
+    grid.appendChild(box);
+  });
+  document.getElementById('skills-total').textContent = 'Total Level: ' + getTotalLevel() + ' / ' + (SKILLS.length * 100);
+}
+
+function toggleSkills(){
+  skillsOpen = !skillsOpen;
+  document.getElementById('skills-panel').style.display = skillsOpen ? 'flex' : 'none';
+  document.getElementById('skills-backdrop').style.display = skillsOpen ? 'block' : 'none';
+  if(skillsOpen) renderSkillsPanel();
+}
+
+// Wire up skills button and backdrop
+document.getElementById('skills-btn').addEventListener('click', toggleSkills);
+document.getElementById('skills-backdrop').addEventListener('click', toggleSkills);
+document.getElementById('skills-close').addEventListener('click', toggleSkills);
+
 let playerCaughtFish = 0;  // Total fish caught
 
 const ITEM_DEFS = {
@@ -1448,6 +1568,76 @@ loader.load('bear-model.glb?v=1', function(gltf){
 });
 
 // Load dead grizzly carcass model
+// Load Greater Skeletal Dreugh
+loader.load('dreugh-model.glb?v=1', function(gltf){
+  dreughTemplate = gltf.scene;
+  dreughTemplate.traverse(function(child){
+    if(child.isMesh){
+      child.material = child.material.clone();
+      child.material.metalness = 0;
+      child.material.roughness = 0.8;
+      if(child.material.color) child.material.color.set(0xffffff);
+      if(child.material.metalnessMap) child.material.metalnessMap = null;
+      if(child.material.roughnessMap) child.material.roughnessMap = null;
+      if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
+      child.material.needsUpdate = true;
+    }
+  });
+  
+  // Spawn dreughs
+  let dreughsPlaced = 0;
+  while(dreughsPlaced < DREUGH_COUNT){
+    const x = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const z = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const h = getHeight(x, z);
+    if(h < -2 || h > 28) continue;
+    
+    const scale = DREUGH_SCALE_MIN + Math.random() * (DREUGH_SCALE_MAX - DREUGH_SCALE_MIN);
+    const dreugh = dreughTemplate.clone();
+    dreugh.scale.set(scale, scale, scale);
+    
+    const heading = Math.random() * Math.PI * 2;
+    const normal = getTerrainNormal(x, z);
+    const up = new THREE.Vector3(0, 1, 0);
+    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+    slopeQuat.multiply(yRotQuat);
+    dreugh.quaternion.copy(slopeQuat);
+    
+    dreugh.position.set(x, h, z);
+    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+    dreugh.position.addScaledVector(localUp, DREUGH_FOOT_OFFSET * scale);
+    
+    scene.add(dreugh);
+    dreughModels.push(dreugh);
+    
+    dreughData.push({
+      model: dreugh,
+      scale: scale,
+      heading: heading,
+      state: 'wandering',
+      walkSpeed: DREUGH_WALK_SPEED + Math.random() * 0.4,
+      turnTimer: 0,
+      turnInterval: 5 + Math.random() * 5,
+      turnTarget: heading,
+      idleTimer: 0,
+      bobPhase: Math.random() * Math.PI * 2
+    });
+    
+    dreughsPlaced++;
+  }
+  
+  debugLog('🦴 Greater Skeletal Dreughs spawned: ' + dreughsPlaced);
+  assetsLoaded++;
+  updateLoading('Dreughs stalking the land!', 97);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Dreugh load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
 loader.load('dead-grizzly-model.glb?v=1', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
@@ -1619,7 +1809,7 @@ function findFishNearBobber(){
 
 function calculateCatchRate(npcId){
   // Catch rates based on NPC ID and skill level
-  const skill = playerSkills.fishing;
+  const skill = getLevel(playerSkills.fishing);
   const skillFactor = skill / 100;  // 0.01 to 1.0
   
   let baseRate = 0;
@@ -1653,7 +1843,7 @@ function successfulCatch(){
     case 4: xpGain = 65; break;  // Overgrown Bass
   }
   
-  playerSkills.fishing = Math.min(100, playerSkills.fishing + xpGain / 100);
+  playerSkills.fishing += xpGain; playerXP += xpGain;
   playerCaughtFish++;
   const fishItemName = FISH_NAMES[fishNpcId] || 'Raw Bass';
   addToInventory(fishItemName);
@@ -1916,7 +2106,7 @@ function completeSkinning(){
   bd.skinned = true;
   
   // Award XP
-  playerXP += bd.pendingXP;
+  playerSkills.attack += bd.pendingXP; playerXP += bd.pendingXP;
   
   // Award drops to inventory
   const drops = bd.pendingDrops || [];
@@ -1978,7 +2168,7 @@ function handleFishingAction(){
     // Attempt reel
     if(attemptCatch()){
       const xp = successfulCatch();
-      console.log('Caught fish (NPC-'+fishNpcId+')! +'+xp+' XP. Skill: '+Math.round(playerSkills.fishing));
+      console.log('Caught fish (NPC-'+fishNpcId+')! +'+xp+' XP. Skill Lv: '+getLevel(playerSkills.fishing));
     } else {
       failedCatch();
       console.log('Fish escaped!');
@@ -2508,6 +2698,76 @@ function animate(){
     }
   });
   
+  // ===== DREUGH AI (WANDERING) =====
+  dreughData.forEach(function(dd){
+    const dreughPos = dd.model.position;
+    
+    // Idle state
+    if(dd.state === 'idle'){
+      dd.idleTimer -= dt;
+      if(dd.idleTimer <= 0){
+        dd.state = 'wandering';
+        dd.turnInterval = 5 + Math.random() * 5;
+      }
+    }
+    
+    // Wandering — occasionally stop
+    if(dd.state === 'wandering'){
+      dd.turnTimer += dt;
+      if(dd.turnTimer >= dd.turnInterval){
+        dd.turnTimer = 0;
+        if(Math.random() < 0.2){
+          dd.state = 'idle';
+          dd.idleTimer = 3 + Math.random() * 8;
+        } else {
+          dd.turnInterval = 5 + Math.random() * 5;
+          dd.turnTarget = dd.heading + (Math.random() - 0.5) * Math.PI * 0.7;
+        }
+      }
+    }
+    
+    const dreughSpeed = dd.state === 'idle' ? 0 : dd.walkSpeed;
+    
+    // Smooth heading
+    if(dreughSpeed > 0){
+      var hDiff = dd.turnTarget - dd.heading;
+      while(hDiff > Math.PI) hDiff -= 2*Math.PI;
+      while(hDiff < -Math.PI) hDiff += 2*Math.PI;
+      dd.heading += hDiff * 0.03;
+    }
+    
+    // Move
+    if(dreughSpeed > 0){
+      const spd = dreughSpeed * dt;
+      const newX = dreughPos.x + Math.sin(dd.heading) * spd;
+      const newZ = dreughPos.z + Math.cos(dd.heading) * spd;
+      const newH = getHeight(newX, newZ);
+      
+      const wb = WORLD_SIZE * 0.45;
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+        const normal = getTerrainNormal(newX, newZ);
+        const up = new THREE.Vector3(0, 1, 0);
+        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, dd.heading + Math.PI);
+        slopeQuat.multiply(yRotQuat);
+        dd.model.quaternion.copy(slopeQuat);
+        dreughPos.set(newX, newH, newZ);
+        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+        dreughPos.addScaledVector(localUp, DREUGH_FOOT_OFFSET * dd.scale);
+      } else {
+        dd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
+        dd.turnTarget = dd.heading;
+      }
+    }
+    
+    // Procedural walking bob
+    if(dreughSpeed > 0){
+      dd.bobPhase += dt * 5;
+      const bobAmt = 0.06 * dd.scale;
+      dreughPos.y += Math.abs(Math.sin(dd.bobPhase)) * bobAmt;
+    }
+  });
+
   // ===== SKINNING SYSTEM =====
   // Find nearest dead unskinned bear
   nearestDeadBear = -1;
@@ -2798,7 +3058,7 @@ function animate(){
   document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);
   document.getElementById('hud-fps').textContent = 'FPS: '+fps;
   document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');
-  document.getElementById('hud-pos').textContent += ' | Fishing: '+Math.round(playerSkills.fishing)+' | Caught: '+playerCaughtFish;
+  document.getElementById('hud-pos').textContent += ' | Fishing Lv: '+getLevel(playerSkills.fishing)+' | Caught: '+playerCaughtFish;
   
   // Update HP bar
   const hpPct = Math.max(0, playerHP / playerMaxHP * 100);

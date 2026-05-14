@@ -51,27 +51,28 @@ canvas{display:block;width:100%;height:100%}
 .inv-icon{font-size:22px;line-height:1}
 .inv-name{font-size:7px;color:#ccc;text-align:center;line-height:1;margin-top:1px;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inv-count{position:absolute;bottom:1px;right:3px;font-size:11px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000}
-#skills-btn{position:fixed;bottom:330px;right:15px;width:60px;height:60px;border-radius:8px;background:radial-gradient(ellipse at 30% 30%,#6b4423,#3a1f0d);border:3px solid #2a1508;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 3px 10px rgba(0,0,0,0.8),inset 0 1px 0 rgba(200,160,80,0.15),inset 0 -2px 0 rgba(0,0,0,0.3);transition:transform 0.15s}
+#skills-btn{position:fixed;bottom:330px;right:15px;width:60px;height:60px;border-radius:8px;background:radial-gradient(ellipse at 40% 30%,#1a1a2e,#0a0a15);border:3px solid #0d0d1a;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 0 12px rgba(80,0,120,0.4),0 0 25px rgba(0,200,100,0.1),0 3px 10px rgba(0,0,0,0.9),inset 0 1px 0 rgba(100,60,160,0.15);transition:transform 0.15s;animation:btnPulse 3s infinite}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 12px rgba(80,0,120,0.4),0 0 25px rgba(0,200,100,0.1),0 3px 10px rgba(0,0,0,0.9)}50%{box-shadow:0 0 18px rgba(80,0,120,0.6),0 0 35px rgba(0,200,100,0.2),0 3px 10px rgba(0,0,0,0.9)}}
 #skills-btn:active{transform:scale(0.9)}
-#skills-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:29}
+#skills-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:29}
 #skills-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;z-index:30;max-height:88vh;overflow-y:auto;padding:0;background:none;border:none}
-#skills-scroll{background:linear-gradient(180deg,#d4b896 0%,#c9a87c 5%,#dcc4a4 15%,#c9a87c 50%,#d4b896 85%,#c9a87c 95%,#d4b896 100%);border:6px solid #2a1508;border-radius:6px;padding:16px 18px 18px;position:relative;box-shadow:0 0 0 3px #5c3a1a,0 0 0 7px #2a1508,0 10px 40px rgba(0,0,0,0.9),inset 0 0 30px rgba(80,50,20,0.2);min-width:290px}
-#skills-scroll::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");pointer-events:none;border-radius:3px}
-#skills-scroll::after{content:'';position:absolute;top:6px;left:6px;right:6px;bottom:6px;border:2px solid rgba(90,55,20,0.3);border-radius:2px;pointer-events:none}
-#skills-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:4px;padding-bottom:8px;border-bottom:3px double #7a5530}
-#skills-header span:first-child{color:#2a1508;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-size:20px;font-weight:bold;letter-spacing:2px;text-shadow:0 1px 0 rgba(200,170,120,0.5)}
-#skills-close{color:#5c3a1a;font-size:22px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:2px solid #5c3a1a;font-weight:bold}
-#skills-close:active{background:rgba(90,55,20,0.3)}
-#skills-total{color:#4a2a10;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-size:13px;text-align:center;margin-bottom:10px;letter-spacing:1px;font-weight:bold;font-style:italic}
-#skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%}
-.skill-box{background:linear-gradient(180deg,rgba(42,21,8,0.85),rgba(60,35,15,0.9));border:2px solid #5c3a1a;border-radius:4px;padding:7px 5px;display:flex;flex-direction:column;align-items:center;min-width:85px;cursor:default;position:relative;box-shadow:inset 0 1px 0 rgba(200,160,80,0.1),0 2px 4px rgba(0,0,0,0.4)}
-.skill-box::after{content:'';position:absolute;top:1px;left:1px;right:1px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,160,80,0.15),transparent)}
-.skill-emoji{font-size:20px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7))}
-.skill-name{font-size:9px;color:#c9a87c;margin-top:3px;text-align:center;text-transform:uppercase;letter-spacing:1.5px;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-weight:bold}
-.skill-level{font-size:18px;font-weight:bold;color:#FFD700;text-shadow:1px 1px 3px #000,0 0 6px rgba(255,200,50,0.3);font-family:'Palatino Linotype','Book Antiqua','Georgia',serif}
-.skill-xp-bar{width:100%;height:6px;background:rgba(0,0,0,0.7);border:1px solid #3a2210;border-radius:3px;margin-top:3px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.5)}
-.skill-xp-fill{height:100%;background:linear-gradient(90deg,#6b4423,#a07030,#d4a040);border-radius:2px;transition:width 0.3s;box-shadow:0 0 4px rgba(200,160,60,0.3)}
-.skill-xp-text{font-size:8px;color:#c9a87c;margin-top:2px;text-align:center;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;opacity:0.8}
+#skills-scroll{background:linear-gradient(170deg,#0d0d1a 0%,#141428 20%,#0a0f1a 40%,#101025 60%,#0d0d1a 80%,#080815 100%);border:4px solid #1a1a30;border-radius:4px;padding:14px 14px 16px;position:relative;box-shadow:0 0 0 2px #0a0a15,0 0 0 5px rgba(80,0,120,0.3),0 0 40px rgba(0,200,100,0.08),0 10px 40px rgba(0,0,0,0.95);min-width:290px}
+#skills-scroll::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");pointer-events:none;border-radius:3px}
+#skills-scroll::after{content:'';position:absolute;top:3px;left:3px;right:3px;bottom:3px;border:1px solid rgba(80,0,120,0.2);border-radius:2px;pointer-events:none;box-shadow:inset 0 0 20px rgba(0,0,0,0.5)}
+#skills-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:4px;padding-bottom:8px;border-bottom:2px solid rgba(80,0,120,0.3)}
+#skills-header span:first-child{color:#8a4fff;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-size:18px;font-weight:bold;letter-spacing:3px;text-shadow:0 0 8px rgba(138,79,255,0.5),0 0 20px rgba(80,0,120,0.3)}
+#skills-close{color:#555;font-size:20px;cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #333;font-weight:bold}
+#skills-close:active{background:rgba(80,0,120,0.3);color:#8a4fff}
+#skills-total{color:#4a6a4a;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-size:12px;text-align:center;margin-bottom:8px;letter-spacing:1px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,100,0.2)}
+#skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:100%}
+.skill-box{background:linear-gradient(180deg,rgba(15,15,30,0.9),rgba(8,8,18,0.95));border:1px solid rgba(80,0,120,0.25);border-radius:3px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;min-width:85px;cursor:default;position:relative;box-shadow:inset 0 0 8px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.5)}
+.skill-box::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(80,0,120,0.2),transparent)}
+.skill-emoji{font-size:20px;line-height:1;filter:drop-shadow(0 0 4px rgba(0,0,0,0.8))}
+.skill-name{font-size:9px;color:#5a7a5a;margin-top:3px;text-align:center;text-transform:uppercase;letter-spacing:1.5px;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-weight:bold;text-shadow:0 0 3px rgba(0,200,100,0.15)}
+.skill-level{font-size:17px;font-weight:bold;color:#cc3333;text-shadow:0 0 6px rgba(200,0,0,0.4),1px 1px 3px #000;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif}
+.skill-xp-bar{width:100%;height:5px;background:rgba(0,0,0,0.8);border:1px solid rgba(80,0,120,0.2);border-radius:2px;margin-top:3px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.6)}
+.skill-xp-fill{height:100%;background:linear-gradient(90deg,#1a0a2e,#4a0080,#8a00cc);border-radius:1px;transition:width 0.3s;box-shadow:0 0 6px rgba(138,0,204,0.4)}
+.skill-xp-text{font-size:8px;color:#4a5a4a;margin-top:2px;text-align:center;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;opacity:0.7}
 </style>
 <script type="importmap">
 {
@@ -127,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v32</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v33</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -157,12 +158,12 @@ setTimeout(function(){
   <div id="inv-grid"></div>
 </div>
 
-<div id="skills-btn">⚔️</div>
+<div id="skills-btn">☠</div>
 <div id="skills-backdrop"></div>
 <div id="skills-panel">
 <div id="skills-scroll">
   <div id="skills-header">
-    <span>⚔ SKILLS ⚔</span>
+    <span>☠ SKILLS ☠</span>
     <span id="skills-close">✕</span>
   </div>
   <div id="skills-total">Total Level: 12</div>
@@ -1204,7 +1205,8 @@ const SKILLS = [
   { id: 'thieving',     name: 'Thieving',     emoji: '🗝️',  color: '#8030a0' },
   { id: 'slayer',       name: 'Slayer',       emoji: '💀',  color: '#202020' },
   { id: 'firemaking',   name: 'Firemaking',   emoji: '🔥',  color: '#d06010' },
-  { id: 'construction', name: 'Construction', emoji: '🏗️',  color: '#808000' }
+  { id: 'construction', name: 'Construction', emoji: '🏗️',  color: '#808000' },
+  { id: 'skinning',     name: 'Skinning',     emoji: '🔪',  color: '#8b0000' }
 ];
 
 let playerSkills = {};
@@ -1959,6 +1961,9 @@ function performPlayerAttack(){
     }
     
     if(bd.hp <= 0){
+      // Award attack XP for the kill
+      const killXP = Math.floor(bd.variant.xp * 0.5); // Half XP for kill, other half from skinning
+      playerSkills.attack += killXP; playerXP += killXP;
       bearDeath(closestIdx);
     }
   }
@@ -2122,8 +2127,8 @@ function completeSkinning(){
   const bd = bearData[skinningTarget];
   bd.skinned = true;
   
-  // Award XP
-  playerSkills.attack += bd.pendingXP; playerXP += bd.pendingXP;
+  // Award XP to skinning skill
+  playerSkills.skinning += bd.pendingXP; playerXP += bd.pendingXP;
   
   // Award drops to inventory
   const drops = bd.pendingDrops || [];

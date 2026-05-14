@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v17-raise-bear -->
+<!-- v18-inventory -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -29,6 +29,19 @@ canvas{display:block;width:100%;height:100%}
 #btn-sprint{bottom:100px;right:30px}
 #btn-camera{bottom:30px;right:100px}
 #btn-cast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);width:80px;height:80px;border-radius:50%;background:rgba(240,160,48,0.6);border:3px solid rgba(240,160,48,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none;transition:all 0.2s}
+#satchel-btn{position:fixed;bottom:260px;right:15px;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,#8B5E3C,#5c3a1e);border:3px solid #a0724a;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.5);transition:transform 0.15s}
+#satchel-btn:active{transform:scale(0.9)}
+#inventory-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;background:linear-gradient(135deg,#5c3a1e,#3d2510);border:3px solid #8B6914;border-radius:8px;padding:10px 14px 14px;z-index:30;box-shadow:0 4px 24px rgba(0,0,0,0.7)}
+#inv-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:29}
+#inv-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:8px}
+#inv-header span:first-child{color:#FFD700;font-size:16px;font-weight:bold;text-shadow:1px 1px 2px #000}
+#inv-close-btn{color:#ccc;font-size:20px;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+#inv-close-btn:hover{color:#fff;background:rgba(255,255,255,0.1)}
+#inv-grid{display:grid;grid-template-columns:repeat(4,52px);grid-template-rows:repeat(7,52px);gap:2px}
+.inv-slot{width:52px;height:52px;background:rgba(0,0,0,0.4);border:1px solid #6b4c2a;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;box-sizing:border-box}
+.inv-icon{font-size:22px;line-height:1}
+.inv-name{font-size:7px;color:#ccc;text-align:center;line-height:1;margin-top:1px;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-count{position:absolute;bottom:1px;right:3px;font-size:11px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000}
 </style>
 <script type="importmap">
 {
@@ -84,7 +97,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v17</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v18</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -96,6 +109,15 @@ setTimeout(function(){
 <div class="touch-btn" id="btn-camera">Cam</div>
 <div id="btn-cast">Cast</div>
 <div id="btn-attack" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(220,50,50,0.6);border:3px solid rgba(220,50,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Attack</div>
+<div id="satchel-btn">🎒</div>
+<div id="inv-backdrop"></div>
+<div id="inventory-panel">
+  <div id="inv-header">
+    <span>Inventory</span>
+    <span id="inv-close-btn">✕</span>
+  </div>
+  <div id="inv-grid"></div>
+</div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -752,7 +774,8 @@ let skinningTarget = -1; // bearData index
 let skinningProgress = 0; // 0 to 1
 const SKINNING_TIME = 3.0; // seconds to skin
 let nearestDeadBear = -1; // index of closest dead bear in range
-let playerInventory = {}; // item name -> count
+let inventorySlots = new Array(28).fill(null); // 28 slots, each: {name, count} or null
+let inventoryOpen = false;
 let playerXP = 0;
 let lastHitBearIndex = -1;
 let lootNotifications = []; // { text, timer }
@@ -786,6 +809,81 @@ let playerSkills = {
   fishing: 1  // Start at skill level 1
 };
 let playerCaughtFish = 0;  // Total fish caught
+
+const ITEM_DEFS = {
+  'Bear Bones':  { color:'#e8e8d0', emoji:'🦴' },
+  'Bear Hide':   { color:'#8B5E3C', emoji:'🟫' },
+  'Bear Meat':   { color:'#cc4444', emoji:'🥩' },
+  'Bear Claws':  { color:'#666666', emoji:'🐾' },
+  'Raw Baby Bass':       { color:'#88ccff', emoji:'🐟' },
+  'Raw Medium Bass':     { color:'#5599dd', emoji:'🐟' },
+  'Raw Full Grown Bass': { color:'#3366aa', emoji:'🐟' },
+  'Raw Overgrown Bass':  { color:'#9944cc', emoji:'🐟' }
+};
+const FISH_NAMES = {1:'Raw Baby Bass', 2:'Raw Medium Bass', 3:'Raw Full Grown Bass', 4:'Raw Overgrown Bass'};
+
+function addToInventory(itemName){
+  for(let i=0;i<28;i++){
+    if(inventorySlots[i] && inventorySlots[i].name === itemName){
+      inventorySlots[i].count++;
+      if(inventoryOpen) renderInventory();
+      return true;
+    }
+  }
+  for(let i=0;i<28;i++){
+    if(!inventorySlots[i]){
+      inventorySlots[i] = {name:itemName, count:1};
+      if(inventoryOpen) renderInventory();
+      return true;
+    }
+  }
+  showLootNotification('Inventory full!');
+  return false;
+}
+
+function toggleInventory(){
+  inventoryOpen = !inventoryOpen;
+  const panel = document.getElementById('inventory-panel');
+  const backdrop = document.getElementById('inv-backdrop');
+  if(inventoryOpen){
+    renderInventory();
+    panel.style.display = 'flex';
+    backdrop.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+    backdrop.style.display = 'none';
+  }
+}
+
+function renderInventory(){
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  for(let i=0;i<28;i++){
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot';
+    if(inventorySlots[i]){
+      const item = inventorySlots[i];
+      const def = ITEM_DEFS[item.name] || {color:'#aaa',emoji:'📦'};
+      slot.style.background = def.color + '33';
+      slot.style.borderColor = def.color;
+      const icon = document.createElement('div');
+      icon.className = 'inv-icon';
+      icon.textContent = def.emoji;
+      slot.appendChild(icon);
+      const nameEl = document.createElement('div');
+      nameEl.className = 'inv-name';
+      nameEl.textContent = item.name.replace('Raw ','');
+      slot.appendChild(nameEl);
+      if(item.count > 1){
+        const cnt = document.createElement('div');
+        cnt.className = 'inv-count';
+        cnt.textContent = item.count;
+        slot.appendChild(cnt);
+      }
+    }
+    grid.appendChild(slot);
+  }
+}
 
 // ===== FISHING SYSTEM =====
 let fishingEquipped = false;
@@ -1238,6 +1336,8 @@ function successfulCatch(){
   
   playerSkills.fishing = Math.min(100, playerSkills.fishing + xpGain / 100);
   playerCaughtFish++;
+  const fishItemName = FISH_NAMES[fishNpcId] || 'Raw Bass';
+  addToInventory(fishItemName);
   
   // Remove fish from world (it's caught)
   if(nearbyFish){
@@ -1413,8 +1513,7 @@ function completeSkinning(){
   // Award drops to inventory
   const drops = bd.pendingDrops || [];
   drops.forEach(function(item){
-    if(!playerInventory[item]) playerInventory[item] = 0;
-    playerInventory[item]++;
+    addToInventory(item);
   });
   
   const dropText = drops.length > 0 ? drops.join(', ') : 'Nothing';
@@ -1450,8 +1549,7 @@ function showLootNotification(text){
 
 function pickupLoot(loot){
   loot.items.forEach(function(item){
-    if(!playerInventory[item]) playerInventory[item] = 0;
-    playerInventory[item]++;
+    addToInventory(item);
   });
   showLootNotification('Picked up: ' + loot.items.join(', '));
   scene.remove(loot.mesh);
@@ -1594,6 +1692,12 @@ document.getElementById('btn-skin').addEventListener('touchstart', function(e){
   if(skinningState === 'idle' && nearestDeadBear >= 0) startSkinning(nearestDeadBear);
 });
 document.getElementById('btn-skin').addEventListener('touchend', function(e){e.preventDefault()});
+
+document.getElementById('satchel-btn').addEventListener('click', function(e){ e.stopPropagation(); toggleInventory(); });
+document.getElementById('satchel-btn').addEventListener('touchstart', function(e){ e.preventDefault(); e.stopPropagation(); toggleInventory(); }, {passive:false});
+document.getElementById('inv-close-btn').addEventListener('click', function(e){ e.stopPropagation(); toggleInventory(); });
+document.getElementById('inv-close-btn').addEventListener('touchstart', function(e){ e.preventDefault(); e.stopPropagation(); toggleInventory(); }, {passive:false});
+document.getElementById('inv-backdrop').addEventListener('click', function(e){ e.stopPropagation(); toggleInventory(); });
 
 document.addEventListener('wheel', function(e){
   if(thirdPerson){
@@ -2252,13 +2356,12 @@ function animate(){
   else if(hpPct > 25) document.getElementById('hp-bar').style.background = 'linear-gradient(to bottom,#ff4,#aa2)';
   else document.getElementById('hp-bar').style.background = 'linear-gradient(to bottom,#f44,#a22)';
   
-  // Show XP and inventory items
+  // Show XP and inventory summary
   var invText = ' | XP: ' + playerXP;
-  var invItems = Object.keys(playerInventory);
-  if(invItems.length > 0){
-    invText += ' | Loot: ';
-    invItems.forEach(function(item){ invText += item + '(' + playerInventory[item] + ') '; });
-  }
+  var totalItems = 0;
+  var usedSlots = 0;
+  for(var si=0;si<28;si++){ if(inventorySlots[si]){ totalItems += inventorySlots[si].count; usedSlots++; } }
+  invText += ' | Items: ' + totalItems + ' (' + usedSlots + '/28 slots)';
   document.getElementById('hud-mode').textContent += invText;
   
   renderer.render(scene, camera);

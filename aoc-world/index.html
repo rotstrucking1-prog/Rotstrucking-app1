@@ -1046,31 +1046,26 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
     }
   });
   debugLog('💀 Dead grizzly carcass model loaded');
-  // TEST: trying Z-axis and combined rotations
-  const testScale = 5;
+  // TEST: ALL 6 possible face-down orientations (exhaustive)
+  // Each puts a different model face toward the ground (-Y in world)
+  const testScale = 7;
   const testBears = [
-    {n:1, zz:10,  rx:0,           ry:0, rz:Math.PI/2,     label:'1: Z=90'},
-    {n:2, zz:20,  rx:0,           ry:0, rz:-Math.PI/2,    label:'2: Z=-90'},
-    {n:3, zz:30,  rx:0,           ry:0, rz:Math.PI,       label:'3: Z=180'},
-    {n:4, zz:40,  rx:Math.PI/2,   ry:0, rz:Math.PI/2,    label:'4: X=90+Z=90'},
-    {n:5, zz:50,  rx:-Math.PI/2,  ry:0, rz:Math.PI/2,    label:'5: X=-90+Z=90'},
-    {n:6, zz:60,  rx:-Math.PI/2,  ry:0, rz:-Math.PI/2,   label:'6: X=-90+Z=-90'},
-    {n:7, zz:70,  rx:Math.PI/2,   ry:0, rz:-Math.PI/2,   label:'7: X=90+Z=-90'},
-    {n:8, zz:80,  rx:Math.PI,     ry:0, rz:Math.PI/2,    label:'8: X=180+Z=90'},
-    {n:9, zz:90,  rx:Math.PI,     ry:0, rz:-Math.PI/2,   label:'9: X=180+Z=-90'},
-    {n:10, zz:100, rx:0,          ry:Math.PI/2, rz:Math.PI/2,  label:'10: Y=90+Z=90'},
-    {n:11, zz:110, rx:0,          ry:-Math.PI/2, rz:Math.PI/2, label:'11: Y=-90+Z=90'},
-    {n:12, zz:120, rx:0,          ry:Math.PI/2, rz:-Math.PI/2, label:'12: Y=90+Z=-90'}
+    {zz:15,  rx:0,           rz:0,           label:'A: NO ROTATION (model -Y down)'},
+    {zz:35,  rx:Math.PI,     rz:0,           label:'B: X=180 (model +Y down, flipped)'},
+    {zz:55,  rx:0,           rz:Math.PI/2,   label:'C: Z=90 (model +X down)'},
+    {zz:75,  rx:0,           rz:-Math.PI/2,  label:'D: Z=-90 (model -X down)'},
+    {zz:95,  rx:Math.PI/2,   rz:0,           label:'E: X=90 (model -Z down)'},
+    {zz:115, rx:-Math.PI/2,  rz:0,           label:'F: X=-90 (model +Z down)'}
   ];
   testBears.forEach(function(t){
     const h = getHeight(0, t.zz);
     const dm = deadBearTemplate.clone();
     dm.traverse(function(c){ if(c.isMesh) c.material = c.material.clone(); });
     dm.scale.set(testScale, testScale, testScale);
-    dm.position.set(0, h + 8.0, t.zz);
-    dm.rotation.set(t.rx, t.ry, t.rz);
+    dm.position.set(0, h + 5.0, t.zz);
+    dm.rotation.set(t.rx, 0, t.rz);
     scene.add(dm);
-    debugLog('🧪 Bear ' + t.label + ' at z=' + t.zz);
+    debugLog('🧪 Bear ' + t.label);
   });
   assetsLoaded++;
   checkReady();

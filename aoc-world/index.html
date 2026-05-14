@@ -149,6 +149,7 @@ function checkReady(){
       const testScale = 7.5;
       testDead.scale.set(testScale, testScale, testScale);
       testDead.position.set(testX, testH + DEAD_BEAR_FOOT_OFFSET * testScale, testZ);
+      testDead.rotation.x = Math.PI; // flip onto back (belly up)
       testDead.rotation.y = Math.PI * 0.25;
       scene.add(testDead);
       debugLog('🧪 TEST dead grizzly placed at (10, 10) near spawn');
@@ -1379,6 +1380,7 @@ function bearDeath(idx){
     
     // Lay flat on terrain — no slope rotation, back flat on ground
     deadModel.position.set(bearX, terrainH + DEAD_BEAR_FOOT_OFFSET * bd.scale, bearZ);
+    deadModel.rotation.x = Math.PI; // flip onto back (belly up)
     // Random Y rotation so carcasses face different directions
     deadModel.rotation.y = Math.random() * Math.PI * 2;
     

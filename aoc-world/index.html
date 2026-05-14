@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v13-lower-bears -->
+<!-- v14-dead-bear-final -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -84,7 +84,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v13</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v14</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -280,7 +280,7 @@ scene.add(water);
 updateLoading('Loading tree model...', 30);
 loader.load('tree-model.glb?v=8', function(gltf){
   const treeTemplate = gltf.scene;
-  const treeCount = 0; // TEST: trees removed for bear visibility
+  const treeCount = 210;
   debugLog('🌲 TREE model loaded, meshes found');
   
   // Fix materials on template
@@ -682,7 +682,7 @@ const BEAR_WALK_SPEED = 1.8;
 const BEAR_CHARGE_SPEED = 6.5;
 const BEAR_ATTACK_RANGE = 5.0;
 const BEAR_FOOT_OFFSET = 0.05;
-const DEAD_BEAR_FOOT_OFFSET = 0.05; // Dead model back-flat offset
+const DEAD_BEAR_FOOT_OFFSET = 0.02; // Dead model ground offset — confirmed v13
 let deadBearTemplate = null; // Loaded dead grizzly GLB
 const BEAR_VARIANTS = [
   { id:'NPC-0006', name:'Baby Grizzly',    scaleMin:3.0, scaleMax:4.0,  spawnRate:0.25, hp:20,  xp:15,  aggroRange:20, damage:3,  attackCooldown:1.5 },
@@ -1047,27 +1047,6 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
     }
   });
   debugLog('💀 Dead grizzly carcass model loaded');
-  // TEST v11: 6 bears AT GROUND LEVEL — all 6 face-down orientations
-  const testScale = 7;
-  const DBFO = 0.02; // dead bear foot offset — very close to ground
-  const testBears = [
-    {zz:10,  rx:0,           ry:0, rz:0,           label:'A: NO ROTATION'},
-    {zz:30,  rx:Math.PI,     ry:0, rz:0,           label:'B: X=180'},
-    {zz:50,  rx:0,           ry:0, rz:Math.PI/2,   label:'C: Z=90'},
-    {zz:70,  rx:0,           ry:0, rz:-Math.PI/2,  label:'D: Z=-90'},
-    {zz:90,  rx:Math.PI/2,   ry:0, rz:0,           label:'E: X=90'},
-    {zz:110, rx:-Math.PI/2,  ry:0, rz:0,           label:'F: X=-90'}
-  ];
-  testBears.forEach(function(t){
-    const h = getHeight(0, t.zz);
-    const dm = deadBearTemplate.clone();
-    dm.traverse(function(c){ if(c.isMesh) c.material = c.material.clone(); });
-    dm.scale.set(testScale, testScale, testScale);
-    dm.position.set(0, h + DBFO * testScale, t.zz);
-    dm.rotation.set(t.rx, t.ry, t.rz);
-    scene.add(dm);
-    debugLog('🧪 Bear ' + t.label + ' at z=' + t.zz);
-  });
   assetsLoaded++;
   checkReady();
 }, undefined, function(err){
@@ -1386,8 +1365,9 @@ function bearDeath(idx){
     });
     deadModel.scale.set(bd.scale, bd.scale, bd.scale);
     
-    // Lay flat on terrain — model native orientation is correct (back flat, belly up)
+    // Lay flat on terrain — Z=PI/2 rotation confirmed by Brad (Bear C)
     deadModel.position.set(bearX, terrainH + DEAD_BEAR_FOOT_OFFSET * bd.scale, bearZ);
+    deadModel.rotation.z = Math.PI / 2;
     // Random Y rotation so carcasses face different directions
     deadModel.rotation.y = Math.random() * Math.PI * 2;
     

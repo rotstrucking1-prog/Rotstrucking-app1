@@ -301,7 +301,7 @@ loader.load('tree-model.glb?v=8', function(gltf){
     t.quaternion.copy(slopeQuat);
     // Position at terrain, then lift along LOCAL up axis (works correctly on slopes)
     t.position.set(x, h, z);
-    const treeLocalUp = new THREE.Vector3(0, 0.433 * scale, 0);
+    const treeLocalUp = new THREE.Vector3(0, 0.1 * scale, 0);
     treeLocalUp.applyQuaternion(slopeQuat);
     t.position.add(treeLocalUp);
     t.castShadow = true;
@@ -332,8 +332,8 @@ loader.load('rock-pile-model.glb?v=1', function(gltf){
       child.castShadow = true;
     }
   });
-  // Rock pile model: Y bottom at -0.354, center at 0. Offset = 0.354 * scale
-  const ROCK_FOOT_OFFSET = 0.354;
+  // Rock pile model: reduced offset so base sits on ground (not floating)
+  const ROCK_FOOT_OFFSET = 0.05;
   for(let i = 0; i < 100; i++){
     const x = (Math.random()-0.5) * WORLD_SIZE * 0.9;
     const z = (Math.random()-0.5) * WORLD_SIZE * 0.9;
@@ -397,7 +397,7 @@ loader.load('iron-ore-deposit.glb?v=8', function(gltf){
     oreSlopeQuat.multiply(oreYRotQuat);
     ore.quaternion.copy(oreSlopeQuat);
     ore.position.set(x, h, z);
-    const oreLocalUp = new THREE.Vector3(0, 0.254 * scale, 0);
+    const oreLocalUp = new THREE.Vector3(0, 0.05 * scale, 0);
     oreLocalUp.applyQuaternion(oreSlopeQuat);
     ore.position.add(oreLocalUp);
     ore.castShadow = true;
@@ -753,7 +753,7 @@ loader.load('grass-model.glb?v=8', function(gltf){
     grassSlopeQuat.multiply(grassYRotQuat);
     g.quaternion.copy(grassSlopeQuat);
     g.position.set(x, h, z);
-    const grassLocalUp = new THREE.Vector3(0, 0.106 * scale, 0);
+    const grassLocalUp = new THREE.Vector3(0, 0.02 * scale, 0);
     grassLocalUp.applyQuaternion(grassSlopeQuat);
     g.position.add(grassLocalUp);
     scene.add(g);

@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v34</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v35</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1384,9 +1384,24 @@ loader.load('character-walk.glb?v=33', function(gltf){
     gltf.animations.forEach(function(clip){
       playerAnimations[clip.name] = playerMixer.clipAction(clip);
     });
-    // Store walk action but don't auto-play — only play when moving
+    // Strip root motion — remove position tracks from root/hip bone so character walks in place
     var walkClip = gltf.animations[0];
     if(walkClip){
+      var filteredTracks = [];
+      for(var t = 0; t < walkClip.tracks.length; t++){
+        var track = walkClip.tracks[t];
+        // Remove position tracks from root bone (Hip) — keeps rotation/scale
+        var isRootPosition = (track.name.indexOf('.position') !== -1) && 
+          (track.name.indexOf('Hip') !== -1 || track.name.indexOf('hip') !== -1 || 
+           track.name.indexOf('Root') !== -1 || track.name.indexOf('root') !== -1 ||
+           track.name.indexOf('Armature') !== -1);
+        if(!isRootPosition){
+          filteredTracks.push(track);
+        } else {
+          console.log('Stripped root motion track:', track.name);
+        }
+      }
+      walkClip.tracks = filteredTracks;
       playerWalkAction = playerMixer.clipAction(walkClip);
       playerWalkAction.setLoop(THREE.LoopRepeat);
     }

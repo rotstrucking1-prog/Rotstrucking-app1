@@ -138,21 +138,26 @@ function checkReady(){
   if(worldReady) return;
   if(assetsLoaded >= totalAssets){
     worldReady = true;
-    // TEST: spawn a dead grizzly near the player for testing
+    // TEST: spawn 4 dead grizzlies with different rotations for Brad to pick
     if(deadBearTemplate){
-      const testX = 10, testZ = 10;
-      const testH = getHeight(testX, testZ);
-      const testDead = deadBearTemplate.clone();
-      testDead.traverse(function(child){
-        if(child.isMesh) child.material = child.material.clone();
-      });
       const testScale = 7.5;
-      testDead.scale.set(testScale, testScale, testScale);
-      testDead.position.set(testX, testH + DEAD_BEAR_FOOT_OFFSET * testScale, testZ);
-      testDead.rotation.x = Math.PI; // flip onto back (belly up)
-      testDead.rotation.y = Math.PI * 0.25;
-      scene.add(testDead);
-      debugLog('🧪 TEST dead grizzly placed at (10, 10) near spawn');
+      const tests = [
+        {x:10, z:5, rx:0, rz:0, label:'A: No rotation'},
+        {x:10, z:15, rx:Math.PI, rz:0, label:'B: X=PI (flipped)'},
+        {x:20, z:5, rx:-Math.PI/2, rz:0, label:'C: X=-PI/2 (tipped back)'},
+        {x:20, z:15, rx:0, rz:Math.PI/2, label:'D: Z=PI/2 (rolled)'}
+      ];
+      tests.forEach(function(t){
+        const h = getHeight(t.x, t.z);
+        const dm = deadBearTemplate.clone();
+        dm.traverse(function(c){ if(c.isMesh) c.material = c.material.clone(); });
+        dm.scale.set(testScale, testScale, testScale);
+        dm.position.set(t.x, h + DEAD_BEAR_FOOT_OFFSET * testScale, t.z);
+        dm.rotation.x = t.rx;
+        dm.rotation.z = t.rz;
+        scene.add(dm);
+        debugLog('🧪 TEST dead bear ' + t.label + ' at (' + t.x + ',' + t.z + ')');
+      });
     }
     updateLoading('Ready!', 100);
     setTimeout(function(){

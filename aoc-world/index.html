@@ -74,6 +74,12 @@ setTimeout(function(){
 </div>
 <div id="click-to-play"><span>Click to Play</span></div>
 <div id="crosshair"></div>
+<div id="hp-bar-container" style="position:fixed;top:10px;left:10px;width:200px;height:22px;background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.4);border-radius:4px;z-index:20;overflow:hidden">
+  <div id="hp-bar" style="width:100%;height:100%;background:linear-gradient(to bottom,#4f4,#2a2);transition:width 0.3s"></div>
+  <div id="hp-text" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:bold;text-shadow:1px 1px 2px #000">100 / 100 HP</div>
+</div>
+<div id="damage-flash" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);z-index:15;pointer-events:none;display:none"></div>
+<div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
@@ -85,6 +91,7 @@ setTimeout(function(){
 <div class="touch-btn" id="btn-sprint">Run</div>
 <div class="touch-btn" id="btn-camera">Cam</div>
 <div id="btn-cast">Cast</div>
+<div id="btn-attack" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(220,50,50,0.6);border:3px solid rgba(220,50,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Attack</div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -117,7 +124,7 @@ const loader = new GLTFLoader();
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 8;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles
+const totalAssets = 9;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -662,6 +669,41 @@ const DEER_SPOOK_DISTANCE = 30;
 const DEER_WALK_SPEED = 2.0;
 const DEER_RUN_SPEED = 8.0;
 
+// ===== GRIZZLY BEAR NPCS (NPC-0006 to NPC-0009) =====
+let bearModels = [];
+let bearData = [];
+const bearCount = 25;
+const BEAR_WALK_SPEED = 1.8;
+const BEAR_CHARGE_SPEED = 6.5;
+const BEAR_ATTACK_RANGE = 5.0;
+const BEAR_FOOT_OFFSET = 0.05;
+const BEAR_VARIANTS = [
+  { id:'NPC-0006', name:'Baby Grizzly',    scaleMin:3.0, scaleMax:4.0,  spawnRate:0.25, hp:20,  xp:15,  aggroRange:20, damage:3,  attackCooldown:1.5 },
+  { id:'NPC-0007', name:'Medium Grizzly',   scaleMin:5.0, scaleMax:6.5,  spawnRate:0.35, hp:40,  xp:30,  aggroRange:30, damage:6,  attackCooldown:1.2 },
+  { id:'NPC-0008', name:'Full Grown Grizzly',scaleMin:7.5, scaleMax:9.0, spawnRate:0.30, hp:70,  xp:55,  aggroRange:40, damage:10, attackCooldown:1.0 },
+  { id:'NPC-0009', name:'Overgrown Grizzly', scaleMin:11.0,scaleMax:14.0,spawnRate:0.10, hp:120, xp:100, aggroRange:50, damage:18, attackCooldown:0.8 }
+];
+const BEAR_DROP_TABLE = [
+  { item:'Bones',      chance:1.0  },
+  { item:'Bear Hide',  chance:0.75 },
+  { item:'Bear Meat',  chance:0.70 },
+  { item:'Bear Claws', chance:0.30 }
+];
+
+// ===== PLAYER COMBAT =====
+let playerHP = 100;
+let playerMaxHP = 100;
+let playerAttackCooldown = 0;
+const PLAYER_ATTACK_RANGE = 6.0;
+const PLAYER_ATTACK_DAMAGE = 15;
+const PLAYER_ATTACK_COOLDOWN = 0.8;
+let damageFlashTimer = 0;
+let lootDrops = []; // { position, items, mesh, timer }
+let playerInventory = {}; // item name -> count
+let playerXP = 0;
+let lastHitBearIndex = -1;
+let lootNotifications = []; // { text, timer }
+
 // ===== PLAYER =====
 let playerModel = null;
 let playerMixer = null;
@@ -844,6 +886,95 @@ loader.load('sun-model.glb?v=8', function(gltf){
 });
 
 // Sun position is now fixed (not following camera anymore)
+
+// ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
+updateLoading('Loading grizzly bears...', 92);
+loader.load('bear-model.glb?v=1', function(gltf){
+  const bearTemplate = gltf.scene;
+  bearTemplate.traverse(function(child){
+    if(child.isMesh){
+      child.material = child.material.clone();
+      child.material.metalness = 0;
+      child.material.roughness = 0.8;
+      if(child.material.color) child.material.color.set(0xffffff);
+      if(child.material.metalnessMap) child.material.metalnessMap = null;
+      if(child.material.roughnessMap) child.material.roughnessMap = null;
+      if(child.material.aoMap) child.material.aoMap = null;
+      child.material.needsUpdate = true;
+      child.castShadow = true;
+    }
+  });
+  
+  let bearsPlaced = 0;
+  for(let i = 0; i < bearCount * 4 && bearsPlaced < bearCount; i++){
+    const x = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const z = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const h = getHeight(x, z);
+    if(h < -2 || h > 28) continue; // Land only, no water or mountain peaks
+    
+    // Pick variant based on spawn rates
+    const roll = Math.random();
+    let cumRate = 0;
+    let variant = BEAR_VARIANTS[0];
+    for(let v = 0; v < BEAR_VARIANTS.length; v++){
+      cumRate += BEAR_VARIANTS[v].spawnRate;
+      if(roll < cumRate){ variant = BEAR_VARIANTS[v]; break; }
+    }
+    
+    const scale = variant.scaleMin + Math.random() * (variant.scaleMax - variant.scaleMin);
+    const bear = bearTemplate.clone();
+    bear.scale.set(scale, scale, scale);
+    
+    // Slope alignment
+    const heading = Math.random() * Math.PI * 2;
+    const normal = getTerrainNormal(x, z);
+    const up = new THREE.Vector3(0, 1, 0);
+    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+    slopeQuat.multiply(yRotQuat);
+    bear.quaternion.copy(slopeQuat);
+    
+    // Position at terrain then lift along local up
+    bear.position.set(x, h, z);
+    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+    bear.position.addScaledVector(localUp, BEAR_FOOT_OFFSET * scale);
+    
+    scene.add(bear);
+    bearModels.push(bear);
+    
+    bearData.push({
+      model: bear,
+      variant: variant,
+      scale: scale,
+      heading: heading,
+      state: 'wandering',  // wandering, idle, aggro, attacking, dead
+      hp: variant.hp,
+      maxHp: variant.hp,
+      walkSpeed: BEAR_WALK_SPEED + Math.random() * 0.5,
+      turnTimer: 0,
+      turnInterval: 4 + Math.random() * 4,
+      turnTarget: heading,
+      aggroTimer: 0,
+      attackTimer: 0,
+      idleTimer: 0,
+      deathTimer: 0,
+      time: Math.random() * Math.PI * 2,
+      damageFlash: 0,
+      bobPhase: Math.random() * Math.PI * 2
+    });
+    
+    bearsPlaced++;
+  }
+  
+  debugLog('🐻 Grizzly bears spawned: ' + bearsPlaced + '/' + bearCount);
+  assetsLoaded++;
+  updateLoading('Bears roaming the wilderness!', 95);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Bear load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
 
 // Terrain counts as loaded
 assetsLoaded++;
@@ -1078,7 +1209,105 @@ document.addEventListener('keydown', function(e){
   if(e.code==='KeyR') {
     fishingEquipped ? unequipFishingPole() : equipFishingPole();
   }
+  if(e.code==='KeyF') {
+    performPlayerAttack();
+  }
 });
+
+// ===== COMBAT SYSTEM =====
+function performPlayerAttack(){
+  if(playerAttackCooldown > 0) return;
+  playerAttackCooldown = PLAYER_ATTACK_COOLDOWN;
+  
+  // Find closest bear within attack range
+  let closestDist = PLAYER_ATTACK_RANGE;
+  let closestIdx = -1;
+  for(let i = 0; i < bearData.length; i++){
+    const bd = bearData[i];
+    if(bd.state === 'dead') continue;
+    const dx = playerPos.x - bd.model.position.x;
+    const dz = playerPos.z - bd.model.position.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    if(dist < closestDist){
+      closestDist = dist;
+      closestIdx = i;
+    }
+  }
+  
+  if(closestIdx >= 0){
+    const bd = bearData[closestIdx];
+    bd.hp -= PLAYER_ATTACK_DAMAGE;
+    bd.damageFlash = 0.3; // Flash red for 0.3s
+    debugLog('⚔️ Hit ' + bd.variant.name + ' for ' + PLAYER_ATTACK_DAMAGE + ' dmg! HP: ' + Math.max(0,bd.hp) + '/' + bd.maxHp);
+    
+    // Make bear aggro if not already
+    if(bd.state === 'wandering' || bd.state === 'idle'){
+      bd.state = 'aggro';
+    }
+    
+    if(bd.hp <= 0){
+      bearDeath(closestIdx);
+    }
+  }
+}
+
+function bearDeath(idx){
+  const bd = bearData[idx];
+  bd.state = 'dead';
+  bd.deathTimer = 2.0; // 2 seconds to fade out
+  
+  // Roll for drops
+  const drops = [];
+  BEAR_DROP_TABLE.forEach(function(drop){
+    if(Math.random() < drop.chance){
+      drops.push(drop.item);
+    }
+  });
+  
+  // Award XP
+  playerXP += bd.variant.xp;
+  
+  // Create loot drop at bear's position
+  if(drops.length > 0){
+    const dropGroup = new THREE.Group();
+    // Small glowing marker
+    const markerGeo = new THREE.SphereGeometry(0.5, 8, 8);
+    const markerMat = new THREE.MeshBasicMaterial({color: 0xFFDD44, transparent: true, opacity: 0.8});
+    const marker = new THREE.Mesh(markerGeo, markerMat);
+    dropGroup.add(marker);
+    dropGroup.position.copy(bd.model.position);
+    dropGroup.position.y += 1;
+    scene.add(dropGroup);
+    
+    lootDrops.push({
+      position: dropGroup.position.clone(),
+      items: drops,
+      mesh: dropGroup,
+      timer: 60 // Loot stays 60 seconds
+    });
+  }
+  
+  // Show notification
+  const dropText = drops.length > 0 ? drops.join(', ') : 'Nothing';
+  showLootNotification(bd.variant.name + ' killed! +' + bd.variant.xp + ' XP | Drops: ' + dropText);
+  debugLog('💀 ' + bd.variant.name + ' died! Drops: ' + dropText);
+}
+
+function showLootNotification(text){
+  const popup = document.getElementById('loot-popup');
+  popup.textContent = text;
+  popup.style.display = 'block';
+  lootNotifications.push({ text: text, timer: 3.0 });
+}
+
+function pickupLoot(loot){
+  loot.items.forEach(function(item){
+    if(!playerInventory[item]) playerInventory[item] = 0;
+    playerInventory[item]++;
+  });
+  showLootNotification('Picked up: ' + loot.items.join(', '));
+  scene.remove(loot.mesh);
+}
 document.addEventListener('keyup', function(e){keys[e.code]=false});
 document.addEventListener('mousemove', function(e){
   if(!mouseLocked) return;
@@ -1143,7 +1372,7 @@ let lastTouchX = 0, lastTouchY = 0;
 
 function showTouchControls(){
   document.getElementById('joystick-zone').style.display = 'block';
-  ['btn-jump','btn-sprint','btn-camera'].forEach(function(id){
+  ['btn-jump','btn-sprint','btn-camera','btn-attack'].forEach(function(id){
     document.getElementById(id).style.display = 'flex';
   });
   document.getElementById('controls').style.display = 'none';
@@ -1211,6 +1440,7 @@ let sprintTouch = false;
 document.getElementById('btn-sprint').addEventListener('touchstart', function(e){e.preventDefault();sprintTouch=true});
 document.getElementById('btn-sprint').addEventListener('touchend', function(){sprintTouch=false});
 document.getElementById('btn-camera').addEventListener('touchstart', function(e){e.preventDefault();thirdPerson=!thirdPerson});
+document.getElementById('btn-attack').addEventListener('touchstart', function(e){e.preventDefault();performPlayerAttack()});
 
 document.addEventListener('wheel', function(e){
   if(thirdPerson){
@@ -1469,6 +1699,209 @@ function animate(){
     }
   });
   
+  // ===== GRIZZLY BEAR AI UPDATES =====
+  if(playerAttackCooldown > 0) playerAttackCooldown -= dt;
+  
+  bearData.forEach(function(bd, idx){
+    if(!bd.model) return;
+    bd.time += dt;
+    
+    // Dead bear — fade out and remove
+    if(bd.state === 'dead'){
+      bd.deathTimer -= dt;
+      // Shrink and fade
+      const fadeScale = Math.max(0, bd.deathTimer / 2.0) * bd.scale;
+      bd.model.scale.set(fadeScale, fadeScale, fadeScale);
+      if(bd.deathTimer <= 0){
+        scene.remove(bd.model);
+        bd.model = null;
+      }
+      return;
+    }
+    
+    // Damage flash (red tint)
+    if(bd.damageFlash > 0){
+      bd.damageFlash -= dt;
+      bd.model.traverse(function(child){
+        if(child.isMesh && child.material){
+          if(bd.damageFlash > 0){
+            child.material.emissive = child.material.emissive || new THREE.Color();
+            child.material.emissive.set(0xff0000);
+            child.material.emissiveIntensity = bd.damageFlash * 3;
+          } else {
+            child.material.emissiveIntensity = 0;
+          }
+        }
+      });
+    }
+    
+    const bearPos = bd.model.position;
+    const dx = playerPos.x - bearPos.x;
+    const dz = playerPos.z - bearPos.z;
+    const distToPlayer = Math.sqrt(dx*dx + dz*dz);
+    
+    // Check aggro — bears CHARGE toward player
+    if(distToPlayer < bd.variant.aggroRange && bd.state !== 'aggro' && bd.state !== 'attacking'){
+      bd.state = 'aggro';
+      bd.heading = Math.atan2(dx, dz);
+      bd.turnTarget = bd.heading;
+    }
+    
+    // De-aggro if player far enough away (2x aggro range)
+    if((bd.state === 'aggro' || bd.state === 'attacking') && distToPlayer > bd.variant.aggroRange * 2){
+      bd.state = 'wandering';
+    }
+    
+    // Aggro — charge toward player
+    if(bd.state === 'aggro'){
+      bd.heading = Math.atan2(dx, dz);
+      bd.turnTarget = bd.heading;
+      
+      if(distToPlayer < BEAR_ATTACK_RANGE){
+        bd.state = 'attacking';
+        bd.attackTimer = 0;
+      }
+    }
+    
+    // Attacking — deal damage to player on cooldown
+    if(bd.state === 'attacking'){
+      if(distToPlayer > BEAR_ATTACK_RANGE * 1.5){
+        bd.state = 'aggro'; // Player moved away, chase again
+      } else {
+        bd.attackTimer -= dt;
+        bd.heading = Math.atan2(dx, dz);
+        if(bd.attackTimer <= 0){
+          bd.attackTimer = bd.variant.attackCooldown;
+          // Deal damage to player
+          playerHP = Math.max(0, playerHP - bd.variant.damage);
+          damageFlashTimer = 0.2;
+          document.getElementById('damage-flash').style.display = 'block';
+        }
+      }
+    }
+    
+    // Idle state
+    if(bd.state === 'idle'){
+      bd.idleTimer -= dt;
+      if(bd.idleTimer <= 0){
+        bd.state = 'wandering';
+        bd.turnInterval = 4 + Math.random() * 4;
+      }
+    }
+    
+    // Wandering — occasionally stop
+    if(bd.state === 'wandering'){
+      bd.turnTimer += dt;
+      if(bd.turnTimer >= bd.turnInterval){
+        bd.turnTimer = 0;
+        if(Math.random() < 0.15){
+          bd.state = 'idle';
+          bd.idleTimer = 3 + Math.random() * 6;
+        } else {
+          bd.turnInterval = 4 + Math.random() * 4;
+          bd.turnTarget = bd.heading + (Math.random() - 0.5) * Math.PI * 0.8;
+        }
+      }
+    }
+    
+    // Movement speed
+    const bearSpeed = bd.state === 'aggro' ? BEAR_CHARGE_SPEED :
+                      bd.state === 'attacking' ? 0 :
+                      bd.state === 'idle' ? 0 : bd.walkSpeed;
+    
+    // Smooth heading
+    if(bearSpeed > 0){
+      var hDiff = bd.turnTarget - bd.heading;
+      while(hDiff > Math.PI) hDiff -= 2*Math.PI;
+      while(hDiff < -Math.PI) hDiff += 2*Math.PI;
+      bd.heading += hDiff * (bd.state === 'aggro' ? 0.15 : 0.04);
+    }
+    
+    // Move
+    if(bearSpeed > 0){
+      const spd = bearSpeed * dt;
+      const newX = bearPos.x + Math.sin(bd.heading) * spd;
+      const newZ = bearPos.z + Math.cos(bd.heading) * spd;
+      const newH = getHeight(newX, newZ);
+      
+      const wb = WORLD_SIZE * 0.45;
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+        const normal = getTerrainNormal(newX, newZ);
+        const up = new THREE.Vector3(0, 1, 0);
+        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, bd.heading + Math.PI);
+        slopeQuat.multiply(yRotQuat);
+        bd.model.quaternion.copy(slopeQuat);
+        bearPos.set(newX, newH, newZ);
+        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+        bearPos.addScaledVector(localUp, BEAR_FOOT_OFFSET * bd.scale);
+      } else {
+        bd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
+        bd.turnTarget = bd.heading;
+      }
+    }
+    
+    // Procedural walking bob (whole body since no skeleton)
+    if(bearSpeed > 0){
+      bd.bobPhase += dt * (bd.state === 'aggro' ? 14 : 6);
+      const bobAmount = (bd.state === 'aggro' ? 0.15 : 0.08) * bd.scale;
+      bearPos.y += Math.abs(Math.sin(bd.bobPhase)) * bobAmount;
+    }
+  });
+  
+  // ===== DAMAGE FLASH TIMER =====
+  if(damageFlashTimer > 0){
+    damageFlashTimer -= dt;
+    if(damageFlashTimer <= 0){
+      document.getElementById('damage-flash').style.display = 'none';
+    }
+  }
+  
+  // Player HP regen (slow, 1 HP per 3 seconds when not taking damage)
+  if(damageFlashTimer <= 0 && playerHP < playerMaxHP){
+    playerHP = Math.min(playerMaxHP, playerHP + dt * 0.33);
+  }
+  
+  // ===== LOOT DROP UPDATES =====
+  for(let i = lootDrops.length - 1; i >= 0; i--){
+    const loot = lootDrops[i];
+    loot.timer -= dt;
+    
+    // Spin the loot marker
+    if(loot.mesh) loot.mesh.rotation.y += dt * 2;
+    // Bob up and down
+    if(loot.mesh) loot.mesh.position.y = loot.position.y + Math.sin(Date.now() * 0.003) * 0.3;
+    
+    // Check if player is close enough to pick up
+    const ldx = playerPos.x - loot.position.x;
+    const ldz = playerPos.z - loot.position.z;
+    const lootDist = Math.sqrt(ldx*ldx + ldz*ldz);
+    if(lootDist < 4){
+      pickupLoot(loot);
+      lootDrops.splice(i, 1);
+      continue;
+    }
+    
+    // Expire loot after timer
+    if(loot.timer <= 0){
+      scene.remove(loot.mesh);
+      lootDrops.splice(i, 1);
+    }
+  }
+  
+  // ===== LOOT NOTIFICATION TIMER =====
+  if(lootNotifications.length > 0){
+    lootNotifications[0].timer -= dt;
+    if(lootNotifications[0].timer <= 0){
+      lootNotifications.shift();
+      if(lootNotifications.length > 0){
+        document.getElementById('loot-popup').textContent = lootNotifications[0].text;
+      } else {
+        document.getElementById('loot-popup').style.display = 'none';
+      }
+    }
+  }
+  
   // ===== FISHING UPDATES =====
   if(fishingEquipped){
     updateFishingPolePosition();
@@ -1576,6 +2009,23 @@ function animate(){
   document.getElementById('hud-fps').textContent = 'FPS: '+fps;
   document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');
   document.getElementById('hud-pos').textContent += ' | Fishing: '+Math.round(playerSkills.fishing)+' | Caught: '+playerCaughtFish;
+  
+  // Update HP bar
+  const hpPct = Math.max(0, playerHP / playerMaxHP * 100);
+  document.getElementById('hp-bar').style.width = hpPct + '%';
+  document.getElementById('hp-text').textContent = Math.round(playerHP) + ' / ' + playerMaxHP + ' HP';
+  if(hpPct > 50) document.getElementById('hp-bar').style.background = 'linear-gradient(to bottom,#4f4,#2a2)';
+  else if(hpPct > 25) document.getElementById('hp-bar').style.background = 'linear-gradient(to bottom,#ff4,#aa2)';
+  else document.getElementById('hp-bar').style.background = 'linear-gradient(to bottom,#f44,#a22)';
+  
+  // Show XP and inventory items
+  var invText = ' | XP: ' + playerXP;
+  var invItems = Object.keys(playerInventory);
+  if(invItems.length > 0){
+    invText += ' | Loot: ';
+    invItems.forEach(function(item){ invText += item + '(' + playerInventory[item] + ') '; });
+  }
+  document.getElementById('hud-mode').textContent += invText;
   
   renderer.render(scene, camera);
 }

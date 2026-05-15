@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v60</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v61</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -2369,6 +2369,7 @@ setInterval(function(){
 // Touch controls
 let joystickActive = false;
 let joystickX = 0, joystickY = 0;
+let joystickTouchId = null; // Track specific joystick finger
 let touchLookId = null;
 let lastTouchX = 0, lastTouchY = 0;
 
@@ -2383,13 +2384,23 @@ function showTouchControls(){
 const jZone = document.getElementById('joystick-zone');
 const jThumb = document.getElementById('joystick-thumb');
 
+// Joystick — track specific touch ID to prevent cross-talk with camera orbit
 jZone.addEventListener('touchstart', function(e){
   e.preventDefault();
+  e.stopPropagation(); // Don't let this touch reach camera orbit handler
+  const t = e.changedTouches[0];
+  joystickTouchId = t.identifier;
   joystickActive = true;
 }, {passive:false});
 jZone.addEventListener('touchmove', function(e){
   e.preventDefault();
-  const t = e.touches[0];
+  e.stopPropagation();
+  // Find OUR specific touch — not just any finger on screen
+  let t = null;
+  for(let i=0;i<e.changedTouches.length;i++){
+    if(e.changedTouches[i].identifier === joystickTouchId){ t=e.changedTouches[i]; break; }
+  }
+  if(!t) return;
   const rect = jZone.getBoundingClientRect();
   const cx = rect.left+70, cy = rect.top+70;
   let dx = t.clientX-cx, dy = t.clientY-cy;
@@ -2401,14 +2412,23 @@ jZone.addEventListener('touchmove', function(e){
   joystickY = dy/60;
 }, {passive:false});
 jZone.addEventListener('touchend', function(e){
-  joystickActive = false;
-  joystickX=0;joystickY=0;
-  jThumb.style.left='45px';jThumb.style.top='45px';
+  for(let i=0;i<e.changedTouches.length;i++){
+    if(e.changedTouches[i].identifier === joystickTouchId){
+      joystickActive = false;
+      joystickTouchId = null;
+      joystickX=0;joystickY=0;
+      jThumb.style.left='45px';jThumb.style.top='45px';
+      break;
+    }
+  }
 });
 
+// Camera orbit — track specific touch ID, explicitly exclude joystick touches
 document.addEventListener('touchstart', function(e){
   for(let i=0;i<e.changedTouches.length;i++){
     const t = e.changedTouches[i];
+    // Skip joystick finger
+    if(joystickTouchId !== null && t.identifier === joystickTouchId) continue;
     if(t.clientX > window.innerWidth*0.4 && t.clientY < window.innerHeight*0.7){
       touchLookId = t.identifier;
       lastTouchX = t.clientX;

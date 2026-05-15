@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v39</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v40</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1131,6 +1131,7 @@ let lootNotifications = []; // { text, timer }
 // ===== PLAYER =====
 let playerModel = null;
 let playerWalkAction = null;
+let playerIdleAction = null;
 let playerIsWalking = false;
 let playerMixer = null;
 let playerAnimations = {};
@@ -1361,7 +1362,7 @@ const playerPlaceholder = new THREE.Mesh(
 scene.add(playerPlaceholder);
 
 updateLoading('Loading character model...', 50);
-loader.load('character-walk.glb?v=37', function(gltf){
+loader.load('character-walk.glb?v=40', function(gltf){
   playerModel = gltf.scene;
   playerModel.scale.set(3, 3, 3);
   // Center the mesh — model is offset X=2.41 from origin in the GLB
@@ -1386,10 +1387,17 @@ loader.load('character-walk.glb?v=37', function(gltf){
   scene.add(playerModel);
   if(gltf.animations && gltf.animations.length > 0){
     playerMixer = new THREE.AnimationMixer(playerModel);
-    var walkClip = gltf.animations[0];
-    if(walkClip){
-      playerWalkAction = playerMixer.clipAction(walkClip);
-      playerWalkAction.setLoop(THREE.LoopRepeat);
+    // Find Walk and Idle clips by name
+    for(var ai = 0; ai < gltf.animations.length; ai++){
+      var clip = gltf.animations[ai];
+      if(clip.name === 'Walk'){
+        playerWalkAction = playerMixer.clipAction(clip);
+        playerWalkAction.setLoop(THREE.LoopRepeat);
+      } else if(clip.name === 'Idle'){
+        playerIdleAction = playerMixer.clipAction(clip);
+        playerIdleAction.setLoop(THREE.LoopRepeat);
+        playerIdleAction.play(); // Start in idle
+      }
     }
   }
   assetsLoaded++;
@@ -2420,13 +2428,14 @@ function animate(){
   
   if(playerMixer) playerMixer.update(dt);
   
-  // Skeleton-based walk animation — plays when moving, stops when idle
+  // Walk/Idle animation crossfade
   const moveSpeed = Math.sqrt(lastMoveX*lastMoveX + lastMoveZ*lastMoveZ);
-  if(playerModel && playerWalkAction){
+  if(playerModel && playerWalkAction && playerIdleAction){
     if(moveSpeed > 0.01){
       if(!playerIsWalking){
+        playerIdleAction.fadeOut(0.3);
         playerWalkAction.reset();
-        playerWalkAction.fadeIn(0.2);
+        playerWalkAction.fadeIn(0.3);
         playerWalkAction.play();
         playerIsWalking = true;
       }
@@ -2434,6 +2443,9 @@ function animate(){
     } else {
       if(playerIsWalking){
         playerWalkAction.fadeOut(0.3);
+        playerIdleAction.reset();
+        playerIdleAction.fadeIn(0.3);
+        playerIdleAction.play();
         playerIsWalking = false;
       }
     }

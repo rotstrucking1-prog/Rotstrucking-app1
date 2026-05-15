@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v63</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v64</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 12;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid
+const totalAssets = 13;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1049,6 +1049,27 @@ let freakData = [];
 let freakModels = [];
 let freakMixers = [];
 
+// ===== STALLION =====
+const STALLION_COUNT = 15;
+const STALLION_SCALE_MIN = 5.0;
+const STALLION_SCALE_MAX = 8.0;
+const STALLION_WALK_SPEED = 2.0;
+const STALLION_FOOT_OFFSET = 0.42; // Model Y_min = -0.4237, lift feet to ground
+const STALLION_HP = 30;
+const STALLION_XP = 25;
+let stallionTemplate = null;
+let stallionAnimClip = null;
+let stallionData = [];
+let stallionModels = [];
+let stallionMixers = [];
+
+const STALLION_DROP_TABLE = [
+  { item:'Horse Bones', chance:1.0  },
+  { item:'Horse Hide',  chance:0.75 },
+  { item:'Horse Tail',  chance:0.60 },
+  { item:'Horse Teeth', chance:0.30 }
+];
+
 // ===== GREATER SKELETAL DREUGH =====
 const DREUGH_COUNT = 20;
 const DREUGH_SCALE_MIN = 4.0;
@@ -1137,6 +1158,8 @@ let skinningTarget = -1; // bearData index
 let skinningProgress = 0; // 0 to 1
 const SKINNING_TIME = 3.0; // seconds to skin
 let nearestDeadBear = -1; // index of closest dead bear in range
+let nearestDeadStallion = -1; // index of closest dead stallion in range
+let skinningType = 'bear'; // 'bear' or 'stallion'
 let inventorySlots = new Array(28).fill(null); // 28 slots, each: {name, count} or null
 let inventoryOpen = false;
 let playerXP = 0;
@@ -1278,6 +1301,10 @@ const ITEM_DEFS = {
   'Bear Hide':   { color:'#8B5E3C', emoji:'🟫' },
   'Bear Meat':   { color:'#cc4444', emoji:'🥩' },
   'Bear Claws':  { color:'#666666', emoji:'🐾' },
+  'Horse Bones': { color:'#e8e8d0', emoji:'🦴' },
+  'Horse Hide':  { color:'#8B4513', emoji:'🟫' },
+  'Horse Tail':  { color:'#333333', emoji:'🐴' },
+  'Horse Teeth': { color:'#fffff0', emoji:'🦷' },
   'Raw Baby Bass':       { color:'#88ccff', emoji:'🐟' },
   'Raw Medium Bass':     { color:'#5599dd', emoji:'🐟' },
   'Raw Full Grown Bass': { color:'#3366aa', emoji:'🐟' },
@@ -1719,6 +1746,99 @@ loader.load('freak-walk.glb?v=2', function(gltf){
   checkReady();
 });
 
+// Load Stallion (animated walk)
+loader.load('stallion-walk.glb?v=1', function(gltf){
+  stallionTemplate = gltf.scene;
+  stallionTemplate.traverse(function(child){
+    if(child.isMesh){
+      child.material = child.material.clone();
+      child.material.metalness = 0;
+      child.material.roughness = 0.8;
+      if(child.material.color) child.material.color.set(0xffffff);
+      if(child.material.metalnessMap) child.material.metalnessMap = null;
+      if(child.material.roughnessMap) child.material.roughnessMap = null;
+      if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
+      child.material.needsUpdate = true;
+    }
+  });
+  
+  // Store walk animation clip
+  if(gltf.animations && gltf.animations.length > 0){
+    stallionAnimClip = gltf.animations[0];
+    debugLog('🐴 Stallion walk clip: ' + stallionAnimClip.name + ' (' + stallionAnimClip.duration.toFixed(2) + 's)');
+  }
+  
+  // Spawn stallions using SkeletonUtils for skinned mesh
+  let stallionsPlaced = 0;
+  while(stallionsPlaced < STALLION_COUNT){
+    const x = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const z = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const h = getHeight(x, z);
+    if(h < -2 || h > 28) continue;
+    
+    const scale = STALLION_SCALE_MIN + Math.random() * (STALLION_SCALE_MAX - STALLION_SCALE_MIN);
+    const stallion = SkeletonUtils.clone(stallionTemplate);
+    stallion.scale.set(scale, scale, scale);
+    
+    const heading = Math.random() * Math.PI * 2;
+    const normal = getTerrainNormal(x, z);
+    const up = new THREE.Vector3(0, 1, 0);
+    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+    slopeQuat.multiply(yRotQuat);
+    stallion.quaternion.copy(slopeQuat);
+    
+    stallion.position.set(x, h, z);
+    stallion.position.y += STALLION_FOOT_OFFSET * scale;
+    
+    scene.add(stallion);
+    stallionModels.push(stallion);
+    
+    // Create per-instance AnimationMixer
+    const mixer = new THREE.AnimationMixer(stallion);
+    stallionMixers.push(mixer);
+    
+    let walkAction = null;
+    if(stallionAnimClip){
+      walkAction = mixer.clipAction(stallionAnimClip);
+      walkAction.play(); // Start walking
+    }
+    
+    stallionData.push({
+      model: stallion,
+      mixer: mixer,
+      walkAction: walkAction,
+      scale: scale,
+      heading: heading,
+      state: 'wandering',
+      hp: STALLION_HP,
+      walkSpeed: STALLION_WALK_SPEED + Math.random() * 0.5,
+      turnTimer: 0,
+      turnInterval: 4 + Math.random() * 6,
+      turnTarget: heading,
+      idleTimer: 0,
+      skinned: false,
+      pendingDrops: [],
+      pendingXP: 0,
+      carcassTimer: 0,
+      fadeTimer: 0,
+      deathProgress: 0
+    });
+    
+    stallionsPlaced++;
+  }
+  
+  debugLog('🐴 Stallions spawned: ' + stallionsPlaced);
+  assetsLoaded++;
+  updateLoading('Stallions roaming!', 97);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Stallion load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
 // Load Greater Skeletal Dreugh
 loader.load('dreugh-model.glb?v=1', function(gltf){
   dreughTemplate = gltf.scene;
@@ -2052,8 +2172,9 @@ document.addEventListener('keydown', function(e){
     performPlayerAttack();
   }
   if(e.code==='KeyE') {
-    if(skinningState === 'idle' && nearestDeadBear >= 0){
-      startSkinning(nearestDeadBear);
+    if(skinningState === 'idle'){
+      if(nearestDeadBear >= 0){ skinningType = 'bear'; startSkinning(nearestDeadBear); }
+      else if(nearestDeadStallion >= 0){ skinningType = 'stallion'; startSkinning(nearestDeadStallion); }
     }
   }
 });
@@ -2097,6 +2218,36 @@ function performPlayerAttack(){
       const killXP = Math.floor(bd.variant.xp * 0.5); // Half XP for kill, other half from skinning
       playerSkills.attack += killXP; playerXP += killXP;
       bearDeath(closestIdx);
+    }
+  }
+  
+  // Also check stallions
+  let closestStallionDist = PLAYER_ATTACK_RANGE;
+  let closestStallionIdx = -1;
+  for(let i = 0; i < stallionData.length; i++){
+    const sd = stallionData[i];
+    if(sd.state === 'dead' || sd.state === 'removed') continue;
+    const dx = playerPos.x - sd.model.position.x;
+    const dz = playerPos.z - sd.model.position.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    if(dist < closestStallionDist){
+      closestStallionDist = dist;
+      closestStallionIdx = i;
+    }
+  }
+  
+  if(closestStallionIdx >= 0 && (closestIdx < 0 || closestStallionDist < closestDist)){
+    const sd = stallionData[closestStallionIdx];
+    sd.hp = 0; // INSTANT KILL
+    const bloodPos = sd.model.position.clone();
+    bloodPos.y += sd.scale * 0.3;
+    spawnBlood(bloodPos, 12 + Math.floor(Math.random() * 8), sd.scale * 0.15);
+    debugLog('⚔️ INSTANT KILL Stallion!');
+    
+    if(sd.hp <= 0){
+      const killXP = Math.floor(STALLION_XP * 0.5);
+      playerSkills.attack += killXP; playerXP += killXP;
+      stallionDeath(closestStallionIdx);
     }
   }
 }
@@ -2251,6 +2402,97 @@ function respawnBear(idx){
   debugLog('🐻 Bear respawned at new location!');
 }
 
+function stallionDeath(idx){
+  const sd = stallionData[idx];
+  sd.state = 'dead';
+  sd.deathProgress = 1.0;
+  sd.skinned = false;
+  
+  // Big blood burst on death
+  const deathBloodPos = sd.model.position.clone();
+  deathBloodPos.y += sd.scale * 0.3;
+  spawnBlood(deathBloodPos, 25 + Math.floor(Math.random() * 15), sd.scale * 0.2);
+  
+  // Lay on side (no separate dead model — rotate current model)
+  sd.model.rotation.set(0, Math.random() * Math.PI * 2, Math.PI / 2);
+  
+  // Stop walk animation
+  if(sd.walkAction) sd.walkAction.stop();
+  
+  // Roll for drops — stored for skinning
+  const drops = [];
+  STALLION_DROP_TABLE.forEach(function(drop){
+    if(Math.random() < drop.chance){
+      drops.push(drop.item);
+    }
+  });
+  sd.pendingDrops = drops;
+  sd.pendingXP = STALLION_XP;
+  
+  // Start 45-second despawn timer
+  sd.carcassTimer = 45;
+  sd.fadeTimer = 0;
+  
+  showLootNotification('Stallion killed! Skin it for loot.');
+}
+
+function respawnStallion(idx){
+  const sd = stallionData[idx];
+  
+  // Find new valid spawn location
+  let x, z, h;
+  for(let tries = 0; tries < 50; tries++){
+    x = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    z = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    h = getHeight(x, z);
+    if(h > -2 && h < 28) break;
+  }
+  
+  const scale = STALLION_SCALE_MIN + Math.random() * (STALLION_SCALE_MAX - STALLION_SCALE_MIN);
+  const heading = Math.random() * Math.PI * 2;
+  
+  const stallion = SkeletonUtils.clone(stallionTemplate);
+  stallion.scale.set(scale, scale, scale);
+  
+  const normal = getTerrainNormal(x, z);
+  const up = new THREE.Vector3(0, 1, 0);
+  const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+  slopeQuat.multiply(yRotQuat);
+  stallion.quaternion.copy(slopeQuat);
+  stallion.position.set(x, h, z);
+  stallion.position.y += STALLION_FOOT_OFFSET * scale;
+  
+  scene.add(stallion);
+  
+  const mixer = new THREE.AnimationMixer(stallion);
+  let walkAction = null;
+  if(stallionAnimClip){
+    walkAction = mixer.clipAction(stallionAnimClip);
+    walkAction.play();
+  }
+  
+  sd.model = stallion;
+  sd.mixer = mixer;
+  sd.walkAction = walkAction;
+  sd.scale = scale;
+  sd.heading = heading;
+  sd.state = 'wandering';
+  sd.hp = STALLION_HP;
+  sd.turnTimer = 0;
+  sd.turnInterval = 4 + Math.random() * 6;
+  sd.turnTarget = heading;
+  sd.idleTimer = 0;
+  sd.skinned = false;
+  sd.pendingDrops = [];
+  sd.pendingXP = 0;
+  sd.carcassTimer = 0;
+  sd.fadeTimer = 0;
+  sd.deathProgress = 0;
+  
+  debugLog('🐴 Stallion respawned at new location!');
+}
+
 function startSkinning(bearIdx){
   if(skinningState === 'skinning') return;
   skinningState = 'skinning';
@@ -2262,21 +2504,28 @@ function startSkinning(bearIdx){
 }
 
 function completeSkinning(){
-  const bd = bearData[skinningTarget];
-  bd.skinned = true;
+  let npc, npcName;
+  if(skinningType === 'stallion'){
+    npc = stallionData[skinningTarget];
+    npcName = 'Stallion';
+  } else {
+    npc = bearData[skinningTarget];
+    npcName = npc.variant.name;
+  }
+  npc.skinned = true;
   
   // Award XP to skinning skill
-  playerSkills.skinning += bd.pendingXP; playerXP += bd.pendingXP;
+  playerSkills.skinning += npc.pendingXP; playerXP += npc.pendingXP;
   
   // Award drops to inventory
-  const drops = bd.pendingDrops || [];
+  const drops = npc.pendingDrops || [];
   drops.forEach(function(item){
     addToInventory(item);
   });
   
   const dropText = drops.length > 0 ? drops.join(', ') : 'Nothing';
-  showLootNotification('Skinned ' + bd.variant.name + '! +' + bd.pendingXP + ' XP | Loot: ' + dropText);
-  debugLog('🔪 Skinned ' + bd.variant.name + '! Drops: ' + dropText);
+  showLootNotification('Skinned ' + npcName + '! +' + npc.pendingXP + ' XP | Loot: ' + dropText);
+  debugLog('🔪 Skinned ' + npcName + '! Drops: ' + dropText);
   
   // Carcass timer already running from death — no reset needed
   
@@ -2472,7 +2721,10 @@ document.getElementById('btn-camera').addEventListener('touchstart', function(e)
 document.getElementById('btn-attack').addEventListener('touchstart', function(e){e.preventDefault();performPlayerAttack()});
 document.getElementById('btn-skin').addEventListener('touchstart', function(e){
   e.preventDefault();
-  if(skinningState === 'idle' && nearestDeadBear >= 0) startSkinning(nearestDeadBear);
+  if(skinningState === 'idle'){
+    if(nearestDeadBear >= 0){ skinningType = 'bear'; startSkinning(nearestDeadBear); }
+    else if(nearestDeadStallion >= 0){ skinningType = 'stallion'; startSkinning(nearestDeadStallion); }
+  }
 });
 document.getElementById('btn-skin').addEventListener('touchend', function(e){e.preventDefault()});
 
@@ -2956,6 +3208,70 @@ function animate(){
     if(fd.mixer) fd.mixer.update(dt);
   });
   
+  // ===== STALLION AI =====
+  stallionData.forEach(function(sd){
+    if(sd.state === 'dead' || sd.state === 'removed') return;
+    const stallionPos = sd.model.position;
+    
+    // Wandering/idle state machine
+    sd.turnTimer += dt;
+    if(sd.state === 'idle'){
+      sd.idleTimer -= dt;
+      if(sd.idleTimer <= 0){
+        sd.state = 'wandering';
+        sd.turnTarget = sd.heading + (Math.random() - 0.5) * Math.PI;
+        if(sd.walkAction) sd.walkAction.play();
+      }
+    } else if(sd.state === 'wandering'){
+      if(sd.turnTimer > sd.turnInterval){
+        sd.turnTimer = 0;
+        sd.turnInterval = 4 + Math.random() * 6;
+        // Random: turn or stop
+        if(Math.random() < 0.3){
+          sd.state = 'idle';
+          sd.idleTimer = 2 + Math.random() * 4;
+          if(sd.walkAction) sd.walkAction.stop();
+        } else {
+          sd.turnTarget = sd.heading + (Math.random() - 0.5) * Math.PI;
+        }
+      }
+    }
+    
+    const stallionSpeed = sd.state === 'idle' ? 0 : sd.walkSpeed;
+    
+    if(stallionSpeed > 0){
+      var hDiff = sd.turnTarget - sd.heading;
+      while(hDiff > Math.PI) hDiff -= 2*Math.PI;
+      while(hDiff < -Math.PI) hDiff += 2*Math.PI;
+      sd.heading += hDiff * 0.03;
+    }
+    
+    if(stallionSpeed > 0){
+      const spd = stallionSpeed * dt;
+      const newX = stallionPos.x + Math.sin(sd.heading) * spd;
+      const newZ = stallionPos.z + Math.cos(sd.heading) * spd;
+      const newH = getHeight(newX, newZ);
+      
+      const wb = WORLD_SIZE * 0.45;
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+        const normal = getTerrainNormal(newX, newZ);
+        const up = new THREE.Vector3(0, 1, 0);
+        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, sd.heading);
+        slopeQuat.multiply(yRotQuat);
+        sd.model.quaternion.copy(slopeQuat);
+        stallionPos.set(newX, newH, newZ);
+        stallionPos.y += STALLION_FOOT_OFFSET * sd.scale;
+      } else {
+        sd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
+        sd.turnTarget = sd.heading;
+      }
+    }
+    
+    // Update animation mixer
+    if(sd.mixer) sd.mixer.update(dt);
+  });
+  
   dreughData.forEach(function(dd){
     const dreughPos = dd.model.position;
     
@@ -3044,6 +3360,11 @@ function animate(){
     const groundY = getHeight(dd.model.position.x, dd.model.position.z);
     if(dd.model.position.y < groundY) dd.model.position.y = groundY + DREUGH_FOOT_OFFSET * dd.scale;
   });
+  stallionData.forEach(function(sd){
+    if(sd.state === 'dead' || sd.state === 'removed') return;
+    const groundY = getHeight(sd.model.position.x, sd.model.position.z);
+    if(sd.model.position.y < groundY) sd.model.position.y = groundY + STALLION_FOOT_OFFSET * sd.scale;
+  });
 
   // ===== SKINNING SYSTEM =====
   // Find nearest dead unskinned bear
@@ -3062,10 +3383,26 @@ function animate(){
     }
   }
   
+  // Find nearest dead unskinned stallion
+  nearestDeadStallion = -1;
+  let nearestDeadStallionDist = 8;
+  for(let i = 0; i < stallionData.length; i++){
+    const sd = stallionData[i];
+    if(sd.state !== 'dead' || sd.skinned || sd.fadeTimer > 0) continue;
+    if(sd.deathProgress < 1.0) continue;
+    const dx = playerPos.x - sd.model.position.x;
+    const dz = playerPos.z - sd.model.position.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    if(dist < nearestDeadStallionDist){
+      nearestDeadStallionDist = dist;
+      nearestDeadStallion = i;
+    }
+  }
+  
   // Show/hide skin prompt
   const skinPrompt = document.getElementById('skin-prompt');
   const btnSkin = document.getElementById('btn-skin');
-  if(nearestDeadBear >= 0 && skinningState === 'idle'){
+  if((nearestDeadBear >= 0 || nearestDeadStallion >= 0) && skinningState === 'idle'){
     skinPrompt.style.display = 'block';
     document.getElementById('skin-prompt-text').textContent = isMobile ? 'Tap Skin' : 'Press E to Skin';
     document.getElementById('skin-progress-bar').style.display = 'none';
@@ -3078,7 +3415,7 @@ function animate(){
   // Skinning progress
   if(skinningState === 'skinning'){
     // Cancel if moved too far from target
-    const sbd = bearData[skinningTarget];
+    const sbd = skinningType === 'stallion' ? stallionData[skinningTarget] : bearData[skinningTarget];
     if(sbd){
       const sdx = playerPos.x - sbd.model.position.x;
       const sdz = playerPos.z - sbd.model.position.z;
@@ -3125,6 +3462,35 @@ function animate(){
         bd.state = 'removed';
         // Respawn a fresh bear at a random location
         respawnBear(i);
+      }
+    }
+  }
+  
+  // Carcass timer — dead stallions despawn after 45 seconds then respawn
+  for(let i = 0; i < stallionData.length; i++){
+    const sd = stallionData[i];
+    if(sd.state !== 'dead' || !sd.model || !sd.carcassTimer) continue;
+    if(sd.carcassTimer > 0){
+      sd.carcassTimer -= dt;
+      if(sd.carcassTimer <= 0){
+        sd.fadeTimer = 3.0;
+      }
+      continue;
+    }
+    if(sd.fadeTimer > 0){
+      sd.fadeTimer -= dt;
+      const opacity = Math.max(0, sd.fadeTimer / 3.0);
+      sd.model.traverse(function(child){
+        if(child.isMesh && child.material){
+          child.material.transparent = true;
+          child.material.opacity = opacity;
+        }
+      });
+      if(sd.fadeTimer <= 0){
+        scene.remove(sd.model);
+        sd.model = null;
+        sd.state = 'removed';
+        respawnStallion(i);
       }
     }
   }

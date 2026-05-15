@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v41</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v42</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1130,6 +1130,7 @@ let lootNotifications = []; // { text, timer }
 
 // ===== PLAYER =====
 let playerModel = null;
+let characterPivot = null;
 let playerWalkAction = null;
 let playerIdleAction = null;
 let playerIsWalking = false;
@@ -1364,12 +1365,12 @@ scene.add(playerPlaceholder);
 updateLoading('Loading character model...', 50);
 loader.load('character-walk.glb?v=40', function(gltf){
   playerModel = gltf.scene;
-  playerModel.scale.set(3, 3, 3);
-  // Center the mesh — model is offset X=2.41 from origin in the GLB
-  for(var ci = 0; ci < playerModel.children.length; ci++){
-    playerModel.children[ci].position.x -= 3.2;
-    playerModel.children[ci].position.z -= 0.045;
-  }
+  // Use pivot container: scale + rotation on pivot, model offset to center mesh
+  characterPivot = new THREE.Group();
+  characterPivot.scale.set(3, 3, 3);
+  // Center the mesh at pivot origin — model mesh is offset X=2.41 in the GLB
+  playerModel.position.x = -2.41;
+  characterPivot.add(playerModel);
   playerModel.traverse(function(child){
     if(child.isMesh){
       child.castShadow=true;child.receiveShadow=true;
@@ -1384,7 +1385,7 @@ loader.load('character-walk.glb?v=40', function(gltf){
       }
     }
   });
-  scene.add(playerModel);
+  scene.add(characterPivot);
   if(gltf.animations && gltf.animations.length > 0){
     playerMixer = new THREE.AnimationMixer(playerModel);
     // Find Walk and Idle clips by name
@@ -2420,9 +2421,9 @@ function animate(){
   playerPos.x = Math.max(-bound, Math.min(bound, playerPos.x));
   playerPos.z = Math.max(-bound, Math.min(bound, playerPos.z));
   
-  if(playerModel){
-    playerModel.position.copy(playerPos);
-    playerModel.rotation.y = characterYaw - Math.PI * 0.5;  // -PI/2 offset — model forward corrected
+  if(characterPivot){
+    characterPivot.position.copy(playerPos);
+    characterPivot.rotation.y = characterYaw - Math.PI * 0.5;
   }
   playerPlaceholder.position.copy(playerPos);
   
@@ -2450,11 +2451,10 @@ function animate(){
       }
     }
   }
-  if(playerModel){
-    playerModel.rotation.y = characterYaw - Math.PI * 0.5;
-    playerModel.rotation.x = 0;
-    playerModel.rotation.z = 0;
-    playerModel.scale.set(3, 3, 3);
+  if(characterPivot){
+    characterPivot.rotation.y = characterYaw - Math.PI * 0.5;
+    characterPivot.rotation.x = 0;
+    characterPivot.rotation.z = 0;
   }
   
   // Update bass swimming — wandering pattern
@@ -3031,15 +3031,21 @@ function animate(){
   }
   
   if(thirdPerson){
-    const camX = playerPos.x - Math.sin(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
-    const camY = playerPos.y + 2 + Math.sin(cameraPitch)*cameraDistance;
-    const camZ = playerPos.z - Math.cos(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
+    // Over-the-shoulder camera — offset to the right
+    const shoulderOffset = 1.5;
+    const rightX = Math.cos(playerYaw);
+    const rightZ = -Math.sin(playerYaw);
+    const shoulderX = playerPos.x + rightX * shoulderOffset;
+    const shoulderZ = playerPos.z + rightZ * shoulderOffset;
+    const camX = shoulderX - Math.sin(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
+    const camY = playerPos.y + 2.5 + Math.sin(cameraPitch)*cameraDistance;
+    const camZ = shoulderZ - Math.cos(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
     camera.position.set(camX, camY, camZ);
-    camera.lookAt(playerPos.x, playerPos.y+1.5, playerPos.z);
+    camera.lookAt(playerPos.x + Math.sin(playerYaw)*3, playerPos.y+1.5, playerPos.z + Math.cos(playerYaw)*3);
     if(playerModel) playerModel.visible = true;
   } else {
     // Eye-level POV — camera at character head height, model hidden
-    const eyeH = 2.6; // ~head height on 3x scale character
+    const eyeH = 2.6;
     camera.position.set(playerPos.x, playerPos.y + eyeH, playerPos.z);
     const lookDist = 10;
     camera.lookAt(

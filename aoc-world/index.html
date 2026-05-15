@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v51</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v52</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -720,7 +720,7 @@ loader.load('rock-pile-model.glb?v=1', function(gltf){
     // Position at terrain height, then lift along local Y so base sits on ground
     pile.position.set(x, h, z);
     const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
-    pile.position.addScaledVector(localUp, ROCK_FOOT_OFFSET * s);
+    pile.position.y += ROCK_FOOT_OFFSET * s;
     scene.add(pile);
   }
   assetsLoaded++;
@@ -938,7 +938,7 @@ loader.load('deer-model.glb?v=2', function(gltf){
     const DEER_FOOT_OFFSET = 0.5;
     deer.position.set(x, h, z);
     const deerLocalUp = new THREE.Vector3(0, 1, 0).applyQuaternion(deerSlopeQuat);
-    deer.position.addScaledVector(deerLocalUp, DEER_FOOT_OFFSET * scale);
+    deer.position.y += DEER_FOOT_OFFSET * scale;
     
     scene.add(deer);
     deerModels.push(deer);
@@ -1567,7 +1567,7 @@ loader.load('bear-model.glb?v=1', function(gltf){
     // Position at terrain then lift along local up
     bear.position.set(x, h, z);
     const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-    bear.position.addScaledVector(localUp, BEAR_FOOT_OFFSET * scale);
+    bear.position.y += BEAR_FOOT_OFFSET * scale;
     
     scene.add(bear);
     bearModels.push(bear);
@@ -1661,7 +1661,7 @@ loader.load('freak-walk.glb?v=2', function(gltf){
     
     freak.position.set(x, h, z);
     const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-    freak.position.addScaledVector(localUp, FREAK_FOOT_OFFSET * scale);
+    freak.position.y += FREAK_FOOT_OFFSET * scale;
     
     scene.add(freak);
     freakModels.push(freak);
@@ -1742,7 +1742,7 @@ loader.load('dreugh-model.glb?v=1', function(gltf){
     
     dreugh.position.set(x, h, z);
     const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-    dreugh.position.addScaledVector(localUp, DREUGH_FOOT_OFFSET * scale);
+    dreugh.position.y += DREUGH_FOOT_OFFSET * scale;
     
     scene.add(dreugh);
     dreughModels.push(dreugh);
@@ -2191,7 +2191,7 @@ function respawnBear(idx){
   bear.quaternion.copy(slopeQuat);
   bear.position.set(x, h, z);
   const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-  bear.position.addScaledVector(localUp, BEAR_FOOT_OFFSET * scale);
+  bear.position.y += BEAR_FOOT_OFFSET * scale;
   scene.add(bear);
   
   // Reset bearData entry
@@ -2690,9 +2690,8 @@ function animate(){
         slopeQuat.multiply(yRotQuat);
         data.model.quaternion.copy(slopeQuat);
         deerPos.set(newX, newH, newZ);
-        // Foot offset — model Y_min = -0.5
-        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-        deerPos.addScaledVector(localUp, 0.5 * data.scale);
+        // Foot offset — model Y_min = -0.5, simple Y lift
+        deerPos.y += DEER_FOOT_OFFSET * data.scale;
       } else {
         data.heading += Math.PI + (Math.random() - 0.5) * 0.5;
         data.turnTarget = data.heading;
@@ -2813,7 +2812,7 @@ function animate(){
         bd.model.quaternion.copy(slopeQuat);
         bearPos.set(newX, newH, newZ);
         const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-        bearPos.addScaledVector(localUp, BEAR_FOOT_OFFSET * bd.scale);
+        bearPos.y += BEAR_FOOT_OFFSET * bd.scale;
       } else {
         bd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
         bd.turnTarget = bd.heading;
@@ -2886,7 +2885,7 @@ function animate(){
         fd.model.quaternion.copy(slopeQuat);
         freakPos.set(newX, newH, newZ);
         const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-        freakPos.addScaledVector(localUp, FREAK_FOOT_OFFSET * fd.scale);
+        freakPos.y += FREAK_FOOT_OFFSET * fd.scale;
       } else {
         fd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
         fd.turnTarget = fd.heading;
@@ -2951,7 +2950,7 @@ function animate(){
         dd.model.quaternion.copy(slopeQuat);
         dreughPos.set(newX, newH, newZ);
         const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
-        dreughPos.addScaledVector(localUp, DREUGH_FOOT_OFFSET * dd.scale);
+        dreughPos.y += DREUGH_FOOT_OFFSET * dd.scale;
       } else {
         dd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
         dd.turnTarget = dd.heading;
@@ -3221,30 +3220,25 @@ function animate(){
   }
   
   if(thirdPerson){
-    // Fallout-style over-the-shoulder camera
-    // Character centered, camera behind + slightly right + above
-    // Crosshairs above character's head — looking past the character
-    const SHOULDER_RIGHT = 1.0; // slight right offset on camera (NOT on character)
-    const LOOK_HEIGHT = 3.2; // above head — crosshairs above character (char ~3 units tall at scale 3)
+    // Dead-center 3rd person camera — character always in exact center of screen
+    const LOOK_HEIGHT = 2.5; // look at character's chest/shoulder area
     
+    const lookX = playerPos.x;
     const lookY = playerPos.y + LOOK_HEIGHT;
+    const lookZ = playerPos.z;
     
-    // Character facing direction
+    // Camera facing direction (same as character)
     const facingX = Math.sin(playerYaw);
     const facingZ = Math.cos(playerYaw);
-    // Right direction (perpendicular to facing)
-    const rightX = Math.cos(playerYaw);
-    const rightZ = -Math.sin(playerYaw);
     
-    // Camera: behind the character + slightly right + above
+    // Camera: straight behind the character, pulled back by cameraDistance
     const behindDist = Math.cos(cameraPitch) * cameraDistance;
-    const camX = playerPos.x - facingX * behindDist + rightX * SHOULDER_RIGHT;
+    const camX = lookX - facingX * behindDist;
     const camY = lookY + Math.sin(cameraPitch) * cameraDistance;
-    const camZ = playerPos.z - facingZ * behindDist + rightZ * SHOULDER_RIGHT;
+    const camZ = lookZ - facingZ * behindDist;
     
     camera.position.set(camX, camY, camZ);
-    // Look at a point slightly right of character (matching shoulder offset)
-    camera.lookAt(playerPos.x + rightX * SHOULDER_RIGHT * 0.3, lookY, playerPos.z + rightZ * SHOULDER_RIGHT * 0.3);
+    camera.lookAt(lookX, lookY, lookZ);
     if(playerModel) playerModel.visible = true;
   } else {
     // Eye-level POV — camera at character head height, model hidden

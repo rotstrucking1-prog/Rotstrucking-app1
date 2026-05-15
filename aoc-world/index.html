@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v62</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v63</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -2533,25 +2533,26 @@ function animate(){
     if(keys['KeyD']||keys['ArrowRight']) moveX = 1;
   }
   
-  moveX = -moveX; // Swap left/right to match camera perspective
-  if(moveX || moveZ){
-    const len = Math.sqrt(moveX*moveX+moveZ*moveZ);
-    if(len>1){moveX/=len;moveZ/=len}
-    // Calculate world-space movement direction from input + camera angle
-    const sinCam = Math.sin(playerYaw);
-    const cosCam = Math.cos(playerYaw);
-    const worldMoveX = moveX*cosCam - moveZ*sinCam;
-    const worldMoveZ = -(moveX*sinCam + moveZ*cosCam);
-    // Character INSTANTLY faces movement direction — no turn lag, no orbiting
-    characterYaw = Math.atan2(worldMoveX, worldMoveZ);
-    // Move forward in facing direction
-    const inputMag = Math.min(1, Math.sqrt(moveX*moveX + moveZ*moveZ));
-    const speed = playerSpeed * inputMag * (isSprinting ? sprintMult : 1) * dt;
-    playerPos.x += worldMoveX * speed;
-    playerPos.z += worldMoveZ * speed;
+  // Left/Right input ORBITS CAMERA — character spins in place, no strafing
+  if(Math.abs(moveX) > 0.05){
+    playerYaw -= moveX * 2.5 * dt;
   }
-  lastMoveX = moveX;
-  lastMoveZ = moveZ;
+  
+  // Forward/Backward input WALKS in camera facing direction
+  const forwardInput = -moveZ; // joystick up (neg Y) = forward (positive)
+  let isWalkingNow = Math.abs(forwardInput) > 0.05;
+  if(isWalkingNow){
+    const inputMag = Math.min(1, Math.abs(forwardInput));
+    const speed = playerSpeed * inputMag * (isSprinting ? sprintMult : 1) * dt;
+    const dir = Math.sign(forwardInput);
+    playerPos.x += Math.sin(playerYaw) * dir * speed;
+    playerPos.z += Math.cos(playerYaw) * dir * speed;
+  }
+  
+  // Character ALWAYS faces camera direction — spins in place with camera
+  characterYaw = playerYaw;
+  lastMoveX = 0;
+  lastMoveZ = isWalkingNow ? 1 : 0;
   
   if((keys['Space'] || false) && isGrounded){
     playerVelY = jumpForce;
@@ -3349,7 +3350,7 @@ function animate(){
     ambientParticles.geometry.attributes.position.needsUpdate = true;
   }
   
-  document.getElementById('hud-pos').textContent = 'Pos: '+Math.round(playerPos.x)+','+Math.round(playerPos.y)+','+Math.round(playerPos.z)+' | Joy: '+joystickX.toFixed(1)+','+joystickY.toFixed(1)+' A:'+joystickActive+' M:'+isMobile;
+  document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);
   document.getElementById('hud-fps').textContent = 'FPS: '+fps;
   document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');
   document.getElementById('hud-pos').textContent += ' | Fishing Lv: '+getLevel(playerSkills.fishing)+' | Caught: '+playerCaughtFish;

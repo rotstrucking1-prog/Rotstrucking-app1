@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v58</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v59</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -2515,16 +2515,17 @@ function animate(){
     const cosCam = Math.cos(playerYaw);
     const worldMoveX = moveX*cosCam - moveZ*sinCam;
     const worldMoveZ = -(moveX*sinCam + moveZ*cosCam);
-    // Turn character to face MOVEMENT direction (not camera) — like GTA/RDR
+    // Turn character to face MOVEMENT direction — like GTA/RDR
     const targetYaw = Math.atan2(worldMoveX, worldMoveZ);
     let angleDiff = targetYaw - characterYaw;
     while(angleDiff > Math.PI) angleDiff -= 2*Math.PI;
     while(angleDiff < -Math.PI) angleDiff += 2*Math.PI;
-    characterYaw += angleDiff * Math.min(1, 12 * dt); // Frame-rate independent smooth turn
-    // Move in actual input direction
-    const speed = playerSpeed * (isSprinting ? sprintMult : 1) * dt;
-    playerPos.x += worldMoveX * speed;
-    playerPos.z += worldMoveZ * speed;
+    characterYaw += angleDiff * Math.min(1, 15 * dt); // Fast smooth turn
+    // Move FORWARD in the direction the character is FACING — never sideways
+    const inputMag = Math.min(1, Math.sqrt(moveX*moveX + moveZ*moveZ));
+    const speed = playerSpeed * inputMag * (isSprinting ? sprintMult : 1) * dt;
+    playerPos.x += Math.sin(characterYaw) * speed;
+    playerPos.z += Math.cos(characterYaw) * speed;
   }
   lastMoveX = moveX;
   lastMoveZ = moveZ;

@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v56</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v57</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1572,7 +1572,7 @@ loader.load('bear-walk.glb?v=2', function(gltf){
     const normal = getTerrainNormal(x, z);
     const up = new THREE.Vector3(0, 1, 0);
     const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading + Math.PI);
+    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
     slopeQuat.multiply(yRotQuat);
     bear.quaternion.copy(slopeQuat);
     
@@ -2203,7 +2203,7 @@ function respawnBear(idx){
   const normal = getTerrainNormal(x, z);
   const up = new THREE.Vector3(0, 1, 0);
   const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading + Math.PI);
+  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
   slopeQuat.multiply(yRotQuat);
   bear.quaternion.copy(slopeQuat);
   bear.position.set(x, h, z);
@@ -2708,7 +2708,7 @@ function animate(){
         const normal = getTerrainNormal(newX, newZ);
         const up = new THREE.Vector3(0, 1, 0);
         const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, data.heading + Math.PI);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, data.heading);
         slopeQuat.multiply(yRotQuat);
         data.model.quaternion.copy(slopeQuat);
         deerPos.set(newX, newH, newZ);
@@ -2829,7 +2829,7 @@ function animate(){
         const normal = getTerrainNormal(newX, newZ);
         const up = new THREE.Vector3(0, 1, 0);
         const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, bd.heading + Math.PI);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, bd.heading);
         slopeQuat.multiply(yRotQuat);
         bd.model.quaternion.copy(slopeQuat);
         bearPos.set(newX, newH, newZ);
@@ -2975,7 +2975,7 @@ function animate(){
         const normal = getTerrainNormal(newX, newZ);
         const up = new THREE.Vector3(0, 1, 0);
         const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, dd.heading + Math.PI);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, dd.heading);
         slopeQuat.multiply(yRotQuat);
         dd.model.quaternion.copy(slopeQuat);
         dreughPos.set(newX, newH, newZ);

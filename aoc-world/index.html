@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v47</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v48</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -934,9 +934,11 @@ loader.load('deer-model.glb?v=2', function(gltf){
     deerSlopeQuat.multiply(deerYRotQuat);
     deer.quaternion.copy(deerSlopeQuat);
     
-    // Position with foot offset
+    // Position with foot offset — model Y_min = -0.5
+    const DEER_FOOT_OFFSET = 0.5;
     deer.position.set(x, h, z);
-    // No offset — feet sink slightly into ground to guarantee grounding
+    const deerLocalUp = new THREE.Vector3(0, 1, 0).applyQuaternion(deerSlopeQuat);
+    deer.position.addScaledVector(deerLocalUp, DEER_FOOT_OFFSET * scale);
     
     scene.add(deer);
     deerModels.push(deer);
@@ -1040,7 +1042,7 @@ const FREAK_COUNT = 15;
 const FREAK_SCALE_MIN = 4.0;
 const FREAK_SCALE_MAX = 7.0;
 const FREAK_WALK_SPEED = 1.5;
-const FREAK_FOOT_OFFSET = 0;
+const FREAK_FOOT_OFFSET = 0.492; // Model Y_min = -0.492, lift feet to ground
 let freakTemplate = null;
 let freakData = [];
 let freakModels = [];
@@ -1050,7 +1052,7 @@ const DREUGH_COUNT = 20;
 const DREUGH_SCALE_MIN = 4.0;
 const DREUGH_SCALE_MAX = 7.0;
 const DREUGH_WALK_SPEED = 1.2;
-const DREUGH_FOOT_OFFSET = 0; // Zeroed — model sinks slightly to guarantee feet on ground
+const DREUGH_FOOT_OFFSET = 0.5; // Model Y_min = -0.5, lift feet to ground
 let dreughTemplate = null;
 let dreughData = [];
 let dreughModels = [];
@@ -1061,7 +1063,7 @@ const bearCount = 25;
 const BEAR_WALK_SPEED = 1.8;
 const BEAR_CHARGE_SPEED = 6.5;
 const BEAR_ATTACK_RANGE = 5.0;
-const BEAR_FOOT_OFFSET = 0; // Zeroed — guarantee feet on ground
+const BEAR_FOOT_OFFSET = 0.279; // Model Y_min = -0.279, lift feet to ground
 const DEAD_BEAR_FOOT_OFFSET = 0.25; // Dead model — raised so back is level with ground
 let deadBearTemplate = null; // Loaded dead grizzly GLB
 const BEAR_VARIANTS = [
@@ -2668,7 +2670,9 @@ function animate(){
         slopeQuat.multiply(yRotQuat);
         data.model.quaternion.copy(slopeQuat);
         deerPos.set(newX, newH, newZ);
-        // No offset — grounded
+        // Foot offset — model Y_min = -0.5
+        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+        deerPos.addScaledVector(localUp, 0.5 * data.scale);
       } else {
         data.heading += Math.PI + (Math.random() - 0.5) * 0.5;
         data.turnTarget = data.heading;
@@ -2931,6 +2935,26 @@ function animate(){
       const bobAmt = 0.06 * dd.scale;
       dreughPos.y += Math.abs(Math.sin(dd.bobPhase)) * bobAmt;
     }
+  });
+
+  // ===== UNIVERSAL GROUND FLOOR CLAMP =====
+  // Nothing goes below terrain level — feet stay at or above ground
+  deerData.forEach(function(d){
+    const groundY = getHeight(d.model.position.x, d.model.position.z);
+    if(d.model.position.y < groundY) d.model.position.y = groundY + 0.5 * d.scale;
+  });
+  bearData.forEach(function(bd){
+    if(!bd.model || bd.state === 'dead') return;
+    const groundY = getHeight(bd.model.position.x, bd.model.position.z);
+    if(bd.model.position.y < groundY) bd.model.position.y = groundY + BEAR_FOOT_OFFSET * bd.scale;
+  });
+  freakData.forEach(function(fd){
+    const groundY = getHeight(fd.model.position.x, fd.model.position.z);
+    if(fd.model.position.y < groundY) fd.model.position.y = groundY + FREAK_FOOT_OFFSET * fd.scale;
+  });
+  dreughData.forEach(function(dd){
+    const groundY = getHeight(dd.model.position.x, dd.model.position.z);
+    if(dd.model.position.y < groundY) dd.model.position.y = groundY + DREUGH_FOOT_OFFSET * dd.scale;
   });
 
   // ===== SKINNING SYSTEM =====

@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v50</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v51</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1042,7 +1042,7 @@ const FREAK_COUNT = 15;
 const FREAK_SCALE_MIN = 4.0;
 const FREAK_SCALE_MAX = 7.0;
 const FREAK_WALK_SPEED = 1.5;
-const FREAK_FOOT_OFFSET = 0.035; // Animated model feet nearly at origin
+const FREAK_FOOT_OFFSET = 0; // Model pre-centered: feet at Y=0, X/Z centered
 let freakTemplate = null;
 let freakWalkClip = null;
 let freakData = [];
@@ -1617,7 +1617,7 @@ loader.load('bear-model.glb?v=1', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-loader.load('freak-walk.glb?v=1', function(gltf){
+loader.load('freak-walk.glb?v=2', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){

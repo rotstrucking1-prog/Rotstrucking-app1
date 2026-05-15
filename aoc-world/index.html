@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v44</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v45</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 11;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh
+const totalAssets = 12;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1035,6 +1035,16 @@ const DEER_RUN_SPEED = 8.0;
 
 // ===== GRIZZLY BEAR NPCS (NPC-0006 to NPC-0009) =====
 let bearModels = [];
+// ===== FREAK-A-ZOID =====
+const FREAK_COUNT = 15;
+const FREAK_SCALE_MIN = 4.0;
+const FREAK_SCALE_MAX = 7.0;
+const FREAK_WALK_SPEED = 1.5;
+const FREAK_FOOT_OFFSET = 0;
+let freakTemplate = null;
+let freakData = [];
+let freakModels = [];
+
 // ===== GREATER SKELETAL DREUGH =====
 const DREUGH_COUNT = 20;
 const DREUGH_SCALE_MIN = 4.0;
@@ -1605,6 +1615,75 @@ loader.load('bear-model.glb?v=1', function(gltf){
 });
 
 // Load dead grizzly carcass model
+// Load Freak-a-Zoid
+loader.load('freak-a-zoid.glb?v=1', function(gltf){
+  freakTemplate = gltf.scene;
+  freakTemplate.traverse(function(child){
+    if(child.isMesh){
+      child.material = child.material.clone();
+      child.material.metalness = 0;
+      child.material.roughness = 0.8;
+      if(child.material.color) child.material.color.set(0xffffff);
+      if(child.material.metalnessMap) child.material.metalnessMap = null;
+      if(child.material.roughnessMap) child.material.roughnessMap = null;
+      if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
+      child.material.needsUpdate = true;
+    }
+  });
+  
+  // Spawn freak-a-zoids
+  let freaksPlaced = 0;
+  while(freaksPlaced < FREAK_COUNT){
+    const x = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const z = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
+    const h = getHeight(x, z);
+    if(h < -2 || h > 28) continue;
+    
+    const scale = FREAK_SCALE_MIN + Math.random() * (FREAK_SCALE_MAX - FREAK_SCALE_MIN);
+    const freak = freakTemplate.clone();
+    freak.scale.set(scale, scale, scale);
+    
+    const heading = Math.random() * Math.PI * 2;
+    const normal = getTerrainNormal(x, z);
+    const up = new THREE.Vector3(0, 1, 0);
+    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+    slopeQuat.multiply(yRotQuat);
+    freak.quaternion.copy(slopeQuat);
+    
+    freak.position.set(x, h, z);
+    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+    freak.position.addScaledVector(localUp, FREAK_FOOT_OFFSET * scale);
+    
+    scene.add(freak);
+    freakModels.push(freak);
+    
+    freakData.push({
+      model: freak,
+      scale: scale,
+      heading: heading,
+      state: 'wandering',
+      walkSpeed: FREAK_WALK_SPEED + Math.random() * 0.5,
+      turnTimer: 0,
+      turnInterval: 4 + Math.random() * 6,
+      turnTarget: heading,
+      idleTimer: 0
+    });
+    
+    freaksPlaced++;
+  }
+  
+  debugLog('👾 Freak-a-Zoids spawned: ' + freaksPlaced);
+  assetsLoaded++;
+  updateLoading('Freak-a-Zoids roaming!', 95);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Freak-a-Zoid load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
 // Load Greater Skeletal Dreugh
 loader.load('dreugh-model.glb?v=1', function(gltf){
   dreughTemplate = gltf.scene;
@@ -2729,6 +2808,65 @@ function animate(){
   });
   
   // ===== DREUGH AI (WANDERING) =====
+  // Update Freak-a-Zoid AI — wandering
+  freakData.forEach(function(fd){
+    const freakPos = fd.model.position;
+    
+    if(fd.state === 'idle'){
+      fd.idleTimer -= dt;
+      if(fd.idleTimer <= 0){
+        fd.state = 'wandering';
+        fd.turnInterval = 4 + Math.random() * 6;
+      }
+    }
+    
+    if(fd.state === 'wandering'){
+      fd.turnTimer += dt;
+      if(fd.turnTimer >= fd.turnInterval){
+        fd.turnTimer = 0;
+        if(Math.random() < 0.25){
+          fd.state = 'idle';
+          fd.idleTimer = 2 + Math.random() * 6;
+        } else {
+          fd.turnInterval = 4 + Math.random() * 6;
+          fd.turnTarget = fd.heading + (Math.random() - 0.5) * Math.PI * 0.8;
+        }
+      }
+    }
+    
+    const freakSpeed = fd.state === 'idle' ? 0 : fd.walkSpeed;
+    
+    if(freakSpeed > 0){
+      var hDiff = fd.turnTarget - fd.heading;
+      while(hDiff > Math.PI) hDiff -= 2*Math.PI;
+      while(hDiff < -Math.PI) hDiff += 2*Math.PI;
+      fd.heading += hDiff * 0.03;
+    }
+    
+    if(freakSpeed > 0){
+      const spd = freakSpeed * dt;
+      const newX = freakPos.x + Math.sin(fd.heading) * spd;
+      const newZ = freakPos.z + Math.cos(fd.heading) * spd;
+      const newH = getHeight(newX, newZ);
+      
+      const wb = WORLD_SIZE * 0.45;
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+        const normal = getTerrainNormal(newX, newZ);
+        const up = new THREE.Vector3(0, 1, 0);
+        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
+        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, fd.heading + Math.PI);
+        slopeQuat.multiply(yRotQuat);
+        fd.model.quaternion.copy(slopeQuat);
+        freakPos.set(newX, newH, newZ);
+        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
+        freakPos.addScaledVector(localUp, FREAK_FOOT_OFFSET * fd.scale);
+      } else {
+        fd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
+        fd.turnTarget = fd.heading;
+      }
+    }
+  });
+  
   dreughData.forEach(function(dd){
     const dreughPos = dd.model.position;
     

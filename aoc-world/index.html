@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v67</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v68</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -926,18 +926,12 @@ loader.load('deer-model.glb?v=2', function(gltf){
     const scale = 2.5 + Math.random() * 1.5; // Scale 2.5-4.0
     deer.scale.set(scale, scale, scale);
     
-    // Align to terrain slope
-    const deerNormal = getTerrainNormal(x, z);
-    const deerUp = new THREE.Vector3(0, 1, 0);
-    const deerSlopeQuat = new THREE.Quaternion().setFromUnitVectors(deerUp, deerNormal);
+    // Face random direction (no slope alignment — prevents floating/sinking)
     const heading = Math.random() * Math.PI * 2;
-    const deerYRotQuat = new THREE.Quaternion().setFromAxisAngle(deerUp, heading);
-    deerSlopeQuat.multiply(deerYRotQuat);
-    deer.quaternion.copy(deerSlopeQuat);
+    deer.rotation.set(0, heading, 0);
     
     // Position with foot offset — model Y_min = -0.5
     deer.position.set(x, h, z);
-    const deerLocalUp = new THREE.Vector3(0, 1, 0).applyQuaternion(deerSlopeQuat);
     deer.position.y += DEER_FOOT_OFFSET * scale;
     
     scene.add(deer);
@@ -1768,13 +1762,7 @@ loader.load('bear-walk.glb?v=2', function(gltf){
     
     // Slope alignment
     const heading = Math.random() * Math.PI * 2;
-    const normal = getTerrainNormal(x, z);
-    const up = new THREE.Vector3(0, 1, 0);
-    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
-    slopeQuat.multiply(yRotQuat);
-    bear.quaternion.copy(slopeQuat);
-    
+    bear.rotation.set(0, heading, 0);
     bear.position.set(x, h, z);
     bear.position.y += BEAR_FOOT_OFFSET * scale;
     
@@ -1868,15 +1856,8 @@ loader.load('freak-walk.glb?v=2', function(gltf){
     freak.scale.set(scale, scale, scale);
     
     const heading = Math.random() * Math.PI * 2;
-    const normal = getTerrainNormal(x, z);
-    const up = new THREE.Vector3(0, 1, 0);
-    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
-    slopeQuat.multiply(yRotQuat);
-    freak.quaternion.copy(slopeQuat);
-    
+    freak.rotation.set(0, heading, 0);
     freak.position.set(x, h, z);
-    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
     freak.position.y += FREAK_FOOT_OFFSET * scale;
     
     scene.add(freak);
@@ -1955,13 +1936,7 @@ loader.load('stallion-walk.glb?v=1', function(gltf){
     stallion.scale.set(scale, scale, scale);
     
     const heading = Math.random() * Math.PI * 2;
-    const normal = getTerrainNormal(x, z);
-    const up = new THREE.Vector3(0, 1, 0);
-    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
-    slopeQuat.multiply(yRotQuat);
-    stallion.quaternion.copy(slopeQuat);
-    
+    stallion.rotation.set(0, heading, 0);
     stallion.position.set(x, h, z);
     stallion.position.y += STALLION_FOOT_OFFSET * scale;
     
@@ -2042,15 +2017,8 @@ loader.load('dreugh-model.glb?v=1', function(gltf){
     dreugh.scale.set(scale, scale, scale);
     
     const heading = Math.random() * Math.PI * 2;
-    const normal = getTerrainNormal(x, z);
-    const up = new THREE.Vector3(0, 1, 0);
-    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
-    slopeQuat.multiply(yRotQuat);
-    dreugh.quaternion.copy(slopeQuat);
-    
+    dreugh.rotation.set(0, heading, 0);
     dreugh.position.set(x, h, z);
-    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
     dreugh.position.y += DREUGH_FOOT_OFFSET * scale;
     
     scene.add(dreugh);
@@ -2581,12 +2549,7 @@ function respawnBear(idx){
   });
   bear.scale.set(scale, scale, scale);
   const heading = Math.random() * Math.PI * 2;
-  const normal = getTerrainNormal(x, z);
-  const up = new THREE.Vector3(0, 1, 0);
-  const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
-  slopeQuat.multiply(yRotQuat);
-  bear.quaternion.copy(slopeQuat);
+  bear.rotation.set(0, heading, 0);
   bear.position.set(x, h, z);
   bear.position.y += BEAR_FOOT_OFFSET * scale;
   scene.add(bear);
@@ -2684,12 +2647,7 @@ function respawnStallion(idx){
   const stallion = SkeletonUtils.clone(stallionTemplate);
   stallion.scale.set(scale, scale, scale);
   
-  const normal = getTerrainNormal(x, z);
-  const up = new THREE.Vector3(0, 1, 0);
-  const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
-  slopeQuat.multiply(yRotQuat);
-  stallion.quaternion.copy(slopeQuat);
+  stallion.rotation.set(0, heading, 0);
   stallion.position.set(x, h, z);
   stallion.position.y += STALLION_FOOT_OFFSET * scale;
   
@@ -3216,15 +3174,8 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        // Align to slope + face heading direction
-        const normal = getTerrainNormal(newX, newZ);
-        const up = new THREE.Vector3(0, 1, 0);
-        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, data.heading);
-        slopeQuat.multiply(yRotQuat);
-        data.model.quaternion.copy(slopeQuat);
+        data.model.rotation.y = data.heading;
         deerPos.set(newX, newH, newZ);
-        // Foot offset — model Y_min = -0.5, simple Y lift
         deerPos.y += DEER_FOOT_OFFSET * data.scale;
       } else {
         data.heading += Math.PI + (Math.random() - 0.5) * 0.5;
@@ -3338,14 +3289,8 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        const normal = getTerrainNormal(newX, newZ);
-        const up = new THREE.Vector3(0, 1, 0);
-        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, bd.heading);
-        slopeQuat.multiply(yRotQuat);
-        bd.model.quaternion.copy(slopeQuat);
+        bd.model.rotation.y = bd.heading;
         bearPos.set(newX, newH, newZ);
-        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
         bearPos.y += BEAR_FOOT_OFFSET * bd.scale;
       } else {
         bd.heading += Math.PI + (Math.random() - 0.5) * 0.5;
@@ -3420,12 +3365,7 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        const normal = getTerrainNormal(newX, newZ);
-        const up = new THREE.Vector3(0, 1, 0);
-        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, fd.heading);
-        slopeQuat.multiply(yRotQuat);
-        fd.model.quaternion.copy(slopeQuat);
+        fd.model.rotation.y = fd.heading;
         freakPos.set(newX, newH, newZ);
         freakPos.y += FREAK_FOOT_OFFSET * fd.scale;
       } else {
@@ -3484,12 +3424,7 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        const normal = getTerrainNormal(newX, newZ);
-        const up = new THREE.Vector3(0, 1, 0);
-        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, sd.heading);
-        slopeQuat.multiply(yRotQuat);
-        sd.model.quaternion.copy(slopeQuat);
+        sd.model.rotation.y = sd.heading;
         stallionPos.set(newX, newH, newZ);
         stallionPos.y += STALLION_FOOT_OFFSET * sd.scale;
       } else {
@@ -3548,14 +3483,8 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        const normal = getTerrainNormal(newX, newZ);
-        const up = new THREE.Vector3(0, 1, 0);
-        const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-        const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, dd.heading);
-        slopeQuat.multiply(yRotQuat);
-        dd.model.quaternion.copy(slopeQuat);
+        dd.model.rotation.y = dd.heading;
         dreughPos.set(newX, newH, newZ);
-        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
         dreughPos.y += DREUGH_FOOT_OFFSET * dd.scale;
       } else {
         dd.heading += Math.PI + (Math.random() - 0.5) * 0.5;

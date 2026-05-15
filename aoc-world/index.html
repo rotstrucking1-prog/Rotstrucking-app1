@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v42</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v43</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1363,13 +1363,11 @@ const playerPlaceholder = new THREE.Mesh(
 scene.add(playerPlaceholder);
 
 updateLoading('Loading character model...', 50);
-loader.load('character-walk.glb?v=40', function(gltf){
+loader.load('character-walk.glb?v=43', function(gltf){
   playerModel = gltf.scene;
-  // Use pivot container: scale + rotation on pivot, model offset to center mesh
+  // Pivot container: handles position/rotation/scale; model at origin
   characterPivot = new THREE.Group();
   characterPivot.scale.set(3, 3, 3);
-  // Center the mesh at pivot origin — model mesh is offset X=2.41 in the GLB
-  playerModel.position.x = -2.41;
   characterPivot.add(playerModel);
   playerModel.traverse(function(child){
     if(child.isMesh){
@@ -2422,8 +2420,19 @@ function animate(){
   playerPos.z = Math.max(-bound, Math.min(bound, playerPos.z));
   
   if(characterPivot){
-    characterPivot.position.copy(playerPos);
-    characterPivot.rotation.y = characterYaw - Math.PI * 0.5;
+    // Mesh center is at local X=2.41 in model. Compensate in world space so
+    // the character's visual center sits at playerPos regardless of rotation.
+    const meshOffsetLocal = 2.41; // model-local X offset of mesh center
+    const pivotRot = characterYaw - Math.PI * 0.5;
+    characterPivot.rotation.y = pivotRot;
+    // Local X axis direction in world after rotation
+    const cosR = Math.cos(pivotRot);
+    const sinR = Math.sin(pivotRot);
+    characterPivot.position.set(
+      playerPos.x - sinR * meshOffsetLocal * 3,
+      playerPos.y,
+      playerPos.z - cosR * meshOffsetLocal * 3
+    );
   }
   playerPlaceholder.position.copy(playerPos);
   
@@ -3031,17 +3040,18 @@ function animate(){
   }
   
   if(thirdPerson){
-    // Over-the-shoulder camera — offset to the right
-    const shoulderOffset = 1.5;
+    // Over-the-shoulder camera — slightly right of center
+    const shoulderOffset = 1.2;
+    // Right direction relative to player facing
     const rightX = Math.cos(playerYaw);
     const rightZ = -Math.sin(playerYaw);
-    const shoulderX = playerPos.x + rightX * shoulderOffset;
-    const shoulderZ = playerPos.z + rightZ * shoulderOffset;
-    const camX = shoulderX - Math.sin(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
-    const camY = playerPos.y + 2.5 + Math.sin(cameraPitch)*cameraDistance;
-    const camZ = shoulderZ - Math.cos(playerYaw)*Math.cos(cameraPitch)*cameraDistance;
-    camera.position.set(camX, camY, camZ);
-    camera.lookAt(playerPos.x + Math.sin(playerYaw)*3, playerPos.y+1.5, playerPos.z + Math.cos(playerYaw)*3);
+    // Camera behind + right of player
+    const behindX = playerPos.x - Math.sin(playerYaw) * Math.cos(cameraPitch) * cameraDistance + rightX * shoulderOffset;
+    const behindY = playerPos.y + 2.5 + Math.sin(cameraPitch) * cameraDistance;
+    const behindZ = playerPos.z - Math.cos(playerYaw) * Math.cos(cameraPitch) * cameraDistance + rightZ * shoulderOffset;
+    camera.position.set(behindX, behindY, behindZ);
+    // Look at player chest height
+    camera.lookAt(playerPos.x, playerPos.y + 1.5, playerPos.z);
     if(playerModel) playerModel.visible = true;
   } else {
     // Eye-level POV — camera at character head height, model hidden

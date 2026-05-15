@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v53</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v54</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1060,12 +1060,13 @@ let dreughData = [];
 let dreughModels = [];
 
 let bearTemplate = null;
+let bearAnimClip = null; // Walk-in-place animation clip
 let bearData = [];
 const bearCount = 25;
 const BEAR_WALK_SPEED = 1.8;
 const BEAR_CHARGE_SPEED = 6.5;
 const BEAR_ATTACK_RANGE = 5.0;
-const BEAR_FOOT_OFFSET = 0.279; // Model Y_min = -0.279, lift feet to ground
+const BEAR_FOOT_OFFSET = 0.015; // New rigged model — feet at Y ≈ -0.015
 const DEAD_BEAR_FOOT_OFFSET = 0.25; // Dead model — raised so back is level with ground
 let deadBearTemplate = null; // Loaded dead grizzly GLB
 const BEAR_VARIANTS = [
@@ -1518,8 +1519,9 @@ loader.load('sun-model.glb?v=8', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-loader.load('bear-model.glb?v=1', function(gltf){
+loader.load('bear-walk.glb?v=1', function(gltf){
   bearTemplate = gltf.scene;
+  bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
     if(child.isMesh){
       child.material = child.material.clone();
@@ -1552,7 +1554,17 @@ loader.load('bear-model.glb?v=1', function(gltf){
     }
     
     const scale = variant.scaleMin + Math.random() * (variant.scaleMax - variant.scaleMin);
-    const bear = bearTemplate.clone();
+    const bear = SkeletonUtils.clone(bearTemplate);
+    bear.traverse(function(child){
+      if(child.isMesh){
+        child.material = child.material.clone();
+        child.material.metalness = 0;
+        child.material.roughness = 0.8;
+        if(child.material.color) child.material.color.set(0xffffff);
+        child.material.needsUpdate = true;
+        child.castShadow = true;
+      }
+    });
     bear.scale.set(scale, scale, scale);
     
     // Slope alignment
@@ -1560,14 +1572,17 @@ loader.load('bear-model.glb?v=1', function(gltf){
     const normal = getTerrainNormal(x, z);
     const up = new THREE.Vector3(0, 1, 0);
     const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading + Math.PI);
     slopeQuat.multiply(yRotQuat);
     bear.quaternion.copy(slopeQuat);
     
-    // Position at terrain then lift along local up
     bear.position.set(x, h, z);
-    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
     bear.position.y += BEAR_FOOT_OFFSET * scale;
+    
+    // Set up animation mixer
+    const mixer = new THREE.AnimationMixer(bear);
+    const walkAction = mixer.clipAction(bearAnimClip);
+    walkAction.play(); // Start walking
     
     scene.add(bear);
     bearModels.push(bear);
@@ -1577,7 +1592,7 @@ loader.load('bear-model.glb?v=1', function(gltf){
       variant: variant,
       scale: scale,
       heading: heading,
-      state: 'wandering',  // wandering, idle, aggro, attacking, dead
+      state: 'wandering',
       hp: variant.hp,
       maxHp: variant.hp,
       walkSpeed: BEAR_WALK_SPEED + Math.random() * 0.5,
@@ -1592,7 +1607,8 @@ loader.load('bear-model.glb?v=1', function(gltf){
       deathQuat: null,
       time: Math.random() * Math.PI * 2,
       damageFlash: 0,
-      bobPhase: Math.random() * Math.PI * 2
+      mixer: mixer,
+      walkAction: walkAction
     });
     
     // Apply fur shader if on Max quality
@@ -2169,7 +2185,7 @@ function respawnBear(idx){
     if(roll < cumRate){ variant = BEAR_VARIANTS[v]; break; }
   }
   const scale = variant.scaleMin + Math.random() * (variant.scaleMax - variant.scaleMin);
-  const bear = bearTemplate.clone();
+  const bear = SkeletonUtils.clone(bearTemplate);
   bear.traverse(function(child){
     if(child.isMesh){
       child.material = child.material.clone();
@@ -2179,6 +2195,7 @@ function respawnBear(idx){
       child.material.transparent = false;
       child.material.opacity = 1;
       child.material.needsUpdate = true;
+      child.castShadow = true;
     }
   });
   bear.scale.set(scale, scale, scale);
@@ -2186,13 +2203,17 @@ function respawnBear(idx){
   const normal = getTerrainNormal(x, z);
   const up = new THREE.Vector3(0, 1, 0);
   const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, normal);
-  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading);
+  const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, heading + Math.PI);
   slopeQuat.multiply(yRotQuat);
   bear.quaternion.copy(slopeQuat);
   bear.position.set(x, h, z);
-  const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(slopeQuat);
   bear.position.y += BEAR_FOOT_OFFSET * scale;
   scene.add(bear);
+  
+  // Set up animation mixer
+  const mixer = new THREE.AnimationMixer(bear);
+  const walkAction = mixer.clipAction(bearAnimClip);
+  walkAction.play();
   
   // Reset bearData entry
   bearData[idx] = {
@@ -2215,7 +2236,8 @@ function respawnBear(idx){
     deathQuat: null,
     time: Math.random() * Math.PI * 2,
     damageFlash: 0,
-    bobPhase: Math.random() * Math.PI * 2
+    mixer: mixer,
+    walkAction: walkAction
   };
   bearModels[idx] = bear;
   
@@ -2819,12 +2841,21 @@ function animate(){
       }
     }
     
-    // Procedural walking bob (whole body since no skeleton)
-    if(bearSpeed > 0){
-      bd.bobPhase += dt * (bd.state === 'aggro' ? 14 : 6);
-      const bobAmount = (bd.state === 'aggro' ? 0.15 : 0.08) * bd.scale;
-      bearPos.y += Math.abs(Math.sin(bd.bobPhase)) * bobAmount;
+    // Walk animation control
+    if(bd.walkAction){
+      if(bearSpeed > 0 && !bd.walkAction.isRunning()){
+        bd.walkAction.reset().play();
+      } else if(bearSpeed <= 0 && bd.walkAction.isRunning()){
+        bd.walkAction.stop();
+      }
+      // Speed up animation when charging
+      if(bd.walkAction.isRunning()){
+        bd.walkAction.timeScale = bd.state === 'aggro' ? 2.5 : 1.0;
+      }
     }
+    
+    // Update animation mixer
+    if(bd.mixer) bd.mixer.update(dt);
   });
   
   // ===== DREUGH AI (WANDERING) =====

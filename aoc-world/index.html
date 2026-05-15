@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v61</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v62</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -2422,6 +2422,13 @@ jZone.addEventListener('touchend', function(e){
     }
   }
 });
+// Safety: iOS Safari can cancel touches silently via system gestures
+jZone.addEventListener('touchcancel', function(e){
+  joystickActive = false;
+  joystickTouchId = null;
+  joystickX=0;joystickY=0;
+  jThumb.style.left='45px';jThumb.style.top='45px';
+});
 
 // Camera orbit — track specific touch ID, explicitly exclude joystick touches
 document.addEventListener('touchstart', function(e){
@@ -3342,7 +3349,7 @@ function animate(){
     ambientParticles.geometry.attributes.position.needsUpdate = true;
   }
   
-  document.getElementById('hud-pos').textContent = 'Position: '+Math.round(playerPos.x)+', '+Math.round(playerPos.y)+', '+Math.round(playerPos.z);
+  document.getElementById('hud-pos').textContent = 'Pos: '+Math.round(playerPos.x)+','+Math.round(playerPos.y)+','+Math.round(playerPos.z)+' | Joy: '+joystickX.toFixed(1)+','+joystickY.toFixed(1)+' A:'+joystickActive+' M:'+isMobile;
   document.getElementById('hud-fps').textContent = 'FPS: '+fps;
   document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');
   document.getElementById('hud-pos').textContent += ' | Fishing Lv: '+getLevel(playerSkills.fishing)+' | Caught: '+playerCaughtFish;

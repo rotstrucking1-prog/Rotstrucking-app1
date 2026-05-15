@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v64</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v65</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 13;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion
+const totalAssets = 15;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1117,6 +1117,94 @@ const bloodParticles = [];
 const BLOOD_POOL_SIZE = 200;
 const bloodGeo = new THREE.SphereGeometry(0.15, 4, 4);
 const bloodMat = new THREE.MeshBasicMaterial({color: 0xcc0000, transparent: true});
+
+// ===== WEAPON / EQUIPMENT SYSTEM =====
+const isAdmin = true; // Admin account — bypasses level requirements
+let equippedWeapon = null; // null or weapon ID string
+let swordModel = null; // The obsidian scimitar 3D model
+let rightHandBone = null; // Reference to character's right hand bone
+let swordAttached = false; // Whether sword is attached to hand bone
+
+const WEAPONS = {
+  'Forged Obsidian Scimitar': {
+    id: 'obsidian_scimitar',
+    requiredLevel: 60,        // Attack level 60 required (admin bypasses)
+    accuracyBonus: 0.25,      // +25% accuracy
+    damageBonus: 0.15,        // +15% damage
+    bleedChance: 0.05,        // 5% bleed chance per hit
+    bleedDuration: 10.0,      // 10 seconds bleed
+    bleedTickRate: 2.0,       // Damage tick every 2 seconds
+    smokeOnHit: true,         // Burning smoke effect on hit
+    legendary: true
+  }
+};
+
+// Smoke hit particles pool
+const SMOKE_POOL_SIZE = 50;
+let smokeParticles = [];
+function initSmokeParticles(){
+  for(let i = 0; i < SMOKE_POOL_SIZE; i++){
+    smokeParticles.push({
+      active: false, x:0, y:0, z:0,
+      vx:0, vy:0, vz:0,
+      life:0, maxLife:0, size:0, mesh:null
+    });
+  }
+  const smokeGeo = new THREE.SphereGeometry(0.08, 4, 4);
+  const smokeMat = new THREE.MeshBasicMaterial({color:0x333333, transparent:true, opacity:0.6});
+  for(let i = 0; i < SMOKE_POOL_SIZE; i++){
+    const m = new THREE.Mesh(smokeGeo, smokeMat.clone());
+    m.visible = false;
+    scene.add(m);
+    smokeParticles[i].mesh = m;
+  }
+}
+
+function spawnSmoke(pos, count, spread){
+  let spawned = 0;
+  for(let i = 0; i < SMOKE_POOL_SIZE && spawned < count; i++){
+    if(!smokeParticles[i].active){
+      const p = smokeParticles[i];
+      p.active = true;
+      p.x = pos.x + (Math.random()-0.5)*spread;
+      p.y = pos.y + (Math.random()-0.5)*spread;
+      p.z = pos.z + (Math.random()-0.5)*spread;
+      p.vx = (Math.random()-0.5)*1.5;
+      p.vy = 1.5 + Math.random()*2.0; // Rise upward
+      p.vz = (Math.random()-0.5)*1.5;
+      p.life = 0;
+      p.maxLife = 0.6 + Math.random()*0.8;
+      p.size = 0.15 + Math.random()*0.2;
+      p.mesh.visible = true;
+      p.mesh.position.set(p.x, p.y, p.z);
+      p.mesh.scale.setScalar(p.size);
+      p.mesh.material.opacity = 0.6;
+      spawned++;
+    }
+  }
+}
+
+function updateSmokeParticles(dt){
+  for(let i = 0; i < SMOKE_POOL_SIZE; i++){
+    const p = smokeParticles[i];
+    if(!p.active) continue;
+    p.life += dt;
+    if(p.life >= p.maxLife){
+      p.active = false;
+      p.mesh.visible = false;
+      continue;
+    }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.z += p.vz * dt;
+    p.vy *= 0.97; // Slow rise
+    p.mesh.position.set(p.x, p.y, p.z);
+    const fade = 1.0 - (p.life / p.maxLife);
+    p.mesh.material.opacity = 0.6 * fade;
+    p.mesh.scale.setScalar(p.size * (1.0 + p.life * 1.5)); // Grow as smoke rises
+  }
+}
+
 function spawnBlood(position, count, scale){
   for(let i = 0; i < count; i++){
     let bp;
@@ -1161,6 +1249,7 @@ let nearestDeadBear = -1; // index of closest dead bear in range
 let nearestDeadStallion = -1; // index of closest dead stallion in range
 let skinningType = 'bear'; // 'bear' or 'stallion'
 let inventorySlots = new Array(28).fill(null); // 28 slots, each: {name, count} or null
+inventorySlots[0] = {name:'Forged Obsidian Scimitar', count:1}; // Starting legendary weapon
 let inventoryOpen = false;
 let playerXP = 0;
 let lastHitBearIndex = -1;
@@ -1308,7 +1397,8 @@ const ITEM_DEFS = {
   'Raw Baby Bass':       { color:'#88ccff', emoji:'🐟' },
   'Raw Medium Bass':     { color:'#5599dd', emoji:'🐟' },
   'Raw Full Grown Bass': { color:'#3366aa', emoji:'🐟' },
-  'Raw Overgrown Bass':  { color:'#9944cc', emoji:'🐟' }
+  'Raw Overgrown Bass':  { color:'#9944cc', emoji:'🐟' },
+  'Forged Obsidian Scimitar': { color:'#1a0a2e', emoji:'⚔️', weapon:true, stackable:false }
 };
 const FISH_NAMES = {1:'Raw Baby Bass', 2:'Raw Medium Bass', 3:'Raw Full Grown Bass', 4:'Raw Overgrown Bass'};
 
@@ -1370,9 +1460,83 @@ function renderInventory(){
         cnt.textContent = item.count;
         slot.appendChild(cnt);
       }
+      // Equipped highlight
+      if(equippedWeapon && item.name === equippedWeapon){
+        slot.style.border = '2px solid #ff4400';
+        slot.style.boxShadow = '0 0 8px rgba(255,68,0,0.6)';
+        const eqLabel = document.createElement('div');
+        eqLabel.style.cssText = 'position:absolute;top:1px;right:2px;font-size:8px;color:#ff4400;font-weight:bold';
+        eqLabel.textContent = 'EQUIPPED';
+        slot.style.position = 'relative';
+        slot.appendChild(eqLabel);
+      }
+      // Click handler for equippable items
+      const slotIdx = i;
+      slot.addEventListener('click', function(){ onInventorySlotClick(slotIdx); });
     }
     grid.appendChild(slot);
   }
+}
+
+
+function onInventorySlotClick(slotIdx){
+  const slot = inventorySlots[slotIdx];
+  if(!slot) return;
+  const def = ITEM_DEFS[slot.name];
+  if(!def || !def.weapon) return; // Not a weapon
+  
+  const weaponDef = WEAPONS[slot.name];
+  if(!weaponDef) return;
+  
+  // Check level requirement (admin bypasses)
+  if(!isAdmin && getXPProgress(playerSkills.attack || 0).level < weaponDef.requiredLevel){
+    showLootNotification('Requires Attack level ' + weaponDef.requiredLevel + '!');
+    return;
+  }
+  
+  if(equippedWeapon === slot.name){
+    // Unequip
+    unequipWeapon();
+  } else {
+    // Equip
+    equipWeapon(slot.name);
+  }
+  renderInventory();
+}
+
+function equipWeapon(weaponName){
+  // Unequip fishing pole if equipped
+  if(fishingEquipped) unequipFishingPole();
+  
+  equippedWeapon = weaponName;
+  
+  if(weaponName === 'Forged Obsidian Scimitar' && swordModel && rightHandBone){
+    if(!swordAttached){
+      const swordClone = swordModel.clone();
+      swordClone.name = 'equippedSword';
+      rightHandBone.add(swordClone);
+      swordAttached = true;
+    }
+    // Make visible
+    rightHandBone.traverse(function(child){
+      if(child.name === 'equippedSword' || (child.parent && child.parent.name === 'equippedSword')){
+        child.visible = true;
+      }
+    });
+  }
+  showLootNotification('Equipped: ' + weaponName + ' ⚔️');
+}
+
+function unequipWeapon(){
+  if(equippedWeapon === 'Forged Obsidian Scimitar' && rightHandBone){
+    rightHandBone.traverse(function(child){
+      if(child.name === 'equippedSword' || (child.parent && child.parent.name === 'equippedSword')){
+        child.visible = false;
+      }
+    });
+  }
+  equippedWeapon = null;
+  showLootNotification('Weapon unequipped');
 }
 
 // ===== FISHING SYSTEM =====
@@ -1442,6 +1606,12 @@ loader.load('character-walk.glb?v=47', function(gltf){
       }
     }
   }
+  // Find right hand bone for weapon attachment
+  playerModel.traverse(function(child){
+    if(child.isBone && child.name === 'rightHand'){
+      rightHandBone = child;
+    }
+  });
   assetsLoaded++;
   updateLoading('Character loaded!', 65);
   checkReady();
@@ -1634,6 +1804,7 @@ loader.load('bear-walk.glb?v=2', function(gltf){
       deathQuat: null,
       time: Math.random() * Math.PI * 2,
       damageFlash: 0,
+      bleedTimer: 0, bleedTickTimer: 0, bleedDamage: 0,
       mixer: mixer,
       walkAction: walkAction
     });
@@ -1933,6 +2104,39 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
   checkReady();
 });
 
+// ===== FORGED OBSIDIAN SCIMITAR =====
+updateLoading('Loading legendary weapons...', 88);
+loader.load('obsidian-scimitar.glb?v=1', function(gltf){
+  swordModel = gltf.scene;
+  swordModel.traverse(function(child){
+    if(child.isMesh){
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if(child.material){
+        child.material.metalness = 0.3;  // Slight metallic sheen for legendary weapon
+        child.material.roughness = 0.5;
+        if(child.material.map) child.material.map.anisotropy = 16;
+        child.material.needsUpdate = true;
+      }
+    }
+  });
+  swordModel.visible = false;
+  // Scale sword to fit hand — character is scale 3, bone space is local
+  // Sword native size ~1 unit tall, hand bone is in character's local coords
+  swordModel.scale.set(2.5, 2.5, 2.5);
+  // Rotate to point forward/up from hand grip
+  swordModel.rotation.set(0, 0, Math.PI * 0.5); // Blade pointing outward
+  swordModel.position.set(0, 0.1, 0); // Offset to sit in palm
+  
+  assetsLoaded++;
+  updateLoading('Legendary weapon loaded!', 90);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Sword load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
 // Terrain counts as loaded
 assetsLoaded++;
 checkReady();
@@ -2206,6 +2410,21 @@ function performPlayerAttack(){
     const bloodPos = bd.model.position.clone();
     bloodPos.y += bd.scale * 0.3; // Center-mass of bear
     spawnBlood(bloodPos, 12 + Math.floor(Math.random() * 8), bd.scale * 0.15);
+    
+    // Weapon effects
+    const wpn = equippedWeapon ? WEAPONS[equippedWeapon] : null;
+    if(wpn && wpn.smokeOnHit){
+      const smokePos = bd.model.position.clone();
+      smokePos.y += bd.scale * 0.4;
+      spawnSmoke(smokePos, 5 + Math.floor(Math.random()*4), bd.scale * 0.2);
+    }
+    if(wpn && wpn.bleedChance > 0 && Math.random() < wpn.bleedChance){
+      bd.bleedTimer = wpn.bleedDuration;
+      bd.bleedTickTimer = wpn.bleedTickRate;
+      bd.bleedDamage = Math.floor(Math.random() * 5) + 2; // 2-6 bleed damage per tick
+      debugLog('🩸 BLEED applied to ' + bd.variant.name + '!');
+    }
+    
     debugLog('⚔️ INSTANT KILL ' + bd.variant.name + '!');
     
     // Make bear aggro if not already
@@ -2239,9 +2458,18 @@ function performPlayerAttack(){
   if(closestStallionIdx >= 0 && (closestIdx < 0 || closestStallionDist < closestDist)){
     const sd = stallionData[closestStallionIdx];
     sd.hp = 0; // INSTANT KILL
-    const bloodPos = sd.model.position.clone();
-    bloodPos.y += sd.scale * 0.3;
-    spawnBlood(bloodPos, 12 + Math.floor(Math.random() * 8), sd.scale * 0.15);
+    const bloodPos2 = sd.model.position.clone();
+    bloodPos2.y += sd.scale * 0.3;
+    spawnBlood(bloodPos2, 12 + Math.floor(Math.random() * 8), sd.scale * 0.15);
+    
+    // Weapon effects
+    const wpn2 = equippedWeapon ? WEAPONS[equippedWeapon] : null;
+    if(wpn2 && wpn2.smokeOnHit){
+      const smokePos2 = sd.model.position.clone();
+      smokePos2.y += sd.scale * 0.4;
+      spawnSmoke(smokePos2, 5 + Math.floor(Math.random()*4), sd.scale * 0.2);
+    }
+    
     debugLog('⚔️ INSTANT KILL Stallion!');
     
     if(sd.hp <= 0){
@@ -3516,6 +3744,9 @@ function animate(){
     if(bp.life <= 0) bp.mesh.visible = false;
   }
   
+  // Update smoke particles (weapon hit effects)
+  updateSmokeParticles(dt);
+  
   // ===== DAMAGE FLASH TIMER =====
   if(damageFlashTimer > 0){
     damageFlashTimer -= dt;
@@ -3755,4 +3986,5 @@ window.addEventListener('resize', function(){
 });
 </script>
 </body>
+    initSmokeParticles();
 </html>

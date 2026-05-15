@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v48</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v49</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -3192,14 +3192,30 @@ function animate(){
   }
   
   if(thirdPerson){
-    // Dead center camera — character is always center of screen
-    // Camera sits behind and above, looking at character chest
-    const lookY = playerPos.y + 2.0; // chest height target
-    const camX = playerPos.x - Math.sin(playerYaw) * Math.cos(cameraPitch) * cameraDistance;
+    // Fallout-style over-the-shoulder camera
+    // Character centered, camera behind + slightly right + above
+    // Crosshairs above character's head — looking past the character
+    const SHOULDER_RIGHT = 1.0; // slight right offset on camera (NOT on character)
+    const LOOK_HEIGHT = 3.2; // above head — crosshairs above character (char ~3 units tall at scale 3)
+    
+    const lookY = playerPos.y + LOOK_HEIGHT;
+    
+    // Character facing direction
+    const facingX = Math.sin(playerYaw);
+    const facingZ = Math.cos(playerYaw);
+    // Right direction (perpendicular to facing)
+    const rightX = Math.cos(playerYaw);
+    const rightZ = -Math.sin(playerYaw);
+    
+    // Camera: behind the character + slightly right + above
+    const behindDist = Math.cos(cameraPitch) * cameraDistance;
+    const camX = playerPos.x - facingX * behindDist + rightX * SHOULDER_RIGHT;
     const camY = lookY + Math.sin(cameraPitch) * cameraDistance;
-    const camZ = playerPos.z - Math.cos(playerYaw) * Math.cos(cameraPitch) * cameraDistance;
+    const camZ = playerPos.z - facingZ * behindDist + rightZ * SHOULDER_RIGHT;
+    
     camera.position.set(camX, camY, camZ);
-    camera.lookAt(playerPos.x, lookY, playerPos.z);
+    // Look at a point slightly right of character (matching shoulder offset)
+    camera.lookAt(playerPos.x + rightX * SHOULDER_RIGHT * 0.3, lookY, playerPos.z + rightZ * SHOULDER_RIGHT * 0.3);
     if(playerModel) playerModel.visible = true;
   } else {
     // Eye-level POV — camera at character head height, model hidden

@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v49</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v50</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1042,10 +1042,12 @@ const FREAK_COUNT = 15;
 const FREAK_SCALE_MIN = 4.0;
 const FREAK_SCALE_MAX = 7.0;
 const FREAK_WALK_SPEED = 1.5;
-const FREAK_FOOT_OFFSET = 0.492; // Model Y_min = -0.492, lift feet to ground
+const FREAK_FOOT_OFFSET = 0.035; // Animated model feet nearly at origin
 let freakTemplate = null;
+let freakWalkClip = null;
 let freakData = [];
 let freakModels = [];
+let freakMixers = [];
 
 // ===== GREATER SKELETAL DREUGH =====
 const DREUGH_COUNT = 20;
@@ -1614,8 +1616,8 @@ loader.load('bear-model.glb?v=1', function(gltf){
 });
 
 // Load dead grizzly carcass model
-// Load Freak-a-Zoid
-loader.load('freak-a-zoid.glb?v=1', function(gltf){
+// Load Freak-a-Zoid (animated walk-in-place)
+loader.load('freak-walk.glb?v=1', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1631,7 +1633,13 @@ loader.load('freak-a-zoid.glb?v=1', function(gltf){
     }
   });
   
-  // Spawn freak-a-zoids
+  // Store walk animation clip
+  if(gltf.animations && gltf.animations.length > 0){
+    freakWalkClip = gltf.animations[0];
+    debugLog('👾 Freak-a-Zoid walk clip: ' + freakWalkClip.name + ' (' + freakWalkClip.duration.toFixed(2) + 's)');
+  }
+  
+  // Spawn freak-a-zoids using SkeletonUtils for skinned mesh
   let freaksPlaced = 0;
   while(freaksPlaced < FREAK_COUNT){
     const x = (Math.random() - 0.5) * WORLD_SIZE * 0.85;
@@ -1640,7 +1648,7 @@ loader.load('freak-a-zoid.glb?v=1', function(gltf){
     if(h < -2 || h > 28) continue;
     
     const scale = FREAK_SCALE_MIN + Math.random() * (FREAK_SCALE_MAX - FREAK_SCALE_MIN);
-    const freak = freakTemplate.clone();
+    const freak = SkeletonUtils.clone(freakTemplate);
     freak.scale.set(scale, scale, scale);
     
     const heading = Math.random() * Math.PI * 2;
@@ -1658,8 +1666,20 @@ loader.load('freak-a-zoid.glb?v=1', function(gltf){
     scene.add(freak);
     freakModels.push(freak);
     
+    // Create per-instance AnimationMixer
+    const mixer = new THREE.AnimationMixer(freak);
+    freakMixers.push(mixer);
+    
+    let walkAction = null;
+    if(freakWalkClip){
+      walkAction = mixer.clipAction(freakWalkClip);
+      walkAction.play(); // Start walking
+    }
+    
     freakData.push({
       model: freak,
+      mixer: mixer,
+      walkAction: walkAction,
       scale: scale,
       heading: heading,
       state: 'wandering',
@@ -2809,7 +2829,7 @@ function animate(){
   });
   
   // ===== DREUGH AI (WANDERING) =====
-  // Update Freak-a-Zoid AI — wandering
+  // Update Freak-a-Zoid AI — wandering + walk animation
   freakData.forEach(function(fd){
     const freakPos = fd.model.position;
     
@@ -2818,6 +2838,10 @@ function animate(){
       if(fd.idleTimer <= 0){
         fd.state = 'wandering';
         fd.turnInterval = 4 + Math.random() * 6;
+        // Start walk animation
+        if(fd.walkAction && !fd.walkAction.isRunning()){
+          fd.walkAction.reset().play();
+        }
       }
     }
     
@@ -2828,6 +2852,8 @@ function animate(){
         if(Math.random() < 0.25){
           fd.state = 'idle';
           fd.idleTimer = 2 + Math.random() * 6;
+          // Stop walk animation
+          if(fd.walkAction) fd.walkAction.stop();
         } else {
           fd.turnInterval = 4 + Math.random() * 6;
           fd.turnTarget = fd.heading + (Math.random() - 0.5) * Math.PI * 0.8;
@@ -2866,6 +2892,9 @@ function animate(){
         fd.turnTarget = fd.heading;
       }
     }
+    
+    // Update animation mixer
+    if(fd.mixer) fd.mixer.update(dt);
   });
   
   dreughData.forEach(function(dd){

@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v37</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v38</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1152,7 +1152,7 @@ let cameraPitch = 0.3;
 let animTime = 0;
 let lastMoveX = 0;
 let lastMoveZ = 0;
-const CHAR_HEIGHT_OFFSET = 1.5;  // Model Y range: -0.5 to 0.5 → at scale 3, feet at -1.5 below origin
+const CHAR_HEIGHT_OFFSET = 0.05;  // Walk model: Y range -0.018 to 1.005 → origin at feet, tiny lift
 
 // ===== PLAYER SKILLS =====
 // ===== XP LEVEL TABLE =====
@@ -1361,7 +1361,7 @@ const playerPlaceholder = new THREE.Mesh(
 scene.add(playerPlaceholder);
 
 updateLoading('Loading character model...', 50);
-loader.load('character-model.glb?v=8', function(gltf){
+loader.load('character-walk.glb?v=37', function(gltf){
   playerModel = gltf.scene;
   playerModel.scale.set(3, 3, 3);
   playerModel.traverse(function(child){
@@ -1379,6 +1379,14 @@ loader.load('character-model.glb?v=8', function(gltf){
     }
   });
   scene.add(playerModel);
+  if(gltf.animations && gltf.animations.length > 0){
+    playerMixer = new THREE.AnimationMixer(playerModel);
+    var walkClip = gltf.animations[0];
+    if(walkClip){
+      playerWalkAction = playerMixer.clipAction(walkClip);
+      playerWalkAction.setLoop(THREE.LoopRepeat);
+    }
+  }
   assetsLoaded++;
   updateLoading('Character loaded!', 65);
   checkReady();
@@ -1758,7 +1766,7 @@ function updateFishingPolePosition(){
   
   // Position pole at player's right shoulder
   const poleOffsetRight = 0.6;
-  const poleOffsetUp = 1.5;
+  const poleOffsetUp = 2.5;  // Walk model: origin at feet, shoulder ~2.5 up at scale 3
   fishingPole.position.set(
     playerPos.x + Math.sin(characterYaw) * poleOffsetRight,
     playerPos.y + poleOffsetUp,
@@ -2407,27 +2415,29 @@ function animate(){
   
   if(playerMixer) playerMixer.update(dt);
   
-  // Procedural running animation
+  // Skeleton-based walk animation — plays when moving, stops when idle
   const moveSpeed = Math.sqrt(lastMoveX*lastMoveX + lastMoveZ*lastMoveZ);
-  if(playerModel){
+  if(playerModel && playerWalkAction){
     if(moveSpeed > 0.01){
-      animTime += dt * (isSprinting ? 12 : 8);
-      const bob = Math.sin(animTime) * 0.15;
-      const lean = Math.sin(animTime * 0.5) * 0.05;
-      const sway = Math.sin(animTime * 0.7) * 0.03;
-      const squash = 1.0 + Math.sin(animTime * 2) * 0.02;
-      playerModel.position.y = playerPos.y + bob * 0.5;
-      playerModel.rotation.y = characterYaw - Math.PI * 0.5;
-      playerModel.rotation.x = lean;
-      playerModel.rotation.z = sway;
-      playerModel.scale.set(3, 3 * squash, 3);
+      if(!playerIsWalking){
+        playerWalkAction.reset();
+        playerWalkAction.fadeIn(0.2);
+        playerWalkAction.play();
+        playerIsWalking = true;
+      }
+      playerWalkAction.timeScale = isSprinting ? 1.8 : 1.0;
     } else {
-      animTime = 0;
-      playerModel.rotation.y = characterYaw - Math.PI * 0.5;
-      playerModel.rotation.x = 0;
-      playerModel.rotation.z = 0;
-      playerModel.scale.set(3, 3, 3);
+      if(playerIsWalking){
+        playerWalkAction.fadeOut(0.3);
+        playerIsWalking = false;
+      }
     }
+  }
+  if(playerModel){
+    playerModel.rotation.y = characterYaw - Math.PI * 0.5;
+    playerModel.rotation.x = 0;
+    playerModel.rotation.z = 0;
+    playerModel.scale.set(3, 3, 3);
   }
   
   // Update bass swimming — wandering pattern

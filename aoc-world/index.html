@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v73</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v74</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 17;  // +1 for Vashra landing anim  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing
+const totalAssets = 18;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing, Dragon Bank-Right
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1071,6 +1071,7 @@ let vashraMixer = null;
 let vashraAngle = 0;  // Current orbit angle
 let vashraFlightAction = null;
 let vashraLandAction = null;
+let vashraBankAction = null;
 let vashraState = 'flying';  // flying, descending, landed, ascending
 let vashraStateTimer = 0;
 let vashraLandX = 0, vashraLandZ = 0;  // Landing target
@@ -2529,10 +2530,29 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
     assetsLoaded++;
     checkReady();
   });
+
+  // Load bank-right animation (used during circular orbit — dragon is always banking right)
+  loader.load('vashra-dragon-bank-right.glb?v=1', function(bankGltf){
+    if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
+      vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
+      vashraBankAction.setLoop(THREE.LoopRepeat);
+      // Start with bank-right playing since dragon starts in flying (circling) state
+      vashraBankAction.play();
+      // Crossfade from flight to bank-right
+      if(vashraFlightAction) vashraFlightAction.crossFadeTo(vashraBankAction, 1.0);
+      debugLog('🐉 Vashra bank-right animation: ' + bankGltf.animations[0].name + ' (' + bankGltf.animations[0].duration.toFixed(2) + 's)');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra bank-right animation load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
   
 }, undefined, function(err){
   console.warn('Vashra dragon load error:', err);
-  assetsLoaded += 2;  // Count both flight + landing as loaded on error
+  assetsLoaded += 3;  // Count flight + landing + bank-right as loaded on error
   checkReady();
 });
 
@@ -4031,10 +4051,14 @@ function animate(){
         vashraLandStartX = vashraModel.position.x;
         vashraLandStartZ = vashraModel.position.z;
         vashraLandStartY = vashraModel.position.y;
-        // Crossfade to landing animation
+        // Crossfade from bank-right (or flight) to landing animation
         vashraLandAction.reset();
         vashraLandAction.play();
-        vashraFlightAction.crossFadeTo(vashraLandAction, 2.0);
+        if(vashraBankAction && vashraBankAction.isRunning()){
+          vashraBankAction.crossFadeTo(vashraLandAction, 2.0);
+        } else {
+          vashraFlightAction.crossFadeTo(vashraLandAction, 2.0);
+        }
         debugLog('🐉 Vashra descending to land at (' + vashraLandX.toFixed(0) + ', ' + vashraLandZ.toFixed(0) + ')');
       }
     } else if(vashraState === 'descending'){
@@ -4069,7 +4093,7 @@ function animate(){
         vashraLandStartZ = vashraModel.position.z;
         // Resume orbit from angle nearest to current position
         vashraAngle = Math.atan2(vashraLandZ, vashraLandX);
-        // Crossfade back to flight animation
+        // Crossfade to straight flight for ascent
         vashraFlightAction.reset();
         vashraFlightAction.play();
         vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
@@ -4096,6 +4120,12 @@ function animate(){
       if(ascT >= 1){
         vashraState = 'flying';
         vashraStateTimer = 0;
+        // Crossfade from straight flight to bank-right for circular orbit
+        if(vashraBankAction){
+          vashraBankAction.reset();
+          vashraBankAction.play();
+          vashraFlightAction.crossFadeTo(vashraBankAction, 1.5);
+        }
         debugLog('🐉 Vashra back in flight!');
       }
     }

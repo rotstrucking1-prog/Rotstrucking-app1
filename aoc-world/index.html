@@ -138,7 +138,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v95</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v96</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1089,7 +1089,9 @@ const VASHRA_SHOWCASE_STEPS = [
   { action: 'ascend', duration: 8, label: '🛫 Ascending to Orbit' },
   { action: 'swoopGrab', duration: 10, label: '🦅 Swoop & Grab!' },
 ];
-const VASHRA_SCALE = 90;  // 30× character scale (3×30=90)
+const VASHRA_SCALE = 90;
+const WATER_BARRIER_Y = -4; // No land NPC goes below this (water surface is -6, buffer of 2)
+  // 30× character scale (3×30=90)
 const VASHRA_FLY_HEIGHT = 100;  // Base flying altitude above terrain
 const VASHRA_FLY_SPEED = 12;  // Flight speed
 const VASHRA_ORBIT_RADIUS = 200;  // Patrol radius
@@ -2588,10 +2590,11 @@ queueLoad(1, 'character-walk.glb?v=47', function(gltf){
     if(ch.material) ch.material.dispose();
   }
   characterPivot.add(playerModel);
-  // Auto-center the model — compute bounding box and zero the X/Z offset
+  // Auto-center the model — compute bounding box and zero ALL offsets
   var charBox = new THREE.Box3().setFromObject(playerModel);
   var charCenter = charBox.getCenter(new THREE.Vector3());
   playerModel.position.x = -charCenter.x;
+  playerModel.position.y = -charBox.min.y;  // Feet on ground
   playerModel.position.z = -charCenter.z;
   playerModel.traverse(function(child){
     if(child.isMesh){
@@ -2649,6 +2652,7 @@ queueLoad(1, 'character-walk.glb?v=47', function(gltf){
       var charBox2 = new THREE.Box3().setFromObject(playerModel);
       var charCenter2 = charBox2.getCenter(new THREE.Vector3());
       playerModel.position.x = -charCenter2.x;
+      playerModel.position.y = -charBox2.min.y;  // Feet on ground
       playerModel.position.z = -charCenter2.z;
       playerModel.traverse(function(child){
         if(child.isMesh){
@@ -3178,7 +3182,7 @@ queueLoad(7, 'vashra-dragon.glb?v=1', function(gltf){
   const startX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
   const startZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
   vashraModel.position.set(startX, VASHRA_FLY_HEIGHT, startZ);
-  vashraModel.rotation.y = vashraAngle + Math.PI / 2;  // Face flight direction
+  vashraModel.rotation.y = Math.PI - vashraAngle;  // Face flight direction (model faces -Z default)
   
   scene.add(vashraModel);
   
@@ -4438,7 +4442,7 @@ function animate(){
       const newH = getHeight(newX, newZ);
       
       const wb = WORLD_SIZE * 0.45;
-      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > WATER_BARRIER_Y && newH < 28){
         data.model.rotation.y = data.heading + Math.PI;
         deerPos.set(newX, newH, newZ);
         deerPos.y += DEER_FOOT_OFFSET * data.scale;
@@ -4553,7 +4557,7 @@ function animate(){
       const newH = getHeight(newX, newZ);
       
       const wb = WORLD_SIZE * 0.45;
-      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > WATER_BARRIER_Y && newH < 28){
         bd.model.rotation.y = bd.heading + Math.PI;
         bearPos.set(newX, newH, newZ);
         bearPos.y += BEAR_FOOT_OFFSET * bd.scale;
@@ -4629,7 +4633,7 @@ function animate(){
       const newH = getHeight(newX, newZ);
       
       const wb = WORLD_SIZE * 0.45;
-      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > WATER_BARRIER_Y && newH < 28){
         fd.model.rotation.y = fd.heading + Math.PI;
         freakPos.set(newX, newH, newZ);
         freakPos.y += FREAK_FOOT_OFFSET * fd.scale;
@@ -4688,7 +4692,7 @@ function animate(){
       const newH = getHeight(newX, newZ);
       
       const wb = WORLD_SIZE * 0.45;
-      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > WATER_BARRIER_Y && newH < 28){
         sd.model.rotation.y = sd.heading + Math.PI;
         stallionPos.set(newX, newH, newZ);
         stallionPos.y += STALLION_FOOT_OFFSET * sd.scale;
@@ -4747,7 +4751,7 @@ function animate(){
       const newH = getHeight(newX, newZ);
       
       const wb = WORLD_SIZE * 0.45;
-      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
+      if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > WATER_BARRIER_Y && newH < 28){
         dd.model.rotation.y = dd.heading + Math.PI;
         dreughPos.set(newX, newH, newZ);
         dreughPos.y += DREUGH_FOOT_OFFSET * dd.scale;
@@ -4822,7 +4826,7 @@ function animate(){
       var terrainBelow = getHeight(flyX, flyZ);
       var flyY = Math.max(VASHRA_FLY_HEIGHT, terrainBelow + 60) + altBob;
       vashraModel.position.set(flyX, flyY, flyZ);
-      vashraModel.rotation.y = vashraAngle + (vashraOrbitDir > 0 ? Math.PI / 2 : -Math.PI / 2);
+      vashraModel.rotation.y = (vashraOrbitDir > 0 ? Math.PI : 0) - vashraAngle;
       
       // Occasional orbit direction switch (bank-right ↔ bank-left)
       vashraOrbitSwitchTimer += dt;
@@ -4880,7 +4884,7 @@ function animate(){
             vashraFireTargetY = getHeight(vashraFireTargetX, vashraFireTargetZ);
             var ftDx = vashraFireTargetX - vashraHoverX;
             var ftDz = vashraFireTargetZ - vashraHoverZ;
-            vashraFireFacingTarget = Math.atan2(ftDx, ftDz);
+            vashraFireFacingTarget = Math.atan2(ftDx, ftDz) + Math.PI;
             vashraFireballFired = false;
             if(vashraFireballAction){
               vashraFireballAction.reset(); vashraFireballAction.play();
@@ -5045,7 +5049,7 @@ function animate(){
           vashraFireTargetY = getHeight(vashraFireTargetX, vashraFireTargetZ);
           var ftDx = vashraFireTargetX - vashraHoverX;
           var ftDz = vashraFireTargetZ - vashraHoverZ;
-          vashraFireFacingTarget = Math.atan2(ftDx, ftDz);
+          vashraFireFacingTarget = Math.atan2(ftDx, ftDz) + Math.PI;
           vashraFireballFired = false;
           if(vashraFireballAction){
             vashraFireballAction.reset(); vashraFireballAction.play();
@@ -5158,8 +5162,8 @@ function animate(){
       
       if(!vashraFireballFired && vashraStateTimer >= VASHRA_FIRE_AT){
         vashraFireballFired = true;
-        var mouthFwdX = Math.sin(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
-        var mouthFwdZ = Math.cos(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
+        var mouthFwdX = -Math.sin(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
+        var mouthFwdZ = -Math.cos(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
         var mX = vashraModel.position.x + mouthFwdX;
         var mY = vashraModel.position.y - 0.05 * VASHRA_SCALE;
         var mZ = vashraModel.position.z + mouthFwdZ;
@@ -5190,7 +5194,7 @@ function animate(){
       var dx = vashraLandX - descX;
       var dz = vashraLandZ - descZ;
       if(Math.abs(dx) > 0.5 || Math.abs(dz) > 0.5){
-        vashraModel.rotation.y = Math.atan2(dx, dz);
+        vashraModel.rotation.y = Math.atan2(dx, dz) + Math.PI;
       }
       if(descT >= 1){
         vashraState = 'landed';
@@ -5304,7 +5308,7 @@ function animate(){
       if(vashraLandNearPlayer && characterPivot){
         var toPlayerX = characterPivot.position.x - vashraLandX;
         var toPlayerZ = characterPivot.position.z - vashraLandZ;
-        var targetFace = Math.atan2(toPlayerX, toPlayerZ);
+        var targetFace = Math.atan2(toPlayerX, toPlayerZ) + Math.PI;
         var fDiff = targetFace - vashraModel.rotation.y;
         while(fDiff > Math.PI) fDiff -= Math.PI * 2;
         while(fDiff < -Math.PI) fDiff += Math.PI * 2;
@@ -5343,7 +5347,7 @@ function animate(){
       // Face dive direction
       var sdx = vashraGrabDiveTarget.x - swoopX;
       var sdz = vashraGrabDiveTarget.z - swoopZ;
-      if(Math.abs(sdx) > 1 || Math.abs(sdz) > 1) vashraModel.rotation.y = Math.atan2(sdx, sdz);
+      if(Math.abs(sdx) > 1 || Math.abs(sdz) > 1) vashraModel.rotation.y = Math.atan2(sdx, sdz) + Math.PI;
       
       if(swoopT >= 1) {
         // Check if close enough to grab player
@@ -5400,7 +5404,7 @@ function animate(){
       var carryZ = vashraGrabStartPos.z + Math.cos(vashraAngle) * carryT * 50;
       var carryY = vashraGrabStartPos.y + (VASHRA_CARRY_ALTITUDE - vashraGrabStartPos.y) * carryEase;
       vashraModel.position.set(carryX, carryY, carryZ);
-      vashraModel.rotation.y = Math.atan2(Math.sin(vashraAngle), Math.cos(vashraAngle));
+      vashraModel.rotation.y = Math.atan2(Math.sin(vashraAngle), Math.cos(vashraAngle)) + Math.PI;
       
       // Player follows dragon (hanging below)
       if(characterPivot && playerGrabbed) {
@@ -5448,7 +5452,7 @@ function animate(){
       // Face movement direction
       var stDx = vashraStrafEndX - strafeX;
       var stDz = vashraStrafEndZ - strafeZ;
-      if(Math.abs(stDx) > 1 || Math.abs(stDz) > 1) vashraModel.rotation.y = Math.atan2(stDx, stDz);
+      if(Math.abs(stDx) > 1 || Math.abs(stDz) > 1) vashraModel.rotation.y = Math.atan2(stDx, stDz) + Math.PI;
       
       // Fire fireballs at intervals
       vashraStrafFireTimer += dt;
@@ -5456,8 +5460,8 @@ function animate(){
         vashraStrafFireTimer = 0;
         vashraStrafeFired++;
         // Fire downward from current position
-        var mouthFwdX = Math.sin(vashraModel.rotation.y) * 0.2 * VASHRA_SCALE;
-        var mouthFwdZ = Math.cos(vashraModel.rotation.y) * 0.2 * VASHRA_SCALE;
+        var mouthFwdX = -Math.sin(vashraModel.rotation.y) * 0.2 * VASHRA_SCALE;
+        var mouthFwdZ = -Math.cos(vashraModel.rotation.y) * 0.2 * VASHRA_SCALE;
         var targetGX = strafeX + mouthFwdX * 2 + (Math.random()-0.5) * 15;
         var targetGZ = strafeZ + mouthFwdZ * 2 + (Math.random()-0.5) * 15;
         var targetGY = getHeight(targetGX, targetGZ);
@@ -5490,7 +5494,7 @@ function animate(){
       var ascZ = vashraLandStartZ + (targetOrbitZ - vashraLandStartZ) * easeAsc;
       var ascY = vashraLandStartY + (VASHRA_FLY_HEIGHT - vashraLandStartY) * easeAsc;
       vashraModel.position.set(ascX, ascY, ascZ);
-      var targetRot = vashraAngle + (vashraOrbitDir > 0 ? Math.PI / 2 : -Math.PI / 2);
+      var targetRot = (vashraOrbitDir > 0 ? Math.PI : 0) - vashraAngle;
       var curRot = vashraModel.rotation.y;
       var rotDiff = targetRot - curRot;
       while(rotDiff > Math.PI) rotDiff -= Math.PI * 2;
@@ -5515,9 +5519,9 @@ function animate(){
       }
     }
     
-    // === HARD FLOOR BARRIER — dragon can NEVER go below terrain ===
+    // === HARD FLOOR BARRIER — dragon can NEVER go below terrain OR water ===
     if(vashraModel){
-      var dragonGroundY = getHeight(vashraModel.position.x, vashraModel.position.z) + 5;
+      var dragonGroundY = Math.max(getHeight(vashraModel.position.x, vashraModel.position.z) + 5, WATER_BARRIER_Y + 5);
       if(vashraModel.position.y < dragonGroundY){
         vashraModel.position.y = dragonGroundY;
       }

@@ -138,7 +138,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v94</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v95</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -943,7 +943,7 @@ queueLoad(3, 'deer-model.glb?v=2', function(gltf){
     
     // Face random direction (no slope alignment — prevents floating/sinking)
     const heading = Math.random() * Math.PI * 2;
-    deer.rotation.set(0, heading, 0);
+    deer.rotation.set(0, heading + Math.PI, 0);
     
     // Position with foot offset — model Y_min = -0.5
     deer.position.set(x, h, z);
@@ -2837,7 +2837,7 @@ queueLoad(4, 'bear-walk.glb?v=2', function(gltf){
     
     // Slope alignment
     const heading = Math.random() * Math.PI * 2;
-    bear.rotation.set(0, heading, 0);
+    bear.rotation.set(0, heading + Math.PI, 0);
     bear.position.set(x, h, z);
     bear.position.y += BEAR_FOOT_OFFSET * scale;
     
@@ -2931,7 +2931,7 @@ queueLoad(4, 'freak-walk.glb?v=2', function(gltf){
     freak.scale.set(scale, scale, scale);
     
     const heading = Math.random() * Math.PI * 2;
-    freak.rotation.set(0, heading, 0);
+    freak.rotation.set(0, heading + Math.PI, 0);
     freak.position.set(x, h, z);
     freak.position.y += FREAK_FOOT_OFFSET * scale;
     
@@ -3012,7 +3012,7 @@ queueLoad(3, 'stallion-walk.glb?v=2', function(gltf){
     stallion.scale.set(scale, scale, scale);
     
     const heading = Math.random() * Math.PI * 2;
-    stallion.rotation.set(0, heading, 0);
+    stallion.rotation.set(0, heading + Math.PI, 0);
     stallion.position.set(x, h, z);
     stallion.position.y += STALLION_FOOT_OFFSET * scale;
     
@@ -3093,7 +3093,7 @@ queueLoad(4, 'dreugh-model.glb?v=1', function(gltf){
     dreugh.scale.set(scale, scale, scale);
     
     const heading = Math.random() * Math.PI * 2;
-    dreugh.rotation.set(0, heading, 0);
+    dreugh.rotation.set(0, heading + Math.PI, 0);
     dreugh.position.set(x, h, z);
     dreugh.position.y += DREUGH_FOOT_OFFSET * scale;
     
@@ -3805,7 +3805,7 @@ function respawnBear(idx){
   });
   bear.scale.set(scale, scale, scale);
   const heading = Math.random() * Math.PI * 2;
-  bear.rotation.set(0, heading, 0);
+  bear.rotation.set(0, heading + Math.PI, 0);
   bear.position.set(x, h, z);
   bear.position.y += BEAR_FOOT_OFFSET * scale;
   scene.add(bear);
@@ -3903,7 +3903,7 @@ function respawnStallion(idx){
   const stallion = SkeletonUtils.clone(stallionTemplate);
   stallion.scale.set(scale, scale, scale);
   
-  stallion.rotation.set(0, heading, 0);
+  stallion.rotation.set(0, heading + Math.PI, 0);
   stallion.position.set(x, h, z);
   stallion.position.y += STALLION_FOOT_OFFSET * scale;
   
@@ -4345,7 +4345,7 @@ function animate(){
         data.turnTarget = data.heading;
       }
       // Face swimming direction
-      data.model.rotation.y = data.heading;
+      data.model.rotation.y = data.heading + Math.PI;
       // Gentle bobbing
       data.model.position.y = -7.75 + Math.sin(data.time * 1.5) * 0.15;
     }
@@ -4439,7 +4439,7 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        data.model.rotation.y = data.heading;
+        data.model.rotation.y = data.heading + Math.PI;
         deerPos.set(newX, newH, newZ);
         deerPos.y += DEER_FOOT_OFFSET * data.scale;
       } else {
@@ -4554,7 +4554,7 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        bd.model.rotation.y = bd.heading;
+        bd.model.rotation.y = bd.heading + Math.PI;
         bearPos.set(newX, newH, newZ);
         bearPos.y += BEAR_FOOT_OFFSET * bd.scale;
       } else {
@@ -4630,7 +4630,7 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        fd.model.rotation.y = fd.heading;
+        fd.model.rotation.y = fd.heading + Math.PI;
         freakPos.set(newX, newH, newZ);
         freakPos.y += FREAK_FOOT_OFFSET * fd.scale;
       } else {
@@ -4689,7 +4689,7 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        sd.model.rotation.y = sd.heading;
+        sd.model.rotation.y = sd.heading + Math.PI;
         stallionPos.set(newX, newH, newZ);
         stallionPos.y += STALLION_FOOT_OFFSET * sd.scale;
       } else {
@@ -4748,7 +4748,7 @@ function animate(){
       
       const wb = WORLD_SIZE * 0.45;
       if(Math.abs(newX) < wb && Math.abs(newZ) < wb && newH > -2 && newH < 28){
-        dd.model.rotation.y = dd.heading;
+        dd.model.rotation.y = dd.heading + Math.PI;
         dreughPos.set(newX, newH, newZ);
         dreughPos.y += DREUGH_FOOT_OFFSET * dd.scale;
       } else {

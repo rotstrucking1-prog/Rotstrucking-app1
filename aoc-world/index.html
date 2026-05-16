@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v83</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v84</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -633,62 +633,9 @@ water.position.y = -6;
 water.userData.isWater = true;
 scene.add(water);
 
-// ===== TREES (Brad's GLB Model) =====
-updateLoading('Loading tree model...', 30);
-loader.load('tree-model.glb?v=8', function(gltf){
-  const treeTemplate = gltf.scene;
-  const treeCount = 210;
-  debugLog('🌲 TREE model loaded, meshes found');
-  
-  // Fix materials on template
-  treeTemplate.traverse(function(child){
-    if(child.isMesh && child.material){
-      child.material.metalness = 0;
-      child.material.roughness = 0.8;
-      if(child.material.metalnessMap) child.material.metalnessMap = null;
-      if(child.material.roughnessMap) child.material.roughnessMap = null;
-      if(child.material.aoMap) child.material.aoMap = null;
-      if(child.material.map) child.material.map.anisotropy = 16;
-      child.material.needsUpdate = true;
-    }
-  });
-  
-  let treesPlaced = 0;
-  for(let i = 0; i < treeCount; i++){
-    const x = (Math.random()-0.5)*WORLD_SIZE*0.9;
-    const z = (Math.random()-0.5)*WORLD_SIZE*0.9;
-    const h = getHeight(x,z);
-    if(h < -2 || h > 28) continue;
-    const t = treeTemplate.clone();
-    const scale = 32 + Math.random()*48;
-    t.scale.set(scale, scale, scale);
-    // Align tree to terrain slope so base meshes with ground on hills
-    const terrainNormal = getTerrainNormal(x, z);
-    const up = new THREE.Vector3(0, 1, 0);
-    const slopeQuat = new THREE.Quaternion().setFromUnitVectors(up, terrainNormal);
-    // Apply random Y rotation first, then slope alignment
-    const yRotQuat = new THREE.Quaternion().setFromAxisAngle(up, Math.random()*Math.PI*2);
-    slopeQuat.multiply(yRotQuat);
-    t.quaternion.copy(slopeQuat);
-    // Position at terrain, then lift along LOCAL up axis (works correctly on slopes)
-    t.position.set(x, h, z);
-    const treeLocalUp = new THREE.Vector3(0, 0.1 * scale, 0);
-    treeLocalUp.applyQuaternion(slopeQuat);
-    t.position.add(treeLocalUp);
-    t.castShadow = true;
-    scene.add(t);
-    treesPlaced++;
-  }
-  debugLog('🌲 Trees placed: ' + treesPlaced + '/' + treeCount);
-  assetsLoaded++;
-  updateLoading('Trees planted!', 40);
-  checkReady();
-}, undefined, function(err){
-  debugLog('❌ Tree load FAILED: ' + err);
-  console.warn('Tree load error:', err);
-  assetsLoaded++;
-  checkReady();
-});
+// ===== TREES REMOVED (Brad requested permanent removal v84) =====
+assetsLoaded++;  // Tree slot removed — increment to keep loading count correct
+checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
@@ -1059,6 +1006,22 @@ let stallionAnimClip = null;
 let stallionData = [];
 
 // --- Vashra Dragon NPC ---
+const VASHRA_SHOWCASE = true;  // Demo mode: cycle through ALL animations + attacks
+let vashraShowcaseStep = 0;
+let vashraShowcaseTimer = 0;
+const VASHRA_SHOWCASE_STEPS = [
+  { action: 'fly', duration: 8, label: '✈️ Straight Flight' },
+  { action: 'bankRight', duration: 8, label: '↪️ Bank Right Orbit' },
+  { action: 'bankLeft', duration: 8, label: '↩️ Bank Left Orbit' },
+  { action: 'fire', duration: 8, label: '🔥 Fireball (hover + fire)' },
+  { action: 'strafe', duration: 10, label: '🔥🔥 Strafing Run' },
+  { action: 'descend', duration: 8, label: '⬇️ Dive to Land' },
+  { action: 'idle', duration: 8, label: '👀 Sitting Idle' },
+  { action: 'sleep', duration: 8, label: '😴 Falling Asleep' },
+  { action: 'wake', duration: 8, label: '🥱 Waking Up (reverse)' },
+  { action: 'ascend', duration: 8, label: '🛫 Ascending to Orbit' },
+  { action: 'swoopGrab', duration: 10, label: '🦅 Swoop & Grab!' },
+];
 const VASHRA_SCALE = 90;  // 30× character scale (3×30=90)
 const VASHRA_FLY_HEIGHT = 100;  // Base flying altitude above terrain
 const VASHRA_FLY_SPEED = 12;  // Flight speed
@@ -4624,6 +4587,105 @@ function animate(){
         }
       }
       
+      // === SHOWCASE MODE: force cycle through all animations ===
+      if(VASHRA_SHOWCASE){
+        vashraShowcaseTimer += dt;
+        var curStep = VASHRA_SHOWCASE_STEPS[vashraShowcaseStep % VASHRA_SHOWCASE_STEPS.length];
+        if(vashraShowcaseTimer >= curStep.duration){
+          vashraShowcaseTimer = 0;
+          vashraShowcaseStep++;
+          var nextStep = VASHRA_SHOWCASE_STEPS[vashraShowcaseStep % VASHRA_SHOWCASE_STEPS.length];
+          debugLog('🎬 SHOWCASE: ' + nextStep.label);
+          
+          if(nextStep.action === 'fly'){
+            // Switch to straight flight
+            vashraFlightAction.reset(); vashraFlightAction.play();
+            if(vashraBankAction && vashraBankAction.isRunning()) vashraBankAction.crossFadeTo(vashraFlightAction, 1.0);
+            if(vashraBankLeftAction && vashraBankLeftAction.isRunning()) vashraBankLeftAction.crossFadeTo(vashraFlightAction, 1.0);
+          } else if(nextStep.action === 'bankRight'){
+            if(vashraBankAction){
+              vashraBankAction.reset(); vashraBankAction.play();
+              vashraFlightAction.crossFadeTo(vashraBankAction, 1.0);
+              vashraOrbitDir = 1;
+            }
+          } else if(nextStep.action === 'bankLeft'){
+            if(vashraBankLeftAction){
+              vashraBankLeftAction.reset(); vashraBankLeftAction.play();
+              if(vashraBankAction) vashraBankAction.crossFadeTo(vashraBankLeftAction, 1.0);
+              vashraOrbitDir = -1;
+            }
+          } else if(nextStep.action === 'fire'){
+            // Trigger fireball
+            vashraState = 'firing';
+            vashraStateTimer = 0;
+            vashraHoverX = vashraModel.position.x;
+            vashraHoverY = vashraModel.position.y;
+            vashraHoverZ = vashraModel.position.z;
+            vashraFireTargetX = characterPivot ? characterPivot.position.x + 20 : 50;
+            vashraFireTargetZ = characterPivot ? characterPivot.position.z + 20 : 50;
+            vashraFireTargetY = getHeight(vashraFireTargetX, vashraFireTargetZ);
+            var ftDx = vashraFireTargetX - vashraHoverX;
+            var ftDz = vashraFireTargetZ - vashraHoverZ;
+            vashraFireFacingTarget = Math.atan2(ftDx, ftDz);
+            vashraFireballFired = false;
+            if(vashraFireballAction){
+              vashraFireballAction.reset(); vashraFireballAction.play();
+              var curAct = vashraBankLeftAction || vashraBankAction || vashraFlightAction;
+              curAct.crossFadeTo(vashraFireballAction, 0.5);
+            }
+          } else if(nextStep.action === 'strafe'){
+            vashraState = 'strafing';
+            vashraStateTimer = 0;
+            vashraStrafeFired = 0;
+            vashraStrafFireTimer = 0;
+            vashraStrafStartX = vashraModel.position.x;
+            vashraStrafStartZ = vashraModel.position.z;
+            vashraStrafStartY = vashraModel.position.y;
+            vashraStrafEndX = (Math.random()-0.5) * 400;
+            vashraStrafEndZ = (Math.random()-0.5) * 400;
+            vashraFlightAction.reset(); vashraFlightAction.play();
+          } else if(nextStep.action === 'descend'){
+            vashraState = 'descending';
+            vashraStateTimer = 0;
+            vashraLandX = characterPivot ? characterPivot.position.x + 40 : 50;
+            vashraLandZ = characterPivot ? characterPivot.position.z + 40 : 50;
+            vashraLandTargetY = getHeight(vashraLandX, vashraLandZ) + 2;
+            vashraLandStartX = vashraModel.position.x;
+            vashraLandStartZ = vashraModel.position.z;
+            vashraLandStartY = vashraModel.position.y;
+            vashraRestDuration = 999;  // Will be overridden by showcase
+            var descendAnim = vashraDiveAction || vashraLandAction;
+            if(descendAnim){ descendAnim.reset(); descendAnim.play(); }
+          } else if(nextStep.action === 'idle'){
+            // This gets handled in landed state — set timer to transition
+          } else if(nextStep.action === 'sleep'){
+            // Handled in landed state idle sub-state
+          } else if(nextStep.action === 'wake'){
+            // Handled in sleep state
+          } else if(nextStep.action === 'ascend'){
+            vashraState = 'ascending';
+            vashraStateTimer = 0;
+            vashraAscendStartY = vashraModel ? vashraModel.position.y : 10;
+            if(vashraFlightAction){ vashraFlightAction.reset(); vashraFlightAction.play(); }
+          } else if(nextStep.action === 'swoopGrab'){
+            vashraState = 'swooping';
+            vashraStateTimer = 0;
+            vashraGrabStartPos.x = vashraModel.position.x;
+            vashraGrabStartPos.y = vashraModel.position.y;
+            vashraGrabStartPos.z = vashraModel.position.z;
+            if(characterPivot){
+              vashraGrabDiveTarget.x = characterPivot.position.x;
+              vashraGrabDiveTarget.y = getHeight(characterPivot.position.x, characterPivot.position.z) + 3;
+              vashraGrabDiveTarget.z = characterPivot.position.z;
+            }
+            var descendAnim2 = vashraDiveAction || vashraFlightAction;
+            if(descendAnim2){ descendAnim2.reset(); descendAnim2.play(); }
+            triggerFearRoar();
+          }
+        }
+        return;  // Skip normal decision engine in showcase mode
+      }
+      
       // === DECISION ENGINE: every N seconds, decide next action ===
       vashraDecisionTimer += dt;
       if(vashraDecisionTimer >= vashraDecisionInterval){
@@ -4776,7 +4838,6 @@ function animate(){
                        (vashraOrbitDir < 0 && vashraBankLeftAction && vashraBankLeftAction.isRunning()) ? vashraBankLeftAction : vashraFlightAction;
           flyAct.crossFadeTo(descendAnim, 1.5);
           debugLog('🐉 Vashra [' + vashraMood + '] decides to LAND ' + (vashraLandNearPlayer ? 'NEAR PLAYER' : 'randomly') + ' — rest ' + vashraRestDuration.toFixed(0) + 's');
-        }
         } else if(choice === 'swoopGrab'){
           // === SWOOP & GRAB: Dragon dives at player, snatches them, carries up, DROPS ===
           vashraLastAction = 'swoop';
@@ -4829,6 +4890,7 @@ function animate(){
           debugLog('🔥 VASHRA STRAFING RUN! ' + (vashraMood === 'aggressive' ? 'Targeting player!' : 'Random path'));
         
         // else choice === 'fly' → do nothing, keep orbiting
+        }
       }
       
     } else if(vashraState === 'firing'){
@@ -4854,6 +4916,7 @@ function animate(){
       if(vashraStateTimer >= VASHRA_HOVER_DURATION){
         vashraState = 'flying';
         vashraStateTimer = 0;
+        if(VASHRA_SHOWCASE) vashraShowcaseTimer = 99999;  // Auto-advance showcase
         vashraDecisionTimer = 0;
         vashraDecisionInterval = 5 + Math.random() * 10;  // Shorter wait after firing
         var returnAct = vashraOrbitDir > 0 ? (vashraBankAction || vashraFlightAction) : (vashraBankLeftAction || vashraFlightAction);
@@ -4916,6 +4979,11 @@ function animate(){
         vashraSittingIdleAction.play();
         if(vashraLandAction && vashraLandAction.isRunning()){
           vashraLandAction.crossFadeTo(vashraSittingIdleAction, 2.0);
+        }
+        // Showcase mode: short durations so Brad can see all animations quickly
+        if(VASHRA_SHOWCASE){
+          vashraSleepIdleDuration = 6;   // 6s idle
+          vashraSleepDuration = 5;       // 5s sleep
         }
         debugLog('🐉 Vashra settles in — looking around, shifting wings (idle ' + vashraSleepIdleDuration.toFixed(0) + 's, sleep ' + vashraSleepDuration.toFixed(0) + 's)');
       }
@@ -5169,6 +5237,7 @@ function animate(){
       if(ascT >= 1){
         vashraState = 'flying';
         vashraStateTimer = 0;
+        if(VASHRA_SHOWCASE) vashraShowcaseTimer = 99999;  // Auto-advance showcase
         vashraDecisionTimer = 0;
         vashraDecisionInterval = 15 + Math.random() * 20;  // Longer wait after landing
         // Reset fire count for new flight, roll new max

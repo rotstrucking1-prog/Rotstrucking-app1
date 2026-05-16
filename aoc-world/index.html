@@ -4081,8 +4081,10 @@ let frameCount = 0;
 let fpsTime = 0;
 let fps = 0;
 
+var _animErrorCount = 0;
 function animate(){
   requestAnimationFrame(animate);
+  try {
   const dt = Math.min(clock.getDelta(), 0.05);
   windTime.value += dt;
   
@@ -5794,6 +5796,12 @@ function animate(){
       fearEl.style.opacity = fearDesaturation * 0.4;
     } else {
       fearEl.style.display = 'none';
+    }
+  }
+  } catch(e) {
+    _animErrorCount++;
+    if(_animErrorCount <= 3) {
+      debugLog('<span style="color:red">💀 ANIMATE CRASH: ' + e.message + ' (line ~' + (e.lineNumber||'?') + ')</span>');
     }
   }
 }

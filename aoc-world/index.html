@@ -138,7 +138,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v87</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v88</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -2535,13 +2535,25 @@ const playerPlaceholder = new THREE.Mesh(
 );
 scene.add(playerPlaceholder);
 
+// Create characterPivot IMMEDIATELY so player exists from frame 1
+// This prevents null crashes and gives a visible placeholder while GLB downloads
+characterPivot = new THREE.Group();
+characterPivot.scale.set(3, 3, 3);
+const placeholderMesh = new THREE.Mesh(
+  new THREE.CapsuleGeometry(0.3, 0.8, 4, 8),
+  new THREE.MeshLambertMaterial({color:0x4488ff})
+);
+placeholderMesh.position.y = 0.55; // center capsule at chest height
+placeholderMesh.name = 'playerPlaceholderMesh';
+characterPivot.add(placeholderMesh);
+scene.add(characterPivot);
+
 updateLoading('Loading character model...', 50);
 retryLoad('character-walk.glb?v=47', function(gltf){
   playerModel = gltf.scene;
-  // Pivot container: handles position/rotation/scale
-  // GLB is pre-centered (mesh X center ≈ 0) so no offset needed
-  characterPivot = new THREE.Group();
-  characterPivot.scale.set(3, 3, 3);
+  // Remove placeholder mesh now that real model is here
+  var ph = characterPivot.getObjectByName('playerPlaceholderMesh');
+  if(ph) characterPivot.remove(ph);
   characterPivot.add(playerModel);
   playerModel.traverse(function(child){
     if(child.isMesh){
@@ -2557,7 +2569,6 @@ retryLoad('character-walk.glb?v=47', function(gltf){
       }
     }
   });
-  scene.add(characterPivot);
   if(gltf.animations && gltf.animations.length > 0){
     playerMixer = new THREE.AnimationMixer(playerModel);
     // Find Walk and Idle clips by name
@@ -2588,8 +2599,9 @@ retryLoad('character-walk.glb?v=47', function(gltf){
   setTimeout(function(){
     loader.load('character-walk.glb?v=47&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
-      characterPivot = new THREE.Group();
-      characterPivot.scale.set(3, 3, 3);
+      // Remove placeholder, use existing characterPivot
+      var ph = characterPivot.getObjectByName('playerPlaceholderMesh');
+      if(ph) characterPivot.remove(ph);
       characterPivot.add(playerModel);
       playerModel.traverse(function(child){
         if(child.isMesh){
@@ -2605,7 +2617,6 @@ retryLoad('character-walk.glb?v=47', function(gltf){
           }
         }
       });
-      scene.add(characterPivot);
       if(gltf.animations && gltf.animations.length > 0){
         playerMixer = new THREE.AnimationMixer(playerModel);
         for(var ai = 0; ai < gltf.animations.length; ai++){
@@ -2627,7 +2638,7 @@ retryLoad('character-walk.glb?v=47', function(gltf){
       if(!worldReady) { assetsLoaded++; checkReady(); }
     }, undefined, function(err2){
       console.warn('Character retry also failed:', err2);
-      debugLog('❌ Character retry FAILED');
+      debugLog('❌ Character retry FAILED — using placeholder');
       assetsLoaded++;
       checkReady();
     });

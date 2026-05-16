@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v70</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v71</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 16;  // +1 for Vashra dragon  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword
+const totalAssets = 17;  // +1 for Vashra landing anim  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1061,9 +1061,20 @@ const VASHRA_SCALE = 90;  // 30× character scale (3×30=90)
 const VASHRA_FLY_HEIGHT = 100;  // Base flying altitude above terrain
 const VASHRA_FLY_SPEED = 12;  // Flight speed
 const VASHRA_ORBIT_RADIUS = 200;  // Patrol radius
+const VASHRA_FLY_DURATION = 60;  // Seconds flying before landing
+const VASHRA_LAND_DURATION = 6;  // Seconds to descend
+const VASHRA_GROUND_TIME = 15;  // Seconds sitting on ground
+const VASHRA_ASCEND_DURATION = 6;  // Seconds to ascend
 let vashraModel = null;
 let vashraMixer = null;
 let vashraAngle = 0;  // Current orbit angle
+let vashraFlightAction = null;
+let vashraLandAction = null;
+let vashraState = 'flying';  // flying, descending, landed, ascending
+let vashraStateTimer = 0;
+let vashraLandX = 0, vashraLandZ = 0;  // Landing target
+let vashraLandStartX = 0, vashraLandStartZ = 0, vashraLandStartY = 0;
+let vashraLandTargetY = 0;
 let stallionModels = [];
 let stallionMixers = [];
 
@@ -2085,7 +2096,7 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
 
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
-// Load Vashra Dragon
+// Load Vashra Dragon (flight model + animation)
 loader.load('vashra-dragon.glb?v=1', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
@@ -2117,20 +2128,38 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   // Set up flight animation
   if(gltf.animations && gltf.animations.length > 0){
     vashraMixer = new THREE.AnimationMixer(vashraModel);
-    const flightAction = vashraMixer.clipAction(gltf.animations[0]);
-    flightAction.setLoop(THREE.LoopRepeat);
-    flightAction.play();
+    vashraFlightAction = vashraMixer.clipAction(gltf.animations[0]);
+    vashraFlightAction.setLoop(THREE.LoopRepeat);
+    vashraFlightAction.play();
     debugLog('🐉 Vashra flight animation: ' + gltf.animations[0].name + ' (' + gltf.animations[0].duration.toFixed(2) + 's)');
   }
   
   debugLog('🐉 Vashra the Dragon spawned! Scale ' + VASHRA_SCALE + ', altitude ' + VASHRA_FLY_HEIGHT);
+  vashraState = 'flying';
+  vashraStateTimer = 0;
   
   assetsLoaded++;
   updateLoading('The dragon awakens...', 85);
   checkReady();
+  
+  // Load landing animation (separate GLB, same model — grab animation clip only)
+  loader.load('vashra-dragon-landing.glb?v=1', function(landGltf){
+    if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
+      vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
+      vashraLandAction.setLoop(THREE.LoopRepeat);
+      debugLog('🐉 Vashra landing animation: ' + landGltf.animations[0].name + ' (' + landGltf.animations[0].duration.toFixed(2) + 's)');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra landing animation load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
+  
 }, undefined, function(err){
   console.warn('Vashra dragon load error:', err);
-  assetsLoaded++;
+  assetsLoaded += 2;  // Count both flight + landing as loaded on error
   checkReady();
 });
 
@@ -3583,24 +3612,102 @@ function animate(){
     if(sd.model.position.y < groundY) sd.model.position.y = groundY + STALLION_FOOT_OFFSET * sd.scale;
   });
 
-  // ===== VASHRA DRAGON AI =====
+  // ===== VASHRA DRAGON AI (state machine: flying → descending → landed → ascending) =====
   if(vashraModel){
-    // Circular orbit pattern high in the sky
-    vashraAngle += dt * VASHRA_FLY_SPEED / VASHRA_ORBIT_RADIUS;
-    if(vashraAngle > Math.PI * 2) vashraAngle -= Math.PI * 2;
+    vashraStateTimer += dt;
     
-    const dragonX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
-    const dragonZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
+    if(vashraState === 'flying'){
+      // Normal circular orbit high in the sky
+      vashraAngle += dt * VASHRA_FLY_SPEED / VASHRA_ORBIT_RADIUS;
+      if(vashraAngle > Math.PI * 2) vashraAngle -= Math.PI * 2;
+      var flyX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
+      var flyZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
+      var altBob = Math.sin(vashraAngle * 3) * 8;
+      vashraModel.position.set(flyX, VASHRA_FLY_HEIGHT + altBob, flyZ);
+      vashraModel.rotation.y = vashraAngle + Math.PI / 2;
+      
+      // After VASHRA_FLY_DURATION seconds, begin landing descent
+      if(vashraStateTimer > VASHRA_FLY_DURATION && vashraLandAction){
+        vashraState = 'descending';
+        vashraStateTimer = 0;
+        // Pick a random landing spot within the map
+        vashraLandX = (Math.random() - 0.5) * 400;
+        vashraLandZ = (Math.random() - 0.5) * 400;
+        vashraLandTargetY = getHeight(vashraLandX, vashraLandZ) + 2;
+        // Remember start position for interpolation
+        vashraLandStartX = vashraModel.position.x;
+        vashraLandStartZ = vashraModel.position.z;
+        vashraLandStartY = vashraModel.position.y;
+        // Crossfade to landing animation
+        vashraLandAction.reset();
+        vashraLandAction.play();
+        vashraFlightAction.crossFadeTo(vashraLandAction, 2.0);
+        debugLog('🐉 Vashra descending to land at (' + vashraLandX.toFixed(0) + ', ' + vashraLandZ.toFixed(0) + ')');
+      }
+    } else if(vashraState === 'descending'){
+      // Smoothly descend from sky to landing spot
+      var descT = Math.min(vashraStateTimer / VASHRA_LAND_DURATION, 1);
+      var ease = descT * descT * (3 - 2 * descT);  // smoothstep
+      var descX = vashraLandStartX + (vashraLandX - vashraLandStartX) * ease;
+      var descZ = vashraLandStartZ + (vashraLandZ - vashraLandStartZ) * ease;
+      var descY = vashraLandStartY + (vashraLandTargetY - vashraLandStartY) * ease;
+      vashraModel.position.set(descX, descY, descZ);
+      // Face toward landing spot
+      var dx = vashraLandX - descX;
+      var dz = vashraLandZ - descZ;
+      if(Math.abs(dx) > 0.5 || Math.abs(dz) > 0.5){
+        vashraModel.rotation.y = Math.atan2(dx, dz);
+      }
+      if(descT >= 1){
+        vashraState = 'landed';
+        vashraStateTimer = 0;
+        vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
+        debugLog('🐉 Vashra has landed!');
+      }
+    } else if(vashraState === 'landed'){
+      // Stay on ground at landing spot
+      vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
+      // After ground time, take off
+      if(vashraStateTimer > VASHRA_GROUND_TIME){
+        vashraState = 'ascending';
+        vashraStateTimer = 0;
+        vashraLandStartY = vashraModel.position.y;
+        vashraLandStartX = vashraModel.position.x;
+        vashraLandStartZ = vashraModel.position.z;
+        // Resume orbit from angle nearest to current position
+        vashraAngle = Math.atan2(vashraLandZ, vashraLandX);
+        // Crossfade back to flight animation
+        vashraFlightAction.reset();
+        vashraFlightAction.play();
+        vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
+        debugLog('🐉 Vashra taking off!');
+      }
+    } else if(vashraState === 'ascending'){
+      // Rise from ground back to orbit altitude
+      var ascT = Math.min(vashraStateTimer / VASHRA_ASCEND_DURATION, 1);
+      var easeAsc = ascT * ascT * (3 - 2 * ascT);  // smoothstep
+      var targetOrbitX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
+      var targetOrbitZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
+      var ascX = vashraLandStartX + (targetOrbitX - vashraLandStartX) * easeAsc;
+      var ascZ = vashraLandStartZ + (targetOrbitZ - vashraLandStartZ) * easeAsc;
+      var ascY = vashraLandStartY + (VASHRA_FLY_HEIGHT - vashraLandStartY) * easeAsc;
+      vashraModel.position.set(ascX, ascY, ascZ);
+      // Gradually face flight direction
+      var targetRot = vashraAngle + Math.PI / 2;
+      var curRot = vashraModel.rotation.y;
+      // Shortest angle lerp
+      var rotDiff = targetRot - curRot;
+      while(rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+      while(rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+      vashraModel.rotation.y += rotDiff * 0.05;
+      if(ascT >= 1){
+        vashraState = 'flying';
+        vashraStateTimer = 0;
+        debugLog('🐉 Vashra back in flight!');
+      }
+    }
     
-    // Gentle altitude bobbing
-    const altBob = Math.sin(vashraAngle * 3) * 8;
-    
-    vashraModel.position.set(dragonX, VASHRA_FLY_HEIGHT + altBob, dragonZ);
-    
-    // Face flight direction (tangent to circle)
-    vashraModel.rotation.y = vashraAngle + Math.PI / 2;
-    
-    // Update flight animation
+    // Update dragon animation mixer
     if(vashraMixer) vashraMixer.update(dt);
   }
 

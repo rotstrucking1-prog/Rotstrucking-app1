@@ -124,6 +124,7 @@ setTimeout(function(){
   <div id="hp-text" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:bold;text-shadow:1px 1px 2px #000">100 / 100 HP</div>
 </div>
 <div id="damage-flash" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);z-index:15;pointer-events:none;display:none"></div>
+<div id="fear-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(50,50,50,0.8);z-index:14;pointer-events:none;display:none"></div>
 <div id="vashra-alert" style="position:fixed;top:25%;left:50%;transform:translateX(-50%);z-index:25;pointer-events:none;text-align:center;display:none">
   <div id="vashra-alert-text" style="font-size:32px;font-weight:bold;color:#ff4400;text-shadow:0 0 20px #ff0000,0 0 40px #ff4400,2px 2px 4px #000;letter-spacing:2px;white-space:nowrap"></div>
   <div id="vashra-alert-sub" style="font-size:18px;color:#ffaa00;text-shadow:0 0 10px #ff6600,1px 1px 2px #000;margin-top:8px"></div>
@@ -132,7 +133,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v85</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v86</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -4131,7 +4132,13 @@ function animate(){
   playerPos.z = Math.max(-bound, Math.min(bound, playerPos.z));
   
   if(characterPivot){
-    characterPivot.position.copy(playerPos);
+    if(playerGrabbed || playerFalling) {
+      // During grab/fall, characterPivot is positioned by carry/fall code
+      // Sync playerPos FROM characterPivot so camera follows player up/down
+      playerPos.copy(characterPivot.position);
+    } else {
+      characterPivot.position.copy(playerPos);
+    }
     characterPivot.rotation.y = characterYaw;
   }
   playerPlaceholder.position.copy(playerPos);
@@ -5764,13 +5771,17 @@ function animate(){
   if(gfxPostProcessing) {
     composer.render();
   } else {
-    // Fear desaturation overlay
-  if(fearDesaturation > 0) {
-    renderer.domElement.style.filter = 'saturate(' + (1 - fearDesaturation * 0.7) + ') contrast(' + (1 + fearDesaturation * 0.2) + ')';
-  } else {
-    renderer.domElement.style.filter = '';
+    renderer.render(scene, camera);
   }
-  renderer.render(scene, camera);
+  // Fear overlay — lightweight div instead of expensive CSS canvas filter
+  var fearEl = document.getElementById('fear-overlay');
+  if(fearEl) {
+    if(fearDesaturation > 0) {
+      fearEl.style.display = 'block';
+      fearEl.style.opacity = fearDesaturation * 0.4;
+    } else {
+      fearEl.style.display = 'none';
+    }
   }
 }
 animate();

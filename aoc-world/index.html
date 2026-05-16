@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v81</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v82</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1078,7 +1078,8 @@ let vashraFireballAction = null;
 let vashraSittingIdleAction = null;
 let vashraSittingIdleTransitioned = false;  // Track if we've crossfaded to sitting idle
 let vashraIdleToSleepAction = null;
-let vashraSleepState = 'none';  // none, idle, sleeping, waking
+let vashraSleepState = 'none';  // none, idle, sleeping, waking, post-wake
+let vashraWakeDuration = 5;  // will be set from clip duration
 let vashraSleepTimer = 0;
 let vashraSleepIdleDuration = 0;  // How long to idle before sleeping
 let vashraSleepDuration = 0;     // How long to stay asleep (can be hours!)
@@ -4926,6 +4927,7 @@ function animate(){
           if(vashraSleepDuration > 0 && vashraIdleToSleepAction){
             vashraSleepState = 'sleeping';
             vashraSleepTimer = 0;
+            vashraIdleToSleepAction.timeScale = 1;  // Ensure forward playback
             vashraIdleToSleepAction.reset();
             vashraIdleToSleepAction.play();
             vashraSittingIdleAction.crossFadeTo(vashraIdleToSleepAction, 2.0);
@@ -4939,20 +4941,39 @@ function animate(){
         vashraSleepTimer += dt;
         // Sleep for the full duration (frozen on last frame thanks to clampWhenFinished)
         if(vashraSleepTimer > vashraSleepDuration){
-          // Wake up! Crossfade from sleeping pose back to sitting idle
+          // Wake up! Play the sleep animation IN REVERSE (lifts head, unfolds wings — natural wake-up)
           vashraSleepState = 'waking';
           vashraSleepTimer = 0;
-          vashraSittingIdleAction.reset();
-          vashraSittingIdleAction.play();
-          if(vashraIdleToSleepAction) vashraIdleToSleepAction.crossFadeTo(vashraSittingIdleAction, 2.5);
-          debugLog('🐉 Vashra waking up — stretching, looking around...');
+          vashraWakeDuration = vashraIdleToSleepAction.getClip().duration; // ~5s reversed
+          vashraIdleToSleepAction.paused = false;
+          vashraIdleToSleepAction.enabled = true;
+          vashraIdleToSleepAction.setLoop(THREE.LoopOnce, 1);
+          vashraIdleToSleepAction.clampWhenFinished = true;
+          vashraIdleToSleepAction.timeScale = -1;  // REVERSE!
+          vashraIdleToSleepAction.time = vashraIdleToSleepAction.getClip().duration; // Start from end
+          vashraIdleToSleepAction.play();
+          debugLog('🐉 Vashra waking up — playing sleep animation in REVERSE!');
         }
       } else if(vashraSleepState === 'waking'){
         vashraSleepTimer += dt;
-        // Look around for 5-10s after waking, then ready to take off
-        if(vashraSleepTimer > 5 + Math.random() * 5){
+        // Wait for reverse animation to finish (~5s), then crossfade to sitting idle to look around
+        if(vashraSleepTimer > vashraWakeDuration + 0.5){
+          vashraSleepState = 'post-wake';
+          vashraSleepTimer = 0;
+          // Reset timeScale back to forward for future use
+          vashraIdleToSleepAction.timeScale = 1;
+          // Crossfade into sitting idle (look around after waking)
+          vashraSittingIdleAction.reset();
+          vashraSittingIdleAction.play();
+          vashraIdleToSleepAction.crossFadeTo(vashraSittingIdleAction, 2.0);
+          debugLog('🐉 Vashra stretching, looking around after waking...');
+        }
+      } else if(vashraSleepState === 'post-wake'){
+        vashraSleepTimer += dt;
+        // Look around for 8-15s after waking, then ready to take off
+        if(vashraSleepTimer > 8 + Math.random() * 7){
           vashraSleepState = 'done';
-          debugLog('🐉 Vashra is awake and ready to fly');
+          debugLog('🐉 Vashra is fully awake and ready to fly');
         }
       }
       

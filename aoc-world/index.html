@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v78</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v79</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1103,12 +1103,66 @@ let vashraRestDuration = 0;  // How long to sit/rest on ground
 let vashraOrbitDir = 1;  // 1 = right orbit (bank-right), -1 = left orbit (bank-left)
 let vashraOrbitSwitchTimer = 0;  // Timer to sometimes switch orbit direction
 let vashraOrbitSwitchInterval = 30 + Math.random() * 60;  // 30-90s between potential switches
+
+// === VASHRA ADVANCED ATTACK SYSTEM ===
+// --- Swoop & Grab ---
+let vashraGrabTarget = null;       // 'player' or NPC ref
+let vashraGrabStartPos = {x:0, y:0, z:0};
+let vashraGrabDiveTarget = {x:0, y:0, z:0};
+let playerGrabbed = false;
+let playerFalling = false;
+let playerFallVelocity = 0;
+let playerFallStartY = 0;
+const VASHRA_SWOOP_DURATION = 2.5;   // Dive to grab takes 2.5s
+const VASHRA_CARRY_DURATION = 4;     // Carry player 4s before dropping
+const VASHRA_CARRY_ALTITUDE = 130;   // How high before dropping
+const FALL_DAMAGE_PER_UNIT = 1.5;    // HP damage per unit of fall height
+const FALL_DAMAGE_MIN_HEIGHT = 20;   // Below this, no fall damage
+
+// --- Strafing Run ---
+let vashraStrafeFired = 0;
+let vashraStrafFireTimer = 0;
+let vashraStrafStartX = 0, vashraStrafStartZ = 0;
+let vashraStrafEndX = 0, vashraStrafEndZ = 0;
+let vashraStrafStartY = 0;
+const VASHRA_STRAFE_DURATION = 4;    // 4s strafe pass
+const VASHRA_STRAFE_ALTITUDE = 45;   // Low altitude
+const VASHRA_STRAFE_FIRE_INTERVAL = 0.6;  // Fireball every 0.6s
+const VASHRA_STRAFE_FIREBALL_COUNT = 6;   // 6 fireballs per strafe
+
+// --- Earthquake Landing ---
+const VASHRA_QUAKE_RADIUS = 50;      // Shockwave range
+const VASHRA_QUAKE_DAMAGE = 30;      // Player damage at epicenter
+const VASHRA_QUAKE_KNOCKBACK = 25;   // Push distance
+let quakeRings = [];                  // Expanding shockwave ring sprites
+
+// --- Fear Roar ---
+let vashraFearActive = false;
+let vashraFearTimer = 0;
+const VASHRA_FEAR_DURATION = 3;      // 3s of terror
+let playerFearSlow = 1.0;            // Movement multiplier (0.5 during fear)
+let fearDesaturation = 0;            // 0 = normal, 1 = full grey
+
+// --- Wing Buffet ---
+const VASHRA_BUFFET_RANGE = 35;      // Range when landed
+const VASHRA_BUFFET_FORCE = 30;      // Push distance
+const VASHRA_BUFFET_DAMAGE = 15;
+let vashraBuffetCooldown = 0;
+
+// --- Screen Shake ---
+let screenShakeIntensity = 0;
+let screenShakeDecay = 0;
+
+// --- Player Knockback ---
+let playerKnockVX = 0, playerKnockVZ = 0;
+let playerKnockTimer = 0;
 // Mood behavior weights: [keepFlying, fireball, landRandom, landNearPlayer]
+// Weights: [keepFlying, fireball, landRandom, landNearPlayer, swoopGrab, strafingRun]
 const VASHRA_MOOD_WEIGHTS = {
-  aggressive:   [0.35, 0.40, 0.10, 0.15],
-  curious:      [0.35, 0.10, 0.15, 0.40],
-  lazy:         [0.55, 0.05, 0.25, 0.15],
-  territorial:  [0.50, 0.35, 0.05, 0.10]
+  aggressive:   [0.15, 0.20, 0.05, 0.10, 0.25, 0.25],
+  curious:      [0.30, 0.08, 0.15, 0.37, 0.05, 0.05],
+  lazy:         [0.55, 0.05, 0.25, 0.15, 0.00, 0.00],
+  territorial:  [0.25, 0.15, 0.05, 0.10, 0.20, 0.25]
 };
 const VASHRA_MOODS = ['aggressive', 'curious', 'lazy', 'territorial'];
 // Ground time ranges per mood (min, max in seconds)
@@ -1320,6 +1374,166 @@ function createExplosionTexture(){
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 32, 32);
   return new THREE.CanvasTexture(canvas);
+}
+
+// === VASHRA TERROR ATTACK FUNCTIONS ===
+function triggerScreenShake(intensity, duration) {
+  screenShakeIntensity = intensity;
+  screenShakeDecay = intensity / duration;
+}
+
+function triggerFearRoar() {
+  vashraFearActive = true;
+  vashraFearTimer = VASHRA_FEAR_DURATION;
+  playerFearSlow = 0.4;  // 60% movement penalty
+  fearDesaturation = 1.0;
+  triggerScreenShake(1.5, 2.0);
+  debugLog('😱 VASHRA ROARS! Player terrified!');
+}
+
+function triggerEarthquakeLanding(epicenterX, epicenterZ) {
+  triggerScreenShake(2.5, 1.5);
+  triggerFearRoar();
+  
+  // Expanding shockwave ring visual
+  var ringGeo = new THREE.RingGeometry(1, 3, 32);
+  var ringMat = new THREE.MeshBasicMaterial({color: 0xcc6600, transparent: true, opacity: 0.7, side: THREE.DoubleSide});
+  var ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  var gy = getHeight(epicenterX, epicenterZ) + 0.5;
+  ring.position.set(epicenterX, gy, epicenterZ);
+  scene.add(ring);
+  quakeRings.push({mesh: ring, radius: 1, maxRadius: VASHRA_QUAKE_RADIUS, speed: 60, opacity: 0.7});
+  
+  // Damage + knockback everything nearby
+  if(characterPivot) {
+    var qdx = characterPivot.position.x - epicenterX;
+    var qdz = characterPivot.position.z - epicenterZ;
+    var qDist = Math.sqrt(qdx*qdx + qdz*qdz);
+    if(qDist < VASHRA_QUAKE_RADIUS) {
+      var falloff = 1.0 - qDist / VASHRA_QUAKE_RADIUS;
+      var dmg = VASHRA_QUAKE_DAMAGE * falloff;
+      playerHP = Math.max(0, playerHP - dmg);
+      damageFlashTimer = 0.5;
+      // Knockback away from epicenter
+      var kbDist = VASHRA_QUAKE_KNOCKBACK * falloff;
+      var kbAngle = Math.atan2(qdx, qdz);
+      playerKnockVX = Math.sin(kbAngle) * kbDist;
+      playerKnockVZ = Math.cos(kbAngle) * kbDist;
+      playerKnockTimer = 0.5;
+      debugLog('💥 EARTHQUAKE! Player hit for ' + dmg.toFixed(0) + ' HP, knocked back ' + kbDist.toFixed(0) + ' units');
+    }
+  }
+  
+  // Kill/push nearby NPCs
+  bearData.forEach(function(bd, i) {
+    if(bd.state === 'dead' || bd.state === 'removed') return;
+    var dx = bd.model.position.x - epicenterX;
+    var dz = bd.model.position.z - epicenterZ;
+    var dist = Math.sqrt(dx*dx + dz*dz);
+    if(dist < VASHRA_QUAKE_RADIUS * 0.5) {
+      bd.hp = Math.max(0, bd.hp - 150);
+      if(bd.hp <= 0) { bearDeath(i); debugLog('🐉💀 Earthquake killed bear #' + i); }
+    }
+  });
+  deerData.forEach(function(dd) {
+    if(dd.state === 'dead') return;
+    var dx = dd.model.position.x - epicenterX;
+    var dz = dd.model.position.z - epicenterZ;
+    if(dx*dx + dz*dz < VASHRA_QUAKE_RADIUS * VASHRA_QUAKE_RADIUS * 0.25) {
+      dd.state = 'fleeing';
+    }
+  });
+}
+
+function checkWingBuffet(dt) {
+  if(vashraState !== 'landed' || !characterPivot) return;
+  vashraBuffetCooldown -= dt;
+  var dx = characterPivot.position.x - vashraLandX;
+  var dz = characterPivot.position.z - vashraLandZ;
+  var dist = Math.sqrt(dx*dx + dz*dz);
+  if(dist < VASHRA_BUFFET_RANGE && vashraBuffetCooldown <= 0) {
+    vashraBuffetCooldown = 8;  // 8s cooldown
+    var pushAngle = Math.atan2(dx, dz);
+    playerKnockVX = Math.sin(pushAngle) * VASHRA_BUFFET_FORCE;
+    playerKnockVZ = Math.cos(pushAngle) * VASHRA_BUFFET_FORCE;
+    playerKnockTimer = 0.6;
+    playerHP = Math.max(0, playerHP - VASHRA_BUFFET_DAMAGE);
+    damageFlashTimer = 0.3;
+    triggerScreenShake(1.0, 0.5);
+    debugLog('🐉💨 Wing buffet! Player pushed ' + VASHRA_BUFFET_FORCE + ' units, -' + VASHRA_BUFFET_DAMAGE + ' HP');
+  }
+}
+
+function updateQuakeRings(dt) {
+  for(var i = quakeRings.length - 1; i >= 0; i--) {
+    var qr = quakeRings[i];
+    qr.radius += qr.speed * dt;
+    qr.opacity -= dt * 0.8;
+    qr.mesh.scale.set(qr.radius, qr.radius, 1);
+    qr.mesh.material.opacity = Math.max(0, qr.opacity);
+    if(qr.radius >= qr.maxRadius || qr.opacity <= 0) {
+      scene.remove(qr.mesh);
+      qr.mesh.geometry.dispose();
+      qr.mesh.material.dispose();
+      quakeRings.splice(i, 1);
+    }
+  }
+}
+
+function updatePlayerKnockback(dt) {
+  if(playerKnockTimer <= 0) return;
+  playerKnockTimer -= dt;
+  var kbFactor = Math.max(0, playerKnockTimer) * 2;  // Stronger at start
+  characterPivot.position.x += playerKnockVX * dt * kbFactor * 4;
+  characterPivot.position.z += playerKnockVZ * dt * kbFactor * 4;
+  // Clamp to world
+  characterPivot.position.x = Math.max(-395, Math.min(395, characterPivot.position.x));
+  characterPivot.position.z = Math.max(-395, Math.min(395, characterPivot.position.z));
+}
+
+function updatePlayerFalling(dt) {
+  if(!playerFalling) return;
+  playerFallVelocity += 60 * dt;  // Gravity acceleration
+  characterPivot.position.y -= playerFallVelocity * dt;
+  var groundY = getHeight(characterPivot.position.x, characterPivot.position.z);
+  if(characterPivot.position.y <= groundY + 0.15) {
+    characterPivot.position.y = groundY + 0.15;
+    playerFalling = false;
+    playerGrabbed = false;
+    var fallHeight = playerFallStartY - groundY;
+    if(fallHeight > FALL_DAMAGE_MIN_HEIGHT) {
+      var fallDmg = (fallHeight - FALL_DAMAGE_MIN_HEIGHT) * FALL_DAMAGE_PER_UNIT;
+      fallDmg = Math.min(fallDmg, 95);  // Cap at 95 HP — survivable but barely
+      playerHP = Math.max(1, playerHP - fallDmg);  // Always leave 1 HP (mercy)
+      triggerScreenShake(3.0, 1.0);
+      damageFlashTimer = 1.0;
+      debugLog('💀 FALL IMPACT! ' + fallHeight.toFixed(0) + ' units = -' + fallDmg.toFixed(0) + ' HP! (' + Math.round(playerHP) + ' remaining)');
+    }
+    playerFallVelocity = 0;
+  }
+}
+
+function updateFearEffect(dt) {
+  if(!vashraFearActive) return;
+  vashraFearTimer -= dt;
+  if(vashraFearTimer <= 0) {
+    vashraFearActive = false;
+    playerFearSlow = 1.0;
+    fearDesaturation = 0;
+  } else {
+    // Fade back to normal over last 1.5s
+    if(vashraFearTimer < 1.5) {
+      playerFearSlow = 0.4 + (1.5 - vashraFearTimer) / 1.5 * 0.6;
+      fearDesaturation = vashraFearTimer / 1.5;
+    }
+  }
+}
+
+function updateScreenShake(dt) {
+  if(screenShakeIntensity <= 0) return;
+  screenShakeIntensity -= screenShakeDecay * dt;
+  if(screenShakeIntensity < 0) screenShakeIntensity = 0;
 }
 
 function initFireballSystem(){
@@ -3775,11 +3989,12 @@ function animate(){
   }
   
   // Forward/Backward input WALKS in camera facing direction
-  const forwardInput = -moveZ; // joystick up (neg Y) = forward (positive)
+  // DISABLED when grabbed by dragon or falling from drop
+  const forwardInput = (playerGrabbed || playerFalling) ? 0 : -moveZ;
   let isWalkingNow = Math.abs(forwardInput) > 0.05;
   if(isWalkingNow){
     const inputMag = Math.min(1, Math.abs(forwardInput));
-    const speed = playerSpeed * inputMag * (isSprinting ? sprintMult : 1) * dt;
+    const speed = playerSpeed * inputMag * (isSprinting ? sprintMult : 1) * dt * playerFearSlow;
     const dir = Math.sign(forwardInput);
     playerPos.x += Math.sin(playerYaw) * dir * speed;
     playerPos.z += Math.cos(playerYaw) * dir * speed;
@@ -4388,15 +4603,16 @@ function animate(){
         if(vashraLastAction === 'fire') weights[1] *= 0.2;
         if(vashraLastAction === 'land') { weights[2] *= 0.1; weights[3] *= 0.1; }
         
-        // Normalize weights
-        var totalW = weights[0] + weights[1] + weights[2] + weights[3];
-        if(totalW <= 0){ weights = [1,0,0,0]; totalW = 1; }
+        // Normalize weights (6 choices now)
+        var totalW = 0;
+        for(var wi = 0; wi < weights.length; wi++) totalW += weights[wi];
+        if(totalW <= 0){ weights = [1,0,0,0,0,0]; totalW = 1; }
         
         var roll = Math.random() * totalW;
         var cumul = 0;
-        var choice = 'fly';  // default keep flying
-        var labels = ['fly', 'fire', 'landRandom', 'landNearPlayer'];
-        for(var w = 0; w < 4; w++){
+        var choice = 'fly';
+        var labels = ['fly', 'fire', 'landRandom', 'landNearPlayer', 'swoopGrab', 'strafingRun'];
+        for(var w = 0; w < labels.length; w++){
           cumul += weights[w];
           if(roll <= cumul){ choice = labels[w]; break; }
         }
@@ -4521,6 +4737,57 @@ function animate(){
           flyAct.crossFadeTo(descendAnim, 1.5);
           debugLog('🐉 Vashra [' + vashraMood + '] decides to LAND ' + (vashraLandNearPlayer ? 'NEAR PLAYER' : 'randomly') + ' — rest ' + vashraRestDuration.toFixed(0) + 's');
         }
+        } else if(choice === 'swoopGrab'){
+          // === SWOOP & GRAB: Dragon dives at player, snatches them, carries up, DROPS ===
+          vashraLastAction = 'swoop';
+          vashraState = 'swooping';
+          vashraStateTimer = 0;
+          vashraGrabStartPos.x = vashraModel.position.x;
+          vashraGrabStartPos.y = vashraModel.position.y;
+          vashraGrabStartPos.z = vashraModel.position.z;
+          // Target the player position (with slight lead)
+          if(characterPivot) {
+            vashraGrabDiveTarget.x = characterPivot.position.x;
+            vashraGrabDiveTarget.y = getHeight(characterPivot.position.x, characterPivot.position.z) + 3;
+            vashraGrabDiveTarget.z = characterPivot.position.z;
+          }
+          // Use dive animation
+          var descendAnim = vashraDiveAction || vashraFlightAction;
+          descendAnim.reset(); descendAnim.play();
+          var flyAct = (vashraOrbitDir > 0 && vashraBankAction) ? vashraBankAction : 
+                       (vashraBankLeftAction || vashraFlightAction);
+          flyAct.crossFadeTo(descendAnim, 0.5);
+          triggerFearRoar();  // ROAR as it dives!
+          debugLog('🦅 VASHRA SWOOPING AT PLAYER!');
+          
+        } else if(choice === 'strafingRun'){
+          // === STRAFING FIRE RUN: Low altitude pass, machine-gun fireballs ===
+          vashraLastAction = 'strafe';
+          vashraState = 'strafing';
+          vashraStateTimer = 0;
+          vashraStrafeFired = 0;
+          vashraStrafFireTimer = 0;
+          // Start from current position, fly toward target area
+          vashraStrafStartX = vashraModel.position.x;
+          vashraStrafStartZ = vashraModel.position.z;
+          vashraStrafStartY = vashraModel.position.y;
+          // Target: player direction or random
+          if(characterPivot && (vashraMood === 'aggressive' || vashraMood === 'territorial')) {
+            var angleToPlayer = Math.atan2(characterPivot.position.z - vashraModel.position.z,
+                                           characterPivot.position.x - vashraModel.position.x);
+            vashraStrafEndX = characterPivot.position.x + Math.cos(angleToPlayer) * 100;
+            vashraStrafEndZ = characterPivot.position.z + Math.sin(angleToPlayer) * 100;
+          } else {
+            vashraStrafEndX = (Math.random() - 0.5) * 600;
+            vashraStrafEndZ = (Math.random() - 0.5) * 600;
+          }
+          // Use straight flight animation at low altitude
+          vashraFlightAction.reset(); vashraFlightAction.play();
+          var curAct = (vashraOrbitDir > 0 && vashraBankAction && vashraBankAction.isRunning()) ? vashraBankAction :
+                       (vashraBankLeftAction && vashraBankLeftAction.isRunning()) ? vashraBankLeftAction : null;
+          if(curAct) curAct.crossFadeTo(vashraFlightAction, 0.5);
+          debugLog('🔥 VASHRA STRAFING RUN! ' + (vashraMood === 'aggressive' ? 'Targeting player!' : 'Random path'));
+        
         // else choice === 'fly' → do nothing, keep orbiting
       }
       
@@ -4576,7 +4843,9 @@ function animate(){
           vashraLandAction.reset(); vashraLandAction.play();
           vashraDiveAction.crossFadeTo(vashraLandAction, 1.0);
         }
-        debugLog('🐉 Vashra landed! ' + (vashraLandNearPlayer ? '👁️ Watching player...' : 'Resting...') + ' (' + vashraRestDuration.toFixed(0) + 's)');
+        // EARTHQUAKE on landing! Ground shakes, things get knocked back
+        triggerEarthquakeLanding(vashraLandX, vashraLandZ);
+        debugLog('🐉💥 Vashra SLAMS down! EARTHQUAKE! ' + (vashraLandNearPlayer ? '👁️ Watching player...' : 'Resting...') + ' (' + vashraRestDuration.toFixed(0) + 's)');
       }
       
     } else if(vashraState === 'landed'){
@@ -4594,6 +4863,9 @@ function animate(){
         vashraModel.rotation.y += fDiff * 0.02;  // Very slow, eerie turn
       }
       
+      // Wing buffet — push away player who gets too close
+      checkWingBuffet(dt);
+      
       if(vashraStateTimer > vashraRestDuration){
         vashraState = 'ascending';
         vashraStateTimer = 0;
@@ -4605,6 +4877,147 @@ function animate(){
         if(vashraLandAction && vashraLandAction.isRunning()) vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
         if(vashraDiveAction && vashraDiveAction.isRunning()) vashraDiveAction.crossFadeTo(vashraFlightAction, 2.0);
         debugLog('🐉 Vashra taking off!');
+      }
+      
+    } else if(vashraState === 'swooping'){
+      // === SWOOP DIVE: Racing toward player to grab ===
+      var swoopT = Math.min(vashraStateTimer / VASHRA_SWOOP_DURATION, 1);
+      var swoopEase = swoopT * swoopT;  // Accelerating dive — gets faster!
+      var swoopX = vashraGrabStartPos.x + (vashraGrabDiveTarget.x - vashraGrabStartPos.x) * swoopEase;
+      var swoopZ = vashraGrabStartPos.z + (vashraGrabDiveTarget.z - vashraGrabStartPos.z) * swoopEase;
+      var swoopY = vashraGrabStartPos.y + (vashraGrabDiveTarget.y - vashraGrabStartPos.y) * swoopEase;
+      vashraModel.position.set(swoopX, swoopY, swoopZ);
+      // Face dive direction
+      var sdx = vashraGrabDiveTarget.x - swoopX;
+      var sdz = vashraGrabDiveTarget.z - swoopZ;
+      if(Math.abs(sdx) > 1 || Math.abs(sdz) > 1) vashraModel.rotation.y = Math.atan2(sdx, sdz);
+      
+      if(swoopT >= 1) {
+        // Check if close enough to grab player
+        if(characterPivot) {
+          var gDx = characterPivot.position.x - vashraGrabDiveTarget.x;
+          var gDz = characterPivot.position.z - vashraGrabDiveTarget.z;
+          var grabDist = Math.sqrt(gDx*gDx + gDz*gDz);
+          if(grabDist < 20) {  // Within grab range
+            // GRABBED! Player loses control
+            playerGrabbed = true;
+            vashraState = 'carrying';
+            vashraStateTimer = 0;
+            vashraGrabStartPos.x = vashraModel.position.x;
+            vashraGrabStartPos.y = vashraModel.position.y;
+            vashraGrabStartPos.z = vashraModel.position.z;
+            // Switch to flight animation (carrying player up)
+            vashraFlightAction.reset(); vashraFlightAction.play();
+            var curAnim = vashraDiveAction || vashraFlightAction;
+            curAnim.crossFadeTo(vashraFlightAction, 0.5);
+            triggerScreenShake(2.0, 1.0);
+            debugLog('🦅💀 VASHRA GRABBED THE PLAYER!');
+          } else {
+            // Missed! Resume flying
+            vashraState = 'ascending';
+            vashraStateTimer = 0;
+            vashraLandStartY = vashraModel.position.y;
+            vashraLandStartX = vashraModel.position.x;
+            vashraLandStartZ = vashraModel.position.z;
+            vashraAngle = Math.atan2(vashraModel.position.z, vashraModel.position.x);
+            vashraFlightAction.reset(); vashraFlightAction.play();
+            if(vashraDiveAction) vashraDiveAction.crossFadeTo(vashraFlightAction, 1.0);
+            debugLog('🦅 Vashra missed the grab! Climbing back...');
+          }
+        } else {
+          // No player ref, just ascend
+          vashraState = 'ascending';
+          vashraStateTimer = 0;
+          vashraLandStartY = vashraModel.position.y;
+          vashraLandStartX = vashraModel.position.x;
+          vashraLandStartZ = vashraModel.position.z;
+          vashraAngle = Math.atan2(vashraModel.position.z, vashraModel.position.x);
+          vashraFlightAction.reset(); vashraFlightAction.play();
+        }
+      }
+      
+    } else if(vashraState === 'carrying'){
+      // === CARRYING PLAYER: Flying up with grabbed player ===
+      var carryT = Math.min(vashraStateTimer / VASHRA_CARRY_DURATION, 1);
+      var carryEase = carryT * carryT * (3 - 2 * carryT);
+      // Fly up to carry altitude
+      var carryX = vashraGrabStartPos.x + Math.sin(vashraAngle) * carryT * 50;
+      var carryZ = vashraGrabStartPos.z + Math.cos(vashraAngle) * carryT * 50;
+      var carryY = vashraGrabStartPos.y + (VASHRA_CARRY_ALTITUDE - vashraGrabStartPos.y) * carryEase;
+      vashraModel.position.set(carryX, carryY, carryZ);
+      vashraModel.rotation.y = Math.atan2(Math.sin(vashraAngle), Math.cos(vashraAngle));
+      
+      // Player follows dragon (hanging below)
+      if(characterPivot && playerGrabbed) {
+        characterPivot.position.x = carryX;
+        characterPivot.position.y = carryY - 8;  // Hanging below dragon
+        characterPivot.position.z = carryZ;
+      }
+      
+      // Screen shake while grabbed (turbulence)
+      if(Math.random() < 0.3) triggerScreenShake(0.5, 0.2);
+      
+      if(carryT >= 1) {
+        // DROP THE PLAYER
+        playerFalling = true;
+        playerFallVelocity = 0;
+        playerFallStartY = characterPivot ? characterPivot.position.y : VASHRA_CARRY_ALTITUDE;
+        vashraState = 'ascending';
+        vashraStateTimer = 0;
+        vashraLandStartY = vashraModel.position.y;
+        vashraLandStartX = vashraModel.position.x;
+        vashraLandStartZ = vashraModel.position.z;
+        vashraAngle = Math.atan2(vashraModel.position.z, vashraModel.position.x);
+        // Bank animation for circling back
+        var bankAct = vashraOrbitDir > 0 ? (vashraBankAction || vashraFlightAction) : (vashraBankLeftAction || vashraFlightAction);
+        bankAct.reset(); bankAct.play();
+        vashraFlightAction.crossFadeTo(bankAct, 1.5);
+        debugLog('🦅💨 VASHRA DROPS THE PLAYER FROM ' + playerFallStartY.toFixed(0) + ' UNITS!');
+      }
+      
+    } else if(vashraState === 'strafing'){
+      // === STRAFING RUN: Low-altitude fireball bombardment ===
+      var strafeT = Math.min(vashraStateTimer / VASHRA_STRAFE_DURATION, 1);
+      var strafeEase = strafeT;  // Linear for constant speed
+      // Descend to strafe altitude then fly along path
+      var descentT = Math.min(strafeT * 3, 1);  // First third is descent
+      var strafeX = vashraStrafStartX + (vashraStrafEndX - vashraStrafStartX) * strafeEase;
+      var strafeZ = vashraStrafStartZ + (vashraStrafEndZ - vashraStrafStartZ) * strafeEase;
+      var strafeY = vashraStrafStartY + (VASHRA_STRAFE_ALTITUDE - vashraStrafStartY) * Math.min(descentT, 1);
+      vashraModel.position.set(strafeX, strafeY, strafeZ);
+      // Face movement direction
+      var stDx = vashraStrafEndX - strafeX;
+      var stDz = vashraStrafEndZ - strafeZ;
+      if(Math.abs(stDx) > 1 || Math.abs(stDz) > 1) vashraModel.rotation.y = Math.atan2(stDx, stDz);
+      
+      // Fire fireballs at intervals
+      vashraStrafFireTimer += dt;
+      if(vashraStrafFireTimer >= VASHRA_STRAFE_FIRE_INTERVAL && vashraStrafeFired < VASHRA_STRAFE_FIREBALL_COUNT) {
+        vashraStrafFireTimer = 0;
+        vashraStrafeFired++;
+        // Fire downward from current position
+        var mouthFwdX = Math.sin(vashraModel.rotation.y) * 0.2 * VASHRA_SCALE;
+        var mouthFwdZ = Math.cos(vashraModel.rotation.y) * 0.2 * VASHRA_SCALE;
+        var targetGX = strafeX + mouthFwdX * 2 + (Math.random()-0.5) * 15;
+        var targetGZ = strafeZ + mouthFwdZ * 2 + (Math.random()-0.5) * 15;
+        var targetGY = getHeight(targetGX, targetGZ);
+        fireFireball(
+          strafeX + mouthFwdX, strafeY - 0.05 * VASHRA_SCALE, strafeZ + mouthFwdZ,
+          targetGX, targetGY, targetGZ
+        );
+        debugLog('🔥 Strafe fireball #' + vashraStrafeFired + '/' + VASHRA_STRAFE_FIREBALL_COUNT);
+      }
+      
+      if(strafeT >= 1) {
+        // End strafe, climb back to orbit
+        vashraState = 'ascending';
+        vashraStateTimer = 0;
+        vashraFireCount = 0;
+        vashraLandStartY = vashraModel.position.y;
+        vashraLandStartX = vashraModel.position.x;
+        vashraLandStartZ = vashraModel.position.z;
+        vashraAngle = Math.atan2(vashraModel.position.z, vashraModel.position.x);
+        debugLog('🐉 Strafe run complete! Climbing back...');
       }
       
     } else if(vashraState === 'ascending'){
@@ -4644,6 +5057,13 @@ function animate(){
     // Update dragon animation mixer
     if(vashraMixer) vashraMixer.update(dt);
   }
+  
+  // === VASHRA TERROR EFFECTS UPDATE ===
+  updateQuakeRings(dt);
+  updatePlayerKnockback(dt);
+  updatePlayerFalling(dt);
+  updateFearEffect(dt);
+  updateScreenShake(dt);
 
   // ===== SKINNING SYSTEM =====
   // Find nearest dead unskinned bear
@@ -4947,7 +5367,13 @@ function animate(){
     const camY = lookY + Math.sin(cameraPitch) * cameraDistance;
     const camZ = lookZ - facingZ * behindDist;
     
-    camera.position.set(camX, camY, camZ);
+    // Apply screen shake
+    var shakeX = 0, shakeY = 0;
+    if(screenShakeIntensity > 0) {
+      shakeX = (Math.random() - 0.5) * screenShakeIntensity * 2;
+      shakeY = (Math.random() - 0.5) * screenShakeIntensity * 2;
+    }
+    camera.position.set(camX + shakeX, camY + shakeY, camZ + shakeX * 0.5);
     camera.lookAt(lookX, lookY, lookZ);
     if(playerModel) playerModel.visible = true;
   } else {
@@ -5024,7 +5450,13 @@ function animate(){
   if(gfxPostProcessing) {
     composer.render();
   } else {
-    renderer.render(scene, camera);
+    // Fear desaturation overlay
+  if(fearDesaturation > 0) {
+    renderer.domElement.style.filter = 'saturate(' + (1 - fearDesaturation * 0.7) + ') contrast(' + (1 + fearDesaturation * 0.2) + ')';
+  } else {
+    renderer.domElement.style.filter = '';
+  }
+  renderer.render(scene, camera);
   }
 }
 animate();

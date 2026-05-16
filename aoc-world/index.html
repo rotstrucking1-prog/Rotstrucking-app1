@@ -313,6 +313,26 @@ const camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeig
 const clock = new THREE.Clock();
 const loader = new GLTFLoader();
 
+// === RETRY LOADER (for LTE/slow connections) ===
+function retryLoad(url, onSuccess, onProgress, onError, maxRetries) {
+  maxRetries = maxRetries || 2;
+  var attempt = 0;
+  function tryLoad() {
+    var retryUrl = attempt > 0 ? url + (url.indexOf('?') >= 0 ? '&' : '?') + 'retry=' + Date.now() : url;
+    loader.load(retryUrl, onSuccess, onProgress, function(err) {
+      attempt++;
+      if(attempt < maxRetries) {
+        debugLog('⚠️ Load failed (' + url.split('?')[0] + ') — retry ' + attempt + '/' + maxRetries + '...');
+        setTimeout(tryLoad, 3000);
+      } else {
+        debugLog('❌ GAVE UP loading ' + url.split('?')[0] + ' after ' + maxRetries + ' attempts');
+        if(onError) onError(err);
+      }
+    });
+  }
+  tryLoad();
+}
+
 // === POST-PROCESSING ===
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
@@ -657,7 +677,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-loader.load('rock-pile-model.glb?v=1', function(gltf){
+retryLoad('rock-pile-model.glb?v=1', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -701,7 +721,7 @@ loader.load('rock-pile-model.glb?v=1', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-loader.load('iron-ore-deposit.glb?v=8', function(gltf){
+retryLoad('iron-ore-deposit.glb?v=8', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -754,7 +774,7 @@ loader.load('iron-ore-deposit.glb?v=8', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-loader.load('bass-model.glb?v=8', function(gltf){
+retryLoad('bass-model.glb?v=8', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -846,7 +866,7 @@ loader.load('bass-model.glb?v=8', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-loader.load('deer-model.glb?v=2', function(gltf){
+retryLoad('deer-model.glb?v=2', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -955,7 +975,7 @@ loader.load('deer-model.glb?v=2', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-loader.load('fishing-pole-model.glb?v=8', function(gltf){
+retryLoad('fishing-pole-model.glb?v=8', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -2516,7 +2536,7 @@ const playerPlaceholder = new THREE.Mesh(
 scene.add(playerPlaceholder);
 
 updateLoading('Loading character model...', 50);
-loader.load('character-walk.glb?v=47', function(gltf){
+retryLoad('character-walk.glb?v=47', function(gltf){
   playerModel = gltf.scene;
   // Pivot container: handles position/rotation/scale
   // GLB is pre-centered (mesh X center ≈ 0) so no offset needed
@@ -2616,7 +2636,7 @@ loader.load('character-walk.glb?v=47', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-loader.load('grass-model.glb?v=8', function(gltf){
+retryLoad('grass-model.glb?v=8', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -2674,7 +2694,7 @@ loader.load('grass-model.glb?v=8', function(gltf){
 updateLoading('Loading sun...', 85);
 var sunModel = null;
 
-loader.load('sun-model.glb?v=8', function(gltf){
+retryLoad('sun-model.glb?v=8', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -2709,7 +2729,7 @@ loader.load('sun-model.glb?v=8', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-loader.load('bear-walk.glb?v=2', function(gltf){
+retryLoad('bear-walk.glb?v=2', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -2818,7 +2838,7 @@ loader.load('bear-walk.glb?v=2', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-loader.load('freak-walk.glb?v=2', function(gltf){
+retryLoad('freak-walk.glb?v=2', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -2899,7 +2919,7 @@ loader.load('freak-walk.glb?v=2', function(gltf){
 });
 
 // Load Stallion (animated walk)
-loader.load('stallion-walk.glb?v=2', function(gltf){
+retryLoad('stallion-walk.glb?v=2', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -2986,7 +3006,7 @@ loader.load('stallion-walk.glb?v=2', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-loader.load('dreugh-model.glb?v=1', function(gltf){
+retryLoad('dreugh-model.glb?v=1', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -3049,7 +3069,7 @@ loader.load('dreugh-model.glb?v=1', function(gltf){
   checkReady();
 });
 
-loader.load('dead-grizzly-model.glb?v=1', function(gltf){
+retryLoad('dead-grizzly-model.glb?v=1', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -3076,7 +3096,7 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-loader.load('vashra-dragon.glb?v=1', function(gltf){
+retryLoad('vashra-dragon.glb?v=1', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -3122,7 +3142,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  loader.load('vashra-dragon-landing.glb?v=2', function(landGltf){
+  retryLoad('vashra-dragon-landing.glb?v=2', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -3137,7 +3157,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  loader.load('vashra-dragon-bank-right.glb?v=1', function(bankGltf){
+  retryLoad('vashra-dragon-bank-right.glb?v=1', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -3156,7 +3176,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  loader.load('vashra-dragon-bank-left.glb?v=1', function(blGltf){
+  retryLoad('vashra-dragon-bank-left.glb?v=1', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -3171,7 +3191,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  loader.load('vashra-dragon-dive-land.glb?v=1', function(diveGltf){
+  retryLoad('vashra-dragon-dive-land.glb?v=1', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -3186,7 +3206,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  loader.load('vashra-dragon-dive-death.glb?v=1', function(deathGltf){
+  retryLoad('vashra-dragon-dive-death.glb?v=1', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -3202,7 +3222,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  loader.load('vashra-dragon-fireball.glb?v=1', function(fbGltf){
+  retryLoad('vashra-dragon-fireball.glb?v=1', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -3218,7 +3238,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  loader.load('vashra-sitting-idle.glb?v=1', function(idleGltf){
+  retryLoad('vashra-sitting-idle.glb?v=1', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -3233,7 +3253,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  loader.load('vashra-idle-to-sleep.glb?v=1', function(sleepGltf){
+  retryLoad('vashra-idle-to-sleep.glb?v=1', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -3254,7 +3274,7 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
   checkReady();
 });
 
-loader.load('obsidian-scimitar.glb?v=1', function(gltf){
+retryLoad('obsidian-scimitar.glb?v=1', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){

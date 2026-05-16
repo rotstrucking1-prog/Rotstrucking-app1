@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v77</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v78</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -962,6 +962,7 @@ loader.load('deer-model.glb?v=2', function(gltf){
       scale: scale,
       heading: heading,
       state: startState,
+      hp: 10,
       walkSpeed: 1.5 + Math.random() * 1.0,
       turnTimer: 0,
       turnInterval: 5 + Math.random() * 5,
@@ -1131,6 +1132,15 @@ let fireballPool = [];
 let explosionPool = [];
 let fireRingPool = [];
 let vashraFireReady = false;
+
+// Dragon fire damage system
+const DRAGON_FIREBALL_DAMAGE = 40;        // Direct hit damage to player (40% HP!)
+const DRAGON_FIREBALL_BLAST_RADIUS = 12;  // Units — damage falloff radius
+const DRAGON_FIRE_RING_DPS = 8;           // Damage per second standing in fire ring
+const DRAGON_FIRE_RING_RADIUS = 8;        // Must match FIREBALL_RING_RADIUS
+const DRAGON_NPC_KILL_DAMAGE = 200;       // Massive damage to NPCs (one-shots most)
+let activeFireRings = [];                  // Track active fire ring centers for damage ticks
+let dragonFireDmgCooldown = 0;            // Prevent player taking 60fps damage
 
 let stallionModels = [];
 let stallionMixers = [];
@@ -1492,6 +1502,209 @@ function spawnFireRing(centerX, centerY, centerZ){
     spawned++;
   }
   debugLog('🔥 Fire ring spawned at (' + centerX.toFixed(0) + ', ' + centerZ.toFixed(0) + ') — burns for ' + FIREBALL_RING_LIFETIME + 's');
+  // Track for damage ticks
+  activeFireRings.push({ x: centerX, y: centerY, z: centerZ, life: 0, maxLife: FIREBALL_RING_LIFETIME });
+}
+
+// === DRAGON FIRE DAMAGE SYSTEM ===
+function dragonFireImpactDamage(impactX, impactY, impactZ) {
+  // Check ALL NPCs and player within blast radius
+  var blastR2 = DRAGON_FIREBALL_BLAST_RADIUS * DRAGON_FIREBALL_BLAST_RADIUS;
+  
+  // --- PLAYER DAMAGE ---
+  var pdx = characterPivot.position.x - impactX;
+  var pdz = characterPivot.position.z - impactZ;
+  var pDist2 = pdx*pdx + pdz*pdz;
+  if(pDist2 < blastR2) {
+    var falloff = 1.0 - Math.sqrt(pDist2) / DRAGON_FIREBALL_BLAST_RADIUS;
+    var dmg = DRAGON_FIREBALL_DAMAGE * falloff;
+    playerHP = Math.max(0, playerHP - dmg);
+    damageFlashTimer = 0.3;
+    debugLog('💥 Player hit by dragon fire! -' + dmg.toFixed(0) + ' HP (' + Math.round(playerHP) + ' remaining)');
+  }
+  
+  // --- BEAR DAMAGE ---
+  for(var i = 0; i < bearData.length; i++) {
+    var bd = bearData[i];
+    if(bd.state === 'dead' || bd.state === 'removed') continue;
+    var dx = bd.model.position.x - impactX;
+    var dz = bd.model.position.z - impactZ;
+    if(dx*dx + dz*dz < blastR2) {
+      bd.hp = Math.max(0, bd.hp - DRAGON_NPC_KILL_DAMAGE);
+      if(bd.hp <= 0) {
+        bearDeath(i);
+        debugLog('🐉💀 Dragon killed bear #' + i);
+      }
+    }
+  }
+  
+  // --- STALLION DAMAGE ---
+  for(var i = 0; i < stallionData.length; i++) {
+    var sd = stallionData[i];
+    if(sd.state === 'dead' || sd.state === 'removed') continue;
+    var dx = sd.model.position.x - impactX;
+    var dz = sd.model.position.z - impactZ;
+    if(dx*dx + dz*dz < blastR2) {
+      sd.hp = Math.max(0, sd.hp - DRAGON_NPC_KILL_DAMAGE);
+      if(sd.hp <= 0) {
+        stallionDeath(i);
+        debugLog('🐉💀 Dragon killed stallion #' + i);
+      }
+    }
+  }
+  
+  // --- DEER DAMAGE (instant kill — fragile animals) ---
+  deerData.forEach(function(dd) {
+    if(dd.state === 'dead') return;
+    var dx = dd.model.position.x - impactX;
+    var dz = dd.model.position.z - impactZ;
+    if(dx*dx + dz*dz < blastR2) {
+      dd.hp = 0;
+      dd.state = 'dead';
+      dd.model.visible = false;
+      // Respawn after 60s
+      setTimeout(function() {
+        dd.hp = 10;
+        dd.state = 'wandering';
+        dd.model.visible = true;
+        // Reposition randomly
+        var nx = (Math.random()-0.5) * 700;
+        var nz = (Math.random()-0.5) * 700;
+        var ny = getHeight(nx, nz);
+        dd.model.position.set(nx, ny + DEER_FOOT_OFFSET * dd.scale, nz);
+      }, 60000);
+      debugLog('🐉💀 Dragon killed deer');
+    }
+  });
+  
+  // --- DREUGH DAMAGE ---
+  dreughData.forEach(function(dd) {
+    if(dd.state === 'dead') return;
+    var dx = dd.model.position.x - impactX;
+    var dz = dd.model.position.z - impactZ;
+    if(dx*dx + dz*dz < blastR2) {
+      dd.hp = Math.max(0, dd.hp - DRAGON_NPC_KILL_DAMAGE);
+      if(dd.hp <= 0) {
+        dd.state = 'dead';
+        dd.model.visible = false;
+        setTimeout(function() {
+          dd.hp = 80;
+          dd.state = 'wandering';
+          dd.model.visible = true;
+          var nx = (Math.random()-0.5) * 700;
+          var nz = (Math.random()-0.5) * 700;
+          var ny = getHeight(nx, nz);
+          dd.model.position.set(nx, ny + 0.5 * dd.scale, nz);
+        }, 60000);
+        debugLog('🐉💀 Dragon killed dreugh');
+      }
+    }
+  });
+  
+  // --- FREAK-A-ZOID DAMAGE ---
+  freakData.forEach(function(fd) {
+    if(fd.state === 'dead') return;
+    var dx = fd.model.position.x - impactX;
+    var dz = fd.model.position.z - impactZ;
+    if(dx*dx + dz*dz < blastR2) {
+      fd.hp = Math.max(0, fd.hp - DRAGON_NPC_KILL_DAMAGE);
+      if(fd.hp <= 0) {
+        fd.state = 'dead';
+        fd.model.visible = false;
+        if(fd.walkAction) fd.walkAction.stop();
+        setTimeout(function() {
+          fd.hp = 60;
+          fd.state = 'wandering';
+          fd.model.visible = true;
+          if(fd.walkAction) fd.walkAction.play();
+          var nx = (Math.random()-0.5) * 700;
+          var nz = (Math.random()-0.5) * 700;
+          var ny = getHeight(nx, nz);
+          fd.model.position.set(nx, ny, nz);
+        }, 60000);
+        debugLog('🐉💀 Dragon killed freak-a-zoid');
+      }
+    }
+  });
+}
+
+// Fire ring continuous damage (called every frame)
+function updateFireRingDamage(dt) {
+  dragonFireDmgCooldown -= dt;
+  
+  // Clean up expired rings
+  for(var r = activeFireRings.length - 1; r >= 0; r--) {
+    activeFireRings[r].life += dt;
+    if(activeFireRings[r].life >= activeFireRings[r].maxLife) {
+      activeFireRings.splice(r, 1);
+    }
+  }
+  
+  if(activeFireRings.length === 0) return;
+  
+  // Check player in any fire ring (with cooldown to prevent 60fps stacking)
+  if(dragonFireDmgCooldown <= 0) {
+    for(var r = 0; r < activeFireRings.length; r++) {
+      var ring = activeFireRings[r];
+      var pdx = characterPivot.position.x - ring.x;
+      var pdz = characterPivot.position.z - ring.z;
+      if(pdx*pdx + pdz*pdz < DRAGON_FIRE_RING_RADIUS * DRAGON_FIRE_RING_RADIUS) {
+        playerHP = Math.max(0, playerHP - DRAGON_FIRE_RING_DPS * 0.5); // 0.5s tick
+        damageFlashTimer = 0.15;
+        dragonFireDmgCooldown = 0.5; // Only damage every 0.5s
+        debugLog('🔥 Player burning in fire ring! -' + (DRAGON_FIRE_RING_DPS * 0.5).toFixed(0) + ' HP');
+        break;
+      }
+    }
+  }
+  
+  // Check NPCs in fire rings (bears, stallions, deer, dreugh, freak)
+  for(var r = 0; r < activeFireRings.length; r++) {
+    var ring = activeFireRings[r];
+    var rr2 = DRAGON_FIRE_RING_RADIUS * DRAGON_FIRE_RING_RADIUS;
+    
+    // Bears in fire
+    for(var i = 0; i < bearData.length; i++) {
+      var bd = bearData[i];
+      if(bd.state === 'dead' || bd.state === 'removed') continue;
+      var dx = bd.model.position.x - ring.x;
+      var dz = bd.model.position.z - ring.z;
+      if(dx*dx + dz*dz < rr2) {
+        bd.hp -= DRAGON_FIRE_RING_DPS * dt;
+        if(bd.hp <= 0) { bd.hp = 0; bearDeath(i); debugLog('🔥💀 Bear burned to death in fire ring'); }
+      }
+    }
+    
+    // Stallions in fire
+    for(var i = 0; i < stallionData.length; i++) {
+      var sd = stallionData[i];
+      if(sd.state === 'dead' || sd.state === 'removed') continue;
+      var dx = sd.model.position.x - ring.x;
+      var dz = sd.model.position.z - ring.z;
+      if(dx*dx + dz*dz < rr2) {
+        sd.hp -= DRAGON_FIRE_RING_DPS * dt;
+        if(sd.hp <= 0) { sd.hp = 0; stallionDeath(i); debugLog('🔥💀 Stallion burned in fire ring'); }
+      }
+    }
+    
+    // Deer in fire — instant flee then die
+    deerData.forEach(function(dd) {
+      if(dd.state === 'dead') return;
+      var dx = dd.model.position.x - ring.x;
+      var dz = dd.model.position.z - ring.z;
+      if(dx*dx + dz*dz < rr2) {
+        dd.hp -= DRAGON_FIRE_RING_DPS * dt;
+        if(dd.state !== 'spooked') { dd.state = 'spooked'; dd.spookTimer = 5; }
+        if(dd.hp <= 0) {
+          dd.hp = 0; dd.state = 'dead'; dd.model.visible = false;
+          setTimeout(function() { dd.hp = 10; dd.state = 'wandering'; dd.model.visible = true;
+            var nx = (Math.random()-0.5)*700, nz = (Math.random()-0.5)*700;
+            dd.model.position.set(nx, getHeight(nx,nz) + DEER_FOOT_OFFSET*dd.scale, nz);
+          }, 60000);
+        }
+      }
+    });
+  }
 }
 
 function updateFireballs(dt){
@@ -1566,9 +1779,10 @@ function updateFireballs(dt){
         fb.trail[t].active = false;
         fb.trail[t].sprite.visible = false;
       }
-      // Spawn explosion + fire ring
+      // Spawn explosion + fire ring + DAMAGE ALL NEARBY
       spawnExplosion(fb.x, groundAtFB + 1, fb.z);
       spawnFireRing(fb.x, groundAtFB, fb.z);
+      dragonFireImpactDamage(fb.x, groundAtFB, fb.z);
     }
   }
   
@@ -2312,6 +2526,7 @@ loader.load('freak-walk.glb?v=2', function(gltf){
       scale: scale,
       heading: heading,
       state: 'wandering',
+      hp: 60,
       walkSpeed: FREAK_WALK_SPEED + Math.random() * 0.5,
       turnTimer: 0,
       turnInterval: 4 + Math.random() * 6,
@@ -2461,6 +2676,7 @@ loader.load('dreugh-model.glb?v=1', function(gltf){
       scale: scale,
       heading: heading,
       state: 'wandering',
+      hp: 80,
       walkSpeed: DREUGH_WALK_SPEED + Math.random() * 0.4,
       turnTimer: 0,
       turnInterval: 5 + Math.random() * 5,
@@ -4194,11 +4410,63 @@ function animate(){
           vashraHoverX = vashraModel.position.x;
           vashraHoverY = vashraModel.position.y;
           vashraHoverZ = vashraModel.position.z;
-          // Pick target — 40% chance near player if aggressive/territorial
-          if((vashraMood === 'aggressive' || vashraMood === 'territorial') && Math.random() < 0.4 && characterPivot){
-            vashraFireTargetX = characterPivot.position.x + (Math.random()-0.5) * 30;
-            vashraFireTargetZ = characterPivot.position.z + (Math.random()-0.5) * 30;
-          } else {
+          // SMART TARGETING — picks player, NPCs, or random ground based on mood
+          var targetRoll = Math.random();
+          var targetChosen = false;
+          
+          if(vashraMood === 'aggressive') {
+            // 50% player, 30% random NPC, 20% random ground
+            if(targetRoll < 0.5 && characterPivot) {
+              vashraFireTargetX = characterPivot.position.x + (Math.random()-0.5) * 10;
+              vashraFireTargetZ = characterPivot.position.z + (Math.random()-0.5) * 10;
+              targetChosen = true;
+              debugLog('🐉🎯 Vashra targets PLAYER!');
+            } else if(targetRoll < 0.8) {
+              var allNPCs = [];
+              bearData.forEach(function(bd) { if(bd.state !== 'dead' && bd.state !== 'removed') allNPCs.push(bd.model.position); });
+              stallionData.forEach(function(sd) { if(sd.state !== 'dead' && sd.state !== 'removed') allNPCs.push(sd.model.position); });
+              deerData.forEach(function(dd) { if(dd.state !== 'dead') allNPCs.push(dd.model.position); });
+              dreughData.forEach(function(dd) { if(dd.state !== 'dead') allNPCs.push(dd.model.position); });
+              freakData.forEach(function(fd) { if(fd.state !== 'dead') allNPCs.push(fd.model.position); });
+              if(allNPCs.length > 0) {
+                var npcTarget = allNPCs[Math.floor(Math.random() * allNPCs.length)];
+                vashraFireTargetX = npcTarget.x + (Math.random()-0.5) * 5;
+                vashraFireTargetZ = npcTarget.z + (Math.random()-0.5) * 5;
+                targetChosen = true;
+                debugLog('🐉🎯 Vashra targets NPC!');
+              }
+            }
+          } else if(vashraMood === 'territorial') {
+            // 30% player, 40% NPC, 30% random
+            if(targetRoll < 0.3 && characterPivot) {
+              vashraFireTargetX = characterPivot.position.x + (Math.random()-0.5) * 15;
+              vashraFireTargetZ = characterPivot.position.z + (Math.random()-0.5) * 15;
+              targetChosen = true;
+              debugLog('🐉🎯 Vashra territorial strike near player!');
+            } else if(targetRoll < 0.7) {
+              var allNPCs = [];
+              bearData.forEach(function(bd) { if(bd.state !== 'dead' && bd.state !== 'removed') allNPCs.push(bd.model.position); });
+              stallionData.forEach(function(sd) { if(sd.state !== 'dead' && sd.state !== 'removed') allNPCs.push(sd.model.position); });
+              deerData.forEach(function(dd) { if(dd.state !== 'dead') allNPCs.push(dd.model.position); });
+              if(allNPCs.length > 0) {
+                var npcTarget = allNPCs[Math.floor(Math.random() * allNPCs.length)];
+                vashraFireTargetX = npcTarget.x + (Math.random()-0.5) * 5;
+                vashraFireTargetZ = npcTarget.z + (Math.random()-0.5) * 5;
+                targetChosen = true;
+                debugLog('🐉🎯 Vashra territorial strike on NPC!');
+              }
+            }
+          } else if(vashraMood === 'curious') {
+            // Curious rarely attacks — 10% player, 10% NPC
+            if(targetRoll < 0.1 && characterPivot) {
+              vashraFireTargetX = characterPivot.position.x + (Math.random()-0.5) * 20;
+              vashraFireTargetZ = characterPivot.position.z + (Math.random()-0.5) * 20;
+              targetChosen = true;
+            }
+          }
+          // Lazy mood: almost never targets anything specific
+          
+          if(!targetChosen) {
             vashraFireTargetX = (Math.random()-0.5) * 400;
             vashraFireTargetZ = (Math.random()-0.5) * 400;
           }
@@ -4530,6 +4798,7 @@ function animate(){
   // Update smoke particles (weapon hit effects)
   updateSmokeParticles(dt);
   updateFireballs(dt);  // Dragon fireball projectiles + explosions + fire rings
+  updateFireRingDamage(dt);  // Continuous fire ring damage to NPCs + player
   
   // ===== DAMAGE FLASH TIMER =====
   if(damageFlashTimer > 0){

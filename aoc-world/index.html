@@ -124,11 +124,15 @@ setTimeout(function(){
   <div id="hp-text" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:bold;text-shadow:1px 1px 2px #000">100 / 100 HP</div>
 </div>
 <div id="damage-flash" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);z-index:15;pointer-events:none;display:none"></div>
+<div id="vashra-alert" style="position:fixed;top:25%;left:50%;transform:translateX(-50%);z-index:25;pointer-events:none;text-align:center;display:none">
+  <div id="vashra-alert-text" style="font-size:32px;font-weight:bold;color:#ff4400;text-shadow:0 0 20px #ff0000,0 0 40px #ff4400,2px 2px 4px #000;letter-spacing:2px;white-space:nowrap"></div>
+  <div id="vashra-alert-sub" style="font-size:18px;color:#ffaa00;text-shadow:0 0 10px #ff6600,1px 1px 2px #000;margin-top:8px"></div>
+</div>
 <div id="skin-prompt" style="position:fixed;bottom:200px;left:50%;transform:translateX(-50%);color:#fff;font-size:18px;font-weight:bold;text-shadow:2px 2px 4px #000;z-index:20;text-align:center;pointer-events:none;display:none;background:rgba(0,0,0,0.5);padding:8px 20px;border-radius:10px;border:2px solid rgba(255,200,50,0.7)"><span id="skin-prompt-text">Press E to Skin</span><div id="skin-progress-bar" style="margin-top:6px;width:200px;height:8px;background:rgba(0,0,0,0.5);border-radius:4px;overflow:hidden;display:none"><div id="skin-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#cc6633,#ffaa44);border-radius:4px;transition:none"></div></div></div>
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v84</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v85</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1348,6 +1352,95 @@ function createExplosionTexture(){
 }
 
 // === VASHRA TERROR ATTACK FUNCTIONS ===
+// === VASHRA ALERT OVERLAY SYSTEM ===
+let vashraAlertTimer = 0;
+let vashraAlertFade = false;
+
+function showVashraAlert(mainText, subText, duration) {
+  var alertEl = document.getElementById('vashra-alert');
+  var textEl = document.getElementById('vashra-alert-text');
+  var subEl = document.getElementById('vashra-alert-sub');
+  if(!alertEl) return;
+  textEl.textContent = mainText;
+  subEl.textContent = subText || '';
+  alertEl.style.display = 'block';
+  alertEl.style.opacity = '1';
+  vashraAlertTimer = duration || 3;
+  vashraAlertFade = false;
+}
+
+function updateVashraAlertSub(subText) {
+  var subEl = document.getElementById('vashra-alert-sub');
+  if(subEl) subEl.textContent = subText;
+}
+
+function hideVashraAlert() {
+  var alertEl = document.getElementById('vashra-alert');
+  if(alertEl) { alertEl.style.display = 'none'; alertEl.style.opacity = '1'; }
+  vashraAlertTimer = 0;
+}
+
+function updateVashraAlert(dt) {
+  if(vashraAlertTimer <= 0) return;
+  vashraAlertTimer -= dt;
+  var alertEl = document.getElementById('vashra-alert');
+  if(!alertEl) return;
+  // Fade out in last 0.8s
+  if(vashraAlertTimer < 0.8) {
+    alertEl.style.opacity = String(Math.max(0, vashraAlertTimer / 0.8));
+  }
+  if(vashraAlertTimer <= 0) {
+    alertEl.style.display = 'none';
+    alertEl.style.opacity = '1';
+  }
+}
+
+// === WIND SPEED LINES (visual feedback during grab/fall) ===
+const windLines = [];
+const WIND_LINE_COUNT = 12;
+let windLinesInited = false;
+
+function initWindLines() {
+  if(windLinesInited) return;
+  var lineMat = new THREE.LineBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.6});
+  for(var i = 0; i < WIND_LINE_COUNT; i++) {
+    var pts = [new THREE.Vector3(0,0,0), new THREE.Vector3(0,-3,0)];
+    var geo = new THREE.BufferGeometry().setFromPoints(pts);
+    var line = new THREE.Line(geo, lineMat.clone());
+    line.visible = false;
+    scene.add(line);
+    windLines.push({mesh: line, vx: 0, vy: 0, vz: 0, life: 0});
+  }
+  windLinesInited = true;
+}
+
+function showWindLines(centerX, centerY, centerZ, goingUp) {
+  if(!windLinesInited) initWindLines();
+  for(var i = 0; i < windLines.length; i++) {
+    var w = windLines[i];
+    if(w.life > 0) continue;
+    var offX = (Math.random() - 0.5) * 20;
+    var offZ = (Math.random() - 0.5) * 20;
+    w.mesh.position.set(centerX + offX, centerY + (Math.random() - 0.5) * 10, centerZ + offZ);
+    w.mesh.visible = true;
+    w.mesh.material.opacity = 0.4 + Math.random() * 0.4;
+    w.vy = goingUp ? (8 + Math.random() * 6) : -(15 + Math.random() * 10);
+    w.life = 0.5 + Math.random() * 0.5;
+    break;  // Spawn one per frame
+  }
+}
+
+function updateWindLines(dt) {
+  for(var i = 0; i < windLines.length; i++) {
+    var w = windLines[i];
+    if(w.life <= 0) { w.mesh.visible = false; continue; }
+    w.life -= dt;
+    w.mesh.position.y += w.vy * dt;
+    w.mesh.material.opacity *= 0.95;
+    if(w.life <= 0) w.mesh.visible = false;
+  }
+}
+
 function triggerScreenShake(intensity, duration) {
   screenShakeIntensity = intensity;
   screenShakeDecay = intensity / duration;
@@ -1365,6 +1458,7 @@ function triggerFearRoar() {
 function triggerEarthquakeLanding(epicenterX, epicenterZ) {
   triggerScreenShake(2.5, 1.5);
   triggerFearRoar();
+  showVashraAlert('💥 EARTHQUAKE!', 'Vashra shakes the ground!', 3);
   
   // Expanding shockwave ring visual
   var ringGeo = new THREE.RingGeometry(1, 3, 32);
@@ -1432,6 +1526,7 @@ function checkWingBuffet(dt) {
     playerHP = Math.max(0, playerHP - VASHRA_BUFFET_DAMAGE);
     damageFlashTimer = 0.3;
     triggerScreenShake(1.0, 0.5);
+    showVashraAlert('🌊 WING BUFFET!', '-' + VASHRA_BUFFET_DAMAGE + ' HP — Blown back!', 2);
     debugLog('🐉💨 Wing buffet! Player pushed ' + VASHRA_BUFFET_FORCE + ' units, -' + VASHRA_BUFFET_DAMAGE + ' HP');
   }
 }
@@ -1467,6 +1562,11 @@ function updatePlayerFalling(dt) {
   if(!playerFalling) return;
   playerFallVelocity += 60 * dt;  // Gravity acceleration
   characterPivot.position.y -= playerFallVelocity * dt;
+  // Wind speed lines rushing past during fall
+  showWindLines(characterPivot.position.x, characterPivot.position.y, characterPivot.position.z, false);
+  // Update falling altitude readout
+  var curAlt = Math.round(characterPivot.position.y);
+  updateVashraAlertSub('Altitude: ' + curAlt + ' — BRACE FOR IMPACT!');
   var groundY = getHeight(characterPivot.position.x, characterPivot.position.z);
   if(characterPivot.position.y <= groundY + 0.15) {
     characterPivot.position.y = groundY + 0.15;
@@ -1479,7 +1579,10 @@ function updatePlayerFalling(dt) {
       playerHP = Math.max(1, playerHP - fallDmg);  // Always leave 1 HP (mercy)
       triggerScreenShake(3.0, 1.0);
       damageFlashTimer = 1.0;
+      showVashraAlert('💥 IMPACT!', '-' + Math.round(fallDmg) + ' HP! (' + Math.round(playerHP) + ' remaining)', 3);
       debugLog('💀 FALL IMPACT! ' + fallHeight.toFixed(0) + ' units = -' + fallDmg.toFixed(0) + ' HP! (' + Math.round(playerHP) + ' remaining)');
+    } else {
+      showVashraAlert('🍀 SAFE LANDING', 'Lucky — not high enough for damage!', 2);
     }
     playerFallVelocity = 0;
   }
@@ -5079,6 +5182,7 @@ function animate(){
       
     } else if(vashraState === 'swooping'){
       // === SWOOP DIVE: Racing toward player to grab ===
+      if(vashraStateTimer < dt * 2) showVashraAlert('⚠️ VASHRA IS DIVING!', 'She\'s coming for you!', VASHRA_SWOOP_DURATION + 1);
       var swoopT = Math.min(vashraStateTimer / VASHRA_SWOOP_DURATION, 1);
       var swoopEase = swoopT * swoopT;  // Accelerating dive — gets faster!
       var swoopX = vashraGrabStartPos.x + (vashraGrabDiveTarget.x - vashraGrabStartPos.x) * swoopEase;
@@ -5109,6 +5213,8 @@ function animate(){
             var curAnim = vashraDiveAction || vashraFlightAction;
             curAnim.crossFadeTo(vashraFlightAction, 0.5);
             triggerScreenShake(2.0, 1.0);
+            showVashraAlert('🦅 GRABBED!', 'Vashra has you in her claws!', VASHRA_CARRY_DURATION + 1);
+            initWindLines();
             debugLog('🦅💀 VASHRA GRABBED THE PLAYER!');
           } else {
             // Missed! Resume flying
@@ -5154,12 +5260,17 @@ function animate(){
       
       // Screen shake while grabbed (turbulence)
       if(Math.random() < 0.3) triggerScreenShake(0.5, 0.2);
+      // Wind speed lines rushing past during ascent
+      if(characterPivot) showWindLines(characterPivot.position.x, characterPivot.position.y, characterPivot.position.z, true);
+      // Update altitude sub-text
+      if(characterPivot) updateVashraAlertSub('Altitude: ' + Math.round(characterPivot.position.y) + ' units — HOLD ON!');
       
       if(carryT >= 1) {
         // DROP THE PLAYER
         playerFalling = true;
         playerFallVelocity = 0;
         playerFallStartY = characterPivot ? characterPivot.position.y : VASHRA_CARRY_ALTITUDE;
+        showVashraAlert('💀 DROPPED!', 'Falling from ' + Math.round(playerFallStartY) + ' units!', 8);
         vashraState = 'ascending';
         vashraStateTimer = 0;
         vashraLandStartY = vashraModel.position.y;
@@ -5263,6 +5374,8 @@ function animate(){
   updatePlayerFalling(dt);
   updateFearEffect(dt);
   updateScreenShake(dt);
+  updateVashraAlert(dt);
+  updateWindLines(dt);
 
   // ===== SKINNING SYSTEM =====
   // Find nearest dead unskinned bear

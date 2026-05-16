@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v80</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v81</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 23;  // +1 for vashra-sitting-idle  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing, Dragon Bank-Right, Dragon Bank-Left, Dragon Dive, Dragon Death, Dragon Fireball
+const totalAssets = 24;  // +1 vashra-sitting-idle, +1 vashra-idle-to-sleep  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing, Dragon Bank-Right, Dragon Bank-Left, Dragon Dive, Dragon Death, Dragon Fireball
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1077,6 +1077,11 @@ let vashraDeathAction = null;
 let vashraFireballAction = null;
 let vashraSittingIdleAction = null;
 let vashraSittingIdleTransitioned = false;  // Track if we've crossfaded to sitting idle
+let vashraIdleToSleepAction = null;
+let vashraSleepState = 'none';  // none, idle, sleeping, waking
+let vashraSleepTimer = 0;
+let vashraSleepIdleDuration = 0;  // How long to idle before sleeping
+let vashraSleepDuration = 0;     // How long to stay asleep (can be hours!)
 let vashraHP = 500;  // Dragon health for future combat
 let vashraState = 'flying';  // flying, firing, descending, landed, resting, ascending
 let vashraStateTimer = 0;
@@ -3097,9 +3102,25 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
     checkReady();
   });
   
+  // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
+  loader.load('vashra-idle-to-sleep.glb?v=1', function(sleepGltf){
+    if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
+      vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
+      vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
+      vashraIdleToSleepAction.clampWhenFinished = true;  // Freeze on sleeping pose forever
+      debugLog('🐉 Vashra idle-to-sleep animation loaded — she can nap for hours!');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra idle-to-sleep load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
+  
 }, undefined, function(err){
   console.warn('Vashra dragon load error:', err);
-  assetsLoaded += 8;  // Count all 8 dragon assets as loaded on error
+  assetsLoaded += 9;  // Count all 9 dragon assets as loaded on error
   checkReady();
 });
 
@@ -4870,15 +4891,69 @@ function animate(){
       // === GROUNDED: sitting, looking around, resting ===
       vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
       
-      // After 2.5s on ground, crossfade from landing pose to sitting idle (looking around, shifting wings)
+      // === FULL SLEEP CYCLE: Landing → Idle (look around) → Sleep (lay down, freeze) → Wake (idle again) → Takeoff ===
       if(!vashraSittingIdleTransitioned && vashraStateTimer > 2.5 && vashraSittingIdleAction){
         vashraSittingIdleTransitioned = true;
+        vashraSleepState = 'idle';
+        vashraSleepTimer = 0;
+        // Lazy mood: long idle before sleep, then sleep for ages
+        // Curious mood: medium idle, medium sleep
+        // Aggressive/Territorial: short idle, short/no sleep — wants to fly
+        if(vashraMood === 'lazy'){
+          vashraSleepIdleDuration = 15 + Math.random() * 30;   // 15-45s looking around
+          vashraSleepDuration = 120 + Math.random() * 7080;     // 2 min to 2+ hours sleeping!
+        } else if(vashraMood === 'curious'){
+          vashraSleepIdleDuration = 10 + Math.random() * 20;   // 10-30s
+          vashraSleepDuration = 30 + Math.random() * 90;        // 30s to 2 min
+        } else {
+          // Aggressive/territorial — skip sleep entirely, just idle briefly
+          vashraSleepIdleDuration = 5 + Math.random() * 10;    // 5-15s
+          vashraSleepDuration = 0;  // No sleep — too angry/alert
+        }
         vashraSittingIdleAction.reset();
         vashraSittingIdleAction.play();
         if(vashraLandAction && vashraLandAction.isRunning()){
           vashraLandAction.crossFadeTo(vashraSittingIdleAction, 2.0);
         }
-        debugLog('🐉 Vashra settles in — looking around, shifting wings');
+        debugLog('🐉 Vashra settles in — looking around, shifting wings (idle ' + vashraSleepIdleDuration.toFixed(0) + 's, sleep ' + vashraSleepDuration.toFixed(0) + 's)');
+      }
+      
+      // Sleep state machine (runs inside landed state)
+      if(vashraSleepState === 'idle'){
+        vashraSleepTimer += dt;
+        // After idle duration, transition to sleeping (if sleep duration > 0)
+        if(vashraSleepTimer > vashraSleepIdleDuration){
+          if(vashraSleepDuration > 0 && vashraIdleToSleepAction){
+            vashraSleepState = 'sleeping';
+            vashraSleepTimer = 0;
+            vashraIdleToSleepAction.reset();
+            vashraIdleToSleepAction.play();
+            vashraSittingIdleAction.crossFadeTo(vashraIdleToSleepAction, 2.0);
+            debugLog('🐉💤 Vashra laying down to sleep... (' + vashraSleepDuration.toFixed(0) + 's nap)');
+          } else {
+            // No sleep — go straight to wanting to take off
+            vashraSleepState = 'done';
+          }
+        }
+      } else if(vashraSleepState === 'sleeping'){
+        vashraSleepTimer += dt;
+        // Sleep for the full duration (frozen on last frame thanks to clampWhenFinished)
+        if(vashraSleepTimer > vashraSleepDuration){
+          // Wake up! Crossfade from sleeping pose back to sitting idle
+          vashraSleepState = 'waking';
+          vashraSleepTimer = 0;
+          vashraSittingIdleAction.reset();
+          vashraSittingIdleAction.play();
+          if(vashraIdleToSleepAction) vashraIdleToSleepAction.crossFadeTo(vashraSittingIdleAction, 2.5);
+          debugLog('🐉 Vashra waking up — stretching, looking around...');
+        }
+      } else if(vashraSleepState === 'waking'){
+        vashraSleepTimer += dt;
+        // Look around for 5-10s after waking, then ready to take off
+        if(vashraSleepTimer > 5 + Math.random() * 5){
+          vashraSleepState = 'done';
+          debugLog('🐉 Vashra is awake and ready to fly');
+        }
       }
       
       // If curious and near player, slowly turn to face them
@@ -4895,18 +4970,21 @@ function animate(){
       // Wing buffet — push away player who gets too close
       checkWingBuffet(dt);
       
-      if(vashraStateTimer > vashraRestDuration){
+      // Only take off when sleep cycle is complete (or skipped for aggressive moods)
+      if(vashraSleepState === 'done'){
         vashraState = 'ascending';
         vashraStateTimer = 0;
+        vashraSleepState = 'none';
         vashraLandStartY = vashraModel.position.y;
         vashraLandStartX = vashraModel.position.x;
         vashraLandStartZ = vashraModel.position.z;
         vashraAngle = Math.atan2(vashraLandZ, vashraLandX);
         vashraFlightAction.reset(); vashraFlightAction.play();
         if(vashraSittingIdleAction && vashraSittingIdleAction.isRunning()) vashraSittingIdleAction.crossFadeTo(vashraFlightAction, 2.0);
+        if(vashraIdleToSleepAction && vashraIdleToSleepAction.isRunning()) vashraIdleToSleepAction.crossFadeTo(vashraFlightAction, 2.0);
         if(vashraLandAction && vashraLandAction.isRunning()) vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
         if(vashraDiveAction && vashraDiveAction.isRunning()) vashraDiveAction.crossFadeTo(vashraFlightAction, 2.0);
-        debugLog('🐉 Vashra taking off!');
+        debugLog('🐉 Vashra taking off after rest cycle!');
       }
       
     } else if(vashraState === 'swooping'){

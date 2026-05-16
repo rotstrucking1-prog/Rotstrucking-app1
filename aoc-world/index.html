@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v79</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v80</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 22;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing, Dragon Bank-Right, Dragon Bank-Left, Dragon Dive, Dragon Death, Dragon Fireball
+const totalAssets = 23;  // +1 for vashra-sitting-idle  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing, Dragon Bank-Right, Dragon Bank-Left, Dragon Dive, Dragon Death, Dragon Fireball
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1075,6 +1075,8 @@ let vashraBankLeftAction = null;
 let vashraDiveAction = null;
 let vashraDeathAction = null;
 let vashraFireballAction = null;
+let vashraSittingIdleAction = null;
+let vashraSittingIdleTransitioned = false;  // Track if we've crossfaded to sitting idle
 let vashraHP = 500;  // Dragon health for future combat
 let vashraState = 'flying';  // flying, firing, descending, landed, resting, ascending
 let vashraStateTimer = 0;
@@ -3080,9 +3082,24 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
     checkReady();
   });
   
+  // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
+  loader.load('vashra-sitting-idle.glb?v=1', function(idleGltf){
+    if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
+      vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
+      vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
+      debugLog('🐉 Vashra sitting idle animation loaded — she looks around & shifts wings');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra sitting idle load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
+  
 }, undefined, function(err){
   console.warn('Vashra dragon load error:', err);
-  assetsLoaded += 7;  // Count all 7 dragon assets as loaded on error
+  assetsLoaded += 8;  // Count all 8 dragon assets as loaded on error
   checkReady();
 });
 
@@ -4838,6 +4855,7 @@ function animate(){
       if(descT >= 1){
         vashraState = 'landed';
         vashraStateTimer = 0;
+        vashraSittingIdleTransitioned = false;
         vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
         if(vashraDiveAction && vashraLandAction){
           vashraLandAction.reset(); vashraLandAction.play();
@@ -4851,6 +4869,17 @@ function animate(){
     } else if(vashraState === 'landed'){
       // === GROUNDED: sitting, looking around, resting ===
       vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
+      
+      // After 2.5s on ground, crossfade from landing pose to sitting idle (looking around, shifting wings)
+      if(!vashraSittingIdleTransitioned && vashraStateTimer > 2.5 && vashraSittingIdleAction){
+        vashraSittingIdleTransitioned = true;
+        vashraSittingIdleAction.reset();
+        vashraSittingIdleAction.play();
+        if(vashraLandAction && vashraLandAction.isRunning()){
+          vashraLandAction.crossFadeTo(vashraSittingIdleAction, 2.0);
+        }
+        debugLog('🐉 Vashra settles in — looking around, shifting wings');
+      }
       
       // If curious and near player, slowly turn to face them
       if(vashraLandNearPlayer && characterPivot){
@@ -4874,6 +4903,7 @@ function animate(){
         vashraLandStartZ = vashraModel.position.z;
         vashraAngle = Math.atan2(vashraLandZ, vashraLandX);
         vashraFlightAction.reset(); vashraFlightAction.play();
+        if(vashraSittingIdleAction && vashraSittingIdleAction.isRunning()) vashraSittingIdleAction.crossFadeTo(vashraFlightAction, 2.0);
         if(vashraLandAction && vashraLandAction.isRunning()) vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
         if(vashraDiveAction && vashraDiveAction.isRunning()) vashraDiveAction.crossFadeTo(vashraFlightAction, 2.0);
         debugLog('🐉 Vashra taking off!');

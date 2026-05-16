@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v74</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v75</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 18;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing, Dragon Bank-Right
+const totalAssets = 22;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword, Dragon, Dragon Landing, Dragon Bank-Right, Dragon Bank-Left, Dragon Dive, Dragon Death, Dragon Fireball
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1072,6 +1072,11 @@ let vashraAngle = 0;  // Current orbit angle
 let vashraFlightAction = null;
 let vashraLandAction = null;
 let vashraBankAction = null;
+let vashraBankLeftAction = null;
+let vashraDiveAction = null;
+let vashraDeathAction = null;
+let vashraFireballAction = null;
+let vashraHP = 500;  // Dragon health for future combat
 let vashraState = 'flying';  // flying, descending, landed, ascending
 let vashraStateTimer = 0;
 let vashraLandX = 0, vashraLandZ = 0;  // Landing target
@@ -2549,10 +2554,72 @@ loader.load('vashra-dragon.glb?v=1', function(gltf){
     assetsLoaded++;
     checkReady();
   });
+
+  // Load bank-left animation (for varied orbit or direction changes)
+  loader.load('vashra-dragon-bank-left.glb?v=1', function(blGltf){
+    if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
+      vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
+      vashraBankLeftAction.setLoop(THREE.LoopRepeat);
+      debugLog('🐉 Vashra bank-left animation loaded');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra bank-left load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
+
+  // Load dive-to-land animation (nose-down diving descent)
+  loader.load('vashra-dragon-dive-land.glb?v=1', function(diveGltf){
+    if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
+      vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
+      vashraDiveAction.setLoop(THREE.LoopRepeat);
+      debugLog('🐉 Vashra dive-to-land animation loaded');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra dive-land load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
+
+  // Load dive-to-death animation (death crash with impact freeze)
+  loader.load('vashra-dragon-dive-death.glb?v=1', function(deathGltf){
+    if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
+      vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
+      vashraDeathAction.setLoop(THREE.LoopOnce);
+      vashraDeathAction.clampWhenFinished = true;  // Freeze on last frame (impact pose)
+      debugLog('🐉 Vashra death-dive animation loaded');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra dive-death load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
+
+  // Load fireball animation (mouth opens to breathe fire)
+  loader.load('vashra-dragon-fireball.glb?v=1', function(fbGltf){
+    if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
+      vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
+      vashraFireballAction.setLoop(THREE.LoopOnce);
+      vashraFireballAction.clampWhenFinished = false;
+      debugLog('🐉 Vashra fireball animation loaded');
+    }
+    assetsLoaded++;
+    checkReady();
+  }, undefined, function(err){
+    console.warn('Vashra fireball load error:', err);
+    assetsLoaded++;
+    checkReady();
+  });
   
 }, undefined, function(err){
   console.warn('Vashra dragon load error:', err);
-  assetsLoaded += 3;  // Count flight + landing + bank-right as loaded on error
+  assetsLoaded += 7;  // Count all 7 dragon assets as loaded on error
   checkReady();
 });
 
@@ -4025,6 +4092,23 @@ function animate(){
         fireballTimer += dt;
         if(fireballTimer >= FIREBALL_FIRE_INTERVAL){
           fireballTimer = 0;
+          // Play fireball breathing animation briefly
+          if(vashraFireballAction){
+            vashraFireballAction.reset();
+            vashraFireballAction.play();
+            // Get current flying action to crossfade from
+            var currentFlyAction = (vashraBankAction && vashraBankAction.isRunning()) ? vashraBankAction : vashraFlightAction;
+            currentFlyAction.crossFadeTo(vashraFireballAction, 0.5);
+            // After fireball animation, crossfade back to banking
+            setTimeout(function(){
+              if(vashraState === 'flying'){
+                var returnAction = vashraBankAction || vashraFlightAction;
+                returnAction.reset();
+                returnAction.play();
+                vashraFireballAction.crossFadeTo(returnAction, 0.8);
+              }
+            }, 2500);  // Return to flight after 2.5s
+          }
           // Calculate mouth position (front of dragon, slightly below)
           var mouthForwardX = Math.sin(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
           var mouthForwardZ = Math.cos(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
@@ -4051,13 +4135,16 @@ function animate(){
         vashraLandStartX = vashraModel.position.x;
         vashraLandStartZ = vashraModel.position.z;
         vashraLandStartY = vashraModel.position.y;
-        // Crossfade from bank-right (or flight) to landing animation
-        vashraLandAction.reset();
-        vashraLandAction.play();
+        // Crossfade to dive animation (or landing if dive not loaded)
+        var descendAnim = vashraDiveAction || vashraLandAction;
+        descendAnim.reset();
+        descendAnim.play();
+        // Stop fireball animation if it was playing
+        if(vashraFireballAction && vashraFireballAction.isRunning()) vashraFireballAction.stop();
         if(vashraBankAction && vashraBankAction.isRunning()){
-          vashraBankAction.crossFadeTo(vashraLandAction, 2.0);
-        } else {
-          vashraFlightAction.crossFadeTo(vashraLandAction, 2.0);
+          vashraBankAction.crossFadeTo(descendAnim, 1.5);
+        } else if(vashraFlightAction && vashraFlightAction.isRunning()){
+          vashraFlightAction.crossFadeTo(descendAnim, 1.5);
         }
         debugLog('🐉 Vashra descending to land at (' + vashraLandX.toFixed(0) + ', ' + vashraLandZ.toFixed(0) + ')');
       }
@@ -4079,6 +4166,12 @@ function animate(){
         vashraState = 'landed';
         vashraStateTimer = 0;
         vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
+        // Crossfade from dive to sitting/landing animation
+        if(vashraDiveAction && vashraLandAction){
+          vashraLandAction.reset();
+          vashraLandAction.play();
+          vashraDiveAction.crossFadeTo(vashraLandAction, 1.0);
+        }
         debugLog('🐉 Vashra has landed!');
       }
     } else if(vashraState === 'landed'){
@@ -4093,10 +4186,12 @@ function animate(){
         vashraLandStartZ = vashraModel.position.z;
         // Resume orbit from angle nearest to current position
         vashraAngle = Math.atan2(vashraLandZ, vashraLandX);
-        // Crossfade to straight flight for ascent
+        // Crossfade from landing to straight flight for ascent
         vashraFlightAction.reset();
         vashraFlightAction.play();
-        vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
+        // Stop any lingering dive/land actions
+        if(vashraLandAction && vashraLandAction.isRunning()) vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
+        if(vashraDiveAction && vashraDiveAction.isRunning()) vashraDiveAction.crossFadeTo(vashraFlightAction, 2.0);
         debugLog('🐉 Vashra taking off!');
       }
     } else if(vashraState === 'ascending'){

@@ -114,6 +114,19 @@ canvas{display:block;width:100%;height:100%}
 .hotbar-cooldown{position:absolute;bottom:0;left:0;width:100%;height:0%;background:rgba(0,0,0,0.6);border-radius:0 0 6px 6px;pointer-events:none;transition:height 0.1s}
 /* Cast button glow when spell selected */
 #btn-cast.spell-ready{background:rgba(100,50,200,0.6);border-color:rgba(150,100,255,0.9);box-shadow:0 0 15px rgba(100,50,200,0.4)}
+
+/* === MINING UI === */
+#mining-overlay{position:fixed;bottom:50%;left:50%;transform:translate(-50%,50%);z-index:20;pointer-events:none;text-align:center;display:none}
+#mining-progress{width:200px;height:12px;background:rgba(0,0,0,0.6);border:2px solid rgba(180,140,60,0.6);border-radius:6px;overflow:hidden;margin:8px auto 0}
+#mining-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#aa7722,#ddaa44);border-radius:4px;transition:width 0.1s}
+#mining-text{color:#ffcc44;font-size:14px;font-weight:bold;text-shadow:0 1px 4px rgba(0,0,0,0.8)}
+/* Pickaxe equip slot */
+.tool-indicator{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);border:2px solid rgba(180,140,60,0.4);border-radius:8px;padding:4px 12px;color:#ffcc44;font-size:12px;font-weight:bold;z-index:20;display:none;backdrop-filter:blur(4px)}
+/* Enhanced settings */
+#settings-panel .setting-section{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)}
+.setting-label{color:#aaa;font-size:11px;margin-bottom:4px}
+.setting-slider{width:100%;height:20px;-webkit-appearance:none;background:rgba(255,255,255,0.1);border-radius:10px;outline:none;cursor:pointer}
+.setting-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#FFD700;cursor:pointer}
 </style>
 <script type="importmap">
 {
@@ -211,7 +224,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v112</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v113</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -225,11 +238,33 @@ setTimeout(function(){
 <div id="btn-attack" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(220,50,50,0.6);border:3px solid rgba(220,50,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Attack</div>
 <div id="settings-btn">⚙️</div>
 <div id="settings-panel">
-  <h3>⚙️ Graphics</h3>
+  <h3>⚙️ Settings</h3>
+  <div style="color:#aaa;font-size:11px;margin-bottom:6px;text-align:center">GRAPHICS QUALITY</div>
   <div class="gfx-btn active" id="gfx-low" onclick="setGraphics('low')">🟢 Low<div class="gfx-label">Best performance</div></div>
   <div class="gfx-btn" id="gfx-medium" onclick="setGraphics('medium')">🟡 Medium<div class="gfx-label">Balanced</div></div>
   <div class="gfx-btn" id="gfx-high" onclick="setGraphics('high')">🟠 High<div class="gfx-label">Great visuals</div></div>
   <div class="gfx-btn" id="gfx-max" onclick="setGraphics('max')">🔴 Max<div class="gfx-label">Maximum quality</div></div>
+  <div class="setting-section">
+    <div style="color:#aaa;font-size:11px;margin-bottom:4px">CAMERA DISTANCE</div>
+    <input type="range" class="setting-slider" id="cam-dist-slider" min="3" max="20" value="5" oninput="cameraDistance=Number(this.value)">
+  </div>
+  <div class="setting-section">
+    <div style="color:#aaa;font-size:11px;margin-bottom:4px">RENDER DISTANCE</div>
+    <input type="range" class="setting-slider" id="render-dist-slider" min="200" max="2000" value="1200" oninput="camera.far=Number(this.value);camera.updateProjectionMatrix()">
+  </div>
+  <div class="setting-section">
+    <div style="color:#aaa;font-size:11px;margin-bottom:4px">MUSIC VOLUME</div>
+    <input type="range" class="setting-slider" id="music-vol-slider" min="0" max="100" value="50">
+  </div>
+  <div class="setting-section">
+    <div style="color:#aaa;font-size:11px;margin-bottom:4px">SFX VOLUME</div>
+    <input type="range" class="setting-slider" id="sfx-vol-slider" min="0" max="100" value="70">
+  </div>
+  <div class="setting-section" style="display:flex;gap:8px;justify-content:center">
+    <div class="gfx-btn" onclick="gameTime=8;showVashraAlert('☀️','Set to morning',1.5)" style="font-size:11px;padding:6px 10px">☀️ Day</div>
+    <div class="gfx-btn" onclick="gameTime=21;showVashraAlert('🌙','Set to night',1.5)" style="font-size:11px;padding:6px 10px">🌙 Night</div>
+    <div class="gfx-btn" onclick="currentWeather='clear';showVashraAlert('☀️','Weather cleared',1.5)" style="font-size:11px;padding:6px 10px">Clear Sky</div>
+  </div>
 </div>
 <div id="satchel-btn">🎒</div>
 <div id="spellbook-btn">📖</div>
@@ -243,6 +278,11 @@ setTimeout(function(){
   <div class="spell-grid" id="spell-grid"></div>
 </div>
 <div id="spell-hotbar"></div>
+<div id="mining-overlay">
+  <div id="mining-text">⛏️ Mining...</div>
+  <div id="mining-progress"><div id="mining-progress-fill"></div></div>
+</div>
+<div class="tool-indicator" id="tool-indicator"></div>
 <div id="inv-backdrop"></div>
 <div id="inventory-panel">
   <div id="inv-header">
@@ -638,7 +678,7 @@ function checkReady(){
 // ===== LIGHTING =====
 // Load Brad's sky texture as panoramic background
 const skyLoader = new THREE.TextureLoader();
-const skyTex = skyLoader.load('sky-texture.jpg?v=112', function(){
+const skyTex = skyLoader.load('sky-texture.jpg?v=113', function(){
   // Once loaded, apply it
   scene.background = skyTex;
   scene.environment = skyTex;
@@ -655,6 +695,9 @@ skyTex.colorSpace = THREE.SRGBColorSpace;
 scene.fog = new THREE.FogExp2(0x87CEEB, 0.0008); // Lighter, more realistic fog
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+// Hemisphere light for sky/ground color bleed — makes scene feel more natural
+const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x4a7a3a, 0.6);
+scene.add(hemiLight);
 scene.add(ambientLight);
 
 const sunLight = new THREE.DirectionalLight(0xffeedd, 6.0);  // Brighter light from sun
@@ -730,7 +773,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=112');
+const grassTex = texLoader.load('grass-texture.jpg?v=113');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -752,6 +795,7 @@ terrainGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 const terrainMat = new THREE.MeshStandardMaterial({map:grassTex, vertexColors:true, roughness:0.85, metalness:0.0});
 const terrain = new THREE.Mesh(terrainGeo, terrainMat);
 terrain.receiveShadow = true;
+var terrainMesh = terrain; // Global reference for mining deformation
 scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
@@ -761,7 +805,7 @@ waterGeo.rotateX(-Math.PI/2);
 
 // Load Brad's water texture with tiling and animation support
 const waterTexLoader = new THREE.TextureLoader();
-const waterTex = waterTexLoader.load('water-texture.jpg?v=112');
+const waterTex = waterTexLoader.load('water-texture.jpg?v=113');
 waterTex.wrapS = THREE.RepeatWrapping;
 waterTex.wrapT = THREE.RepeatWrapping;
 waterTex.repeat.set(16, 16);
@@ -803,7 +847,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=112', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=113', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -847,7 +891,7 @@ queueLoad(5, 'rock-pile-model.glb?v=112', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=112', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=113', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -900,7 +944,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=112', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=112', function(gltf){
+queueLoad(3, 'bass-model.glb?v=113', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -992,7 +1036,7 @@ queueLoad(3, 'bass-model.glb?v=112', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=112', function(gltf){
+queueLoad(3, 'deer-model.glb?v=113', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1101,7 +1145,7 @@ queueLoad(3, 'deer-model.glb?v=112', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=112', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=113', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -1709,6 +1753,125 @@ function initFishingZones(){
     }
   }
 }
+
+// === MINING SYSTEM ===
+// Terrain is a heightmap — mining lowers terrain vertices at dig point
+let isMining = false;
+let miningProgress = 0;
+const MINING_DURATION = 3.0; // Seconds per dig action
+const MINING_DEPTH_PER_DIG = 1.5; // How much terrain drops per dig
+const MINING_RADIUS = 8; // Radius of terrain deformation
+let miningCooldown = 0;
+let hasPickaxe = true; // Player starts with pickaxe for now
+
+// Mine at current position
+function startMining(){
+  if(isMining || miningCooldown > 0 || !hasPickaxe) return;
+  isMining = true;
+  miningProgress = 0;
+  document.getElementById('mining-overlay').style.display = 'block';
+}
+
+function updateMining(dt){
+  if(miningCooldown > 0) miningCooldown -= dt;
+  
+  if(!isMining) return;
+  
+  miningProgress += dt;
+  var pct = Math.min(100, (miningProgress / MINING_DURATION) * 100);
+  var fill = document.getElementById('mining-progress-fill');
+  if(fill) fill.style.width = pct + '%';
+  
+  if(miningProgress >= MINING_DURATION){
+    // Complete the dig!
+    isMining = false;
+    document.getElementById('mining-overlay').style.display = 'none';
+    miningCooldown = 0.5;
+    
+    // Deform terrain at player position
+    deformTerrain(playerPos.x, playerPos.z, MINING_RADIUS, -MINING_DEPTH_PER_DIG);
+    
+    // Grant mining XP
+    var xpGain = 15 + Math.floor(Math.random() * 10);
+    playerSkills.mining += xpGain;
+    playerXP += xpGain;
+    
+    // Chance to find resources
+    var miningLevel = getLevel(playerSkills.mining);
+    var r = Math.random();
+    if(r < 0.3){
+      addItemToInventory({name:'Stone', icon:'🪨', count:1});
+      showVashraAlert('⛏️ MINED', '+1 Stone | +' + xpGain + ' XP', 2);
+    } else if(r < 0.5 && miningLevel >= 10){
+      addItemToInventory({name:'Iron Ore', icon:'⚙️', count:1});
+      showVashraAlert('⛏️ MINED', '+1 Iron Ore | +' + xpGain + ' XP', 2);
+    } else if(r < 0.6 && miningLevel >= 30){
+      addItemToInventory({name:'Gold Nugget', icon:'✨', count:1});
+      showVashraAlert('⛏️ MINED', '+1 Gold Nugget! | +' + xpGain + ' XP', 2);
+    } else if(r < 0.65 && miningLevel >= 50){
+      addItemToInventory({name:'Diamond', icon:'💎', count:1});
+      showVashraAlert('⛏️ MINED', '+1 Diamond!! | +' + xpGain + ' XP', 2);
+    } else {
+      showVashraAlert('⛏️ MINED', 'Nothing useful | +' + xpGain + ' XP', 1.5);
+    }
+  }
+}
+
+// Deform terrain heightmap around a point
+function deformTerrain(worldX, worldZ, radius, depth){
+  if(!terrainMesh) return;
+  var geo = terrainMesh.geometry;
+  var positions = geo.attributes.position;
+  var count = positions.count;
+  
+  // Convert world coords to terrain-local coords
+  // Terrain is WORLD_SIZE x WORLD_SIZE centered at origin
+  for(var i = 0; i < count; i++){
+    var vx = positions.getX(i);
+    var vz = positions.getZ(i);
+    
+    var dx = vx - worldX;
+    var dz = vz - worldZ;
+    var dist = Math.sqrt(dx*dx + dz*dz);
+    
+    if(dist < radius){
+      // Smooth falloff — more deformation at center
+      var falloff = 1 - (dist / radius);
+      falloff = falloff * falloff; // Quadratic falloff
+      var vy = positions.getY(i);
+      positions.setY(i, vy + depth * falloff);
+    }
+  }
+  
+  positions.needsUpdate = true;
+  geo.computeVertexNormals();
+  // Update bounding sphere for raycasting
+  geo.computeBoundingSphere();
+}
+
+// Add item to first available inventory slot
+function addItemToInventory(item){
+  // Check if item already exists in inventory (stack)
+  for(var i = 0; i < 28; i++){
+    if(inventorySlots[i] && inventorySlots[i].name === item.name){
+      inventorySlots[i].count += item.count;
+      renderInventory();
+      return true;
+    }
+  }
+  // Find empty slot
+  for(var i = 0; i < 28; i++){
+    if(!inventorySlots[i]){
+      inventorySlots[i] = { name: item.name, icon: item.icon, count: item.count };
+      renderInventory();
+      return true;
+    }
+  }
+  return false; // Inventory full
+}
+
+// M key to mine
+
 
 
 // Smoke hit particles pool
@@ -3065,7 +3228,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=112', function(gltf){
+queueLoad(1, 'character-walk.glb?v=113', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -3132,7 +3295,7 @@ queueLoad(1, 'character-walk.glb?v=112', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=112&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=113&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -3200,7 +3363,7 @@ queueLoad(1, 'character-walk.glb?v=112', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=112', function(gltf){
+queueLoad(2, 'grass-model.glb?v=113', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -3258,7 +3421,7 @@ queueLoad(2, 'grass-model.glb?v=112', function(gltf){
 updateLoading('Loading sun...', 85);
 var sunModel = null;
 
-queueLoad(2, 'sun-model.glb?v=112', function(gltf){
+queueLoad(2, 'sun-model.glb?v=113', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -3293,7 +3456,7 @@ queueLoad(2, 'sun-model.glb?v=112', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=112', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=113', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -3402,7 +3565,7 @@ queueLoad(4, 'bear-walk.glb?v=112', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=112', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=113', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -3483,7 +3646,7 @@ queueLoad(4, 'freak-walk.glb?v=112', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=112', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=113', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -3570,7 +3733,7 @@ queueLoad(3, 'stallion-walk.glb?v=112', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=112', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=113', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -3633,7 +3796,7 @@ queueLoad(4, 'dreugh-model.glb?v=112', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=112', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=113', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -3660,7 +3823,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=112', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=113', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -3706,7 +3869,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=112', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=113', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -3721,7 +3884,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=112', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=113', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -3740,7 +3903,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=112', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=113', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -3755,7 +3918,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=112', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=113', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -3770,7 +3933,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=112', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=113', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -3786,7 +3949,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=112', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=113', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -3802,7 +3965,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=112', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=113', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -3817,7 +3980,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=112', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=113', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -3838,7 +4001,7 @@ queueLoad(7, 'vashra-dragon.glb?v=112', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=112', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=113', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -4100,7 +4263,13 @@ document.addEventListener('pointerlockchange', function(){
 
 document.addEventListener('keydown', function(e){
 
-  // Spellbook toggle on Q
+  
+  // Mining on M key
+  if(e.code === 'KeyM' && !isMining){
+    startMining();
+  }
+  // Cancel mining on movement
+// Spellbook toggle on Q
   if(e.code === 'KeyQ'){
     spellbookOpen = !spellbookOpen;
     document.getElementById('spellbook-panel').className = spellbookOpen ? 'open' : '';
@@ -6448,6 +6617,9 @@ function animate(){
   
   // Update lighting based on time of day
   updateDayNight(gameTime);
+  
+  // === MINING UPDATE ===
+  updateMining(dt);
   
   // === SPELL COOLDOWNS ===
   Object.keys(spellCooldowns).forEach(function(id){

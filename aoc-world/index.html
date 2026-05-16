@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v82</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v83</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -2140,6 +2140,7 @@ let isSprinting = false;
 let thirdPerson = true;
 let cameraDistance = 5;
 let cameraPitch = 0.3;
+let cameraYawOffset = 0; // Free-look: mouse/touch orbits camera independently of character
 
 // Procedural animation tracking
 let animTime = 0;
@@ -3799,7 +3800,7 @@ function pickupLoot(loot){
 document.addEventListener('keyup', function(e){keys[e.code]=false});
 document.addEventListener('mousemove', function(e){
   if(!mouseLocked) return;
-  playerYaw -= e.movementX*0.003;
+  cameraYawOffset -= e.movementX*0.003;
   cameraPitch -= e.movementY*0.003;
   cameraPitch = Math.max(-1.2, Math.min(1.2, cameraPitch));
 });
@@ -3933,7 +3934,7 @@ document.addEventListener('touchmove', function(e){
   for(let i=0;i<e.changedTouches.length;i++){
     const t = e.changedTouches[i];
     if(t.identifier === touchLookId){
-      playerYaw -= (t.clientX-lastTouchX)*0.005;
+      cameraYawOffset -= (t.clientX-lastTouchX)*0.005;
       cameraPitch -= (t.clientY-lastTouchY)*0.005;
       cameraPitch = Math.max(-1.2, Math.min(1.2, cameraPitch));
       lastTouchX = t.clientX;
@@ -5486,11 +5487,12 @@ function animate(){
     const lookY = playerPos.y + LOOK_HEIGHT;
     const lookZ = playerPos.z;
     
-    // Camera facing direction (same as character)
-    const facingX = Math.sin(playerYaw);
-    const facingZ = Math.cos(playerYaw);
+    // Camera facing direction (free-look: playerYaw + cameraYawOffset)
+    const camYaw = playerYaw + cameraYawOffset;
+    const facingX = Math.sin(camYaw);
+    const facingZ = Math.cos(camYaw);
     
-    // Camera: straight behind the character, pulled back by cameraDistance
+    // Camera: orbits around character using free-look yaw
     const behindDist = Math.cos(cameraPitch) * cameraDistance;
     const camX = lookX - facingX * behindDist;
     const camY = lookY + Math.sin(cameraPitch) * cameraDistance;
@@ -5510,10 +5512,11 @@ function animate(){
     const eyeH = 2.6;
     camera.position.set(playerPos.x, playerPos.y + eyeH, playerPos.z);
     const lookDist = 10;
+    const fpYaw = playerYaw + cameraYawOffset;
     camera.lookAt(
-      playerPos.x + Math.sin(playerYaw)*lookDist,
+      playerPos.x + Math.sin(fpYaw)*lookDist,
       playerPos.y + eyeH + Math.sin(cameraPitch)*lookDist,
-      playerPos.z + Math.cos(playerYaw)*lookDist
+      playerPos.z + Math.cos(fpYaw)*lookDist
     );
     if(playerModel) playerModel.visible = false;
   }

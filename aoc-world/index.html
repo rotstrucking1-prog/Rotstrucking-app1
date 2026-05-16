@@ -138,7 +138,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v88</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v89</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -5765,7 +5765,7 @@ function animate(){
   if(thirdPerson){
     // Over-the-shoulder 3rd person camera (Fallout 76 style)
     const LOOK_HEIGHT = 2.5; // look at character's chest/shoulder area
-    const SHOULDER_OFFSET = 1.2; // right shoulder offset
+    const SHOULDER_OFFSET = -1.2; // LEFT shoulder — character on left, camera peeks over right
     
     // Camera facing direction (free-look: playerYaw + cameraYawOffset)
     const camYaw = playerYaw + cameraYawOffset;

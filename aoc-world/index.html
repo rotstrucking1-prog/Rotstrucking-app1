@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v71</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v72</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -471,6 +471,7 @@ function checkReady(){
   if(assetsLoaded >= totalAssets){
     worldReady = true;
     initSmokeParticles(); // Initialize smoke particle pool
+    initFireballSystem(); // Initialize fireball particle system
     // Test bears spawned from dead bear loader callback below
     updateLoading('Ready!', 100);
     setTimeout(function(){
@@ -1075,6 +1076,23 @@ let vashraStateTimer = 0;
 let vashraLandX = 0, vashraLandZ = 0;  // Landing target
 let vashraLandStartX = 0, vashraLandStartZ = 0, vashraLandStartY = 0;
 let vashraLandTargetY = 0;
+// --- Vashra Dragon Fireball System ---
+const FIREBALL_MAX_ACTIVE = 3;         // Max simultaneous fireballs
+const FIREBALL_SPEED = 80;             // Units per second
+const FIREBALL_FIRE_INTERVAL = 18;     // Seconds between fireballs while flying
+const FIREBALL_TRAIL_COUNT = 20;       // Trail particles per fireball
+const FIREBALL_EXPLOSION_COUNT = 40;   // Explosion particles per impact
+const FIREBALL_RING_COUNT = 24;        // Fire ring particles per impact
+const FIREBALL_RING_RADIUS = 8;        // Ring radius in world units
+const FIREBALL_RING_LIFETIME = 7;      // Seconds ring stays lit
+const FIREBALL_RING_FADE_TIME = 2;     // Seconds to fade at end
+let fireTexture = null;
+let fireballPool = [];
+let explosionPool = [];
+let fireRingPool = [];
+let fireballTimer = 10;  // Start with shorter delay for first fireball
+let vashraFireReady = false;
+
 let stallionModels = [];
 let stallionMixers = [];
 
@@ -1218,6 +1236,361 @@ function updateSmokeParticles(dt){
     const fade = 1.0 - (p.life / p.maxLife);
     p.mesh.material.opacity = 0.6 * fade;
     p.mesh.scale.setScalar(p.size * (1.0 + p.life * 1.5)); // Grow as smoke rises
+  }
+}
+
+
+
+// ===== FIREBALL PARTICLE SYSTEM =====
+function createFireTexture(){
+  var canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  var ctx = canvas.getContext('2d');
+  // Bright fire gradient
+  var gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, 'rgba(255,255,220,1)');    // white-hot center
+  gradient.addColorStop(0.15, 'rgba(255,220,80,1)');  // bright yellow
+  gradient.addColorStop(0.35, 'rgba(255,140,20,0.9)');// orange
+  gradient.addColorStop(0.6, 'rgba(220,60,10,0.5)');  // red-orange
+  gradient.addColorStop(1, 'rgba(150,20,0,0)');        // transparent edge
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createExplosionTexture(){
+  var canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  var ctx = canvas.getContext('2d');
+  var gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gradient.addColorStop(0, 'rgba(255,200,50,1)');
+  gradient.addColorStop(0.4, 'rgba(255,80,10,0.7)');
+  gradient.addColorStop(1, 'rgba(100,20,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function initFireballSystem(){
+  fireTexture = createFireTexture();
+  var explosionTexture = createExplosionTexture();
+  
+  // Create fireball projectile pool
+  for(var i = 0; i < FIREBALL_MAX_ACTIVE; i++){
+    var coreMat = new THREE.SpriteMaterial({
+      map: fireTexture, color: 0xffaa33,
+      blending: THREE.AdditiveBlending, transparent: true, opacity: 1.0, depthWrite: false
+    });
+    var coreSprite = new THREE.Sprite(coreMat);
+    coreSprite.scale.set(6, 6, 1);
+    coreSprite.visible = false;
+    scene.add(coreSprite);
+    
+    // Inner bright core
+    var innerMat = new THREE.SpriteMaterial({
+      map: fireTexture, color: 0xffffcc,
+      blending: THREE.AdditiveBlending, transparent: true, opacity: 0.8, depthWrite: false
+    });
+    var innerSprite = new THREE.Sprite(innerMat);
+    innerSprite.scale.set(3, 3, 1);
+    innerSprite.visible = false;
+    scene.add(innerSprite);
+    
+    // Trail particles
+    var trail = [];
+    for(var t = 0; t < FIREBALL_TRAIL_COUNT; t++){
+      var tMat = new THREE.SpriteMaterial({
+        map: fireTexture, color: 0xff6600,
+        blending: THREE.AdditiveBlending, transparent: true, opacity: 0.6, depthWrite: false
+      });
+      var tSprite = new THREE.Sprite(tMat);
+      tSprite.scale.set(2, 2, 1);
+      tSprite.visible = false;
+      scene.add(tSprite);
+      trail.push({ sprite: tSprite, x:0, y:0, z:0, life:0, maxLife:0.6, active: false });
+    }
+    
+    fireballPool.push({
+      active: false, core: coreSprite, inner: innerSprite, trail: trail,
+      x:0, y:0, z:0, vx:0, vy:0, vz:0,
+      targetX:0, targetY:0, targetZ:0, trailTimer: 0
+    });
+  }
+  
+  // Create explosion particle pool
+  for(var e = 0; e < FIREBALL_EXPLOSION_COUNT; e++){
+    var eMat = new THREE.SpriteMaterial({
+      map: explosionTexture, color: 0xff8800,
+      blending: THREE.AdditiveBlending, transparent: true, opacity: 1.0, depthWrite: false
+    });
+    var eSprite = new THREE.Sprite(eMat);
+    eSprite.scale.set(3, 3, 1);
+    eSprite.visible = false;
+    scene.add(eSprite);
+    explosionPool.push({
+      active: false, sprite: eSprite,
+      x:0, y:0, z:0, vx:0, vy:0, vz:0,
+      life:0, maxLife:1.5, size:3
+    });
+  }
+  
+  // Create fire ring pool (multiple rings can exist at once)
+  for(var r = 0; r < FIREBALL_RING_COUNT * 3; r++){  // Support up to 3 simultaneous rings
+    var rMat = new THREE.SpriteMaterial({
+      map: fireTexture, color: 0xff4400,
+      blending: THREE.AdditiveBlending, transparent: true, opacity: 0.8, depthWrite: false
+    });
+    var rSprite = new THREE.Sprite(rMat);
+    rSprite.scale.set(3, 3, 1);
+    rSprite.visible = false;
+    scene.add(rSprite);
+    fireRingPool.push({
+      active: false, sprite: rSprite,
+      baseX:0, baseY:0, baseZ:0,  // Ring center
+      x:0, y:0, z:0,
+      life:0, maxLife: FIREBALL_RING_LIFETIME,
+      flickerOffset: Math.random() * Math.PI * 2,
+      baseSize: 2 + Math.random() * 2
+    });
+  }
+  
+  vashraFireReady = true;
+  debugLog('🔥 Fireball system initialized: ' + FIREBALL_MAX_ACTIVE + ' fireballs, ' + FIREBALL_EXPLOSION_COUNT + ' explosion particles, ' + (FIREBALL_RING_COUNT * 3) + ' ring particles');
+}
+
+function fireFireball(startX, startY, startZ, targetX, targetY, targetZ){
+  // Find an inactive fireball
+  var fb = null;
+  for(var i = 0; i < fireballPool.length; i++){
+    if(!fireballPool[i].active){ fb = fireballPool[i]; break; }
+  }
+  if(!fb) return;  // All fireballs in use
+  
+  fb.active = true;
+  fb.x = startX; fb.y = startY; fb.z = startZ;
+  fb.targetX = targetX; fb.targetY = targetY; fb.targetZ = targetZ;
+  fb.trailTimer = 0;
+  
+  // Calculate velocity toward target
+  var dx = targetX - startX;
+  var dy = targetY - startY;
+  var dz = targetZ - startZ;
+  var dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+  if(dist < 1) dist = 1;
+  fb.vx = (dx / dist) * FIREBALL_SPEED;
+  fb.vy = (dy / dist) * FIREBALL_SPEED;
+  fb.vz = (dz / dist) * FIREBALL_SPEED;
+  
+  // Show core sprites
+  fb.core.visible = true;
+  fb.core.position.set(startX, startY, startZ);
+  fb.inner.visible = true;
+  fb.inner.position.set(startX, startY, startZ);
+  
+  // Reset trail
+  for(var t = 0; t < fb.trail.length; t++){
+    fb.trail[t].active = false;
+    fb.trail[t].sprite.visible = false;
+  }
+  
+  debugLog('🔥 Fireball launched! Target: (' + targetX.toFixed(0) + ', ' + targetZ.toFixed(0) + ')');
+}
+
+function spawnExplosion(x, y, z){
+  var spawned = 0;
+  for(var i = 0; i < explosionPool.length && spawned < 30; i++){
+    var ep = explosionPool[i];
+    if(ep.active) continue;
+    ep.active = true;
+    ep.x = x + (Math.random()-0.5) * 3;
+    ep.y = y + Math.random() * 2;
+    ep.z = z + (Math.random()-0.5) * 3;
+    // Burst outward
+    var angle = Math.random() * Math.PI * 2;
+    var speed = 8 + Math.random() * 15;
+    ep.vx = Math.cos(angle) * speed;
+    ep.vy = 5 + Math.random() * 12;  // Upward burst
+    ep.vz = Math.sin(angle) * speed;
+    ep.life = 0;
+    ep.maxLife = 0.8 + Math.random() * 1.0;
+    ep.size = 2 + Math.random() * 3;
+    ep.sprite.visible = true;
+    ep.sprite.position.set(ep.x, ep.y, ep.z);
+    ep.sprite.scale.set(ep.size, ep.size, 1);
+    ep.sprite.material.opacity = 1.0;
+    spawned++;
+  }
+}
+
+function spawnFireRing(centerX, centerY, centerZ){
+  var spawned = 0;
+  for(var i = 0; i < fireRingPool.length && spawned < FIREBALL_RING_COUNT; i++){
+    var rp = fireRingPool[i];
+    if(rp.active) continue;
+    rp.active = true;
+    rp.life = 0;
+    rp.maxLife = FIREBALL_RING_LIFETIME;
+    rp.baseX = centerX;
+    rp.baseY = centerY + 0.5;  // Slightly above ground
+    rp.baseZ = centerZ;
+    // Position in a circle
+    var ringAngle = (spawned / FIREBALL_RING_COUNT) * Math.PI * 2;
+    var ringR = FIREBALL_RING_RADIUS + (Math.random()-0.5) * 2;
+    rp.x = centerX + Math.cos(ringAngle) * ringR;
+    rp.y = centerY + 0.5 + Math.random() * 1.5;
+    rp.z = centerZ + Math.sin(ringAngle) * ringR;
+    rp.flickerOffset = Math.random() * Math.PI * 2;
+    rp.baseSize = 2.5 + Math.random() * 2;
+    rp.sprite.visible = true;
+    rp.sprite.position.set(rp.x, rp.y, rp.z);
+    rp.sprite.scale.set(rp.baseSize, rp.baseSize, 1);
+    rp.sprite.material.opacity = 0.8;
+    // Random fire color per ring particle
+    var colors = [0xff4400, 0xff6600, 0xff2200, 0xff8800, 0xffaa00];
+    rp.sprite.material.color.setHex(colors[Math.floor(Math.random()*colors.length)]);
+    spawned++;
+  }
+  debugLog('🔥 Fire ring spawned at (' + centerX.toFixed(0) + ', ' + centerZ.toFixed(0) + ') — burns for ' + FIREBALL_RING_LIFETIME + 's');
+}
+
+function updateFireballs(dt){
+  if(!vashraFireReady) return;
+  
+  // Update active fireballs (projectiles in flight)
+  for(var i = 0; i < fireballPool.length; i++){
+    var fb = fireballPool[i];
+    if(!fb.active) continue;
+    
+    // Move fireball
+    fb.x += fb.vx * dt;
+    fb.y += fb.vy * dt;
+    fb.z += fb.vz * dt;
+    
+    // Pulse effect on core
+    var pulse = 1.0 + Math.sin(performance.now() * 0.01) * 0.15;
+    fb.core.position.set(fb.x, fb.y, fb.z);
+    fb.core.scale.set(6 * pulse, 6 * pulse, 1);
+    fb.inner.position.set(fb.x, fb.y, fb.z);
+    fb.inner.scale.set(3 * pulse, 3 * pulse, 1);
+    
+    // Spawn trail particles
+    fb.trailTimer += dt;
+    if(fb.trailTimer > 0.03){  // Every 30ms
+      fb.trailTimer = 0;
+      for(var t = 0; t < fb.trail.length; t++){
+        if(!fb.trail[t].active){
+          var tp = fb.trail[t];
+          tp.active = true;
+          tp.x = fb.x + (Math.random()-0.5)*2;
+          tp.y = fb.y + (Math.random()-0.5)*2;
+          tp.z = fb.z + (Math.random()-0.5)*2;
+          tp.life = 0;
+          tp.maxLife = 0.3 + Math.random()*0.3;
+          tp.sprite.visible = true;
+          tp.sprite.position.set(tp.x, tp.y, tp.z);
+          tp.sprite.material.opacity = 0.6;
+          tp.sprite.scale.set(2 + Math.random()*1.5, 2 + Math.random()*1.5, 1);
+          break;
+        }
+      }
+    }
+    
+    // Update trail particles
+    for(var t = 0; t < fb.trail.length; t++){
+      var tp = fb.trail[t];
+      if(!tp.active) continue;
+      tp.life += dt;
+      if(tp.life >= tp.maxLife){
+        tp.active = false;
+        tp.sprite.visible = false;
+        continue;
+      }
+      // Trail particles drift and fade
+      tp.y += 1.0 * dt;  // Rise slightly
+      tp.sprite.position.set(tp.x, tp.y, tp.z);
+      var fade = 1.0 - (tp.life / tp.maxLife);
+      tp.sprite.material.opacity = 0.5 * fade;
+      tp.sprite.scale.setScalar(2 * (1 + tp.life * 2) * fade);
+    }
+    
+    // Check if fireball reached target area (within 5 units of target ground level)
+    var groundAtFB = getHeight(fb.x, fb.z);
+    if(fb.y <= groundAtFB + 3){
+      // IMPACT!
+      fb.active = false;
+      fb.core.visible = false;
+      fb.inner.visible = false;
+      // Hide remaining trail
+      for(var t = 0; t < fb.trail.length; t++){
+        fb.trail[t].active = false;
+        fb.trail[t].sprite.visible = false;
+      }
+      // Spawn explosion + fire ring
+      spawnExplosion(fb.x, groundAtFB + 1, fb.z);
+      spawnFireRing(fb.x, groundAtFB, fb.z);
+    }
+  }
+  
+  // Update explosion particles
+  for(var i = 0; i < explosionPool.length; i++){
+    var ep = explosionPool[i];
+    if(!ep.active) continue;
+    ep.life += dt;
+    if(ep.life >= ep.maxLife){
+      ep.active = false;
+      ep.sprite.visible = false;
+      continue;
+    }
+    // Physics: move + gravity
+    ep.x += ep.vx * dt;
+    ep.y += ep.vy * dt;
+    ep.z += ep.vz * dt;
+    ep.vy -= 20 * dt;  // Gravity
+    // Clamp to ground
+    var groundE = getHeight(ep.x, ep.z);
+    if(ep.y < groundE + 0.5){
+      ep.y = groundE + 0.5;
+      ep.vy *= -0.3;  // Bounce slightly
+      ep.vx *= 0.8;
+      ep.vz *= 0.8;
+    }
+    ep.sprite.position.set(ep.x, ep.y, ep.z);
+    var fade = 1.0 - (ep.life / ep.maxLife);
+    ep.sprite.material.opacity = fade;
+    ep.sprite.scale.setScalar(ep.size * (0.5 + fade * 0.5));
+    // Color shift orange → red
+    var r = 1.0;
+    var g = 0.5 * fade;
+    var b = 0.1 * fade * fade;
+    ep.sprite.material.color.setRGB(r, g, b);
+  }
+  
+  // Update fire ring particles
+  for(var i = 0; i < fireRingPool.length; i++){
+    var rp = fireRingPool[i];
+    if(!rp.active) continue;
+    rp.life += dt;
+    if(rp.life >= rp.maxLife){
+      rp.active = false;
+      rp.sprite.visible = false;
+      continue;
+    }
+    // Flicker effect
+    var flicker = 0.7 + 0.3 * Math.sin(rp.life * 8 + rp.flickerOffset);
+    var flickerSize = rp.baseSize * (0.8 + 0.4 * Math.sin(rp.life * 6 + rp.flickerOffset * 2));
+    rp.sprite.scale.set(flickerSize, flickerSize * 1.3, 1);  // Taller than wide (flame shape)
+    // Slight upward drift
+    rp.sprite.position.set(rp.x, rp.y + Math.sin(rp.life * 3 + rp.flickerOffset) * 0.5, rp.z);
+    // Fade out in last FIREBALL_RING_FADE_TIME seconds
+    var timeLeft = rp.maxLife - rp.life;
+    if(timeLeft < FIREBALL_RING_FADE_TIME){
+      var ringFade = timeLeft / FIREBALL_RING_FADE_TIME;
+      rp.sprite.material.opacity = 0.8 * flicker * ringFade;
+    } else {
+      rp.sprite.material.opacity = 0.8 * flicker;
+    }
   }
 }
 
@@ -3626,6 +3999,26 @@ function animate(){
       vashraModel.position.set(flyX, VASHRA_FLY_HEIGHT + altBob, flyZ);
       vashraModel.rotation.y = vashraAngle + Math.PI / 2;
       
+
+      // Fireball targeting while flying
+      if(vashraFireReady){
+        fireballTimer += dt;
+        if(fireballTimer >= FIREBALL_FIRE_INTERVAL){
+          fireballTimer = 0;
+          // Calculate mouth position (front of dragon, slightly below)
+          var mouthForwardX = Math.sin(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
+          var mouthForwardZ = Math.cos(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
+          var mouthX = vashraModel.position.x + mouthForwardX;
+          var mouthY = vashraModel.position.y - 0.05 * VASHRA_SCALE;
+          var mouthZ = vashraModel.position.z + mouthForwardZ;
+          // Pick a random ground target within 150 units of center
+          var tgtX = (Math.random()-0.5) * 300;
+          var tgtZ = (Math.random()-0.5) * 300;
+          var tgtY = getHeight(tgtX, tgtZ);
+          fireFireball(mouthX, mouthY, mouthZ, tgtX, tgtY, tgtZ);
+        }
+      }
+
       // After VASHRA_FLY_DURATION seconds, begin landing descent
       if(vashraStateTimer > VASHRA_FLY_DURATION && vashraLandAction){
         vashraState = 'descending';
@@ -3863,6 +4256,7 @@ function animate(){
   
   // Update smoke particles (weapon hit effects)
   updateSmokeParticles(dt);
+  updateFireballs(dt);  // Dragon fireball projectiles + explosions + fire rings
   
   // ===== DAMAGE FLASH TIMER =====
   if(damageFlashTimer > 0){

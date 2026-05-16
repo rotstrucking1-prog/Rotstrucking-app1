@@ -138,7 +138,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v96</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v97</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -2590,12 +2590,21 @@ queueLoad(1, 'character-walk.glb?v=47', function(gltf){
     if(ch.material) ch.material.dispose();
   }
   characterPivot.add(playerModel);
-  // Auto-center the model — compute bounding box and zero ALL offsets
-  var charBox = new THREE.Box3().setFromObject(playerModel);
-  var charCenter = charBox.getCenter(new THREE.Vector3());
-  playerModel.position.x = -charCenter.x;
-  playerModel.position.y = -charBox.min.y;  // Feet on ground
-  playerModel.position.z = -charCenter.z;
+  // Auto-center using hip bone position (bounding box doesn't work for skinned meshes)
+  var hipBone = null;
+  playerModel.traverse(function(ch){ if(ch.name === 'hip' && !hipBone) hipBone = ch; });
+  if(hipBone){
+    playerModel.position.x = -hipBone.position.x;
+    playerModel.position.z = -hipBone.position.z;
+    playerModel.position.y = -hipBone.position.y + 0.05; // Slight ground offset
+  } else {
+    // Fallback: bounding box centering
+    var charBox = new THREE.Box3().setFromObject(playerModel);
+    var charCenter = charBox.getCenter(new THREE.Vector3());
+    playerModel.position.x = -charCenter.x;
+    playerModel.position.y = -charBox.min.y;
+    playerModel.position.z = -charCenter.z;
+  }
   playerModel.traverse(function(child){
     if(child.isMesh){
       child.castShadow=true;child.receiveShadow=true;
@@ -2648,12 +2657,20 @@ queueLoad(1, 'character-walk.glb?v=47', function(gltf){
         if(ch.material) ch.material.dispose();
       }
       characterPivot.add(playerModel);
-      // Auto-center the model
-      var charBox2 = new THREE.Box3().setFromObject(playerModel);
-      var charCenter2 = charBox2.getCenter(new THREE.Vector3());
-      playerModel.position.x = -charCenter2.x;
-      playerModel.position.y = -charBox2.min.y;  // Feet on ground
-      playerModel.position.z = -charCenter2.z;
+      // Auto-center using hip bone position
+      var hipBone2 = null;
+      playerModel.traverse(function(ch){ if(ch.name === 'hip' && !hipBone2) hipBone2 = ch; });
+      if(hipBone2){
+        playerModel.position.x = -hipBone2.position.x;
+        playerModel.position.z = -hipBone2.position.z;
+        playerModel.position.y = -hipBone2.position.y + 0.05;
+      } else {
+        var charBox2 = new THREE.Box3().setFromObject(playerModel);
+        var charCenter2 = charBox2.getCenter(new THREE.Vector3());
+        playerModel.position.x = -charCenter2.x;
+        playerModel.position.y = -charBox2.min.y;
+        playerModel.position.z = -charCenter2.z;
+      }
       playerModel.traverse(function(child){
         if(child.isMesh){
           child.castShadow=true;child.receiveShadow=true;

@@ -129,7 +129,7 @@ setTimeout(function(){
 </div>
 <div id="damage-flash" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);z-index:15;pointer-events:none;display:none"></div>
 <div id="fear-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(50,50,50,0.8);z-index:14;pointer-events:none;display:none"></div>
-<div id="debugLog" style="position:fixed;bottom:0;left:0;width:100%;max-height:40vh;overflow-y:auto;background:rgba(0,0,0,0.85);color:#0f0;font:11px monospace;padding:6px;z-index:9999;pointer-events:auto;display:block"></div>
+<div id="debugLog" style="position:fixed;bottom:0;left:0;width:100%;max-height:40vh;overflow-y:auto;background:rgba(0,0,0,0.85);color:#0f0;font:11px monospace;padding:6px;z-index:9999;pointer-events:auto;display:none"></div>
 <div id="vashra-alert" style="position:fixed;top:25%;left:50%;transform:translateX(-50%);z-index:25;pointer-events:none;text-align:center;display:none">
   <div id="vashra-alert-text" style="font-size:32px;font-weight:bold;color:#ff4400;text-shadow:0 0 20px #ff0000,0 0 40px #ff4400,2px 2px 4px #000;letter-spacing:2px;white-space:nowrap"></div>
   <div id="vashra-alert-sub" style="font-size:18px;color:#ffaa00;text-shadow:0 0 10px #ff6600,1px 1px 2px #000;margin-top:8px"></div>
@@ -138,7 +138,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v86-debug</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v87</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1024,7 +1024,7 @@ let stallionAnimClip = null;
 let stallionData = [];
 
 // --- Vashra Dragon NPC ---
-const VASHRA_SHOWCASE = true;  // Demo mode: cycle through ALL animations + attacks
+const VASHRA_SHOWCASE = false;  // Demo mode OFF — real personality AI drives behavior
 let vashraShowcaseStep = 0;
 let vashraShowcaseTimer = 0;
 const VASHRA_SHOWCASE_STEPS = [
@@ -1562,7 +1562,7 @@ function updateQuakeRings(dt) {
 }
 
 function updatePlayerKnockback(dt) {
-  if(playerKnockTimer <= 0) return;
+  if(playerKnockTimer <= 0 || !characterPivot) return;
   playerKnockTimer -= dt;
   var kbFactor = Math.max(0, playerKnockTimer) * 2;  // Stronger at start
   characterPivot.position.x += playerKnockVX * dt * kbFactor * 4;
@@ -1573,7 +1573,7 @@ function updatePlayerKnockback(dt) {
 }
 
 function updatePlayerFalling(dt) {
-  if(!playerFalling) return;
+  if(!playerFalling || !characterPivot) return;
   playerFallVelocity += 60 * dt;  // Gravity acceleration
   characterPivot.position.y -= playerFallVelocity * dt;
   // Wind speed lines rushing past during fall
@@ -1814,6 +1814,7 @@ function dragonFireImpactDamage(impactX, impactY, impactZ) {
   var blastR2 = DRAGON_FIREBALL_BLAST_RADIUS * DRAGON_FIREBALL_BLAST_RADIUS;
   
   // --- PLAYER DAMAGE ---
+  if(characterPivot) {
   var pdx = characterPivot.position.x - impactX;
   var pdz = characterPivot.position.z - impactZ;
   var pDist2 = pdx*pdx + pdz*pdz;
@@ -1824,6 +1825,7 @@ function dragonFireImpactDamage(impactX, impactY, impactZ) {
     damageFlashTimer = 0.3;
     debugLog('💥 Player hit by dragon fire! -' + dmg.toFixed(0) + ' HP (' + Math.round(playerHP) + ' remaining)');
   }
+  } // end characterPivot guard
   
   // --- BEAR DAMAGE ---
   for(var i = 0; i < bearData.length; i++) {
@@ -1945,7 +1947,7 @@ function updateFireRingDamage(dt) {
   if(activeFireRings.length === 0) return;
   
   // Check player in any fire ring (with cooldown to prevent 60fps stacking)
-  if(dragonFireDmgCooldown <= 0) {
+  if(dragonFireDmgCooldown <= 0 && characterPivot) {
     for(var r = 0; r < activeFireRings.length; r++) {
       var ring = activeFireRings[r];
       var pdx = characterPivot.position.x - ring.x;
@@ -2561,9 +2563,55 @@ loader.load('character-walk.glb?v=47', function(gltf){
   updateLoading('Character loaded!', 65);
   checkReady();
 }, undefined, function(err){
-  console.warn('Character load error:', err);
-  assetsLoaded++;
-  checkReady();
+  console.warn('Character load error — retrying in 3s...', err);
+  debugLog('⚠️ Character load FAILED — retrying...');
+  setTimeout(function(){
+    loader.load('character-walk.glb?v=47&retry=' + Date.now(), function(gltf){
+      playerModel = gltf.scene;
+      characterPivot = new THREE.Group();
+      characterPivot.scale.set(3, 3, 3);
+      characterPivot.add(playerModel);
+      playerModel.traverse(function(child){
+        if(child.isMesh){
+          child.castShadow=true;child.receiveShadow=true;
+          if(child.material){
+            child.material.metalness = 0;
+            child.material.roughness = 0.8;
+            if(child.material.metalnessMap) child.material.metalnessMap = null;
+            if(child.material.roughnessMap) child.material.roughnessMap = null;
+            if(child.material.aoMap) child.material.aoMap = null;
+            if(child.material.map) child.material.map.anisotropy = 16;
+            child.material.needsUpdate = true;
+          }
+        }
+      });
+      scene.add(characterPivot);
+      if(gltf.animations && gltf.animations.length > 0){
+        playerMixer = new THREE.AnimationMixer(playerModel);
+        for(var ai = 0; ai < gltf.animations.length; ai++){
+          var clip = gltf.animations[ai];
+          if(clip.name === 'Walk'){
+            playerWalkAction = playerMixer.clipAction(clip);
+            playerWalkAction.setLoop(THREE.LoopRepeat);
+          } else if(clip.name === 'Idle'){
+            playerIdleAction = playerMixer.clipAction(clip);
+            playerIdleAction.setLoop(THREE.LoopRepeat);
+            playerIdleAction.play();
+          }
+        }
+      }
+      playerModel.traverse(function(child){
+        if(child.isBone && child.name === 'rightHand') rightHandBone = child;
+      });
+      debugLog('✅ Character loaded on RETRY!');
+      if(!worldReady) { assetsLoaded++; checkReady(); }
+    }, undefined, function(err2){
+      console.warn('Character retry also failed:', err2);
+      debugLog('❌ Character retry FAILED');
+      assetsLoaded++;
+      checkReady();
+    });
+  }, 3000);
 });
 
 // ===== GRASS INSTANCES =====
@@ -5684,23 +5732,29 @@ function animate(){
   }
   
   if(thirdPerson){
-    // Dead-center 3rd person camera — character always in exact center of screen
+    // Over-the-shoulder 3rd person camera (Fallout 76 style)
     const LOOK_HEIGHT = 2.5; // look at character's chest/shoulder area
-    
-    const lookX = playerPos.x;
-    const lookY = playerPos.y + LOOK_HEIGHT;
-    const lookZ = playerPos.z;
+    const SHOULDER_OFFSET = 1.2; // right shoulder offset
     
     // Camera facing direction (free-look: playerYaw + cameraYawOffset)
     const camYaw = playerYaw + cameraYawOffset;
     const facingX = Math.sin(camYaw);
     const facingZ = Math.cos(camYaw);
     
-    // Camera: orbits around character using free-look yaw
+    // Right vector (perpendicular to facing direction)
+    const rightX = Math.cos(camYaw);
+    const rightZ = -Math.sin(camYaw);
+    
+    // Look target: slightly right of character center (over shoulder)
+    const lookX = playerPos.x + rightX * SHOULDER_OFFSET * 0.5;
+    const lookY = playerPos.y + LOOK_HEIGHT;
+    const lookZ = playerPos.z + rightZ * SHOULDER_OFFSET * 0.5;
+    
+    // Camera: behind and right of character
     const behindDist = Math.cos(cameraPitch) * cameraDistance;
-    const camX = lookX - facingX * behindDist;
+    const camX = lookX - facingX * behindDist + rightX * SHOULDER_OFFSET;
     const camY = lookY + Math.sin(cameraPitch) * cameraDistance;
-    const camZ = lookZ - facingZ * behindDist;
+    const camZ = lookZ - facingZ * behindDist + rightZ * SHOULDER_OFFSET;
     
     // Apply screen shake
     var shakeX = 0, shakeY = 0;

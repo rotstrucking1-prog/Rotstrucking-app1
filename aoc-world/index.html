@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v76</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v77</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -1062,9 +1062,7 @@ const VASHRA_SCALE = 90;  // 30× character scale (3×30=90)
 const VASHRA_FLY_HEIGHT = 100;  // Base flying altitude above terrain
 const VASHRA_FLY_SPEED = 12;  // Flight speed
 const VASHRA_ORBIT_RADIUS = 200;  // Patrol radius
-const VASHRA_FLY_DURATION = 60;  // Seconds flying before landing
 const VASHRA_LAND_DURATION = 6;  // Seconds to descend
-const VASHRA_GROUND_TIME = 15;  // Seconds sitting on ground
 const VASHRA_ASCEND_DURATION = 6;  // Seconds to ascend
 let vashraModel = null;
 let vashraMixer = null;
@@ -1077,7 +1075,7 @@ let vashraDiveAction = null;
 let vashraDeathAction = null;
 let vashraFireballAction = null;
 let vashraHP = 500;  // Dragon health for future combat
-let vashraState = 'flying';  // flying, firing, descending, landed, ascending
+let vashraState = 'flying';  // flying, firing, descending, landed, resting, ascending
 let vashraStateTimer = 0;
 let vashraHoverX = 0, vashraHoverY = 0, vashraHoverZ = 0, vashraHoverRot = 0;
 let vashraFireFacingTarget = 0;
@@ -1088,10 +1086,40 @@ const VASHRA_FIRE_AT = 2.5;       // Fire the actual fireball 2.5s into the anim
 let vashraLandX = 0, vashraLandZ = 0;  // Landing target
 let vashraLandStartX = 0, vashraLandStartZ = 0, vashraLandStartY = 0;
 let vashraLandTargetY = 0;
+// --- Vashra Dragon Personality AI ---
+// Moods: 'aggressive', 'curious', 'lazy', 'territorial'
+// Each mood changes probability weights for next action
+let vashraMood = 'lazy';  // Start lazy — first flight cycle is calm
+let vashraMoodTimer = 0;
+let vashraMoodDuration = 120 + Math.random() * 300;  // 2-7 min before first mood shift
+let vashraDecisionTimer = 0;
+let vashraDecisionInterval = 8 + Math.random() * 12;  // 8-20s between decisions while flying
+let vashraLastAction = '';  // Prevent same action twice in a row
+let vashraFireCount = 0;  // Fireballs in current flight; resets on land
+let vashraMaxFirePerFlight = 0;  // Set per flight by mood
+let vashraLandNearPlayer = false;  // If true, land near player (curious behavior)
+let vashraRestDuration = 0;  // How long to sit/rest on ground
+let vashraOrbitDir = 1;  // 1 = right orbit (bank-right), -1 = left orbit (bank-left)
+let vashraOrbitSwitchTimer = 0;  // Timer to sometimes switch orbit direction
+let vashraOrbitSwitchInterval = 30 + Math.random() * 60;  // 30-90s between potential switches
+// Mood behavior weights: [keepFlying, fireball, landRandom, landNearPlayer]
+const VASHRA_MOOD_WEIGHTS = {
+  aggressive:   [0.35, 0.40, 0.10, 0.15],
+  curious:      [0.35, 0.10, 0.15, 0.40],
+  lazy:         [0.55, 0.05, 0.25, 0.15],
+  territorial:  [0.50, 0.35, 0.05, 0.10]
+};
+const VASHRA_MOODS = ['aggressive', 'curious', 'lazy', 'territorial'];
+// Ground time ranges per mood (min, max in seconds)
+const VASHRA_REST_TIMES = {
+  aggressive:   [8, 20],
+  curious:      [15, 45],
+  lazy:         [30, 120],
+  territorial:  [5, 15]
+};
 // --- Vashra Dragon Fireball System ---
 const FIREBALL_MAX_ACTIVE = 3;         // Max simultaneous fireballs
 const FIREBALL_SPEED = 80;             // Units per second
-const FIREBALL_FIRE_INTERVAL = 18;     // Seconds between fireballs while flying
 const FIREBALL_TRAIL_COUNT = 20;       // Trail particles per fireball
 const FIREBALL_EXPLOSION_COUNT = 40;   // Explosion particles per impact
 const FIREBALL_RING_COUNT = 24;        // Fire ring particles per impact
@@ -1102,7 +1130,6 @@ let fireTexture = null;
 let fireballPool = [];
 let explosionPool = [];
 let fireRingPool = [];
-let fireballTimer = 10;  // Start with shorter delay for first fireball
 let vashraFireReady = false;
 
 let stallionModels = [];
@@ -4078,90 +4105,166 @@ function animate(){
     if(sd.model.position.y < groundY) sd.model.position.y = groundY + STALLION_FOOT_OFFSET * sd.scale;
   });
 
-  // ===== VASHRA DRAGON AI (state machine: flying → descending → landed → ascending) =====
+  // ===== VASHRA DRAGON AI — Personality-Driven Behavior Engine =====
   if(vashraModel){
     vashraStateTimer += dt;
     
+    // --- Mood System: shifts personality every 2-7 minutes ---
+    vashraMoodTimer += dt;
+    if(vashraMoodTimer >= vashraMoodDuration){
+      vashraMoodTimer = 0;
+      vashraMoodDuration = 120 + Math.random() * 300;  // 2-7 min next shift
+      var oldMood = vashraMood;
+      // Pick new mood different from current
+      do { vashraMood = VASHRA_MOODS[Math.floor(Math.random() * VASHRA_MOODS.length)]; } while(vashraMood === oldMood);
+      // Set max fireballs for this mood period
+      if(vashraMood === 'aggressive') vashraMaxFirePerFlight = 2 + Math.floor(Math.random() * 4);  // 2-5
+      else if(vashraMood === 'territorial') vashraMaxFirePerFlight = 1 + Math.floor(Math.random() * 3);  // 1-3
+      else if(vashraMood === 'curious') vashraMaxFirePerFlight = Math.random() < 0.3 ? 1 : 0;  // 30% chance of 1
+      else vashraMaxFirePerFlight = Math.random() < 0.15 ? 1 : 0;  // lazy: 15% chance of 1
+      debugLog('🧠 Vashra mood: ' + oldMood + ' → ' + vashraMood + ' (maxFire=' + vashraMaxFirePerFlight + ')');
+    }
+    
     if(vashraState === 'flying'){
-      // Normal circular orbit high in the sky
-      vashraAngle += dt * VASHRA_FLY_SPEED / VASHRA_ORBIT_RADIUS;
+      // === FLIGHT: circular orbit with directional banking ===
+      vashraAngle += dt * VASHRA_FLY_SPEED / VASHRA_ORBIT_RADIUS * vashraOrbitDir;
       if(vashraAngle > Math.PI * 2) vashraAngle -= Math.PI * 2;
+      if(vashraAngle < 0) vashraAngle += Math.PI * 2;
       var flyX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
       var flyZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
       var altBob = Math.sin(vashraAngle * 3) * 8;
       vashraModel.position.set(flyX, VASHRA_FLY_HEIGHT + altBob, flyZ);
-      vashraModel.rotation.y = vashraAngle + Math.PI / 2;
+      vashraModel.rotation.y = vashraAngle + (vashraOrbitDir > 0 ? Math.PI / 2 : -Math.PI / 2);
       
-
-      // Fireball targeting while flying — when ready, transition to 'firing' state
-      if(vashraFireReady){
-        fireballTimer += dt;
-        if(fireballTimer >= FIREBALL_FIRE_INTERVAL){
-          fireballTimer = 0;
-          // Transition to firing state — dragon STOPS moving and hovers
+      // Occasional orbit direction switch (bank-right ↔ bank-left)
+      vashraOrbitSwitchTimer += dt;
+      if(vashraOrbitSwitchTimer >= vashraOrbitSwitchInterval){
+        vashraOrbitSwitchTimer = 0;
+        vashraOrbitSwitchInterval = 30 + Math.random() * 60;
+        if(Math.random() < 0.35){  // 35% chance to actually switch
+          vashraOrbitDir *= -1;
+          var newBankAct = vashraOrbitDir > 0 ? vashraBankAction : vashraBankLeftAction;
+          var oldBankAct = vashraOrbitDir > 0 ? vashraBankLeftAction : vashraBankAction;
+          if(newBankAct && oldBankAct){
+            newBankAct.reset(); newBankAct.play();
+            oldBankAct.crossFadeTo(newBankAct, 1.5);
+            debugLog('🐉 Vashra switches orbit: ' + (vashraOrbitDir > 0 ? 'RIGHT' : 'LEFT'));
+          }
+        }
+      }
+      
+      // === DECISION ENGINE: every N seconds, decide next action ===
+      vashraDecisionTimer += dt;
+      if(vashraDecisionTimer >= vashraDecisionInterval){
+        vashraDecisionTimer = 0;
+        vashraDecisionInterval = 8 + Math.random() * 15;  // 8-23s next decision
+        
+        // Get mood weights
+        var weights = VASHRA_MOOD_WEIGHTS[vashraMood].slice();  // [keepFlying, fireball, landRandom, landNearPlayer]
+        
+        // Adjust: if already fired max fireballs this flight, zero out fireball weight
+        if(vashraFireCount >= vashraMaxFirePerFlight) weights[1] = 0;
+        // Adjust: can't fire if fireball system not ready
+        if(!vashraFireReady || !vashraFireballAction) weights[1] = 0;
+        // Adjust: can't land if no landing animation
+        if(!vashraLandAction){ weights[2] = 0; weights[3] = 0; }
+        // Adjust: prevent same action twice in a row
+        if(vashraLastAction === 'fire') weights[1] *= 0.2;
+        if(vashraLastAction === 'land') { weights[2] *= 0.1; weights[3] *= 0.1; }
+        
+        // Normalize weights
+        var totalW = weights[0] + weights[1] + weights[2] + weights[3];
+        if(totalW <= 0){ weights = [1,0,0,0]; totalW = 1; }
+        
+        var roll = Math.random() * totalW;
+        var cumul = 0;
+        var choice = 'fly';  // default keep flying
+        var labels = ['fly', 'fire', 'landRandom', 'landNearPlayer'];
+        for(var w = 0; w < 4; w++){
+          cumul += weights[w];
+          if(roll <= cumul){ choice = labels[w]; break; }
+        }
+        
+        // === EXECUTE DECISION ===
+        if(choice === 'fire'){
+          vashraLastAction = 'fire';
+          vashraFireCount++;
           vashraState = 'firing';
           vashraStateTimer = 0;
-          // Save hover position (where dragon stopped)
           vashraHoverX = vashraModel.position.x;
           vashraHoverY = vashraModel.position.y;
           vashraHoverZ = vashraModel.position.z;
-          vashraHoverRot = vashraModel.rotation.y;
-          // Pre-pick fireball target
-          vashraFireTargetX = (Math.random()-0.5) * 300;
-          vashraFireTargetZ = (Math.random()-0.5) * 300;
+          // Pick target — 40% chance near player if aggressive/territorial
+          if((vashraMood === 'aggressive' || vashraMood === 'territorial') && Math.random() < 0.4 && characterPivot){
+            vashraFireTargetX = characterPivot.position.x + (Math.random()-0.5) * 30;
+            vashraFireTargetZ = characterPivot.position.z + (Math.random()-0.5) * 30;
+          } else {
+            vashraFireTargetX = (Math.random()-0.5) * 400;
+            vashraFireTargetZ = (Math.random()-0.5) * 400;
+          }
           vashraFireTargetY = getHeight(vashraFireTargetX, vashraFireTargetZ);
-          // Face toward target while hovering
           var ftDx = vashraFireTargetX - vashraHoverX;
           var ftDz = vashraFireTargetZ - vashraHoverZ;
           vashraFireFacingTarget = Math.atan2(ftDx, ftDz);
           vashraFireballFired = false;
-          // Crossfade to fireball hover animation
           if(vashraFireballAction){
-            vashraFireballAction.reset();
-            vashraFireballAction.play();
-            var currentFlyAct = (vashraBankAction && vashraBankAction.isRunning()) ? vashraBankAction : vashraFlightAction;
-            currentFlyAct.crossFadeTo(vashraFireballAction, 0.5);
+            vashraFireballAction.reset(); vashraFireballAction.play();
+            var curAct = (vashraOrbitDir > 0 && vashraBankAction && vashraBankAction.isRunning()) ? vashraBankAction :
+                         (vashraOrbitDir < 0 && vashraBankLeftAction && vashraBankLeftAction.isRunning()) ? vashraBankLeftAction : vashraFlightAction;
+            curAct.crossFadeTo(vashraFireballAction, 0.5);
           }
-          debugLog('🐉 Vashra entering hover to fire!');
+          debugLog('🔥 Vashra [' + vashraMood + '] decides to FIRE! (shot ' + vashraFireCount + '/' + vashraMaxFirePerFlight + ')');
+          
+        } else if(choice === 'landRandom' || choice === 'landNearPlayer'){
+          vashraLastAction = 'land';
+          vashraLandNearPlayer = (choice === 'landNearPlayer');
+          vashraState = 'descending';
+          vashraStateTimer = 0;
+          vashraFireCount = 0;  // Reset fire count for next flight
+          
+          if(vashraLandNearPlayer && characterPivot){
+            // Land within 40-80 units of player — close enough to feel intentional
+            var landAngle = Math.random() * Math.PI * 2;
+            var landDist = 40 + Math.random() * 40;
+            vashraLandX = characterPivot.position.x + Math.cos(landAngle) * landDist;
+            vashraLandZ = characterPivot.position.z + Math.sin(landAngle) * landDist;
+            // Clamp to world bounds
+            vashraLandX = Math.max(-380, Math.min(380, vashraLandX));
+            vashraLandZ = Math.max(-380, Math.min(380, vashraLandZ));
+          } else {
+            vashraLandX = (Math.random() - 0.5) * 400;
+            vashraLandZ = (Math.random() - 0.5) * 400;
+          }
+          vashraLandTargetY = getHeight(vashraLandX, vashraLandZ) + 2;
+          vashraLandStartX = vashraModel.position.x;
+          vashraLandStartZ = vashraModel.position.z;
+          vashraLandStartY = vashraModel.position.y;
+          
+          // Set ground rest time based on mood + curiosity
+          var restRange = VASHRA_REST_TIMES[vashraMood];
+          vashraRestDuration = restRange[0] + Math.random() * (restRange[1] - restRange[0]);
+          if(vashraLandNearPlayer) vashraRestDuration *= 1.5;  // Curious = stays longer
+          
+          var descendAnim = vashraDiveAction || vashraLandAction;
+          descendAnim.reset(); descendAnim.play();
+          if(vashraFireballAction && vashraFireballAction.isRunning()) vashraFireballAction.stop();
+          var flyAct = (vashraOrbitDir > 0 && vashraBankAction && vashraBankAction.isRunning()) ? vashraBankAction :
+                       (vashraOrbitDir < 0 && vashraBankLeftAction && vashraBankLeftAction.isRunning()) ? vashraBankLeftAction : vashraFlightAction;
+          flyAct.crossFadeTo(descendAnim, 1.5);
+          debugLog('🐉 Vashra [' + vashraMood + '] decides to LAND ' + (vashraLandNearPlayer ? 'NEAR PLAYER' : 'randomly') + ' — rest ' + vashraRestDuration.toFixed(0) + 's');
         }
+        // else choice === 'fly' → do nothing, keep orbiting
       }
-
-      // After VASHRA_FLY_DURATION seconds, begin landing descent
-      if(vashraStateTimer > VASHRA_FLY_DURATION && vashraLandAction){
-        vashraState = 'descending';
-        vashraStateTimer = 0;
-        // Pick a random landing spot within the map
-        vashraLandX = (Math.random() - 0.5) * 400;
-        vashraLandZ = (Math.random() - 0.5) * 400;
-        vashraLandTargetY = getHeight(vashraLandX, vashraLandZ) + 2;
-        // Remember start position for interpolation
-        vashraLandStartX = vashraModel.position.x;
-        vashraLandStartZ = vashraModel.position.z;
-        vashraLandStartY = vashraModel.position.y;
-        // Crossfade to dive animation (or landing if dive not loaded)
-        var descendAnim = vashraDiveAction || vashraLandAction;
-        descendAnim.reset();
-        descendAnim.play();
-        // Stop fireball animation if it was playing
-        if(vashraFireballAction && vashraFireballAction.isRunning()) vashraFireballAction.stop();
-        if(vashraBankAction && vashraBankAction.isRunning()){
-          vashraBankAction.crossFadeTo(descendAnim, 1.5);
-        } else if(vashraFlightAction && vashraFlightAction.isRunning()){
-          vashraFlightAction.crossFadeTo(descendAnim, 1.5);
-        }
-        debugLog('🐉 Vashra descending to land at (' + vashraLandX.toFixed(0) + ', ' + vashraLandZ.toFixed(0) + ')');
-      }
+      
     } else if(vashraState === 'firing'){
-      // Dragon STOPPED — hovering in place, playing fireball animation
-      // Gentle altitude bob while hovering
+      // === HOVER + FIRE: stopped in place, fireball animation ===
       var hoverBob = Math.sin(vashraStateTimer * 2) * 3;
       vashraModel.position.set(vashraHoverX, vashraHoverY + hoverBob, vashraHoverZ);
-      // Smoothly turn to face the target
       var faceDiff = vashraFireFacingTarget - vashraModel.rotation.y;
       while(faceDiff > Math.PI) faceDiff -= Math.PI * 2;
       while(faceDiff < -Math.PI) faceDiff += Math.PI * 2;
       vashraModel.rotation.y += faceDiff * 0.08;
-      // Fire the actual fireball at the mid-point of the animation
+      
       if(!vashraFireballFired && vashraStateTimer >= VASHRA_FIRE_AT){
         vashraFireballFired = true;
         var mouthFwdX = Math.sin(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
@@ -4172,26 +4275,26 @@ function animate(){
         fireFireball(mX, mY, mZ, vashraFireTargetX, vashraFireTargetY, vashraFireTargetZ);
         debugLog('🔥 Vashra fires! Target: (' + vashraFireTargetX.toFixed(0) + ', ' + vashraFireTargetZ.toFixed(0) + ')');
       }
-      // After hover duration, return to flying orbit
+      
       if(vashraStateTimer >= VASHRA_HOVER_DURATION){
         vashraState = 'flying';
         vashraStateTimer = 0;
-        // Crossfade from fireball hover back to bank-right orbit
-        var returnAct = vashraBankAction || vashraFlightAction;
-        returnAct.reset();
-        returnAct.play();
+        vashraDecisionTimer = 0;
+        vashraDecisionInterval = 5 + Math.random() * 10;  // Shorter wait after firing
+        var returnAct = vashraOrbitDir > 0 ? (vashraBankAction || vashraFlightAction) : (vashraBankLeftAction || vashraFlightAction);
+        returnAct.reset(); returnAct.play();
         if(vashraFireballAction) vashraFireballAction.crossFadeTo(returnAct, 0.8);
         debugLog('🐉 Vashra resuming orbit');
       }
+      
     } else if(vashraState === 'descending'){
-      // Smoothly descend from sky to landing spot
+      // === DIVING: smoothstep from sky to ground ===
       var descT = Math.min(vashraStateTimer / VASHRA_LAND_DURATION, 1);
-      var ease = descT * descT * (3 - 2 * descT);  // smoothstep
+      var ease = descT * descT * (3 - 2 * descT);
       var descX = vashraLandStartX + (vashraLandX - vashraLandStartX) * ease;
       var descZ = vashraLandStartZ + (vashraLandZ - vashraLandStartZ) * ease;
       var descY = vashraLandStartY + (vashraLandTargetY - vashraLandStartY) * ease;
       vashraModel.position.set(descX, descY, descZ);
-      // Face toward landing spot
       var dx = vashraLandX - descX;
       var dz = vashraLandZ - descZ;
       if(Math.abs(dx) > 0.5 || Math.abs(dz) > 0.5){
@@ -4201,48 +4304,53 @@ function animate(){
         vashraState = 'landed';
         vashraStateTimer = 0;
         vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
-        // Crossfade from dive to sitting/landing animation
         if(vashraDiveAction && vashraLandAction){
-          vashraLandAction.reset();
-          vashraLandAction.play();
+          vashraLandAction.reset(); vashraLandAction.play();
           vashraDiveAction.crossFadeTo(vashraLandAction, 1.0);
         }
-        debugLog('🐉 Vashra has landed!');
+        debugLog('🐉 Vashra landed! ' + (vashraLandNearPlayer ? '👁️ Watching player...' : 'Resting...') + ' (' + vashraRestDuration.toFixed(0) + 's)');
       }
+      
     } else if(vashraState === 'landed'){
-      // Stay on ground at landing spot
+      // === GROUNDED: sitting, looking around, resting ===
       vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
-      // After ground time, take off
-      if(vashraStateTimer > VASHRA_GROUND_TIME){
+      
+      // If curious and near player, slowly turn to face them
+      if(vashraLandNearPlayer && characterPivot){
+        var toPlayerX = characterPivot.position.x - vashraLandX;
+        var toPlayerZ = characterPivot.position.z - vashraLandZ;
+        var targetFace = Math.atan2(toPlayerX, toPlayerZ);
+        var fDiff = targetFace - vashraModel.rotation.y;
+        while(fDiff > Math.PI) fDiff -= Math.PI * 2;
+        while(fDiff < -Math.PI) fDiff += Math.PI * 2;
+        vashraModel.rotation.y += fDiff * 0.02;  // Very slow, eerie turn
+      }
+      
+      if(vashraStateTimer > vashraRestDuration){
         vashraState = 'ascending';
         vashraStateTimer = 0;
         vashraLandStartY = vashraModel.position.y;
         vashraLandStartX = vashraModel.position.x;
         vashraLandStartZ = vashraModel.position.z;
-        // Resume orbit from angle nearest to current position
         vashraAngle = Math.atan2(vashraLandZ, vashraLandX);
-        // Crossfade from landing to straight flight for ascent
-        vashraFlightAction.reset();
-        vashraFlightAction.play();
-        // Stop any lingering dive/land actions
+        vashraFlightAction.reset(); vashraFlightAction.play();
         if(vashraLandAction && vashraLandAction.isRunning()) vashraLandAction.crossFadeTo(vashraFlightAction, 2.0);
         if(vashraDiveAction && vashraDiveAction.isRunning()) vashraDiveAction.crossFadeTo(vashraFlightAction, 2.0);
         debugLog('🐉 Vashra taking off!');
       }
+      
     } else if(vashraState === 'ascending'){
-      // Rise from ground back to orbit altitude
+      // === TAKEOFF: rise from ground back to orbit ===
       var ascT = Math.min(vashraStateTimer / VASHRA_ASCEND_DURATION, 1);
-      var easeAsc = ascT * ascT * (3 - 2 * ascT);  // smoothstep
+      var easeAsc = ascT * ascT * (3 - 2 * ascT);
       var targetOrbitX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
       var targetOrbitZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
       var ascX = vashraLandStartX + (targetOrbitX - vashraLandStartX) * easeAsc;
       var ascZ = vashraLandStartZ + (targetOrbitZ - vashraLandStartZ) * easeAsc;
       var ascY = vashraLandStartY + (VASHRA_FLY_HEIGHT - vashraLandStartY) * easeAsc;
       vashraModel.position.set(ascX, ascY, ascZ);
-      // Gradually face flight direction
-      var targetRot = vashraAngle + Math.PI / 2;
+      var targetRot = vashraAngle + (vashraOrbitDir > 0 ? Math.PI / 2 : -Math.PI / 2);
       var curRot = vashraModel.rotation.y;
-      // Shortest angle lerp
       var rotDiff = targetRot - curRot;
       while(rotDiff > Math.PI) rotDiff -= Math.PI * 2;
       while(rotDiff < -Math.PI) rotDiff += Math.PI * 2;
@@ -4250,13 +4358,18 @@ function animate(){
       if(ascT >= 1){
         vashraState = 'flying';
         vashraStateTimer = 0;
-        // Crossfade from straight flight to bank-right for circular orbit
-        if(vashraBankAction){
-          vashraBankAction.reset();
-          vashraBankAction.play();
-          vashraFlightAction.crossFadeTo(vashraBankAction, 1.5);
-        }
-        debugLog('🐉 Vashra back in flight!');
+        vashraDecisionTimer = 0;
+        vashraDecisionInterval = 15 + Math.random() * 20;  // Longer wait after landing
+        // Reset fire count for new flight, roll new max
+        vashraFireCount = 0;
+        if(vashraMood === 'aggressive') vashraMaxFirePerFlight = 2 + Math.floor(Math.random() * 4);
+        else if(vashraMood === 'territorial') vashraMaxFirePerFlight = 1 + Math.floor(Math.random() * 3);
+        else vashraMaxFirePerFlight = Math.random() < 0.25 ? 1 : 0;
+        // Crossfade to appropriate bank animation
+        var bankAct = vashraOrbitDir > 0 ? (vashraBankAction || vashraFlightAction) : (vashraBankLeftAction || vashraFlightAction);
+        bankAct.reset(); bankAct.play();
+        vashraFlightAction.crossFadeTo(bankAct, 1.5);
+        debugLog('🐉 Vashra back in flight! [' + vashraMood + '] maxFire=' + vashraMaxFirePerFlight);
       }
     }
     

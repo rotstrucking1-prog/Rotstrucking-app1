@@ -128,7 +128,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v68</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v69</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -458,7 +458,7 @@ function updateGrassWindShaders() {
 
 // ===== LOADING MANAGER =====
 let assetsLoaded = 0;
-const totalAssets = 15;  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword
+const totalAssets = 16;  // +1 for Vashra dragon  // Character, Bass, Fishing Pole, Grass, Sun, Terrain, Deer, Rock Piles, Bears, Dead Grizzly, Dreugh, Freak-a-Zoid, Stallion, Sword
 function updateLoading(txt,pct){
   document.getElementById('load-text').textContent = txt;
   document.getElementById('bar').style.width = pct+'%';
@@ -1055,6 +1055,15 @@ const STALLION_XP = 25;
 let stallionTemplate = null;
 let stallionAnimClip = null;
 let stallionData = [];
+
+// --- Vashra Dragon NPC ---
+const VASHRA_SCALE = 90;  // 30× character scale (3×30=90)
+const VASHRA_FLY_HEIGHT = 100;  // Base flying altitude above terrain
+const VASHRA_FLY_SPEED = 12;  // Flight speed
+const VASHRA_ORBIT_RADIUS = 200;  // Patrol radius
+let vashraModel = null;
+let vashraMixer = null;
+let vashraAngle = 0;  // Current orbit angle
 let stallionModels = [];
 let stallionMixers = [];
 
@@ -2076,6 +2085,55 @@ loader.load('dead-grizzly-model.glb?v=1', function(gltf){
 
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
+// Load Vashra Dragon
+loader.load('vashra-dragon.glb?v=1', function(gltf){
+  vashraModel = gltf.scene;
+  vashraModel.traverse(function(child){
+    if(child.isMesh){
+      child.material = child.material.clone();
+      child.material.metalness = 0;
+      child.material.roughness = 0.8;
+      if(child.material.color) child.material.color.set(0xffffff);
+      if(child.material.metalnessMap) child.material.metalnessMap = null;
+      if(child.material.roughnessMap) child.material.roughnessMap = null;
+      if(child.material.aoMap) child.material.aoMap = null;
+      if(child.material.map) child.material.map.anisotropy = 16;
+      child.material.needsUpdate = true;
+    }
+  });
+  
+  // Scale and position Vashra high in the sky
+  vashraModel.scale.set(VASHRA_SCALE, VASHRA_SCALE, VASHRA_SCALE);
+  
+  // Start at a random orbit position
+  vashraAngle = Math.random() * Math.PI * 2;
+  const startX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
+  const startZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
+  vashraModel.position.set(startX, VASHRA_FLY_HEIGHT, startZ);
+  vashraModel.rotation.y = vashraAngle + Math.PI / 2;  // Face flight direction
+  
+  scene.add(vashraModel);
+  
+  // Set up flight animation
+  if(gltf.animations && gltf.animations.length > 0){
+    vashraMixer = new THREE.AnimationMixer(vashraModel);
+    const flightAction = vashraMixer.clipAction(gltf.animations[0]);
+    flightAction.setLoop(THREE.LoopRepeat);
+    flightAction.play();
+    debugLog('🐉 Vashra flight animation: ' + gltf.animations[0].name + ' (' + gltf.animations[0].duration.toFixed(2) + 's)');
+  }
+  
+  debugLog('🐉 Vashra the Dragon spawned! Scale ' + VASHRA_SCALE + ', altitude ' + VASHRA_FLY_HEIGHT);
+  
+  assetsLoaded++;
+  updateLoading('The dragon awakens...', 85);
+  checkReady();
+}, undefined, function(err){
+  console.warn('Vashra dragon load error:', err);
+  assetsLoaded++;
+  checkReady();
+});
+
 loader.load('obsidian-scimitar.glb?v=1', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
@@ -3524,6 +3582,27 @@ function animate(){
     const groundY = getHeight(sd.model.position.x, sd.model.position.z);
     if(sd.model.position.y < groundY) sd.model.position.y = groundY + STALLION_FOOT_OFFSET * sd.scale;
   });
+
+  // ===== VASHRA DRAGON AI =====
+  if(vashraModel){
+    // Circular orbit pattern high in the sky
+    vashraAngle += dt * VASHRA_FLY_SPEED / VASHRA_ORBIT_RADIUS;
+    if(vashraAngle > Math.PI * 2) vashraAngle -= Math.PI * 2;
+    
+    const dragonX = Math.cos(vashraAngle) * VASHRA_ORBIT_RADIUS;
+    const dragonZ = Math.sin(vashraAngle) * VASHRA_ORBIT_RADIUS;
+    
+    // Gentle altitude bobbing
+    const altBob = Math.sin(vashraAngle * 3) * 8;
+    
+    vashraModel.position.set(dragonX, VASHRA_FLY_HEIGHT + altBob, dragonZ);
+    
+    // Face flight direction (tangent to circle)
+    vashraModel.rotation.y = vashraAngle + Math.PI / 2;
+    
+    // Update flight animation
+    if(vashraMixer) vashraMixer.update(dt);
+  }
 
   // ===== SKINNING SYSTEM =====
   // Find nearest dead unskinned bear

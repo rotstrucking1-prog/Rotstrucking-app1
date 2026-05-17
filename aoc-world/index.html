@@ -273,7 +273,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v161e</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v161f</div>
   <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="crash-debug" style="display:none;position:fixed;bottom:80px;left:10px;background:rgba(200,0,0,0.9);color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;z-index:9999;max-width:90vw;word-break:break-all;font-family:monospace"></div>
@@ -403,7 +403,7 @@ function loadAndDecodeSounds(){
   var keys = Object.keys(SOUND_FILES);
   console.log('🔊 Loading ' + keys.length + ' sound files...');
   keys.forEach(function(key){
-    fetch(SOUND_FILES[key] + '?v=161e')
+    fetch(SOUND_FILES[key] + '?v=161f')
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
       .then(function(audioBuffer){
@@ -1520,7 +1520,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=161e', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=161f', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -1555,7 +1555,7 @@ queueLoad(4, 'snowflake-model.glb?v=161e', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=161e', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=161f', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1812,7 +1812,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=161e');
+const grassTex = texLoader.load('grass-texture.jpg?v=161f');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1821,61 +1821,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=161e');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=161f');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=161e');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=161f');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=161e');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=161f');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=161e');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=161f');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=161e');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=161f');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=161e');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=161f');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=161e');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=161f');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=161e');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=161f');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=161e');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=161f');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=161e');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=161f');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=161e');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=161f');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=161e');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=161f');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=161e');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=161f');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=161e');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=161f');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=161e');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=161f');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=161e');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=161f');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -2122,7 +2122,7 @@ scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=161e', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=161f', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -2145,7 +2145,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=161e');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=161f');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -2179,7 +2179,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=161e', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=161f', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -2223,7 +2223,7 @@ queueLoad(5, 'rock-pile-model.glb?v=161e', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=161e', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=161f', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -2276,7 +2276,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=161e', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=161e', function(gltf){
+queueLoad(3, 'bass-model.glb?v=161f', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -2368,7 +2368,7 @@ queueLoad(3, 'bass-model.glb?v=161e', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=161e', function(gltf){
+queueLoad(3, 'deer-model.glb?v=161f', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -2477,7 +2477,7 @@ queueLoad(3, 'deer-model.glb?v=161e', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=161e', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=161f', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -7626,10 +7626,6 @@ function spellImpactEffect(x, y, z, color, intensityMul){
         var sc = startSize * (1 - t * 0.5);
         sprite.scale.set(sc, sc, 1);
         requestAnimationFrame(animate);
-  // Track FPS for crash reports
-  _fpsFrames++;
-  var _fpsNow = performance.now();
-  if(_fpsNow - _fpsTime > 1000) { window._lastFps = Math.round(_fpsFrames * 1000 / (_fpsNow - _fpsTime)); _fpsFrames = 0; _fpsTime = _fpsNow; }
       }
       requestAnimationFrame(animate);
     })(s, pVx, pVy, pVz, size);
@@ -10074,7 +10070,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=161e', function(gltf){
+queueLoad(1, 'character-walk.glb?v=161f', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -10141,7 +10137,7 @@ queueLoad(1, 'character-walk.glb?v=161e', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=161e&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=161f&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -10209,7 +10205,7 @@ queueLoad(1, 'character-walk.glb?v=161e', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=161e', function(gltf){
+queueLoad(2, 'grass-model.glb?v=161f', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -10269,7 +10265,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=161e', function(gltf){
+queueLoad(2, 'sun-model.glb?v=161f', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -10301,7 +10297,7 @@ queueLoad(2, 'sun-model.glb?v=161e', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=161e', function(gltf){
+queueLoad(2, 'moon-model.glb?v=161f', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -10355,7 +10351,7 @@ queueLoad(2, 'moon-model.glb?v=161e', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=161e', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=161f', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -10464,7 +10460,7 @@ queueLoad(4, 'bear-walk.glb?v=161e', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=161e', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=161f', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10545,7 +10541,7 @@ queueLoad(4, 'freak-walk.glb?v=161e', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=161e', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=161f', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10632,7 +10628,7 @@ queueLoad(3, 'stallion-walk.glb?v=161e', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=161e', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=161f', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10695,7 +10691,7 @@ queueLoad(4, 'dreugh-model.glb?v=161e', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=161e', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=161f', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10722,7 +10718,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=161e', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=161f', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -10768,7 +10764,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=161e', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=161f', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -10783,7 +10779,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=161e', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=161f', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -10802,7 +10798,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=161e', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=161f', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -10817,7 +10813,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=161e', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=161f', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -10832,7 +10828,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=161e', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=161f', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -10848,7 +10844,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=161e', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=161f', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -10864,7 +10860,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=161e', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=161f', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -10879,7 +10875,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=161e', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=161f', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -10900,7 +10896,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161e', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=161e', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=161f', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -12922,6 +12918,7 @@ function updateAmbientDust(dt){
 function animate(){
   requestAnimationFrame(animate);
 
+  var _section = 'INIT';
   try {
   const dt = Math.min(clock.getDelta(), 0.05);
   windTime.value += dt;
@@ -12943,6 +12940,7 @@ function animate(){
     if(keys['KeyD']||keys['ArrowRight']) moveX = 1;
   }
   
+  _section = 'MOVEMENT';
   // Left/Right input ORBITS CAMERA — character spins in place, no strafing
   if(Math.abs(moveX) > 0.05){
     playerYaw -= moveX * 2.5 * dt;
@@ -12967,6 +12965,7 @@ function animate(){
     playerPos.z += Math.cos(playerYaw) * dir * speed;
   }
   
+  _section = 'CHAR_FACING';
   // Character ALWAYS faces camera direction — spins in place with camera
   characterYaw = playerYaw;
   lastMoveX = 0;
@@ -13047,6 +13046,7 @@ function animate(){
     characterPivot.rotation.z = 0;
   }
   
+  _section = 'BASS_SWIM';
   // Update bass swimming — wandering pattern
   bassSwimData.forEach(function(data){
     if(data.model){
@@ -13084,6 +13084,7 @@ function animate(){
     }
   });
   
+  _section = 'DEER_AI';
   // ===== DEER AI UPDATES (Rigged Animation) =====
   deerData.forEach(function(data){
     if(!data.model) return;
@@ -13182,6 +13183,7 @@ function animate(){
     }
   });
   
+  _section = 'BEAR_AI';
   // ===== GRIZZLY BEAR AI UPDATES =====
   if(playerAttackCooldown > 0) playerAttackCooldown -= dt;
   
@@ -13524,6 +13526,7 @@ function animate(){
     if(sd.model.position.y < groundY) sd.model.position.y = groundY + STALLION_FOOT_OFFSET * sd.scale;
   });
 
+  _section = 'DRAGON_AI';
   // ===== VASHRA DRAGON AI — Personality-Driven Behavior Engine =====
   if(vashraModel){
     vashraStateTimer += dt;
@@ -14998,6 +15001,7 @@ function updateCastVFX(dt){
   document.getElementById('hud-mode').textContent = 'Camera: '+(thirdPerson?'3rd Person':'1st Person');
   document.getElementById('hud-pos').textContent += ' | Fishing Lv: '+getLevel(playerSkills.fishing)+' | Caught: '+playerCaughtFish;
   
+  _section = 'HUD_UPDATE';
   // === UPDATE MODERN HUD BARS ===
   var hpPct = Math.max(0, playerHP / playerMaxHP * 100);
   var hpFill = document.getElementById('hp-fill');
@@ -15042,6 +15046,7 @@ function updateCastVFX(dt){
   invText += ' | Items: ' + totalItems + ' (' + usedSlots + '/28 slots)';
   document.getElementById('hud-mode').textContent += invText;
   
+  _section = 'RENDER';
   if(gfxPostProcessing) {
     // God Ray sun screen position tracking
     if(godRayPass && godRayPass.enabled && sunModel){
@@ -15104,7 +15109,7 @@ function updateCastVFX(dt){
 
   } catch(e) {
     if(!window._crashLog) window._crashLog = [];
-    window._crashLog.push({t: Date.now(), msg: e.message, stack: e.stack ? e.stack.substring(0, 300) : ''});
+    window._crashLog.push({t: Date.now(), section: _section, msg: e.message, stack: e.stack ? e.stack.substring(0, 300) : ''});
     if(window._crashLog.length <= 3) {
       debugLog('<span style="color:red">💀 CRASH: ' + e.message + '</span>');
     }
@@ -15112,7 +15117,7 @@ function updateCastVFX(dt){
     var _crashEl = document.getElementById('crash-debug');
     if(_crashEl && window._crashLog.length <= 5){
       _crashEl.style.display = 'block';
-      _crashEl.textContent = '💀 CRASH: ' + e.message + ' | Stack: ' + (e.stack ? e.stack.substring(0, 200) : 'none');
+      _crashEl.textContent = '💀 CRASH [' + _section + ']: ' + e.message + ' | Stack: ' + (e.stack ? e.stack.substring(0, 200) : 'none');
     }
     // Failsafe render — at minimum show SOMETHING even if game logic crashes
     try { renderer.render(scene, camera); } catch(re) {}

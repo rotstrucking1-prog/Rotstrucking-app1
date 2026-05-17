@@ -990,8 +990,6 @@ lensflare.addElement(new LensflareElement(lfHexTex, 60, 0.6));
 lensflare.addElement(new LensflareElement(lfHexTex, 100, 0.7));
 lensflare.addElement(new LensflareElement(lfHexTex, 120, 0.9));
 lensflare.addElement(new LensflareElement(lfHexTex, 80, 1.0));
-sunLight.add(lensflare);
-
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
 // Hemisphere light for sky/ground color bleed — makes scene feel more natural
 const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x4a7a3a, 0.6);
@@ -1009,6 +1007,7 @@ sunLight.shadow.camera.bottom = -150;
 sunLight.shadow.camera.far = 1500;
 sunLight.shadow.bias = -0.001;
 scene.add(sunLight);
+sunLight.add(lensflare);
 
 // Ambient floating particles (dust/pollen)
 const particleCount = 80;

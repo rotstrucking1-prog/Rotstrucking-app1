@@ -267,7 +267,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v142</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v143</div>
   <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
@@ -392,7 +392,7 @@ function initRealSounds(){
     if(!ctx) return;
     realSoundCtx = ctx;
     Object.keys(SOUND_FILES).forEach(function(key){
-      fetch(SOUND_FILES[key] + '?v=142')
+      fetch(SOUND_FILES[key] + '?v=143')
         .then(function(r){ return r.arrayBuffer(); })
         .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
         .then(function(decoded){ soundBuffers[key] = decoded; console.log('Sound loaded:', key); })
@@ -950,7 +950,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=142', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=143', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -985,7 +985,7 @@ queueLoad(4, 'snowflake-model.glb?v=142', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=142', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=143', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1242,7 +1242,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=142');
+const grassTex = texLoader.load('grass-texture.jpg?v=143');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1251,61 +1251,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=142');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=143');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=142');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=143');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=142');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=143');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=142');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=143');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=142');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=143');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=142');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=143');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=142');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=143');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=142');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=143');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=142');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=143');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=142');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=143');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=142');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=143');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=142');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=143');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=142');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=143');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=142');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=143');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=142');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=143');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=142');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=143');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -1552,7 +1552,7 @@ scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=142', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=143', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -1575,7 +1575,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=142');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=143');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -1609,7 +1609,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=142', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=143', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1653,7 +1653,7 @@ queueLoad(5, 'rock-pile-model.glb?v=142', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=142', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=143', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -1706,7 +1706,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=142', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=142', function(gltf){
+queueLoad(3, 'bass-model.glb?v=143', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -1798,7 +1798,7 @@ queueLoad(3, 'bass-model.glb?v=142', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=142', function(gltf){
+queueLoad(3, 'deer-model.glb?v=143', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1907,7 +1907,7 @@ queueLoad(3, 'deer-model.glb?v=142', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=142', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=143', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -2176,13 +2176,48 @@ const BEAR_DROP_TABLE = [
   { item:'Bear Claws', chance:0.30 }
 ];
 
+const isAdmin = true; // Admin account — bypasses level requirements (HOISTED for TDZ safety)
+
+// ===== PLAYER ATTRIBUTES (Darkfall-inspired) =====
+// 6 core attributes, each 1-100. Activities raise them over time.
+// Admin starts at max (100 each).
+const playerAttributes = {
+  might: 1,      // +HP (Strength equivalent)
+  fortitude: 1,  // +HP, +Stamina (Vitality equivalent)
+  precision: 1,  // +ranged accuracy (Dexterity equivalent)
+  agility: 1,    // +Stamina, +speed (Quickness equivalent)
+  intellect: 1,  // +Mana (Intelligence equivalent)
+  insight: 1     // +Mana, +spell power (Wisdom equivalent)
+};
+
+// Admin gets max attributes
+if(isAdmin){
+  playerAttributes.might = 100;
+  playerAttributes.fortitude = 100;
+  playerAttributes.precision = 100;
+  playerAttributes.agility = 100;
+  playerAttributes.intellect = 100;
+  playerAttributes.insight = 100;
+}
+
+// Derived stat formulas (Darkfall-inspired, tuned for Brad's targets)
+// At max (all 100): HP=1000, Mana=1000, Stamina=250
+function calcMaxHP(){ return Math.round(200 + playerAttributes.might * 3 + playerAttributes.fortitude * 5); }
+function calcMaxMana(){ return Math.round(100 + playerAttributes.intellect * 5 + playerAttributes.insight * 4); }
+function calcMaxStamina(){ return Math.round(100 + playerAttributes.fortitude * 0.5 + playerAttributes.agility * 1.0); }
+
+// Regen formulas — scale with attributes
+function calcHPRegen(){ return 1 + playerAttributes.fortitude / 20; } // 1-6 HP/sec
+function calcManaRegen(){ return 2 + playerAttributes.insight / 10; } // 2-12 mana/sec
+function calcStaminaRegen(){ return 5 + playerAttributes.agility / 10; } // 5-15 stam/sec
+
 // ===== PLAYER COMBAT =====
-let playerHP = 100;
-let playerMaxHP = 100;
-let playerMana = 50;
-let playerMaxMana = 50;  // Scales with magic level
-let playerStamina = 100;
-let playerMaxStamina = 100;
+let playerMaxHP = calcMaxHP();
+let playerMaxMana = calcMaxMana();
+let playerMaxStamina = calcMaxStamina();
+let playerHP = playerMaxHP;
+let playerMana = playerMaxMana;
+let playerStamina = playerMaxStamina;
 let staminaRegenDelay = 0; // Delay before stamina regens after sprinting
 
 // === DAY/NIGHT CYCLE ===
@@ -2212,7 +2247,6 @@ const bloodGeo = new THREE.SphereGeometry(0.15, 4, 4);
 const bloodMat = new THREE.MeshBasicMaterial({color: 0xcc0000, transparent: true});
 
 // ===== WEAPON / EQUIPMENT SYSTEM =====
-const isAdmin = true; // Admin account — bypasses level requirements
 let equippedWeapon = null; // null or weapon ID string
 let swordModel = null; // The obsidian scimitar 3D model
 let rightHandBone = null; // Reference to character's right hand bone
@@ -2597,11 +2631,11 @@ function castSpell(spellId){
   
   var magicLevel = getLevel(playerSkills.magic);
   if(!isAdmin && magicLevel < spell.level) return; // Level too low (admin bypasses)
-  if(playerMana < spell.mana) return; // Not enough mana
+  if(!isAdmin && playerMana < spell.mana) return; // Not enough mana (admin unlimited)
   if(spellCooldowns[spellId] && spellCooldowns[spellId] > 0) return; // On cooldown
   
   // Consume mana
-  playerMana -= spell.mana;
+  if(!isAdmin) playerMana -= spell.mana; // Admin has unlimited mana
   spellCooldowns[spellId] = spell.cooldown;
   
   // Casting circle VFX under player feet
@@ -2644,11 +2678,11 @@ function castSpell(spellId){
   }
   // === v141: Resource conversion ===
   if(spell.id === 'vital_exchange'){
-    if(playerHP > 35){ playerHP -= 30; playerMana = Math.min(playerMana + 30, maxMana); playSpellSound(spell); }
+    if(playerHP > 35){ playerHP -= 30; playerMana = Math.min(playerMana + 30, playerMaxMana); playSpellSound(spell); }
     return;
   }
   if(spell.id === 'mana_infusion'){
-    playerStamina = Math.min(playerStamina + 40, maxStamina); playSpellSound(spell);
+    playerStamina = Math.min(playerStamina + 40, playerMaxStamina); playSpellSound(spell);
     return;
   }
   // === v141: Debuff projectile spells ===
@@ -5438,23 +5472,21 @@ const sprintMult = 1.8;
 // Stamina drain rate based on agility level
 // At level 100: 8 stamina/sec, at level 1: 20 stamina/sec
 function getStaminaDrain(){
-  var agiLvl = getLevel(playerSkills.agility);
+  var agiLvl = playerAttributes.agility; // Use attribute directly (1-100)
   return 20 - (agiLvl - 1) * (12.0 / 99.0);
 }
 // Stamina regen rate: 12/sec base, faster at higher agility
 function getStaminaRegen(){
-  var agiLvl = getLevel(playerSkills.agility);
-  return 12 + agiLvl * 0.08;
+  return calcStaminaRegen() * playerStamRegenBuff;
 }
-// Mana regen rate: 2/sec base, faster at higher magic
 function getManaRegen(){
-  var magLvl = getLevel(playerSkills.magic);
-  return 2 + magLvl * 0.05;
+  return calcManaRegen() * playerManaRegenBuff;
 }
-// Max mana scales with magic level
+function getHPRegen(){
+  return calcHPRegen() * playerHPRegenBuff;
+}
 function getMaxMana(){
-  var magLvl = getLevel(playerSkills.magic);
-  return 30 + magLvl * 0.7; // 30 at lvl 1, 100 at lvl 100
+  return calcMaxMana();
 }
 const jumpForce = 12;
 const gravity = -30;
@@ -5543,6 +5575,34 @@ function getTotalLevel(){
 function renderSkillsPanel(){
   const grid = document.getElementById('skills-grid');
   if(!grid) return;
+  
+  // === ATTRIBUTE SECTION (Darkfall-inspired) ===
+  let attrHTML = '<div style="grid-column:1/-1;margin-bottom:8px;padding:8px;background:rgba(0,0,0,0.4);border-radius:8px;border:1px solid rgba(255,215,0,0.3)">';
+  attrHTML += '<div style="text-align:center;font-size:14px;color:#ffd700;margin-bottom:6px;font-weight:bold">⚔️ ATTRIBUTES</div>';
+  attrHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px">';
+  const attrDefs = [
+    {key:'might',     icon:'💪', label:'Might',     effect:'+HP'},
+    {key:'fortitude', icon:'🛡️', label:'Fortitude', effect:'+HP/Stam'},
+    {key:'precision', icon:'🎯', label:'Precision', effect:'+Accuracy'},
+    {key:'agility',   icon:'🏃', label:'Agility',   effect:'+Stam/Speed'},
+    {key:'intellect', icon:'🧠', label:'Intellect', effect:'+Mana'},
+    {key:'insight',   icon:'👁️', label:'Insight',   effect:'+Mana/Regen'}
+  ];
+  attrDefs.forEach(function(a){
+    var val = playerAttributes[a.key];
+    var pct = val; // 1-100 directly maps to percentage
+    var barCol = val >= 80 ? '#ffd700' : val >= 50 ? '#44ff44' : val >= 25 ? '#ffaa00' : '#ff4444';
+    attrHTML += '<div style="display:flex;align-items:center;gap:4px;padding:2px 4px;background:rgba(0,0,0,0.3);border-radius:4px">';
+    attrHTML += '<span>' + a.icon + '</span>';
+    attrHTML += '<div style="flex:1"><div style="color:#ccc;font-size:10px">' + a.label + ' <span style="color:#888">(' + a.effect + ')</span></div>';
+    attrHTML += '<div style="background:rgba(0,0,0,0.5);border-radius:3px;height:8px;overflow:hidden;margin-top:1px">';
+    attrHTML += '<div style="width:' + pct + '%;height:100%;background:' + barCol + ';border-radius:3px;transition:width 0.3s"></div></div></div>';
+    attrHTML += '<span style="color:#fff;font-weight:bold;font-size:12px;min-width:24px;text-align:right">' + val + '</span></div>';
+  });
+  attrHTML += '</div>';
+  attrHTML += '<div style="text-align:center;font-size:10px;color:#888;margin-top:4px">HP: ' + playerMaxHP + ' | Mana: ' + playerMaxMana + ' | Stam: ' + playerMaxStamina + '</div>';
+  attrHTML += '</div>';
+  grid.innerHTML = attrHTML + grid.innerHTML;
   grid.innerHTML = '';
   SKILLS.forEach(function(s){
     const xp = playerSkills[s.id];
@@ -5897,7 +5957,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=142', function(gltf){
+queueLoad(1, 'character-walk.glb?v=143', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -5964,7 +6024,7 @@ queueLoad(1, 'character-walk.glb?v=142', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=142&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=143&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -6032,7 +6092,7 @@ queueLoad(1, 'character-walk.glb?v=142', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=142', function(gltf){
+queueLoad(2, 'grass-model.glb?v=143', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -6092,7 +6152,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=142', function(gltf){
+queueLoad(2, 'sun-model.glb?v=143', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -6124,7 +6184,7 @@ queueLoad(2, 'sun-model.glb?v=142', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=142', function(gltf){
+queueLoad(2, 'moon-model.glb?v=143', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -6178,7 +6238,7 @@ queueLoad(2, 'moon-model.glb?v=142', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=142', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=143', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -6287,7 +6347,7 @@ queueLoad(4, 'bear-walk.glb?v=142', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=142', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=143', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -6368,7 +6428,7 @@ queueLoad(4, 'freak-walk.glb?v=142', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=142', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=143', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -6455,7 +6515,7 @@ queueLoad(3, 'stallion-walk.glb?v=142', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=142', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=143', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -6518,7 +6578,7 @@ queueLoad(4, 'dreugh-model.glb?v=142', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=142', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=143', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -6545,7 +6605,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=142', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=143', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -6591,7 +6651,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=142', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=143', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -6606,7 +6666,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=142', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=143', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -6625,7 +6685,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=142', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=143', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -6640,7 +6700,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=142', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=143', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -6655,7 +6715,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=142', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=143', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -6671,7 +6731,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=142', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=143', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -6687,7 +6747,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=142', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=143', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -6702,7 +6762,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=142', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=143', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -6723,7 +6783,7 @@ queueLoad(7, 'vashra-dragon.glb?v=142', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=142', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=143', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -10232,6 +10292,11 @@ function animate(){
   }
   
   // Player HP regen (slow, 1 HP per 3 seconds when not taking damage)
+  // === RECALC DERIVED STATS FROM ATTRIBUTES ===
+  playerMaxHP = calcMaxHP();
+  playerMaxMana = calcMaxMana();
+  playerMaxStamina = calcMaxStamina();
+  
   // === STAMINA REGEN ===
   if(staminaRegenDelay > 0){
     staminaRegenDelay -= dt;
@@ -10240,9 +10305,13 @@ function animate(){
   }
   
   // === MANA REGEN ===
-  playerMaxMana = getMaxMana();
   if(isAdmin){ playerMana = playerMaxMana; } else if(playerMana < playerMaxMana){
     playerMana = Math.min(playerMaxMana, playerMana + getManaRegen() * dt);
+  }
+  
+  // === HP REGEN (attribute-based) ===
+  if(damageFlashTimer <= 0 && playerHP < playerMaxHP){
+    playerHP = Math.min(playerMaxHP, playerHP + getHPRegen() * dt);
   }
   
   // === DAY/NIGHT CYCLE ===
@@ -10521,9 +10590,7 @@ function updateCastVFX(dt){
   }
   updateWeather(dt);
   
-  if(damageFlashTimer <= 0 && playerHP < playerMaxHP){
-    playerHP = Math.min(playerMaxHP, playerHP + dt * 0.33);
-  }
+  // HP regen now handled in main stat regen block above
   
   // ===== LOOT DROP UPDATES =====
   for(let i = lootDrops.length - 1; i >= 0; i--){

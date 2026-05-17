@@ -10,353 +10,366 @@
 <title>Architect of Creation - World Prototype</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{overflow:hidden;background:#000;font-family:Arial,sans-serif;touch-action:none}
+body{overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,sans-serif;touch-action:none}
 canvas{display:block;width:100%;height:100%}
-#loading{position:fixed;top:0;left:0;width:100%;height:100%;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;color:#fff}
-#loading h1{font-size:2em;margin-bottom:10px;color:#f0a030}
-#loading p{font-size:1.1em;color:#aaa}
-#bar-wrap{width:300px;height:8px;background:#333;border-radius:4px;margin-top:15px;overflow:hidden}
-#bar{height:100%;width:0%;background:linear-gradient(90deg,#f0a030,#ff6030);transition:width .3s}
-#hud{position:fixed;bottom:15px;left:15px;color:#fff;font-size:13px;text-shadow:1px 1px 2px #000;pointer-events:none;z-index:10;opacity:0.8}
-#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;pointer-events:none;z-index:10;opacity:1}
-#crosshair::before,#crosshair::after{content:'';position:absolute;background:#fff}
-#crosshair::before{width:2px;height:20px;left:9px;top:0}
-#crosshair::after{width:20px;height:2px;top:9px;left:0}
+
+/* === LOADING === */
+#loading{position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;color:#fff}
+#loading h1{font-size:1.6em;margin-bottom:8px;color:#f0a030;font-weight:300;letter-spacing:2px}
+#loading p{font-size:0.9em;color:#888}
+#bar-wrap{width:240px;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:12px;overflow:hidden}
+#bar{height:100%;width:0%;background:linear-gradient(90deg,#f0a030,#ff6030);border-radius:2px;transition:width .3s}
+
+/* === OVERLAYS === */
+#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;pointer-events:none;z-index:10;opacity:0.5}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,0.7)}
+#crosshair::before{width:1px;height:14px;left:6.5px;top:0}
+#crosshair::after{width:14px;height:1px;top:6.5px;left:0}
 #click-to-play{position:fixed;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;z-index:50;background:rgba(0,0,0,0.3);cursor:pointer}
-#click-to-play span{background:rgba(0,0,0,0.7);color:#f0a030;padding:20px 40px;border-radius:10px;font-size:1.4em;border:2px solid #f0a030}
-#controls{position:fixed;top:10px;right:10px;color:#fff;font-size:12px;text-shadow:1px 1px 2px #000;z-index:10;opacity:0.6;text-align:right;line-height:1.6}
-#joystick-zone{position:fixed;bottom:30px;left:30px;width:140px;height:140px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.2);display:none;z-index:20}
-#joystick-thumb{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(240,160,48,0.8);left:45px;top:45px;pointer-events:none}
-.touch-btn{position:fixed;width:60px;height:60px;border-radius:50%;background:rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.3);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;z-index:20;-webkit-user-select:none;user-select:none}
-#btn-jump{bottom:30px;right:30px}
-#btn-sprint{bottom:100px;right:30px}
-#btn-camera{bottom:30px;right:100px}
-#btn-cast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);width:80px;height:80px;border-radius:50%;background:rgba(240,160,48,0.6);border:3px solid rgba(240,160,48,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none;transition:all 0.2s}
-#settings-btn{position:fixed;top:10px;left:12px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:22px;z-index:25;cursor:pointer;-webkit-user-select:none;user-select:none}
-#settings-btn:active{transform:scale(0.9)}
-#settings-panel{display:none;position:fixed;top:60px;left:10px;background:rgba(0,0,0,0.85);border:2px solid rgba(255,255,255,0.2);border-radius:12px;padding:15px;z-index:30;min-width:200px}
-#settings-panel.open{display:flex;flex-direction:column;gap:8px}
-#settings-panel h3{color:#FFD700;font-size:15px;margin:0 0 5px;text-align:center;font-weight:bold}
-.gfx-btn{padding:10px 15px;border:2px solid rgba(255,255,255,0.3);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:14px;font-weight:bold;cursor:pointer;text-align:center;-webkit-user-select:none;user-select:none;transition:all 0.15s}
-.gfx-btn:active{transform:scale(0.95)}
-.gfx-btn.active{border-color:#FFD700;background:rgba(255,215,0,0.2);color:#FFD700}
-.gfx-label{color:#aaa;font-size:11px;margin-top:2px}
-#satchel-btn{position:fixed;bottom:260px;right:15px;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,#8B5E3C,#5c3a1e);border:3px solid #a0724a;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.5);transition:transform 0.15s}
-#satchel-btn:active{transform:scale(0.9)}
-#inventory-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;background:linear-gradient(135deg,#5c3a1e,#3d2510);border:3px solid #8B6914;border-radius:8px;padding:10px 14px 14px;z-index:30;box-shadow:0 4px 24px rgba(0,0,0,0.7)}
-#inv-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:29}
-#inv-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:8px}
-#inv-header span:first-child{color:#FFD700;font-size:16px;font-weight:bold;text-shadow:1px 1px 2px #000}
-#inv-close-btn{color:#ccc;font-size:20px;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px}
-#inv-close-btn:hover{color:#fff;background:rgba(255,255,255,0.1)}
-#inv-grid{display:grid;grid-template-columns:repeat(4,52px);grid-template-rows:repeat(7,52px);gap:2px}
-.inv-slot{width:52px;height:52px;background:rgba(0,0,0,0.4);border:1px solid #6b4c2a;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;box-sizing:border-box}
-.inv-icon{font-size:22px;line-height:1}
-.inv-name{font-size:7px;color:#ccc;text-align:center;line-height:1;margin-top:1px;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inv-count{position:absolute;bottom:1px;right:3px;font-size:11px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000}
-#skills-btn{position:fixed;bottom:330px;right:15px;width:60px;height:60px;border-radius:8px;background:radial-gradient(ellipse at 40% 30%,#1a1a2e,#0a0a15);border:3px solid #0d0d1a;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 0 12px rgba(80,0,120,0.4),0 0 25px rgba(0,200,100,0.1),0 3px 10px rgba(0,0,0,0.9),inset 0 1px 0 rgba(100,60,160,0.15);transition:transform 0.15s;animation:btnPulse 3s infinite}
-@keyframes btnPulse{0%,100%{box-shadow:0 0 12px rgba(80,0,120,0.4),0 0 25px rgba(0,200,100,0.1),0 3px 10px rgba(0,0,0,0.9)}50%{box-shadow:0 0 18px rgba(80,0,120,0.6),0 0 35px rgba(0,200,100,0.2),0 3px 10px rgba(0,0,0,0.9)}}
-#skills-btn:active{transform:scale(0.9)}
-#skills-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:29}
-#skills-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;z-index:30;max-height:88vh;overflow-y:auto;padding:0;background:none;border:none}
-#skills-scroll{background:linear-gradient(170deg,#0d0d1a 0%,#141428 20%,#0a0f1a 40%,#101025 60%,#0d0d1a 80%,#080815 100%);border:4px solid #1a1a30;border-radius:4px;padding:14px 14px 16px;position:relative;box-shadow:0 0 0 2px #0a0a15,0 0 0 5px rgba(80,0,120,0.3),0 0 40px rgba(0,200,100,0.08),0 10px 40px rgba(0,0,0,0.95);min-width:290px}
-#skills-scroll::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");pointer-events:none;border-radius:3px}
-#skills-scroll::after{content:'';position:absolute;top:3px;left:3px;right:3px;bottom:3px;border:1px solid rgba(80,0,120,0.2);border-radius:2px;pointer-events:none;box-shadow:inset 0 0 20px rgba(0,0,0,0.5)}
-#skills-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:4px;padding-bottom:8px;border-bottom:2px solid rgba(80,0,120,0.3)}
-#skills-header span:first-child{color:#8a4fff;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-size:18px;font-weight:bold;letter-spacing:3px;text-shadow:0 0 8px rgba(138,79,255,0.5),0 0 20px rgba(80,0,120,0.3)}
-#skills-close{color:#555;font-size:20px;cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #333;font-weight:bold}
-#skills-close:active{background:rgba(80,0,120,0.3);color:#8a4fff}
-#skills-total{color:#4a6a4a;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-size:12px;text-align:center;margin-bottom:8px;letter-spacing:1px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,100,0.2)}
-#skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:100%}
-.skill-box{background:linear-gradient(180deg,rgba(15,15,30,0.9),rgba(8,8,18,0.95));border:1px solid rgba(80,0,120,0.25);border-radius:3px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;min-width:85px;cursor:default;position:relative;box-shadow:inset 0 0 8px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.5)}
-.skill-box::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(80,0,120,0.2),transparent)}
-.skill-emoji{font-size:20px;line-height:1;filter:drop-shadow(0 0 4px rgba(0,0,0,0.8))}
-.skill-name{font-size:9px;color:#5a7a5a;margin-top:3px;text-align:center;text-transform:uppercase;letter-spacing:1.5px;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;font-weight:bold;text-shadow:0 0 3px rgba(0,200,100,0.15)}
-.skill-level{font-size:17px;font-weight:bold;color:#cc3333;text-shadow:0 0 6px rgba(200,0,0,0.4),1px 1px 3px #000;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif}
-.skill-xp-bar{width:100%;height:5px;background:rgba(0,0,0,0.8);border:1px solid rgba(80,0,120,0.2);border-radius:2px;margin-top:3px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.6)}
-.skill-xp-fill{height:100%;background:linear-gradient(90deg,#1a0a2e,#4a0080,#8a00cc);border-radius:1px;transition:width 0.3s;box-shadow:0 0 6px rgba(138,0,204,0.4)}
-.skill-xp-text{font-size:8px;color:#4a5a4a;margin-top:2px;text-align:center;font-family:'Palatino Linotype','Book Antiqua','Georgia',serif;opacity:0.7}
-
-/* === MODERN GLASS HUD === */
-.hud-bar-wrap{display:flex;align-items:center;gap:6px}
-.hud-bar-icon{font-size:16px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.8));width:20px;text-align:center}
-.hud-bar-outer{position:relative;width:200px;height:20px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.12);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.4),inset 0 1px 3px rgba(0,0,0,0.6);backdrop-filter:blur(6px)}
-.hud-bar-fill{position:absolute;top:0;left:0;height:100%;border-radius:10px;transition:width 0.3s ease}
-.hud-bar-shine{position:absolute;top:2px;left:4px;right:4px;height:40%;background:linear-gradient(180deg,rgba(255,255,255,0.3),rgba(255,255,255,0.05));border-radius:8px;pointer-events:none}
-.hud-bar-label{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,0.9),0 0 6px rgba(0,0,0,0.5);letter-spacing:0.5px;font-family:'Segoe UI',Arial,sans-serif}
-.hp-fill{background:linear-gradient(180deg,#5dff5d 0%,#28c928 40%,#1a9e1a 100%);box-shadow:0 0 12px rgba(50,200,50,0.35)}
-.hp-fill.medium{background:linear-gradient(180deg,#ffee55 0%,#ddaa20 40%,#bb8800 100%);box-shadow:0 0 12px rgba(220,170,30,0.35)}
-.hp-fill.low{background:linear-gradient(180deg,#ff5555 0%,#cc2020 40%,#991010 100%);box-shadow:0 0 12px rgba(200,30,30,0.4);animation:hpPulse 0.8s infinite}
-@keyframes hpPulse{0%,100%{opacity:1}50%{opacity:0.7}}
-.mana-fill{background:linear-gradient(180deg,#66aaff 0%,#3377dd 40%,#2255aa 100%);box-shadow:0 0 12px rgba(50,100,220,0.35)}
-.stam-fill{background:linear-gradient(180deg,#ffdd44 0%,#ddaa00 40%,#aa8800 100%);box-shadow:0 0 12px rgba(220,170,0,0.35)}
-.stam-fill.depleted{background:linear-gradient(180deg,#ff8844 0%,#cc5500 40%,#993300 100%);box-shadow:0 0 12px rgba(200,80,0,0.35);animation:stamFlash 0.5s infinite}
-@keyframes stamFlash{0%,100%{opacity:1}50%{opacity:0.6}}
-/* Day/night tint overlay */
+#click-to-play span{background:rgba(0,0,0,0.6);color:#f0a030;padding:16px 32px;border-radius:12px;font-size:1.1em;border:1px solid rgba(240,160,48,0.3);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
 #day-night-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;transition:background 2s ease}
+#underwater-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;opacity:0}
+#damage-flash{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);z-index:15;pointer-events:none;display:none}
+#fear-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(50,50,50,0.8);z-index:14;pointer-events:none;display:none}
 
-/* === MAGIC SPELLBOOK UI === */
-#spellbook-btn{position:fixed;bottom:190px;right:15px;width:56px;height:56px;border-radius:8px;background:radial-gradient(circle,#2a1a50,#150a30);border:3px solid #4a2a80;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:20;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 0 15px rgba(100,50,200,0.3),0 3px 10px rgba(0,0,0,0.7);transition:transform 0.15s}
-#spellbook-btn:active{transform:scale(0.9)}
-#spellbook-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;background:linear-gradient(135deg,#1a0a35,#0d0520);border:3px solid #4a2a80;border-radius:12px;padding:12px 16px;z-index:31;box-shadow:0 0 30px rgba(100,50,200,0.3),0 8px 32px rgba(0,0,0,0.8);min-width:300px;max-height:80vh;overflow-y:auto}
-#spellbook-panel.open{display:flex}
-.spell-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;margin-top:8px}
-.spell-card{background:rgba(20,10,50,0.8);border:2px solid rgba(100,50,200,0.3);border-radius:8px;padding:8px 6px;text-align:center;cursor:pointer;transition:all 0.15s;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.spell-card:active{transform:scale(0.95)}
-.spell-card.selected{border-color:#9966ff;box-shadow:0 0 12px rgba(150,100,255,0.4);background:rgba(40,20,80,0.8)}
-.spell-card.locked{opacity:0.35;pointer-events:none}
-.spell-icon{font-size:24px;display:flex;align-items:center;justify-content:center}
-.spell-name{font-size:10px;color:#b088ff;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px}
-.spell-info{font-size:8px;color:#7766aa}
-.spell-mana{font-size:9px;color:#66aaff;font-weight:bold}
-/* Spell hotbar at bottom */
-#spell-hotbar{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:20;pointer-events:none;opacity:0}
+/* === GLASS MIXIN === */
+.glass{background:rgba(15,15,25,0.25);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:0.5px solid rgba(255,255,255,0.12);box-shadow:0 2px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.06)}
+
+/* === TOP BAR: HP/Mana/Stam centered === */
+#game-hud{position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:6px;pointer-events:none}
+.hud-bar-wrap{display:flex;align-items:center;gap:3px}
+.hud-bar-icon{font-size:9px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8));width:12px;text-align:center}
+.hud-bar-outer{position:relative;width:90px;height:10px;background:rgba(10,10,20,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:5px;overflow:hidden;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 3px rgba(0,0,0,0.3)}
+.hud-bar-fill{position:absolute;top:0;left:0;height:100%;border-radius:5px;transition:width 0.3s ease}
+.hud-bar-shine{position:absolute;top:1px;left:3px;right:3px;height:35%;background:linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0.02));border-radius:4px;pointer-events:none}
+.hud-bar-label{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,0.9);letter-spacing:0.3px}
+.hp-fill{background:linear-gradient(180deg,#5dff5d 0%,#28c928 40%,#1a9e1a 100%);box-shadow:0 0 8px rgba(50,200,50,0.25)}
+.hp-fill.medium{background:linear-gradient(180deg,#ffee55 0%,#ddaa20 40%,#bb8800 100%);box-shadow:0 0 8px rgba(220,170,30,0.3)}
+.hp-fill.low{background:linear-gradient(180deg,#ff5555 0%,#cc2020 40%,#991010 100%);box-shadow:0 0 8px rgba(200,30,30,0.3);animation:hpPulse 0.8s infinite}
+@keyframes hpPulse{0%,100%{opacity:1}50%{opacity:0.7}}
+.mana-fill{background:linear-gradient(180deg,#66aaff 0%,#3377dd 40%,#2255aa 100%);box-shadow:0 0 8px rgba(50,100,220,0.25)}
+.stam-fill{background:linear-gradient(180deg,#ffdd44 0%,#ddaa00 40%,#aa8800 100%);box-shadow:0 0 8px rgba(220,170,0,0.25)}
+.stam-fill.depleted{background:linear-gradient(180deg,#ff8844 0%,#cc5500 40%,#993300 100%);animation:stamFlash 0.5s infinite}
+@keyframes stamFlash{0%,100%{opacity:1}50%{opacity:0.6}}
+
+/* === COMPASS (under bars) === */
+#compass-hud{position:fixed;top:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.45);font-size:8px;font-weight:500;text-shadow:0 0 4px rgba(0,200,255,0.3);letter-spacing:0.5px;z-index:20;pointer-events:none}
+
+/* === TOP LEFT: Settings === */
+#settings-btn{position:fixed;top:6px;left:6px;width:28px;height:28px;border-radius:10px;background:rgba(15,15,25,0.2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:0.5px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:13px;z-index:25;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 2px 6px rgba(0,0,0,0.15),inset 0 1px 0 rgba(255,255,255,0.06)}
+#settings-btn:active{transform:scale(0.92)}
+#settings-panel{display:none;position:fixed;top:38px;left:6px;background:rgba(12,12,22,0.4);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px;z-index:30;min-width:160px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 4px 16px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.05)}
+#settings-panel.open{display:flex;flex-direction:column;gap:6px}
+#settings-panel h3{color:rgba(255,215,0,0.8);font-size:12px;margin:0 0 4px;text-align:center;font-weight:500;letter-spacing:1px}
+.gfx-btn{padding:5px 8px;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.7);font-size:10px;font-weight:500;cursor:pointer;text-align:center;-webkit-user-select:none;user-select:none;transition:all 0.15s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.gfx-btn:active{transform:scale(0.96)}
+.gfx-btn.active{border-color:rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:rgba(255,215,0,0.9)}
+.gfx-label{color:rgba(255,255,255,0.35);font-size:9px;margin-top:1px}
+.setting-section{margin-top:6px;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.06)}
+.setting-label{color:rgba(255,255,255,0.4);font-size:9px;margin-bottom:3px}
+.setting-slider{width:100%;height:18px;-webkit-appearance:none;background:rgba(255,255,255,0.06);border-radius:9px;outline:none;cursor:pointer}
+.setting-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:rgba(255,215,0,0.8);cursor:pointer;box-shadow:0 0 6px rgba(255,215,0,0.3)}
+
+/* === TOP RIGHT: Minimap + Buttons === */
+#top-right-area{position:fixed;top:6px;right:6px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;z-index:20}
+#minimap-frame{width:70px;height:70px;border-radius:50%;border:0.5px solid rgba(255,255,255,0.1);background:rgba(10,10,15,0.2);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.2);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:none}
+#minimap-frame canvas{width:100%;height:100%}
+#top-btn-row{display:flex;gap:3px}
+.top-icon-btn{width:26px;height:26px;border-radius:8px;background:rgba(15,15,25,0.2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 2px 6px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.04)}
+.top-icon-btn:active{transform:scale(0.92)}
+
+/* === BOTTOM LEFT: Joystick === */
+#joystick-zone{position:fixed;bottom:16px;left:16px;width:80px;height:80px;border-radius:50%;border:0.5px solid rgba(255,255,255,0.08);background:rgba(15,15,25,0.15);display:none;z-index:20;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 3px rgba(0,0,0,0.2)}
+#joystick-thumb{position:absolute;width:30px;height:30px;border-radius:50%;background:rgba(240,160,48,0.35);left:25px;top:25px;pointer-events:none;border:0.5px solid rgba(240,160,48,0.2);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+
+/* === BOTTOM CENTER: System Chat === */
+#system-chat{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);width:280px;max-height:80px;background:rgba(10,10,18,0.25);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;z-index:20;overflow:hidden;display:none;box-shadow:0 2px 8px rgba(0,0,0,0.15),inset 0 1px 0 rgba(255,255,255,0.04)}
+#system-chat.visible{display:block}
+#system-chat-messages{padding:4px 6px;overflow-y:auto;max-height:76px;font-size:8px;line-height:1.4;color:rgba(255,255,255,0.55);scrollbar-width:none;-ms-overflow-style:none}
+#system-chat-messages::-webkit-scrollbar{display:none}
+.sys-msg{padding:1px 0;border-bottom:0.5px solid rgba(255,255,255,0.03);animation:sysFadeIn 0.2s ease}
+@keyframes sysFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+#system-chat-toggle{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);width:28px;height:18px;border-radius:6px;background:rgba(15,15,25,0.2);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:9px;z-index:20;cursor:pointer;color:rgba(255,255,255,0.35);box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+#system-chat-toggle:active{transform:translateX(-50%) scale(0.92)}
+
+/* === BOTTOM RIGHT: Action Buttons === */
+#action-btns{position:fixed;bottom:12px;right:12px;display:none;flex-direction:column;gap:4px;align-items:flex-end;z-index:20}
+.act-btn{width:38px;height:38px;border-radius:12px;background:rgba(15,15,25,0.2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;-webkit-user-select:none;user-select:none;box-shadow:0 2px 6px rgba(0,0,0,0.15),inset 0 1px 0 rgba(255,255,255,0.05);letter-spacing:0.3px}
+.act-btn:active{transform:scale(0.92)}
+#btn-cast{background:rgba(100,50,200,0.2);border-color:rgba(150,100,255,0.2)}
+#btn-cast.spell-ready{background:rgba(100,50,200,0.4);border-color:rgba(150,100,255,0.5);box-shadow:0 0 10px rgba(100,50,200,0.3)}
+#btn-attack{background:rgba(200,50,50,0.2);border-color:rgba(200,50,50,0.2)}
+#btn-sprint{background:rgba(50,200,100,0.15);border-color:rgba(50,200,100,0.15)}
+#btn-skin{width:38px;height:38px;border-radius:12px;background:rgba(180,120,50,0.2);border:0.5px solid rgba(180,120,50,0.2);color:rgba(255,255,255,0.7);display:none;align-items:center;justify-content:center;font-size:8px;font-weight:600;z-index:20;-webkit-user-select:none;user-select:none;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+
+/* === SPELL HOTBAR === */
+#spell-hotbar{position:fixed;bottom:58px;right:12px;display:flex;flex-direction:column;gap:3px;z-index:20;pointer-events:none;opacity:0}
 #spell-hotbar.active{opacity:1;pointer-events:auto}
-.hotbar-slot{width:48px;height:48px;border-radius:8px;background:rgba(20,10,50,0.7);border:2px solid rgba(100,50,200,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:all 0.15s;position:relative;backdrop-filter:blur(4px)}
-.hotbar-slot.active{border-color:#bb88ff;box-shadow:0 0 10px rgba(150,100,255,0.5)}
-.hotbar-cooldown{position:absolute;bottom:0;left:0;width:100%;height:0%;background:rgba(0,0,0,0.6);border-radius:0 0 6px 6px;pointer-events:none;transition:height 0.1s}
-/* Cast button glow when spell selected */
-#btn-cast.spell-ready{background:rgba(100,50,200,0.6);border-color:rgba(150,100,255,0.9);box-shadow:0 0 15px rgba(100,50,200,0.4)}
+.hotbar-slot{width:30px;height:30px;border-radius:8px;background:rgba(20,10,50,0.2);border:0.5px solid rgba(100,50,200,0.15);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:all 0.15s;position:relative;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.hotbar-slot.active{border-color:rgba(187,136,255,0.5);box-shadow:0 0 8px rgba(150,100,255,0.3)}
+.hotbar-cooldown{position:absolute;bottom:0;left:0;width:100%;height:0%;background:rgba(0,0,0,0.5);border-radius:0 0 8px 8px;pointer-events:none;transition:height 0.1s}
 
-/* === MINING UI === */
+/* === PANELS: Inventory, Spellbook, Skills === */
+#inv-backdrop,#spellbook-backdrop,#skills-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:29}
+#inventory-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;background:rgba(15,12,8,0.4);border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:8px 10px 10px;z-index:30;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+#inv-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:6px}
+#inv-header span:first-child{color:rgba(255,215,0,0.8);font-size:13px;font-weight:500;letter-spacing:1px}
+#inv-close-btn{color:rgba(255,255,255,0.4);font-size:16px;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+#inv-close-btn:active{color:#fff;background:rgba(255,255,255,0.08)}
+#inv-grid{display:grid;grid-template-columns:repeat(4,38px);grid-template-rows:repeat(7,38px);gap:2px}
+.inv-slot{width:38px;height:38px;background:rgba(0,0,0,0.2);border:0.5px solid rgba(255,255,255,0.06);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.inv-icon{font-size:18px;line-height:1}
+.inv-name{font-size:6px;color:rgba(255,255,255,0.5);text-align:center;line-height:1;margin-top:1px;max-width:36px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-count{position:absolute;bottom:1px;right:2px;font-size:9px;font-weight:600;color:#fff;text-shadow:1px 1px 1px #000}
+
+/* Spellbook */
+#spellbook-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;background:rgba(12,8,28,0.4);border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:10px 12px;z-index:31;min-width:240px;max-height:75vh;overflow-y:auto;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+#spellbook-panel.open{display:flex}
+.spell-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100%;margin-top:6px}
+.spell-card{background:rgba(20,10,50,0.25);border:0.5px solid rgba(100,50,200,0.12);border-radius:8px;padding:4px 3px;text-align:center;cursor:pointer;transition:all 0.15s;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.spell-card:active{transform:scale(0.96)}
+.spell-card.selected{border-color:rgba(150,100,255,0.5);box-shadow:0 0 8px rgba(150,100,255,0.3);background:rgba(40,20,80,0.5)}
+.spell-card.locked{opacity:0.3;pointer-events:none}
+.spell-icon{font-size:20px;display:flex;align-items:center;justify-content:center}
+.spell-name{font-size:8px;color:rgba(176,136,255,0.8);font-weight:500;text-transform:uppercase;letter-spacing:0.3px}
+.spell-info{font-size:7px;color:rgba(119,102,170,0.6)}
+.spell-mana{font-size:8px;color:rgba(102,170,255,0.7);font-weight:500}
+
+/* Skills */
+#skills-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);flex-direction:column;align-items:center;z-index:30;max-height:80vh;overflow-y:auto;padding:0;background:none;border:none}
+#skills-scroll{background:rgba(10,10,22,0.4);border:0.5px solid rgba(255,255,255,0.1);border-radius:14px;padding:10px 10px 12px;position:relative;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:240px}
+#skills-scroll::before,#skills-scroll::after{display:none}
+#skills-header{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:4px;padding-bottom:6px;border-bottom:0.5px solid rgba(255,255,255,0.06)}
+#skills-header span:first-child{color:rgba(138,79,255,0.8);font-size:14px;font-weight:500;letter-spacing:2px}
+#skills-close{color:rgba(255,255,255,0.3);font-size:16px;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+#skills-close:active{background:rgba(80,0,120,0.2);color:#8a4fff}
+#skills-total{color:rgba(74,106,74,0.6);font-size:10px;text-align:center;margin-bottom:6px;letter-spacing:0.5px;font-weight:500}
+#skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100%}
+.skill-box{background:rgba(15,15,30,0.25);border:0.5px solid rgba(255,255,255,0.05);border-radius:6px;padding:3px 2px;display:flex;flex-direction:column;align-items:center;min-width:65px;cursor:default;position:relative;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.skill-box::after{display:none}
+.skill-emoji{font-size:16px;line-height:1;filter:drop-shadow(0 0 4px rgba(0,0,0,0.8))}
+.skill-name{font-size:7px;color:rgba(90,122,90,0.6);margin-top:2px;text-align:center;text-transform:uppercase;letter-spacing:1px;font-weight:500}
+.skill-level{font-size:14px;font-weight:600;color:rgba(204,51,51,0.8);text-shadow:0 0 4px rgba(200,0,0,0.3)}
+.skill-xp-bar{width:100%;height:3px;background:rgba(0,0,0,0.4);border:0.5px solid rgba(255,255,255,0.05);border-radius:2px;margin-top:2px;overflow:hidden}
+.skill-xp-fill{height:100%;background:linear-gradient(90deg,#2a0a4e,#6a00aa);border-radius:1px;transition:width 0.3s}
+.skill-xp-text{font-size:6px;color:rgba(74,90,74,0.5);margin-top:1px;text-align:center}
+
+/* === DEBUG HUD (bottom left, tiny) === */
+#hud{position:fixed;bottom:4px;left:4px;color:rgba(255,255,255,0.25);font-size:7px;text-shadow:1px 1px 2px rgba(0,0,0,0.6);pointer-events:none;z-index:10;line-height:1.3}
+#crash-debug{display:none;position:fixed;bottom:40px;left:6px;background:rgba(200,0,0,0.6);color:#fff;padding:4px 6px;border-radius:6px;font-size:8px;z-index:9999;max-width:80vw;word-break:break-all;font-family:monospace;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#controls{display:none}
+
+/* === PROMPTS & POPUPS === */
+#vashra-alert{position:fixed;top:20%;left:50%;transform:translateX(-50%);z-index:25;pointer-events:none;text-align:center;display:none}
+#vashra-alert-text{font-size:18px;font-weight:600;color:#ff4400;text-shadow:0 0 15px #ff0000,0 0 30px #ff4400;letter-spacing:2px}
+#vashra-alert-sub{font-size:11px;color:#ffaa00;text-shadow:0 0 8px #ff6600;margin-top:4px}
+#skin-prompt{position:fixed;bottom:140px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;font-weight:500;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none;background:rgba(10,10,15,0.25);padding:4px 12px;border-radius:8px;border:0.5px solid rgba(255,200,50,0.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+#skin-progress-bar{margin-top:4px;width:160px;height:4px;background:rgba(0,0,0,0.4);border-radius:2px;overflow:hidden;display:none}
+#skin-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#cc6633,#ffaa44);border-radius:2px;transition:none}
+#loot-popup{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:13px;font-weight:500;text-shadow:1px 1px 2px #000;z-index:20;text-align:center;pointer-events:none;display:none}
+
+/* === MINING === */
 #mining-overlay{position:fixed;bottom:50%;left:50%;transform:translate(-50%,50%);z-index:20;pointer-events:none;text-align:center;display:none}
-#mining-progress{width:200px;height:12px;background:rgba(0,0,0,0.6);border:2px solid rgba(180,140,60,0.6);border-radius:6px;overflow:hidden;margin:8px auto 0}
-#mining-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#aa7722,#ddaa44);border-radius:4px;transition:width 0.1s}
-#mining-text{color:#ffcc44;font-size:14px;font-weight:bold;text-shadow:0 1px 4px rgba(0,0,0,0.8)}
-/* Pickaxe equip slot */
-.tool-indicator{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);border:2px solid rgba(180,140,60,0.4);border-radius:8px;padding:4px 12px;color:#ffcc44;font-size:12px;font-weight:bold;z-index:20;display:none;backdrop-filter:blur(4px)}
-/* Enhanced settings */
-#settings-panel .setting-section{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)}
-.setting-label{color:#aaa;font-size:11px;margin-bottom:4px}
-.setting-slider{width:100%;height:20px;-webkit-appearance:none;background:rgba(255,255,255,0.1);border-radius:10px;outline:none;cursor:pointer}
-.setting-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#FFD700;cursor:pointer}
-#spell-test-overlay{display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);border:2px solid #f0a030;border-radius:12px;padding:12px 28px;z-index:100;text-align:center;pointer-events:none}
-#spell-test-overlay .test-title{color:#f0a030;font-size:14px;font-weight:bold;margin-bottom:4px}
-#spell-test-overlay .test-spell{color:#fff;font-size:22px;font-weight:bold;text-shadow:0 0 10px rgba(240,160,48,0.5)}
-#spell-test-overlay .test-school{color:#aaa;font-size:13px;margin-top:2px}
-#spell-test-overlay .test-progress{color:#888;font-size:12px;margin-top:4px}
+#mining-progress{width:120px;height:4px;background:rgba(10,10,15,0.25);border:0.5px solid rgba(180,140,60,0.2);border-radius:2px;overflow:hidden;margin:6px auto 0}
+#mining-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#aa7722,#ddaa44);border-radius:2px;transition:width 0.1s}
+#mining-text{color:#ffcc44;font-size:12px;font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,0.6)}
+.tool-indicator{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.3);border:0.5px solid rgba(180,140,60,0.2);border-radius:6px;padding:3px 8px;color:#ffcc44;font-size:10px;font-weight:500;z-index:20;display:none;backdrop-filter:blur(8px)}
+
+/* === SPELL TEST OVERLAY (now minimal) === */
+#spell-test-overlay{display:none;position:fixed;top:32px;left:50%;transform:translateX(-50%);background:rgba(10,10,15,0.25);border:0.5px solid rgba(240,160,48,0.2);border-radius:8px;padding:4px 12px;z-index:100;text-align:center;pointer-events:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#spell-test-overlay .test-title{color:rgba(240,160,48,0.7);font-size:9px;font-weight:500;margin-bottom:2px}
+#spell-test-overlay .test-spell{color:#fff;font-size:14px;font-weight:500;text-shadow:0 0 6px rgba(240,160,48,0.3)}
+#spell-test-overlay .test-school{color:rgba(255,255,255,0.4);font-size:10px;margin-top:1px}
+#spell-test-overlay .test-progress{color:rgba(255,255,255,0.3);font-size:9px;margin-top:2px}
+
+/* === DEBUG LOG === */
+#debugLog{position:fixed;bottom:0;left:0;width:100%;max-height:30vh;overflow-y:auto;background:rgba(0,0,0,0.7);color:#0f0;font:9px monospace;padding:4px;z-index:9999;pointer-events:auto;display:none;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+
+/* === ANIMATIONS === */
+@keyframes btnPulse{0%,100%{box-shadow:0 0 8px rgba(80,0,120,0.3)}50%{box-shadow:0 0 14px rgba(80,0,120,0.5)}}
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-<script>
-// Catch module-level errors (modules fail silently without this)
-window.addEventListener('error', function(e){
-  var ld = document.getElementById('loading');
-  if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Error: ' + e.message; }
-  var dbg = document.getElementById('debugLog');
-  if(dbg) dbg.innerHTML += '<span style="color:red">❌ ERROR: ' + e.message + ' (line ' + e.lineno + ')</span><br>';
-});
-window.addEventListener('unhandledrejection', function(e){
-  var ld = document.getElementById('loading');
-  if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Load error: ' + (e.reason || 'unknown'); }
-  var dbg = document.getElementById('debugLog');
-  if(dbg) dbg.innerHTML += '<span style="color:red">❌ REJECT: ' + (e.reason || 'unknown') + '</span><br>';
-});
-// Safety timeout - if still loading after 15s, show what happened
-setTimeout(function(){
-  var ld = document.getElementById('loading');
-  if(ld && ld.style.display !== 'none'){
-    var p = ld.querySelector('p');
-    if(p && p.textContent === 'Loading world...') p.textContent = 'Still loading... (slow connection?)';
-  }
-}, 15000);
 
-// === COMPREHENSIVE DIAGNOSTICS (v138) ===
-window.getDiagnostics = function() {
-  var diag = {
-    build: 'v138',
-    timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent,
-    screen: {w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio},
-    webgl: 'unknown',
-    fps: window._lastFps || 0,
-    gfxQuality: typeof gfxQuality !== 'undefined' ? gfxQuality : 'unknown',
-    gameTime: typeof gameTime !== 'undefined' ? gameTime : -1,
-    crashLog: window._crashLog || [],
-    memoryMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 'N/A',
-    totalMemoryMB: performance.memory ? Math.round(performance.memory.totalJSHeapSize / 1048576) : 'N/A'
-  };
-  try {
-    var c = document.createElement('canvas');
-    var gl = c.getContext('webgl2') || c.getContext('webgl');
-    if(gl) {
-      diag.webgl = gl.getParameter(gl.VERSION);
-      diag.renderer = gl.getParameter(gl.RENDERER);
-      diag.vendor = gl.getParameter(gl.VENDOR);
-      var ext = gl.getExtension('WEBGL_debug_renderer_info');
-      if(ext) diag.gpuRenderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
-    }
-  } catch(e){}
-  return diag;
-};
-window.downloadCrashReport = function() {
-  var data = window.getDiagnostics();
-  var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'aoc-crash-report-' + Date.now() + '.json';
-  a.click();
-};
-
-// Force start if stuck after 40s
-setTimeout(function(){
-  if(document.getElementById('loading').style.display !== 'none'){
-    console.warn('Force-starting world after timeout');
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('click-to-play').style.display = 'flex';
-  }
-}, 40000);
-</script>
-</head>
-<body>
+<!-- Loading -->
 <div id="loading">
   <h1>Architect of Creation</h1>
   <p id="load-text">Loading world...</p>
   <div id="bar-wrap"><div id="bar"></div></div>
 </div>
 <div id="click-to-play"><span>Click to Play</span></div>
-<div id="spell-test-overlay"><div class="test-title">🧪 SPELL TEST MODE</div><div class="test-spell" id="test-spell-name">...</div><div class="test-school" id="test-spell-school">...</div><div class="test-progress" id="test-spell-progress">0/0</div></div>
+
+<!-- Full screen overlays -->
 <div id="crosshair"></div>
 <div id="day-night-overlay"></div>
-<!-- MODERN GLASS HUD -->
-<div id="game-hud" style="position:fixed;top:12px;left:60px;z-index:20;display:flex;flex-direction:column;gap:4px;pointer-events:none">
-  <!-- HP BAR -->
+<div id="underwater-overlay" style="opacity:0;pointer-events:none"></div>
+<div id="damage-flash"></div>
+<div id="fear-overlay"></div>
+
+<!-- === TOP CENTER: HP / Mana / Stamina === -->
+<div id="game-hud">
   <div class="hud-bar-wrap">
-    <div class="hud-bar-icon">❤️</div>
-    <div class="hud-bar-outer hp-outer">
+    <div class="hud-bar-icon">❤</div>
+    <div class="hud-bar-outer">
       <div id="hp-fill" class="hud-bar-fill hp-fill" style="width:100%"></div>
       <div class="hud-bar-shine"></div>
-      <div id="hp-label" class="hud-bar-label">100 / 100</div>
+      <div id="hp-label" class="hud-bar-label">1000 / 1000</div>
     </div>
   </div>
-  <!-- MANA BAR -->
   <div class="hud-bar-wrap">
     <div class="hud-bar-icon">💧</div>
-    <div class="hud-bar-outer mana-outer">
+    <div class="hud-bar-outer">
       <div id="mana-fill" class="hud-bar-fill mana-fill" style="width:100%"></div>
       <div class="hud-bar-shine"></div>
-      <div id="mana-label" class="hud-bar-label">50 / 50</div>
+      <div id="mana-label" class="hud-bar-label">1000 / 1000</div>
     </div>
   </div>
-  <!-- STAMINA BAR -->
   <div class="hud-bar-wrap">
     <div class="hud-bar-icon">⚡</div>
-    <div class="hud-bar-outer stam-outer">
+    <div class="hud-bar-outer">
       <div id="stam-fill" class="hud-bar-fill stam-fill" style="width:100%"></div>
       <div class="hud-bar-shine"></div>
-      <div id="stam-label" class="hud-bar-label">100 / 100</div>
+      <div id="stam-label" class="hud-bar-label">250 / 250</div>
     </div>
   </div>
 </div>
-<!-- MINIMAP PLACEHOLDER -->
-<div id="minimap-frame" style="position:fixed;top:12px;right:12px;width:140px;height:140px;border-radius:50%;border:3px solid rgba(180,160,120,0.5);background:rgba(0,0,0,0.3);z-index:20;overflow:hidden;box-shadow:0 0 15px rgba(0,0,0,0.5),inset 0 0 20px rgba(0,0,0,0.4);backdrop-filter:blur(2px);display:none">
-  <canvas id="minimap-canvas" width="140" height="140" style="width:100%;height:100%"></canvas>
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;background:#ff4444;border-radius:50%;border:1px solid #fff;z-index:2"></div>
-</div>
-<div id="underwater-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
-  background:linear-gradient(180deg, rgba(10,60,90,0.7) 0%, rgba(5,30,60,0.85) 100%);
-  pointer-events:none;z-index:3;display:none;opacity:0;transition:opacity 0.5s"></div>
-<div id="damage-flash" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.3);z-index:15;pointer-events:none;display:none"></div>
-<div id="fear-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(50,50,50,0.8);z-index:14;pointer-events:none;display:none"></div>
-<div id="debugLog" style="position:fixed;bottom:0;left:0;width:100%;max-height:40vh;overflow-y:auto;background:rgba(0,0,0,0.85);color:#0f0;font:11px monospace;padding:6px;z-index:9999;pointer-events:auto;display:none"></div>
-<div id="vashra-alert" style="position:fixed;top:25%;left:50%;transform:translateX(-50%);z-index:25;pointer-events:none;text-align:center;display:none">
-  <div id="vashra-alert-text" style="font-size:32px;font-weight:bold;color:#ff4400;text-shadow:0 0 20px #ff0000,0 0 40px #ff4400,2px 2px 4px #000;letter-spacing:2px;white-space:nowrap"></div>
-  <div id="vashra-alert-sub" style="font-size:18px;color:#ffaa00;text-shadow:0 0 10px #ff6600,1px 1px 2px #000;margin-top:8px"></div>
-</div>
-<div id="skin-prompt" style="position:fixed;bottom:200px;left:50%;transform:translateX(-50%);color:#fff;font-size:18px;font-weight:bold;text-shadow:2px 2px 4px #000;z-index:20;text-align:center;pointer-events:none;display:none;background:rgba(0,0,0,0.5);padding:8px 20px;border-radius:10px;border:2px solid rgba(255,200,50,0.7)"><span id="skin-prompt-text">Press E to Skin</span><div id="skin-progress-bar" style="margin-top:6px;width:200px;height:8px;background:rgba(0,0,0,0.5);border-radius:4px;overflow:hidden;display:none"><div id="skin-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#cc6633,#ffaa44);border-radius:4px;transition:none"></div></div></div>
-<div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
-<div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
-<div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v161g</div>
-  <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
-  <div id="hud-pos">Position: 0, 0, 0</div>
-  <div id="crash-debug" style="display:none;position:fixed;bottom:80px;left:10px;background:rgba(200,0,0,0.9);color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;z-index:9999;max-width:90vw;word-break:break-all;font-family:monospace"></div>
-  <div id="hud-fps">FPS: 0</div>
-  <div id="hud-mode">Camera: 3rd Person</div>
-</div>
-<div id="controls">WASD - Move | Shift - Sprint | Space - Jump<br>Mouse - Look | V - Toggle Camera | Scroll - Zoom</div>
-<div id="joystick-zone"><div id="joystick-thumb"></div></div>
-<div class="touch-btn" id="btn-jump">Jump</div>
-<div class="touch-btn" id="btn-sprint">Run</div>
-<div class="touch-btn" id="btn-camera">Cam</div>
-<div id="btn-cast">Cast</div>
-<div id="btn-attack" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(220,50,50,0.6);border:3px solid rgba(220,50,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Attack</div>
-<div id="settings-btn"> <button id="sound-btn" style="position:fixed;top:10px;right:60px;z-index:1000;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:8px;padding:6px 10px;font-size:16px;cursor:pointer;" onclick="window.toggleSound()">🔊</button><span>⚙️</div>
+<div id="compass-hud">N 0°</div>
+
+<!-- === TOP LEFT: Settings === -->
+<div id="settings-btn">⚙️</div>
 <div id="settings-panel">
-  <h3>⚙️ Settings</h3>
-  <div style="color:#aaa;font-size:11px;margin-bottom:6px;text-align:center">GRAPHICS QUALITY</div>
-  <div class="gfx-btn active" id="gfx-low" onclick="setGraphics('low')">🟢 Low<div class="gfx-label">Best performance</div></div>
-  <div class="gfx-btn" id="gfx-medium" onclick="setGraphics('medium')">🟡 Medium<div class="gfx-label">Balanced</div></div>
-  <div class="gfx-btn" id="gfx-high" onclick="setGraphics('high')">🟠 High<div class="gfx-label">Great visuals</div></div>
-  <div class="gfx-btn" id="gfx-max" onclick="setGraphics('max')">🔴 Max<div class="gfx-label">Maximum quality</div></div>
+  <h3>SETTINGS</h3>
+  <div class="gfx-btn active" id="gfx-low" onclick="window.setGraphics('low')">🟢 Low<div class="gfx-label">Performance</div></div>
+  <div class="gfx-btn" id="gfx-medium" onclick="window.setGraphics('medium')">🟡 Med<div class="gfx-label">Balanced</div></div>
+  <div class="gfx-btn" id="gfx-high" onclick="window.setGraphics('high')">🟠 High<div class="gfx-label">Visuals</div></div>
+  <div class="gfx-btn" id="gfx-max" onclick="window.setGraphics('max')">🔴 Max<div class="gfx-label">Ultra</div></div>
   <div class="setting-section">
-    <div style="color:#aaa;font-size:11px;margin-bottom:4px">CAMERA DISTANCE</div>
+    <div class="setting-label">Camera Distance</div>
     <input type="range" class="setting-slider" id="cam-dist-slider" min="3" max="20" value="5">
   </div>
   <div class="setting-section">
-    <div style="color:#aaa;font-size:11px;margin-bottom:4px">RENDER DISTANCE</div>
-    <input type="range" class="setting-slider" id="render-dist-slider" min="200" max="2000" value="1200" >
+    <div class="setting-label">Render Distance</div>
+    <input type="range" class="setting-slider" id="render-dist-slider" min="200" max="2000" value="1200">
   </div>
   <div class="setting-section">
-    <div style="color:#aaa;font-size:11px;margin-bottom:4px">MUSIC VOLUME</div>
+    <div class="setting-label">Music</div>
     <input type="range" class="setting-slider" id="music-vol-slider" min="0" max="100" value="50" oninput="if(window.setMusicVolume) window.setMusicVolume(this.value/100)">
   </div>
   <div class="setting-section">
-    <div style="color:#aaa;font-size:11px;margin-bottom:4px">SFX VOLUME</div>
+    <div class="setting-label">SFX</div>
     <input type="range" class="setting-slider" id="sfx-vol-slider" min="0" max="100" value="70">
   </div>
-  <div class="setting-section" style="display:flex;gap:8px;justify-content:center">
-    <div class="gfx-btn" id="btn-set-day" style="font-size:11px;padding:6px 10px">☀️ Day</div>
-    <div class="gfx-btn" id="btn-set-night" style="font-size:11px;padding:6px 10px">🌙 Night</div>
-    <div class="gfx-btn" id="btn-clear-weather" style="font-size:11px;padding:6px 10px">Clear Sky</div>
+  <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px">
+    <div class="gfx-btn" id="btn-set-day" style="font-size:9px;padding:4px 6px">☀️ Day</div>
+    <div class="gfx-btn" id="btn-set-night" style="font-size:9px;padding:4px 6px">🌙 Night</div>
+    <div class="gfx-btn" id="btn-clear-weather" style="font-size:9px;padding:4px 6px">Clear</div>
+    <button id="sound-btn" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border-radius:6px;padding:4px 6px;font-size:9px;cursor:pointer" onclick="window.toggleSound()">🔊</button>
   </div>
 </div>
-<div id="satchel-btn">🎒</div>
-<div id="spellbook-btn">📖</div>
-<div id="spellbook-backdrop" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:30"></div>
-<div id="spellbook-panel">
-  <div style="display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:4px;padding-bottom:8px;border-bottom:2px solid rgba(100,50,200,0.3)">
-    <span style="color:#bb88ff;font-size:16px;font-weight:bold;letter-spacing:2px;text-shadow:0 0 8px rgba(150,100,255,0.5)">📖 SPELLBOOK</span>
-    <span id="spellbook-close" style="color:#666;font-size:20px;cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #444;font-weight:bold">✕</span>
+
+<!-- === TOP RIGHT: Minimap + Icon Buttons === -->
+<div id="top-right-area">
+  <div id="minimap-frame">
+    <canvas id="minimap-canvas" width="140" height="140"></canvas>
   </div>
-  <div style="color:#7766aa;font-size:11px;margin-bottom:6px" id="spell-mana-display">Mana: 50 / 50</div>
+  <div id="top-btn-row">
+    <div class="top-icon-btn" id="spellbook-btn">📖</div>
+    <div class="top-icon-btn" id="satchel-btn">🎒</div>
+    <div class="top-icon-btn" id="skills-btn">☠</div>
+  </div>
+</div>
+
+<!-- === BOTTOM LEFT: Joystick === -->
+<div id="joystick-zone"><div id="joystick-thumb"></div></div>
+
+<!-- === BOTTOM CENTER: System Chat === -->
+<div id="system-chat" class="visible">
+  <div id="system-chat-messages"></div>
+</div>
+<div id="system-chat-toggle" style="display:none">💬</div>
+
+<!-- === BOTTOM RIGHT: Action Buttons === -->
+<div id="action-btns">
+  <div class="act-btn" id="btn-cast">Cast</div>
+  <div class="act-btn" id="btn-attack">Atk</div>
+  <div class="act-btn" id="btn-sprint">Run</div>
+  <div class="act-btn" id="btn-jump">Jump</div>
+  <div class="act-btn" id="btn-camera">Cam</div>
+</div>
+
+<!-- Skin button (context-sensitive) -->
+<div id="btn-skin">Skin</div>
+
+<!-- === SPELL HOTBAR === -->
+<div id="spell-hotbar"></div>
+
+<!-- === SPELL TEST OVERLAY (minimal) === -->
+<div id="spell-test-overlay">
+  <div class="test-title">🧪 SPELL TEST</div>
+  <div class="test-spell" id="test-spell-name">...</div>
+  <div class="test-school" id="test-spell-school">...</div>
+  <div class="test-progress" id="test-spell-progress">0/0</div>
+</div>
+
+<!-- === PANELS === -->
+<div id="spellbook-backdrop" style="display:none"></div>
+<div id="spellbook-panel">
+  <div style="display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <span style="color:rgba(150,100,255,0.8);font-size:13px;font-weight:500;letter-spacing:1px">SPELLBOOK</span>
+    <span id="spellbook-close" style="color:rgba(255,255,255,0.3);font-size:16px;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px">✕</span>
+  </div>
+  <div style="color:rgba(102,170,255,0.5);font-size:9px;margin-bottom:4px" id="spell-mana-display">Mana: 1000 / 1000</div>
   <div class="spell-grid" id="spell-grid"></div>
 </div>
-<div id="spell-hotbar"></div>
-<div id="mining-overlay">
-  <div id="mining-text">⛏️ Mining...</div>
-  <div id="mining-progress"><div id="mining-progress-fill"></div></div>
-</div>
-<div class="tool-indicator" id="tool-indicator"></div>
+
 <div id="inv-backdrop"></div>
 <div id="inventory-panel">
   <div id="inv-header">
-    <span>Inventory</span>
+    <span>INVENTORY</span>
     <span id="inv-close-btn">✕</span>
   </div>
   <div id="inv-grid"></div>
 </div>
 
-<div id="skills-btn">☠</div>
 <div id="skills-backdrop"></div>
 <div id="skills-panel">
-<div id="skills-scroll">
-  <div id="skills-header">
-    <span>☠ SKILLS ☠</span>
-    <span id="skills-close">✕</span>
+  <div id="skills-scroll">
+    <div id="skills-header">
+      <span>SKILLS</span>
+      <span id="skills-close">✕</span>
+    </div>
+    <div id="skills-total">Total Level: 12</div>
+    <div id="skills-grid"></div>
   </div>
-  <div id="skills-total">Total Level: 12</div>
-  <div id="skills-grid"></div>
-</div>
 </div>
 
+<!-- === OTHER HUD === -->
+<div id="hud">
+  <div id="hud-pos">Pos: 0, 0, 0</div>
+  <div id="crash-debug"></div>
+  <div id="hud-fps">FPS: 0</div>
+  <div id="hud-mode">Cam: 3rd</div>
+  <div style="color:rgba(255,215,0,0.3);font-size:7px">BUILD v162</div>
+</div>
+<div id="controls">WASD Move | Shift Sprint | Space Jump | V Camera</div>
 
+<!-- === PROMPTS === -->
+<div id="skin-prompt"><span id="skin-prompt-text">Press E to Skin</span><div id="skin-progress-bar"><div id="skin-progress-fill"></div></div></div>
+<div id="loot-popup"></div>
+<div id="vashra-alert"><div id="vashra-alert-text"></div><div id="vashra-alert-sub"></div></div>
+<div id="mining-overlay"><div id="mining-text">⛏️ Mining...</div><div id="mining-progress"><div id="mining-progress-fill"></div></div></div>
+<div class="tool-indicator" id="tool-indicator"></div>
+<div id="debugLog"></div>
+
+<script>
+// Catch module-level errors (modules fail silently without this)
+window.addEventListener('error', function(e){
+  var ld = document.getElementById('loading');
+  if(ld) { var p = ld.querySelector('p'); if(p) p.textContent = 'Error: ' + (e.message||'Unknown'); }
+  // Send crash report
+  if(typeof CRASH_REPORT_URL !== 'undefined' && CRASH_REPORT_URL) {
+    fetch(CRASH_REPORT_URL, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({error:e.message,file:e.filename,line:e.lineno,col:e.colno,ts:Date.now()})}).catch(function(){});
+  }
+});
+</script>
 <script type="module">
 
 import * as THREE from 'three';
@@ -375,6 +388,43 @@ import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 
 // === AUTO CRASH REPORT SYSTEM (v138) ===
 // Set this to the webhook URL to enable auto crash reporting to Tasklet agent
+
+// === SYSTEM CHAT ===
+window.systemMsg = function(text, color) {
+  var el = document.getElementById('system-chat-messages');
+  if(!el) return;
+  var msg = document.createElement('div');
+  msg.className = 'sys-msg';
+  msg.style.color = color || 'rgba(255,255,255,0.55)';
+  var now = new Date();
+  var ts = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  msg.textContent = '[' + ts + '] ' + text;
+  el.appendChild(msg);
+  // Keep max 50 messages
+  while(el.children.length > 50) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+  // Show chat if hidden
+  var chat = document.getElementById('system-chat');
+  if(chat && !chat.classList.contains('visible')) {
+    chat.classList.add('visible');
+    document.getElementById('system-chat-toggle').style.display = 'none';
+  }
+};
+// Toggle system chat
+document.getElementById('system-chat-toggle').addEventListener('click', function(){
+  var chat = document.getElementById('system-chat');
+  chat.classList.add('visible');
+  this.style.display = 'none';
+});
+document.getElementById('system-chat').addEventListener('click', function(e){
+  // Double tap to hide
+  if(this._lastTap && Date.now() - this._lastTap < 300){
+    this.classList.remove('visible');
+    document.getElementById('system-chat-toggle').style.display = 'flex';
+  }
+  this._lastTap = Date.now();
+});
+
 const CRASH_REPORT_URL = ''; // Will be filled with webhook URL
 
 // === REAL SOUND EFFECTS (v140) ===
@@ -403,7 +453,7 @@ function loadAndDecodeSounds(){
   var keys = Object.keys(SOUND_FILES);
   console.log('🔊 Loading ' + keys.length + ' sound files...');
   keys.forEach(function(key){
-    fetch(SOUND_FILES[key] + '?v=161g')
+    fetch(SOUND_FILES[key] + '?v=162')
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
       .then(function(audioBuffer){
@@ -1520,7 +1570,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=161g', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=162', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -1555,7 +1605,7 @@ queueLoad(4, 'snowflake-model.glb?v=161g', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=161g', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=162', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1812,7 +1862,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=161g');
+const grassTex = texLoader.load('grass-texture.jpg?v=162');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1821,61 +1871,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=161g');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=162');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=161g');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=162');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=161g');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=162');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=161g');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=162');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=161g');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=162');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=161g');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=162');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=161g');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=162');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=161g');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=162');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=161g');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=162');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=161g');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=162');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=161g');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=162');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=161g');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=162');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=161g');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=162');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=161g');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=162');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=161g');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=162');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=161g');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=162');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -2122,7 +2172,7 @@ scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=161g', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=162', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -2145,7 +2195,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=161g');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=162');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -2179,7 +2229,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=161g', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=162', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -2223,7 +2273,7 @@ queueLoad(5, 'rock-pile-model.glb?v=161g', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=161g', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=162', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -2276,7 +2326,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=161g', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=161g', function(gltf){
+queueLoad(3, 'bass-model.glb?v=162', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -2368,7 +2418,7 @@ queueLoad(3, 'bass-model.glb?v=161g', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=161g', function(gltf){
+queueLoad(3, 'deer-model.glb?v=162', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -2477,7 +2527,7 @@ queueLoad(3, 'deer-model.glb?v=161g', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=161g', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=162', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -6271,17 +6321,17 @@ function updateBuffHUD(){
   if(!buffHudEl){
     buffHudEl = document.createElement('div');
     buffHudEl.id = 'buff-hud';
-    buffHudEl.style.cssText = 'position:fixed;bottom:180px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:100;pointer-events:none;';
+    buffHudEl.style.cssText = 'position:fixed;top:30px;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:20;pointer-events:none;flex-wrap:wrap;justify-content:center;max-width:320px;';
     document.body.appendChild(buffHudEl);
   }
   var html = '';
   Object.keys(activeBuffIcons).forEach(function(key){
     var b = activeBuffIcons[key];
     var c = '#' + new THREE.Color(b.color).getHexString();
-    var iconMap = {speed:'⚡',attackSpeed:'⚔️',manaRegen:'💎',hpRegen:'💚',defense:'🛡️',spellPower:'🔮'};
-    html += '<div style="background:rgba(0,0,0,0.7);border:2px solid '+c+';border-radius:8px;padding:4px 8px;text-align:center;min-width:40px;">';
-    html += '<div style="font-size:18px;">'+(iconMap[key]||'✨')+'</div>';
-    html += '<div style="font-size:10px;color:'+c+';font-weight:bold;">'+Math.ceil(b.timer)+'s</div>';
+    var iconMap = {speed:'⚡',attackSpeed:'⚔️',manaRegen:'💎',hpRegen:'💚',defense:'🛡️',spellPower:'🔮',meleeDmg:'💪',spellDmg:'🧠',stamRegen:'🏃',preserve:'⏳',invuln:'✨',fireResist:'🔥',iceResist:'❄️',lightResist:'⚡',earthResist:'🪨',deflectMagic:'🔮',deflectMelee:'⚔️'};
+    html += '<div style="background:rgba(10,10,20,0.25);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:0.5px solid '+c+'44;border-radius:6px;padding:1px 4px;text-align:center;display:flex;align-items:center;gap:2px;">';
+    html += '<span style="font-size:10px;line-height:1;">'+(iconMap[key]||'✨')+'</span>';
+    html += '<span style="font-size:7px;color:'+c+';font-weight:600;">'+Math.ceil(b.timer)+'s</span>';
     html += '</div>';
   });
   buffHudEl.innerHTML = html;
@@ -10070,7 +10120,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=161g', function(gltf){
+queueLoad(1, 'character-walk.glb?v=162', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -10137,7 +10187,7 @@ queueLoad(1, 'character-walk.glb?v=161g', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=161g&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=162&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -10205,7 +10255,7 @@ queueLoad(1, 'character-walk.glb?v=161g', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=161g', function(gltf){
+queueLoad(2, 'grass-model.glb?v=162', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -10265,7 +10315,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=161g', function(gltf){
+queueLoad(2, 'sun-model.glb?v=162', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -10297,7 +10347,7 @@ queueLoad(2, 'sun-model.glb?v=161g', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=161g', function(gltf){
+queueLoad(2, 'moon-model.glb?v=162', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -10351,7 +10401,7 @@ queueLoad(2, 'moon-model.glb?v=161g', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=161g', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=162', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -10460,7 +10510,7 @@ queueLoad(4, 'bear-walk.glb?v=161g', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=161g', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=162', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10541,7 +10591,7 @@ queueLoad(4, 'freak-walk.glb?v=161g', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=161g', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=162', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10628,7 +10678,7 @@ queueLoad(3, 'stallion-walk.glb?v=161g', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=161g', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=162', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10691,7 +10741,7 @@ queueLoad(4, 'dreugh-model.glb?v=161g', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=161g', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=162', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10718,7 +10768,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=161g', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=162', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -10764,7 +10814,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=161g', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=162', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -10779,7 +10829,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=161g', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=162', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -10798,7 +10848,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=161g', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=162', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -10813,7 +10863,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=161g', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=162', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -10828,7 +10878,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=161g', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=162', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -10844,7 +10894,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=161g', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=162', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -10860,7 +10910,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=161g', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=162', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -10875,7 +10925,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=161g', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=162', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -10896,7 +10946,7 @@ queueLoad(7, 'vashra-dragon.glb?v=161g', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=161g', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=162', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -11686,10 +11736,11 @@ let lastTouchX = 0, lastTouchY = 0;
 
 function showTouchControls(){
   document.getElementById('joystick-zone').style.display = 'block';
-  ['btn-jump','btn-sprint','btn-camera','btn-attack'].forEach(function(id){
-    document.getElementById(id).style.display = 'flex';
-  });
+  document.getElementById('action-btns').style.display = 'flex';
   document.getElementById('controls').style.display = 'none';
+  // Show minimap on mobile too
+  var mm = document.getElementById('minimap-frame');
+  if(mm) mm.style.display = 'block';
 }
 
 const jZone = document.getElementById('joystick-zone');

@@ -385,32 +385,32 @@ var soundsLoaded = false;
 function initRealSounds(){
   if(soundsLoaded) return;
   soundsLoaded = true;
-  // Use the shared audioCtx instead of creating a separate one
-  // This avoids mobile Safari's AudioContext limit
-  function doLoad(){
-    var ctx = realSoundCtx || audioCtx;
-    if(!ctx) return;
-    realSoundCtx = ctx;
-    Object.keys(SOUND_FILES).forEach(function(key){
-      fetch(SOUND_FILES[key] + '?v=143')
-        .then(function(r){ return r.arrayBuffer(); })
-        .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
-        .then(function(decoded){ soundBuffers[key] = decoded; console.log('Sound loaded:', key); })
-        .catch(function(e){ console.warn('Sound load failed:', key, e); });
-    });
+  // ALWAYS share audioCtx — mobile Safari only allows ONE AudioContext
+  realSoundCtx = audioCtx;
+  if(!realSoundCtx){
+    console.warn('No AudioContext yet — sounds deferred');
+    soundsLoaded = false; // Allow retry on next call
+    return;
   }
-  try {
-    if(!audioCtx) {
-      realSoundCtx = new (window.AudioContext || window.webkitAudioContext)();
-    } else {
-      realSoundCtx = audioCtx;
+  Object.keys(SOUND_FILES).forEach(function(key){
+    function loadSound(retries){
+      fetch(SOUND_FILES[key] + '?v=143')
+        .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
+        .then(function(decoded){ soundBuffers[key] = decoded; console.log('🔊 Sound loaded:', key); })
+        .catch(function(e){
+          console.warn('Sound load failed:', key, e.message);
+          if(retries > 0) setTimeout(function(){ loadSound(retries - 1); }, 2000);
+        });
     }
-    doLoad();
-  } catch(e){ console.warn('AudioContext not available'); }
+    loadSound(2); // Retry up to 2 times on bad connections
+  });
 }
 
 function playSound(key, volume, playbackRate){
-  if(!realSoundCtx || !soundBuffers[key]) return;
+  if(!soundBuffers[key]) return;
+  if(!realSoundCtx) realSoundCtx = audioCtx;
+  if(!realSoundCtx) return;
   if(realSoundCtx.state === 'suspended') realSoundCtx.resume();
   try {
     var src = realSoundCtx.createBufferSource();
@@ -4063,20 +4063,21 @@ let soundEnabled = true;
 const MASTER_VOL = 0.7;
 
 function initAudio(){
-  initRealSounds();
-  if(audioCtx) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    masterVolume = audioCtx.createGain();
-    masterVolume.gain.value = MASTER_VOL;
-    masterVolume.connect(audioCtx.destination);
-  } catch(e){ soundEnabled = false; }
+  if(!audioCtx){
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterVolume = audioCtx.createGain();
+      masterVolume.gain.value = MASTER_VOL;
+      masterVolume.connect(audioCtx.destination);
+    } catch(e){ soundEnabled = false; }
+  }
+  initRealSounds(); // AFTER audioCtx exists so they share the same context
 }
 
 // Resume audio context on user interaction (mobile requirement)
 function resumeAudio(){
   if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  if(realSoundCtx && realSoundCtx !== audioCtx && realSoundCtx.state === 'suspended') realSoundCtx.resume();
+  // realSoundCtx IS audioCtx now — single shared context for mobile Safari
 }
 
 // === NOISE BUFFER (shared for all noise-based sounds) ===

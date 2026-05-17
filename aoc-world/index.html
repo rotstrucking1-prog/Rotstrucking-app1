@@ -105,7 +105,7 @@ canvas{display:block;width:100%;height:100%}
 .spell-card:active{transform:scale(0.95)}
 .spell-card.selected{border-color:#9966ff;box-shadow:0 0 12px rgba(150,100,255,0.4);background:rgba(40,20,80,0.8)}
 .spell-card.locked{opacity:0.35;pointer-events:none}
-.spell-icon{font-size:24px}
+.spell-icon{font-size:24px;display:flex;align-items:center;justify-content:center}
 .spell-name{font-size:10px;color:#b088ff;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px}
 .spell-info{font-size:8px;color:#7766aa}
 .spell-mana{font-size:9px;color:#66aaff;font-weight:bold}
@@ -267,7 +267,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v148</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v149</div>
   <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
@@ -394,7 +394,7 @@ function initRealSounds(){
   }
   Object.keys(SOUND_FILES).forEach(function(key){
     function loadSound(retries){
-      fetch(SOUND_FILES[key] + '?v=148')
+      fetch(SOUND_FILES[key] + '?v=149')
         .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
         .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
         .then(function(decoded){ soundBuffers[key] = decoded; console.log('🔊 Sound loaded:', key); })
@@ -426,9 +426,143 @@ function playSound(key, volume, playbackRate){
 
 var schoolSoundMap = {
   novice: 'magic', adept: 'wind', pyromancy: 'fire', cryomancy: 'ice',
-  tempest: 'lightning', geomancy: 'earth', mystical: 'magic', death: 'dark',
+  tempest: 'lightning', geomancy: 'earth', mystical: 'magic', death: 'death_custom',
   hymn: 'heal', hex: 'dark'
 };
+
+// Death Arts custom creepy synthesized sounds — whispers, moans, dark energy
+function playDeathSound(spellId, vol){
+  if(!audioCtx) return;
+  vol = vol || 0.5;
+  var t = audioCtx.currentTime;
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.05);
+  g.connect(audioCtx.destination);
+
+  // Shared: dark low rumble base
+  var rumble = audioCtx.createOscillator();
+  rumble.type = 'sawtooth';
+  rumble.frequency.setValueAtTime(42, t);
+  rumble.frequency.linearRampToValueAtTime(35, t + 0.8);
+  var rumbleG = audioCtx.createGain();
+  rumbleG.gain.setValueAtTime(vol * 0.25, t);
+  rumbleG.gain.linearRampToValueAtTime(0, t + 1.0);
+  var rumbleFilt = audioCtx.createBiquadFilter();
+  rumbleFilt.type = 'lowpass';
+  rumbleFilt.frequency.value = 120;
+  rumble.connect(rumbleFilt);
+  rumbleFilt.connect(rumbleG);
+  rumbleG.connect(audioCtx.destination);
+  rumble.start(t);
+  rumble.stop(t + 1.0);
+
+  // Unintelligible whisper: noise through narrow bandpass with modulation
+  var bufLen = audioCtx.sampleRate * 1.5;
+  var noiseBuf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+  var nd = noiseBuf.getChannelData(0);
+  for(var i = 0; i < bufLen; i++){
+    // Random whisper pattern - amplitude modulated noise
+    var envMod = Math.sin(i / audioCtx.sampleRate * (8 + Math.random() * 12));
+    nd[i] = (Math.random() * 2 - 1) * (0.3 + 0.7 * Math.abs(envMod));
+  }
+  var noiseNode = audioCtx.createBufferSource();
+  noiseNode.buffer = noiseBuf;
+  var whisperFilt = audioCtx.createBiquadFilter();
+  whisperFilt.type = 'bandpass';
+  whisperFilt.Q.value = 8;
+  var whisperG = audioCtx.createGain();
+
+  // Per-spell variations
+  var dur = 1.2, pitchBase = 800;
+  if(spellId === 'shadow_bolt'){ pitchBase = 600; dur = 0.8; }
+  else if(spellId === 'soul_siphon'){ pitchBase = 500; dur = 1.5;
+    // Extra reverse-suck effect
+    var suck = audioCtx.createOscillator(); suck.type = 'sine';
+    suck.frequency.setValueAtTime(200, t); suck.frequency.exponentialRampToValueAtTime(800, t+0.5);
+    var suckG = audioCtx.createGain(); suckG.gain.setValueAtTime(vol*0.15,t); suckG.gain.linearRampToValueAtTime(0,t+0.6);
+    suck.connect(suckG); suckG.connect(audioCtx.destination); suck.start(t); suck.stop(t+0.6);
+  }
+  else if(spellId === 'blood_barrage'){ pitchBase = 400; dur = 1.0;
+    // Splatter sounds
+    for(var bb=0;bb<4;bb++){
+      var splat = audioCtx.createOscillator(); splat.type='triangle';
+      splat.frequency.setValueAtTime(100+Math.random()*200, t+bb*0.15);
+      var splatG = audioCtx.createGain(); splatG.gain.setValueAtTime(vol*0.2,t+bb*0.15);
+      splatG.gain.linearRampToValueAtTime(0,t+bb*0.15+0.15);
+      splat.connect(splatG); splatG.connect(audioCtx.destination);
+      splat.start(t+bb*0.15); splat.stop(t+bb*0.15+0.2);
+    }
+  }
+  else if(spellId === 'raise_dead'){ pitchBase = 350; dur = 2.0;
+    // Deep moaning
+    var moan = audioCtx.createOscillator(); moan.type='sine';
+    moan.frequency.setValueAtTime(90, t);
+    moan.frequency.linearRampToValueAtTime(120, t+0.5);
+    moan.frequency.linearRampToValueAtTime(80, t+1.5);
+    var moanG = audioCtx.createGain(); moanG.gain.setValueAtTime(0,t);
+    moanG.gain.linearRampToValueAtTime(vol*0.35,t+0.3);
+    moanG.gain.linearRampToValueAtTime(vol*0.2,t+1.0);
+    moanG.gain.linearRampToValueAtTime(0,t+2.0);
+    var moanFilt = audioCtx.createBiquadFilter(); moanFilt.type='lowpass'; moanFilt.frequency.value=200;
+    moan.connect(moanFilt); moanFilt.connect(moanG); moanG.connect(audioCtx.destination);
+    moan.start(t); moan.stop(t+2.0);
+  }
+  else if(spellId === 'corpse_explode'){ pitchBase = 300; dur = 0.6;
+    playSound('explosion', vol * 0.8, 0.6);
+  }
+  else if(spellId === 'death_coil'){ pitchBase = 550; dur = 1.0;
+    // Skull shriek
+    var shriek = audioCtx.createOscillator(); shriek.type='sawtooth';
+    shriek.frequency.setValueAtTime(1200, t);
+    shriek.frequency.exponentialRampToValueAtTime(400, t+0.4);
+    var shriekG = audioCtx.createGain(); shriekG.gain.setValueAtTime(vol*0.12,t);
+    shriekG.gain.linearRampToValueAtTime(0,t+0.4);
+    var shriekFilt = audioCtx.createBiquadFilter(); shriekFilt.type='bandpass'; shriekFilt.frequency.value=700; shriekFilt.Q.value=4;
+    shriek.connect(shriekFilt); shriekFilt.connect(shriekG); shriekG.connect(audioCtx.destination);
+    shriek.start(t); shriek.stop(t+0.5);
+  }
+  else if(spellId === 'eye_of_decay'){ pitchBase = 700; dur = 1.3;
+    // Eerie high-pitched whine
+    var whine = audioCtx.createOscillator(); whine.type='sine';
+    whine.frequency.setValueAtTime(2000, t); whine.frequency.linearRampToValueAtTime(1500, t+1.0);
+    var whineG = audioCtx.createGain(); whineG.gain.setValueAtTime(vol*0.08,t);
+    whineG.gain.linearRampToValueAtTime(0,t+1.2);
+    whine.connect(whineG); whineG.connect(audioCtx.destination);
+    whine.start(t); whine.stop(t+1.3);
+  }
+
+  // Whisper filter modulation for creepy effect
+  whisperFilt.frequency.setValueAtTime(pitchBase, t);
+  whisperFilt.frequency.linearRampToValueAtTime(pitchBase * 0.6, t + dur * 0.5);
+  whisperFilt.frequency.linearRampToValueAtTime(pitchBase * 1.2, t + dur);
+  whisperG.gain.setValueAtTime(0, t);
+  whisperG.gain.linearRampToValueAtTime(vol * 0.35, t + 0.08);
+  whisperG.gain.linearRampToValueAtTime(vol * 0.25, t + dur * 0.7);
+  whisperG.gain.linearRampToValueAtTime(0, t + dur);
+  noiseNode.connect(whisperFilt);
+  whisperFilt.connect(whisperG);
+  whisperG.connect(audioCtx.destination);
+  noiseNode.start(t);
+  noiseNode.stop(t + dur);
+
+  // Delayed eerie echo whisper
+  setTimeout(function(){
+    if(!audioCtx) return;
+    var t2 = audioCtx.currentTime;
+    var buf2 = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+    var d2 = buf2.getChannelData(0);
+    for(var j=0;j<d2.length;j++){
+      var e2 = Math.sin(j/audioCtx.sampleRate * (5 + Math.random()*8));
+      d2[j] = (Math.random()*2-1) * (0.2 + 0.8*Math.abs(e2));
+    }
+    var ns2 = audioCtx.createBufferSource(); ns2.buffer = buf2;
+    var f2 = audioCtx.createBiquadFilter(); f2.type='bandpass'; f2.frequency.value=pitchBase*0.7; f2.Q.value=12;
+    var g2 = audioCtx.createGain(); g2.gain.setValueAtTime(vol*0.15,t2); g2.gain.linearRampToValueAtTime(0,t2+0.8);
+    ns2.connect(f2); f2.connect(g2); g2.connect(audioCtx.destination);
+    ns2.start(t2); ns2.stop(t2+0.8);
+  }, 200 + Math.random()*150);
+}
 // Per-spell sound overrides for hex crafting (dark + layered)
 var hexSpellSoundOverrides = {
   swarm: {key:'debuff', rate:1.4, vol:0.6, layer:'wind'},
@@ -446,6 +580,11 @@ var hexSpellSoundOverrides = {
 };
 
 function playSpellSound(spell){
+  // Death Arts: custom creepy synthesized sounds
+  if(spell.school === 'death'){
+    playDeathSound(spell.id, 0.55);
+    return;
+  }
   // Hex spells: unique layered dark sounds
   var hexOvr = hexSpellSoundOverrides[spell.id];
   if(hexOvr){
@@ -463,6 +602,375 @@ function playSpellSound(spell){
     setTimeout(function(){ playSound('explosion', 0.3, 0.7 + Math.random() * 0.3); }, 100);
   }
 }
+
+
+// ===== CANVAS SPELL ICON GENERATOR =====
+var _iconCache = {};
+function genSpellIcon(spell){
+  if(_iconCache[spell.id]) return _iconCache[spell.id];
+  var sz = 48;
+  var c = document.createElement('canvas');
+  c.width = sz; c.height = sz;
+  var ctx = c.getContext('2d');
+  var col = '#' + (spell.color || 0x8888ff).toString(16).padStart(6,'0');
+
+  // Background glow
+  var gr = ctx.createRadialGradient(sz/2,sz/2,2,sz/2,sz/2,sz/2);
+  gr.addColorStop(0, col + '88');
+  gr.addColorStop(0.6, col + '33');
+  gr.addColorStop(1, 'transparent');
+  ctx.fillStyle = gr;
+  ctx.fillRect(0,0,sz,sz);
+
+  // Border circle
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(sz/2,sz/2,sz/2-2,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.fillStyle = col;
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  var cx = sz/2, cy = sz/2;
+
+  // Per-spell unique icons
+  var sid = spell.id;
+  var sch = spell.school;
+
+  if(sid==='arcane_bolt'){ _drawStar(ctx,cx,cy,5,12,6,col); }
+  else if(sid==='spark'){ _drawZap(ctx,cx-4,cy-6,cx+4,cy+6,col); _drawZap(ctx,cx+2,cy-8,cx-2,cy+4,col); }
+  else if(sid==='mend_self'){ _drawCross(ctx,cx,cy,8,col); _drawHeart(ctx,cx,cy-2,6,col); }
+  else if(sid==='candlelight'){ _drawFlame(ctx,cx,cy-2,6,10,'#ffffaa'); _drawLine(ctx,cx,cy+5,cx,cy+10,col); }
+  else if(sid==='ward'){ _drawShield(ctx,cx,cy,10,col); }
+  else if(sid==='repulse'){ _drawArrowUp(ctx,cx,cy,10,col); _drawBurst(ctx,cx,cy+6,6,3,col); }
+  else if(sid==='blink'){ _drawPortal(ctx,cx-6,cy,5,col); _drawPortal(ctx,cx+6,cy,5,col); _drawDash(ctx,cx-2,cy,cx+2,cy,col); }
+  else if(sid==='retribution'){ _drawShield(ctx,cx,cy,8,col); _drawZap(ctx,cx,cy-3,cx,cy+5,col); }
+  else if(sid==='barrage'){ for(var i=-1;i<=1;i++) _drawArrowRight(ctx,cx+i*5,cy+i*4,6,col); }
+  else if(sid==='envenom'){ _drawDrop(ctx,cx,cy,8,'#44cc00'); _drawSkull(ctx,cx,cy-1,5,col); }
+  else if(sid==='flame_bolt'){ _drawFlame(ctx,cx,cy,8,12,col); }
+  else if(sid==='scorching_ray'){ _drawBeam(ctx,4,cy,sz-4,cy,4,col); _drawSunRays(ctx,cx,cy,10,6,col); }
+  else if(sid==='immolation'){ _drawRing(ctx,cx,cy,12,col); _drawFlame(ctx,cx,cy-3,5,8,col); }
+  else if(sid==='fire_surge'){ _drawFlame(ctx,cx,cy,10,16,col); _drawBurst(ctx,cx,cy,14,6,col); }
+  else if(sid==='eruption'){ _drawMountain(ctx,cx,cy+4,col); _drawFlame(ctx,cx,cy-6,6,8,col); _drawFlame(ctx,cx-5,cy-3,4,6,col); }
+  else if(sid==='ice_shard'){ _drawDiamond(ctx,cx,cy,6,12,'#88ddff'); }
+  else if(sid==='frost_nova'){ _drawSnowflake(ctx,cx,cy,12,col); }
+  else if(sid==='glacial_storm'){ _drawSnowflake(ctx,cx-4,cy-2,7,col); _drawSnowflake(ctx,cx+5,cy+3,5,col); _drawWind(ctx,cx,cy+6,col); }
+  else if(sid==='whirlpool'){ _drawSpiral(ctx,cx,cy,12,col); }
+  else if(sid==='tidal_wave'){ _drawWave(ctx,cx,cy,14,col); }
+  else if(sid==='gust'){ _drawWind(ctx,cx,cy,col); _drawWind(ctx,cx,cy-6,col); }
+  else if(sid==='spark_orb'){ _drawOrb(ctx,cx,cy,8,'#ffff44'); _drawZap(ctx,cx-6,cy,cx-2,cy-4,col); _drawZap(ctx,cx+6,cy,cx+2,cy+4,col); }
+  else if(sid==='lightning_bolt'){ _drawBigZap(ctx,cx,cy,col); }
+  else if(sid==='cyclone'){ _drawSpiral(ctx,cx,cy,14,col); _drawWind(ctx,cx,cy-8,col); }
+  else if(sid==='static_field'){ _drawRing(ctx,cx,cy,14,col); _drawZap(ctx,cx-3,cy,cx+3,cy,col); }
+  else if(sid==='stone_missile'){ _drawRock(ctx,cx,cy,8,col); }
+  else if(sid==='tremor'){ _drawCrack(ctx,cx,cy,col); _drawRock(ctx,cx-5,cy-3,4,col); _drawRock(ctx,cx+5,cy+2,3,col); }
+  else if(sid==='entangle'){ _drawVines(ctx,cx,cy,col); }
+  else if(sid==='acid_splash'){ _drawDrop(ctx,cx,cy,8,'#88cc00'); _drawDrop(ctx,cx-5,cy+3,4,'#aaee00'); }
+  else if(sid==='meteor_rain'){ _drawMeteor(ctx,cx-4,cy-4,col); _drawMeteor(ctx,cx+3,cy+1,col); _drawMeteor(ctx,cx-1,cy+5,col); }
+  else if(sid==='shadow_bolt'){ _drawSkull(ctx,cx,cy,7,'#6600aa'); _drawBurst(ctx,cx,cy,12,4,'#440066'); }
+  else if(sid==='soul_siphon'){ _drawBeam(ctx,cx-8,cy,cx+8,cy,3,'#cc0033'); _drawHeart(ctx,cx+6,cy,4,'#cc0033'); }
+  else if(sid==='blood_barrage'){ for(var bb=0;bb<4;bb++) _drawDrop(ctx,cx-6+bb*4,cy-3+bb*2,4,'#cc0033'); }
+  else if(sid==='raise_dead'){ _drawSkull(ctx,cx,cy-4,6,'#663366'); _drawLine(ctx,cx,cy+2,cx,cy+10,col); _drawLine(ctx,cx-4,cy+5,cx+4,cy+5,col); }
+  else if(sid==='corpse_explode'){ _drawSkull(ctx,cx,cy-1,5,'#880022'); _drawBurst(ctx,cx,cy,14,8,col); }
+  else if(sid==='death_coil'){ _drawSkull(ctx,cx,cy,8,'#330033'); _drawSpiral(ctx,cx,cy,10,'#660066'); }
+  else if(sid==='eye_of_decay'){ _drawEye(ctx,cx,cy,10,col); }
+  else if(sid==='radiant_bolt'){ _drawStar(ctx,cx,cy,6,14,7,'#ffccff'); }
+  else if(sid==='mana_drain'){ _drawBeam(ctx,cx-8,cy,cx+8,cy,3,'#cc88ff'); _drawDrop(ctx,cx-6,cy,4,'#8844cc'); }
+  else if(sid==='mirror_shield'){ _drawShield(ctx,cx,cy,10,'#aaaaff'); _drawLine(ctx,cx-4,cy-4,cx+4,cy+4,'#ffffff'); }
+  else if(sid==='force_wall'){ _drawWall(ctx,cx,cy,col); }
+  // Hymn Weaving
+  else if(sid==='hymn_restore'){ _drawCross(ctx,cx,cy,8,'#44ff88'); _drawNote(ctx,cx+6,cy-6,col); }
+  else if(sid==='life_bond'){ _drawHeart(ctx,cx-4,cy,5,col); _drawHeart(ctx,cx+4,cy,5,col); _drawLine(ctx,cx-2,cy,cx+2,cy,col); }
+  else if(sid==='war_chant'){ _drawSword(ctx,cx,cy,12,col); _drawNote(ctx,cx+5,cy-5,col); }
+  else if(sid==='aegis_hymn'){ _drawShield(ctx,cx,cy,10,col); _drawNote(ctx,cx+5,cy-6,col); }
+  else if(sid==='anthem_might'||sid==='anthem_wit'||sid==='anthem_vigor'||sid==='anthem_endurance'){
+    _drawNote(ctx,cx-3,cy,col); _drawNote(ctx,cx+3,cy-3,col); _drawStar(ctx,cx,cy+5,4,8,4,col);
+  }
+  else if(sid==='preserve'){ _drawShield(ctx,cx,cy,8,col); _drawClock(ctx,cx,cy,6,col); }
+  else if(sid==='devotion'){ _drawShield(ctx,cx,cy,12,col); _drawCross(ctx,cx,cy,6,'#ffffff'); }
+  // Wards
+  else if(sid.indexOf('ward_')===0||sid==='mystic_deflection'||sid==='steel_resolve'){
+    _drawShield(ctx,cx,cy,12,col);
+    if(sid==='ward_fire') _drawFlame(ctx,cx,cy-2,5,7,col);
+    else if(sid==='ward_frost') _drawSnowflake(ctx,cx,cy,6,col);
+    else if(sid==='ward_storm') _drawZap(ctx,cx,cy-4,cx,cy+4,col);
+    else if(sid==='ward_stone') _drawRock(ctx,cx,cy,5,col);
+    else _drawStar(ctx,cx,cy,4,8,4,col);
+  }
+  // Stat buffs
+  else if(sid==='granite_skin'){ _drawShield(ctx,cx,cy,10,'#886633'); _drawRock(ctx,cx,cy,6,'#886633'); }
+  else if(sid==='gale_step'){ _drawWind(ctx,cx,cy,col); _drawArrowRight(ctx,cx,cy+6,6,col); }
+  else if(sid==='vital_exchange'){ _drawHeart(ctx,cx-5,cy,5,'#ff4444'); _drawArrowRight(ctx,cx,cy,4,col); _drawDrop(ctx,cx+6,cy,4,'#8844ff'); }
+  else if(sid==='mana_infusion'){ _drawDrop(ctx,cx-5,cy,5,'#8844ff'); _drawArrowRight(ctx,cx,cy,4,col); _drawZap(ctx,cx+4,cy-3,cx+6,cy+3,'#ffff44'); }
+  // Self buffs
+  else if(sid==='buff_swift'){ _drawWind(ctx,cx,cy,col); _drawArrowUp(ctx,cx,cy-2,6,col); }
+  else if(sid==='buff_fury'){ _drawSword(ctx,cx-3,cy,10,'#ff4444'); _drawSword(ctx,cx+3,cy,10,'#ff4444'); }
+  else if(sid==='buff_mana_flow'){ _drawSpiral(ctx,cx,cy,10,'#8844ff'); }
+  else if(sid==='buff_regen'){ _drawCross(ctx,cx,cy,10,'#44ff44'); _drawArrowUp(ctx,cx+6,cy,4,'#44ff44'); }
+  else if(sid==='buff_iron'){ _drawShield(ctx,cx,cy,12,'#aaaaaa'); }
+  else if(sid==='buff_arcane'){ _drawStar(ctx,cx,cy,6,14,7,'#aa66ff'); _drawOrb(ctx,cx,cy,5,'#cc88ff'); }
+  // Hex Crafting
+  else if(sid==='swarm'){ for(var sw=0;sw<6;sw++){ var sa=sw/6*Math.PI*2; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx+Math.cos(sa)*8,cy+Math.sin(sa)*8,2,0,Math.PI*2); ctx.fill(); } }
+  else if(sid==='hex_slow'){ _drawChain(ctx,cx,cy,col); }
+  else if(sid==='essence_drain'){ _drawBeam(ctx,cx-8,cy,cx+8,cy,3,col); _drawSkull(ctx,cx-6,cy,4,col); }
+  else if(sid==='dread'){ _drawSkull(ctx,cx,cy,10,col); _drawBurst(ctx,cx,cy,14,4,'#440044'); }
+  else if(sid==='plague'){ _drawSkull(ctx,cx,cy,6,'#44aa00'); _drawDrop(ctx,cx-5,cy+3,3,'#66cc00'); _drawDrop(ctx,cx+5,cy+2,3,'#66cc00'); }
+  else if(sid==='lethargy'){ _drawSpiral(ctx,cx,cy,10,'#666666'); _drawLine(ctx,cx-6,cy+8,cx+6,cy+8,col); }
+  else if(sid==='mind_fog'){ _drawCloud(ctx,cx,cy,col); _drawSpiral(ctx,cx,cy,6,'#9944cc'); }
+  else if(sid==='corrode'){ _drawDrop(ctx,cx,cy,10,'#88cc00'); _drawCrack(ctx,cx,cy+4,'#88cc00'); }
+  // School fallbacks
+  else if(sch==='pyromancy'){ _drawFlame(ctx,cx,cy,8,12,col); }
+  else if(sch==='cryomancy'){ _drawSnowflake(ctx,cx,cy,10,col); }
+  else if(sch==='tempest'){ _drawBigZap(ctx,cx,cy,col); }
+  else if(sch==='geomancy'){ _drawRock(ctx,cx,cy,8,col); }
+  else if(sch==='death'){ _drawSkull(ctx,cx,cy,8,col); }
+  else if(sch==='hex'){ _drawEye(ctx,cx,cy,8,col); }
+  else if(sch==='hymn'){ _drawNote(ctx,cx,cy,col); }
+  else if(sch==='novice'||sch==='mystical'){ _drawStar(ctx,cx,cy,5,10,5,col); }
+  else if(sch==='adept'){ _drawSword(ctx,cx,cy,12,col); }
+  else { _drawOrb(ctx,cx,cy,8,col); }
+
+  var url = c.toDataURL();
+  _iconCache[spell.id] = url;
+  return url;
+}
+
+// Drawing primitives
+function _drawStar(ctx,x,y,points,ro,ri,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  for(var i=0;i<points*2;i++){
+    var a=i/(points*2)*Math.PI*2-Math.PI/2;
+    var r=i%2===0?ro:ri;
+    if(i===0)ctx.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r);
+    else ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);
+  }
+  ctx.closePath(); ctx.fill();
+}
+function _drawFlame(ctx,x,y,w,h,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x,y-h/2);
+  ctx.quadraticCurveTo(x+w,y-h/4,x+w/2,y+h/2);
+  ctx.quadraticCurveTo(x,y+h/4,x-w/2,y+h/2);
+  ctx.quadraticCurveTo(x-w,y-h/4,x,y-h/2);
+  ctx.fill();
+}
+function _drawZap(ctx,x1,y1,x2,y2,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+  var mx=(x1+x2)/2, my=(y1+y2)/2;
+  ctx.moveTo(x1,y1); ctx.lineTo(mx+3,my-2); ctx.lineTo(mx-2,my+2); ctx.lineTo(x2,y2);
+  ctx.stroke();
+}
+function _drawBigZap(ctx,x,y,col){
+  ctx.strokeStyle=col; ctx.lineWidth=3; ctx.beginPath();
+  ctx.moveTo(x+2,y-12); ctx.lineTo(x-3,y-2); ctx.lineTo(x+4,y-1); ctx.lineTo(x-1,y+12);
+  ctx.stroke(); ctx.strokeStyle='#ffffff'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x+2,y-12); ctx.lineTo(x-3,y-2); ctx.lineTo(x+4,y-1); ctx.lineTo(x-1,y+12); ctx.stroke();
+}
+function _drawShield(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(x,y-r); ctx.quadraticCurveTo(x+r,y-r*0.5,x+r,y);
+  ctx.quadraticCurveTo(x+r*0.5,y+r,x,y+r*1.1);
+  ctx.quadraticCurveTo(x-r*0.5,y+r,x-r,y);
+  ctx.quadraticCurveTo(x-r,y-r*0.5,x,y-r);
+  ctx.stroke();
+}
+function _drawSkull(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(x,y-r*0.2,r*0.7,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-r*0.3,y+r*0.3); ctx.lineTo(x,y+r*0.8); ctx.lineTo(x+r*0.3,y+r*0.3); ctx.stroke();
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.arc(x-r*0.25,y-r*0.3,r*0.15,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+r*0.25,y-r*0.3,r*0.15,0,Math.PI*2); ctx.fill();
+}
+function _drawHeart(ctx,x,y,r,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x,y+r);
+  ctx.bezierCurveTo(x-r*1.5,y-r*0.5,x-r*0.5,y-r*1.2,x,y-r*0.3);
+  ctx.bezierCurveTo(x+r*0.5,y-r*1.2,x+r*1.5,y-r*0.5,x,y+r);
+  ctx.fill();
+}
+function _drawCross(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(x,y-r); ctx.lineTo(x,y+r); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-r*0.7,y-r*0.3); ctx.lineTo(x+r*0.7,y-r*0.3); ctx.stroke();
+}
+function _drawArrowUp(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(x,y-r); ctx.lineTo(x-r*0.5,y); ctx.moveTo(x,y-r); ctx.lineTo(x+r*0.5,y);
+  ctx.moveTo(x,y-r); ctx.lineTo(x,y+r); ctx.stroke();
+}
+function _drawArrowRight(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(x-r,y); ctx.lineTo(x+r,y);
+  ctx.moveTo(x+r*0.5,y-r*0.4); ctx.lineTo(x+r,y); ctx.lineTo(x+r*0.5,y+r*0.4);
+  ctx.stroke();
+}
+function _drawDrop(ctx,x,y,r,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x,y-r);
+  ctx.quadraticCurveTo(x+r,y,x,y+r*0.8);
+  ctx.quadraticCurveTo(x-r,y,x,y-r);
+  ctx.fill();
+}
+function _drawOrb(ctx,x,y,r,col){
+  var gr=ctx.createRadialGradient(x-r*0.3,y-r*0.3,r*0.1,x,y,r);
+  gr.addColorStop(0,'#ffffff'); gr.addColorStop(0.4,col); gr.addColorStop(1,'#000000');
+  ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+}
+function _drawRing(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
+}
+function _drawBurst(ctx,x,y,r,n,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  for(var i=0;i<n;i++){
+    var a=i/n*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(x+Math.cos(a)*r*0.3,y+Math.sin(a)*r*0.3);
+    ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r); ctx.stroke();
+  }
+}
+function _drawBeam(ctx,x1,y1,x2,y2,w,col){
+  ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath();
+  ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.strokeStyle='#ffffff'; ctx.lineWidth=1; ctx.beginPath();
+  ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}
+function _drawSnowflake(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  for(var i=0;i<6;i++){
+    var a=i/6*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(x,y);
+    ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+Math.cos(a)*r*0.5+Math.cos(a+0.5)*r*0.3,y+Math.sin(a)*r*0.5+Math.sin(a+0.5)*r*0.3);
+    ctx.lineTo(x+Math.cos(a)*r*0.5,y+Math.sin(a)*r*0.5); ctx.stroke();
+  }
+}
+function _drawSpiral(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+  for(var i=0;i<40;i++){
+    var a=i/40*Math.PI*4; var rr=r*i/40;
+    if(i===0)ctx.moveTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);
+    else ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);
+  }
+  ctx.stroke();
+}
+function _drawWave(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.beginPath();
+  ctx.moveTo(x-r,y); ctx.quadraticCurveTo(x-r*0.5,y-r*0.8,x,y);
+  ctx.quadraticCurveTo(x+r*0.5,y+r*0.8,x+r,y); ctx.stroke();
+  ctx.lineWidth=1.5; ctx.beginPath();
+  ctx.moveTo(x-r*0.8,y+4); ctx.quadraticCurveTo(x-r*0.3,y+4-r*0.5,x+r*0.2,y+4);
+  ctx.quadraticCurveTo(x+r*0.7,y+4+r*0.5,x+r*0.8,y+4); ctx.stroke();
+}
+function _drawWind(ctx,x,y,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  for(var i=0;i<3;i++){
+    ctx.beginPath(); ctx.moveTo(x-8,y+i*4);
+    ctx.quadraticCurveTo(x,y+i*4-3,x+8,y+i*4); ctx.stroke();
+  }
+}
+function _drawSword(ctx,x,y,h,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x,y-h/2); ctx.lineTo(x,y+h/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-h*0.3,y-h*0.1); ctx.lineTo(x+h*0.3,y-h*0.1); ctx.stroke();
+  ctx.fillStyle=col; ctx.fillRect(x-1,y+h*0.3,3,h*0.2);
+}
+function _drawRock(ctx,x,y,r,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x-r,y+r*0.3); ctx.lineTo(x-r*0.5,y-r);
+  ctx.lineTo(x+r*0.7,y-r*0.5); ctx.lineTo(x+r,y+r*0.5);
+  ctx.lineTo(x,y+r); ctx.closePath(); ctx.fill();
+}
+function _drawCrack(ctx,x,y,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(x-8,y); ctx.lineTo(x-2,y-3); ctx.lineTo(x+1,y+2); ctx.lineTo(x+8,y-1); ctx.stroke();
+}
+function _drawMeteor(ctx,x,y,col){
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.beginPath();
+  ctx.moveTo(x+2,y-2); ctx.lineTo(x+8,y-8); ctx.stroke();
+}
+function _drawDiamond(ctx,x,y,w,h,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x,y-h/2); ctx.lineTo(x+w/2,y); ctx.lineTo(x,y+h/2); ctx.lineTo(x-w/2,y);
+  ctx.closePath(); ctx.fill();
+}
+function _drawPortal(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(x,y,r*0.5,r,0,0,Math.PI*2); ctx.stroke();
+}
+function _drawDash(ctx,x1,y1,x2,y2,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.setLineDash([]);
+}
+function _drawMountain(ctx,x,y,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x-10,y+5); ctx.lineTo(x-3,y-8); ctx.lineTo(x+3,y-5);
+  ctx.lineTo(x+10,y+5); ctx.closePath(); ctx.fill();
+}
+function _drawNote(ctx,x,y,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x,y-5); ctx.lineTo(x,y+5); ctx.stroke();
+  ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(x-2,y+5,3,2,0,0,Math.PI*2); ctx.fill();
+}
+function _drawVines(ctx,x,y,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  for(var i=0;i<3;i++){
+    var ox=x-6+i*6;
+    ctx.beginPath(); ctx.moveTo(ox,y+10);
+    ctx.quadraticCurveTo(ox+(i%2?3:-3),y,ox,y-8); ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(ox,y-8,2,3,0,0,Math.PI*2); ctx.fill();
+  }
+}
+function _drawChain(ctx,x,y,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  for(var i=0;i<3;i++){
+    ctx.beginPath(); ctx.ellipse(x-8+i*8,y,4,6,0,0,Math.PI*2); ctx.stroke();
+  }
+}
+function _drawEye(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(x-r,y); ctx.quadraticCurveTo(x,y-r*0.7,x+r,y);
+  ctx.quadraticCurveTo(x,y+r*0.7,x-r,y); ctx.stroke();
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,r*0.3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#000000'; ctx.beginPath(); ctx.arc(x,y,r*0.12,0,Math.PI*2); ctx.fill();
+}
+function _drawWall(ctx,x,y,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.strokeRect(x-10,y-6,20,12);
+  ctx.beginPath(); ctx.moveTo(x,y-6); ctx.lineTo(x,y+6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-5,y); ctx.lineTo(x+5,y); ctx.stroke();
+}
+function _drawCloud(ctx,x,y,col){
+  ctx.fillStyle=col+'88';
+  ctx.beginPath(); ctx.arc(x-4,y,6,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+4,y-2,5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y-5,5,0,Math.PI*2); ctx.fill();
+}
+function _drawLine(ctx,x1,y1,x2,y2,col){
+  ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}
+function _drawClock(ctx,x,y,r,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-r*0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+r*0.5,y); ctx.stroke();
+}
+function _drawSunRays(ctx,x,y,r,n,col){
+  ctx.strokeStyle=col; ctx.lineWidth=1;
+  for(var i=0;i<n;i++){
+    var a=i/n*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(x+Math.cos(a)*r*0.4,y+Math.sin(a)*r*0.4);
+    ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r); ctx.stroke();
+  }
+}
+// ===== END ICON GENERATOR =====
 
 window._lastFps = 0;
 var _fpsFrames = 0, _fpsTime = performance.now();
@@ -972,7 +1480,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=148', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=149', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -1007,7 +1515,7 @@ queueLoad(4, 'snowflake-model.glb?v=148', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=148', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=149', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1264,7 +1772,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=148');
+const grassTex = texLoader.load('grass-texture.jpg?v=149');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1273,61 +1781,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=148');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=149');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=148');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=149');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=148');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=149');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=148');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=149');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=148');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=149');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=148');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=149');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=148');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=149');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=148');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=149');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=148');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=149');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=148');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=149');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=148');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=149');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=148');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=149');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=148');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=149');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=148');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=149');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=148');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=149');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=148');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=149');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -1574,7 +2082,7 @@ scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=148', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=149', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -1597,7 +2105,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=148');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=149');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -1631,7 +2139,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=148', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=149', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1675,7 +2183,7 @@ queueLoad(5, 'rock-pile-model.glb?v=148', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=148', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=149', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -1728,7 +2236,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=148', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=148', function(gltf){
+queueLoad(3, 'bass-model.glb?v=149', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -1820,7 +2328,7 @@ queueLoad(3, 'bass-model.glb?v=148', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=148', function(gltf){
+queueLoad(3, 'deer-model.glb?v=149', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1929,7 +2437,7 @@ queueLoad(3, 'deer-model.glb?v=148', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=148', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=149', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -3740,6 +4248,49 @@ function castSpell(spellId){
     fireSpellProjectile(slowSpell);
     return;
   }
+  if(spell.id === 'shadow_bolt'){
+    // Dark bolt with ghostly wisps trailing behind
+    playSpellSound(spell);
+    var yaw = playerYaw + cameraYawOffset;
+    var pitch = cameraPitch || 0;
+    var dx = -Math.sin(yaw) * Math.cos(pitch);
+    var dy = Math.sin(pitch);
+    var dz = -Math.cos(yaw) * Math.cos(pitch);
+    var spd = spell.speed || 60;
+    var startPos = new THREE.Vector3(
+      characterPivot.position.x - Math.sin(yaw)*2,
+      characterPivot.position.y + 2.5,
+      characterPivot.position.z - Math.cos(yaw)*2
+    );
+    // Main bolt — dark purple
+    var boltGeo = new THREE.SphereGeometry(0.35, 8, 4);
+    var boltMat = new THREE.MeshBasicMaterial({color:0x6600aa, transparent:true, opacity:0.9});
+    var bolt = new THREE.Mesh(boltGeo, boltMat);
+    bolt.position.copy(startPos);
+    scene.add(bolt);
+    // Dark wispy shell
+    var shellGeo = new THREE.IcosahedronGeometry(0.6, 0);
+    var shellMat = new THREE.MeshBasicMaterial({color:0x220044, transparent:true, opacity:0.35, wireframe:true});
+    var shell = new THREE.Mesh(shellGeo, shellMat);
+    bolt.add(shell);
+    // Trail wisps — 5 small dark particles
+    var wisps = [];
+    for(var w=0;w<5;w++){
+      var wGeo = new THREE.SphereGeometry(0.12, 4, 4);
+      var wMat = new THREE.MeshBasicMaterial({color:0x440066, transparent:true, opacity:0.5});
+      var wMesh = new THREE.Mesh(wGeo, wMat);
+      wMesh.position.copy(startPos);
+      scene.add(wMesh);
+      wisps.push({mesh:wMesh, delay:w*0.05, offX:0, offY:0, offZ:0});
+    }
+    spellProjectiles.push({
+      mesh:bolt, vx:dx*spd, vy:dy*spd+5, vz:dz*spd,
+      spell:spell, age:0, maxAge:spell.range/spd+2,
+      extras: wisps.map(function(ww){return ww.mesh}),
+      wisps: wisps, shell: shell
+    });
+    return;
+  }
   if(spell.id === 'death_coil'){
     // Death Coil — big dark projectile with lifesteal on hit
     fireSpellProjectile(spell);
@@ -4378,7 +4929,7 @@ function castSpell(spellId){
         }
       });
     }
-    showVashraAlert(spell.icon + ' ' + spell.name.toUpperCase(), spell.desc, 2);
+    showVashraAlert(spell.name.toUpperCase(), spell.desc, 2);
   } else if(spell.id === 'war_chant'){
     // Damage buff
     playerDamageBuff = 1.25;
@@ -7524,7 +8075,8 @@ function renderSpellbook(){
     card.className = 'spell-card' + (locked ? ' locked' : '') + (selectedSpell === spell.id ? ' selected' : '');
     var cd = spellCooldowns[spell.id] || 0;
     var schoolObj = SPELL_SCHOOLS.find(function(s){ return s.id === spell.school; }) || {};
-    card.innerHTML = '<div class="spell-icon">' + spell.icon + '</div>' +
+    var iconUrl = genSpellIcon(spell);
+    card.innerHTML = '<div class="spell-icon"><img src="'+iconUrl+'" width="28" height="28" style="image-rendering:pixelated"></div>' +
       '<div class="spell-name" style="color:' + (schoolObj.color || '#fff') + '">' + spell.name + '</div>' +
       '<div class="spell-info">Lv ' + spell.level + (spell.damage ? ' | ' + spell.damage + ' dmg' : '') + (spell.healAmt ? ' | +' + spell.healAmt + ' hp' : '') + '</div>' +
       '<div class="spell-mana">' + spell.mana + ' mana' + (cd > 0 ? ' | ' + cd.toFixed(1) + 's' : '') + '</div>' +
@@ -7536,7 +8088,8 @@ function renderSpellbook(){
         renderSpellbook();
         var castBtn = document.getElementById('btn-cast');
         if(castBtn){
-          castBtn.textContent = spell.icon;
+          var cIconUrl = genSpellIcon(spell);
+          castBtn.innerHTML = '<img src="'+cIconUrl+'" width="24" height="24" style="image-rendering:pixelated">';
           castBtn.className = 'spell-ready';
         }
       });
@@ -7786,7 +8339,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=148', function(gltf){
+queueLoad(1, 'character-walk.glb?v=149', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -7853,7 +8406,7 @@ queueLoad(1, 'character-walk.glb?v=148', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=148&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=149&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -7921,7 +8474,7 @@ queueLoad(1, 'character-walk.glb?v=148', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=148', function(gltf){
+queueLoad(2, 'grass-model.glb?v=149', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -7981,7 +8534,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=148', function(gltf){
+queueLoad(2, 'sun-model.glb?v=149', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -8013,7 +8566,7 @@ queueLoad(2, 'sun-model.glb?v=148', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=148', function(gltf){
+queueLoad(2, 'moon-model.glb?v=149', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -8067,7 +8620,7 @@ queueLoad(2, 'moon-model.glb?v=148', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=148', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=149', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -8176,7 +8729,7 @@ queueLoad(4, 'bear-walk.glb?v=148', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=148', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=149', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -8257,7 +8810,7 @@ queueLoad(4, 'freak-walk.glb?v=148', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=148', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=149', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -8344,7 +8897,7 @@ queueLoad(3, 'stallion-walk.glb?v=148', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=148', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=149', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -8407,7 +8960,7 @@ queueLoad(4, 'dreugh-model.glb?v=148', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=148', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=149', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -8434,7 +8987,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=148', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=149', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -8480,7 +9033,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=148', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=149', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -8495,7 +9048,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=148', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=149', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -8514,7 +9067,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=148', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=149', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -8529,7 +9082,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=148', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=149', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -8544,7 +9097,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=148', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=149', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -8560,7 +9113,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=148', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=149', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -8576,7 +9129,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=148', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=149', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -8591,7 +9144,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=148', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=149', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -8612,7 +9165,7 @@ queueLoad(7, 'vashra-dragon.glb?v=148', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=148', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=149', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -10016,6 +10569,18 @@ function updateDustParticles(dt){
     p.mesh.position.x += p.vx * dt;
     p.mesh.position.y += p.vy * dt;
     p.mesh.position.z += p.vz * dt;
+    // Shadow Bolt wisp trail follow
+    if(p.wisps){
+      for(var wi=0;wi<p.wisps.length;wi++){
+        var ww=p.wisps[wi];
+        var lag = 1.0 - wi*0.15;
+        ww.mesh.position.lerp(p.mesh.position, lag * 3 * dt);
+        ww.mesh.position.x += (Math.random()-0.5)*0.3;
+        ww.mesh.position.y += (Math.random()-0.5)*0.3;
+        ww.mesh.material.opacity = 0.5 - p.age*0.2;
+      }
+      if(p.shell){ p.shell.rotation.x += dt*3; p.shell.rotation.y += dt*4; }
+    }
     p.vy -= 1.5 * dt;
     p.mesh.material.opacity = 0.4 * (1 - t);
     var sc = p.mesh.scale.x * (1 + dt * 2);

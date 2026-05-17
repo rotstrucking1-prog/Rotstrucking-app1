@@ -267,7 +267,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v138</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v139</div>
   <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
@@ -877,7 +877,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=138', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=139', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -912,7 +912,7 @@ queueLoad(4, 'snowflake-model.glb?v=138', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=138', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=139', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1169,7 +1169,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=138');
+const grassTex = texLoader.load('grass-texture.jpg?v=139');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1178,61 +1178,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=138');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=139');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=138');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=139');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=138');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=139');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=138');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=139');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=138');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=139');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=138');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=139');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=138');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=139');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=138');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=139');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=138');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=139');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=138');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=139');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=138');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=139');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=138');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=139');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=138');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=139');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=138');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=139');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=138');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=139');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=138');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=139');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -1479,7 +1479,7 @@ scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=138', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=139', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -1502,7 +1502,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=138');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=139');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -1536,7 +1536,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=138', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=139', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1580,7 +1580,7 @@ queueLoad(5, 'rock-pile-model.glb?v=138', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=138', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=139', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -1633,7 +1633,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=138', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=138', function(gltf){
+queueLoad(3, 'bass-model.glb?v=139', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -1725,7 +1725,7 @@ queueLoad(3, 'bass-model.glb?v=138', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=138', function(gltf){
+queueLoad(3, 'deer-model.glb?v=139', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1834,7 +1834,7 @@ queueLoad(3, 'deer-model.glb?v=138', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=138', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=139', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -2159,25 +2159,86 @@ const WEAPONS = {
   }
 };
 
-// === MAGIC SPELL SYSTEM ===
+// === MAGIC SPELL SYSTEM === (v139: 10 Schools, 40+ Spells)
+const SPELL_SCHOOLS = [
+  { id: 'novice',    name: 'Novice Arts',   icon: '🔮', color: '#8888ff' },
+  { id: 'adept',     name: 'Adept Arts',    icon: '⚔️', color: '#ff8844' },
+  { id: 'pyromancy', name: 'Pyromancy',     icon: '🔥', color: '#ff4400' },
+  { id: 'cryomancy', name: 'Cryomancy',     icon: '❄️', color: '#88ddff' },
+  { id: 'tempest',   name: 'Tempest Arts',  icon: '⚡', color: '#ffff44' },
+  { id: 'geomancy',  name: 'Geomancy',      icon: '🌍', color: '#886633' },
+  { id: 'mystical',  name: 'Mystical Arts', icon: '🌟', color: '#cc88ff' },
+  { id: 'death',     name: 'Death Arts',    icon: '💀', color: '#cc0033' },
+  { id: 'hymn',      name: 'Hymn Weaving',  icon: '📿', color: '#44ff88' },
+  { id: 'hex',       name: 'Hex Crafting',  icon: '🕷️', color: '#aa44aa' },
+];
 const SPELLS = [
-  // Combat Spells
-  { id: 'fire_strike',   name: 'Fire Strike',    icon: '🔥', type: 'combat', level: 1,  mana: 5,  damage: 12, range: 80,  cooldown: 1.5, speed: 60,  color: 0xff4400, desc: 'Basic fire projectile' },
-  { id: 'wind_bolt',     name: 'Wind Bolt',      icon: '💨', type: 'combat', level: 9,  mana: 8,  damage: 18, range: 100, cooldown: 2.0, speed: 80,  color: 0x88ccff, desc: 'Ranged wind attack' },
-  { id: 'water_blast',   name: 'Water Blast',    icon: '🌊', type: 'combat', level: 17, mana: 12, damage: 25, range: 90,  cooldown: 2.5, speed: 55,  color: 0x2288cc, desc: 'Pressurized water bolt' },
-  { id: 'earth_wave',    name: 'Earth Wave',     icon: '🪨', type: 'combat', level: 25, mana: 18, damage: 35, range: 60,  cooldown: 3.0, speed: 40,  color: 0x886633, desc: 'Ground shockwave' },
-  { id: 'ice_barrage',   name: 'Ice Barrage',    icon: '❄️', type: 'combat', level: 40, mana: 28, damage: 45, range: 70,  cooldown: 4.0, speed: 50,  color: 0x88ddff, desc: 'AoE freeze blast' },
-  { id: 'fire_surge',    name: 'Fire Surge',     icon: '🌋', type: 'combat', level: 60, mana: 40, damage: 65, range: 100, cooldown: 5.0, speed: 70,  color: 0xff2200, desc: 'Devastating fire blast' },
-  { id: 'blood_barrage', name: 'Blood Barrage',  icon: '🩸', type: 'combat', level: 80, mana: 55, damage: 50, range: 80,  cooldown: 6.0, speed: 45,  color: 0xcc0033, desc: 'Lifesteal AoE' },
+  // ===== NOVICE ARTS (starter spells everyone learns) =====
+  { id: 'arcane_bolt',   name: 'Arcane Bolt',    school: 'novice', icon: '🔮', type: 'combat',  level: 1,  mana: 5,  damage: 12, range: 80,  cooldown: 1.5, speed: 60,  color: 0x8888ff, desc: 'Basic magical projectile' },
+  { id: 'mend_self',     name: 'Mend Self',      school: 'novice', icon: '💚', type: 'utility', level: 5,  mana: 10, healAmt: 25,  cooldown: 8.0,  color: 0x44ff44, desc: 'Restore health' },
+  { id: 'candlelight',   name: 'Candlelight',    school: 'novice', icon: '💡', type: 'utility', level: 1,  mana: 3,  duration: 60, cooldown: 2.0,  color: 0xffffaa, desc: 'Create light orb' },
+  { id: 'ward',          name: 'Ward',           school: 'novice', icon: '🛡️', type: 'utility', level: 20, mana: 25, duration: 15, cooldown: 30.0, color: 0x8844ff, desc: '50% damage reduction shield' },
+  { id: 'spark',         name: 'Spark',          school: 'novice', icon: '✨', type: 'combat',  level: 3,  mana: 4,  damage: 8,  range: 60,  cooldown: 1.0, speed: 90,  color: 0xffccaa, desc: 'Quick spark of energy' },
   
-  // Utility Spells
-  { id: 'heal',          name: 'Heal',           icon: '💚', type: 'utility', level: 5,  mana: 10, healAmt: 25,  cooldown: 8.0,  color: 0x44ff44, desc: 'Restore health' },
-  { id: 'light',         name: 'Light',          icon: '💡', type: 'utility', level: 1,  mana: 3,  duration: 60, cooldown: 2.0,  color: 0xffffaa, desc: 'Create light orb' },
-  { id: 'shield',        name: 'Magic Shield',   icon: '🛡️', type: 'utility', level: 20, mana: 25, duration: 15, cooldown: 30.0, color: 0x8844ff, desc: 'Damage reduction' },
-  { id: 'teleport',      name: 'Teleport',       icon: '✨', type: 'utility', level: 35, mana: 35, cooldown: 60.0, color: 0xffaaff, desc: 'Teleport forward' },
-  { id: 'vengeance',     name: 'Vengeance',      icon: '⚡', type: 'utility', level: 50, mana: 40, duration: 20, cooldown: 45.0, color: 0xffdd00, desc: 'Reflect 25% damage' },
-  { id: 'entangle',      name: 'Entangle',       icon: '🌿', type: 'combat', level: 30, mana: 20, damage: 10, range: 60, cooldown: 10.0, speed: 35, color: 0x22aa22, desc: 'Root enemy in place' },
-  { id: 'lightning_bolt', name: 'Lightning Bolt', icon: '🌩️', type: 'combat', level: 50, mana: 35, damage: 60, range: 120, cooldown: 3.0, speed: 150, color: 0xffff44, desc: 'Instant lightning strike' },
+  // ===== ADEPT ARTS (mid-tier utility + combat) =====
+  { id: 'repulse',       name: 'Repulse',        school: 'adept', icon: '💫', type: 'physics', level: 25, mana: 30, cooldown: 12.0, color: 0xff8844, desc: 'Launch yourself forward — bunny hop!' },
+  { id: 'blink',         name: 'Blink',          school: 'adept', icon: '✨', type: 'utility', level: 35, mana: 35, cooldown: 60.0, color: 0xffaaff, desc: 'Teleport to crosshair target' },
+  { id: 'retribution',   name: 'Retribution',    school: 'adept', icon: '⚡', type: 'utility', level: 50, mana: 40, duration: 20, cooldown: 45.0, color: 0xffdd00, desc: 'Reflect 25% damage back to attackers' },
+  { id: 'barrage',       name: 'Barrage',        school: 'adept', icon: '💥', type: 'combat',  level: 30, mana: 22, damage: 30, range: 90,  cooldown: 2.5, speed: 85,  color: 0xff6633, desc: 'Rapid triple-shot blast' },
+  { id: 'envenom',       name: 'Envenom',        school: 'adept', icon: '🐍', type: 'combat',  level: 40, mana: 28, damage: 15, range: 70,  cooldown: 8.0, speed: 50, dotDmg: 5, dotDur: 6, color: 0x44cc00, desc: 'Poison that deals damage over time' },
+  
+  // ===== PYROMANCY (fire destruction) =====
+  { id: 'flame_bolt',    name: 'Flame Bolt',     school: 'pyromancy', icon: '🔥', type: 'combat', level: 1,  mana: 6,  damage: 14, range: 80,  cooldown: 1.5, speed: 65,  color: 0xff4400, desc: 'Searing fire bolt' },
+  { id: 'scorching_ray', name: 'Scorching Ray',  school: 'pyromancy', icon: '☀️', type: 'combat', level: 15, mana: 14, damage: 22, range: 100, cooldown: 2.0, speed: 120, color: 0xff8800, desc: 'Focused beam of heat' },
+  { id: 'immolation',    name: 'Immolation',     school: 'pyromancy', icon: '🔥', type: 'combat', level: 35, mana: 30, damage: 20, range: 40,  cooldown: 15.0, speed: 0, aoeRadius: 12, color: 0xff2200, desc: 'Ring of fire around self' },
+  { id: 'fire_surge',    name: 'Fire Surge',     school: 'pyromancy', icon: '🌋', type: 'combat', level: 60, mana: 40, damage: 65, range: 100, cooldown: 5.0, speed: 70,  color: 0xff2200, desc: 'Devastating fire blast' },
+  { id: 'eruption',      name: 'Eruption',       school: 'pyromancy', icon: '🌋', type: 'combat', level: 80, mana: 60, damage: 80, range: 60,  cooldown: 12.0, speed: 30, aoeRadius: 15, color: 0xff3300, desc: 'Volcanic explosion from ground' },
+  
+  // ===== CRYOMANCY (ice + water control) =====
+  { id: 'ice_shard',     name: 'Ice Shard',      school: 'cryomancy', icon: '❄️', type: 'combat', level: 5,  mana: 7,  damage: 15, range: 90,  cooldown: 1.8, speed: 70,  color: 0x88ddff, desc: 'Sharp ice projectile' },
+  { id: 'frost_nova',    name: 'Frost Nova',     school: 'cryomancy', icon: '💎', type: 'combat', level: 25, mana: 22, damage: 28, range: 40,  cooldown: 8.0, speed: 0, aoeRadius: 10, color: 0xaaeeff, desc: 'Burst of freezing energy around self' },
+  { id: 'glacial_storm', name: 'Glacial Storm',  school: 'cryomancy', icon: '🌨️', type: 'combat', level: 40, mana: 28, damage: 45, range: 70,  cooldown: 4.0, speed: 50,  color: 0x88ddff, desc: 'AoE freeze blast' },
+  { id: 'whirlpool',     name: 'Whirlpool',      school: 'cryomancy', icon: '🌀', type: 'physics', level: 65, mana: 50, damage: 8, duration: 15, range: 80, cooldown: 45.0, speed: 40, color: 0x2288cc, desc: 'Water vortex that traps target for 15s' },
+  { id: 'tidal_wave',    name: 'Tidal Wave',     school: 'cryomancy', icon: '🌊', type: 'combat', level: 75, mana: 55, damage: 55, range: 100, cooldown: 10.0, speed: 45, aoeRadius: 18, color: 0x2288cc, desc: 'Massive wave that crushes all' },
+  
+  // ===== TEMPEST ARTS (lightning + wind) =====
+  { id: 'gust',          name: 'Gust',           school: 'tempest', icon: '💨', type: 'combat', level: 9,  mana: 8,  damage: 18, range: 100, cooldown: 2.0, speed: 80,  color: 0x88ccff, desc: 'Ranged wind attack' },
+  { id: 'spark_orb',     name: 'Spark Orb',      school: 'tempest', icon: '⚡', type: 'combat', level: 20, mana: 15, damage: 25, range: 80,  cooldown: 2.5, speed: 65, color: 0xffff44, desc: 'Electrified orb that chains' },
+  { id: 'lightning_bolt', name: 'Lightning Bolt', school: 'tempest', icon: '🌩️', type: 'combat', level: 50, mana: 35, damage: 60, range: 120, cooldown: 3.0, speed: 150, color: 0xffff44, desc: 'Instant lightning strike' },
+  { id: 'cyclone',       name: 'Cyclone',        school: 'tempest', icon: '🌪️', type: 'physics', level: 70, mana: 55, damage: 6, duration: 12, range: 100, cooldown: 40.0, speed: 35, color: 0xccddee, desc: 'Chasing tornado that deals continuous damage' },
+  { id: 'static_field',  name: 'Static Field',   school: 'tempest', icon: '⚡', type: 'physics', level: 60, mana: 45, damage: 4, duration: 15, range: 0, cooldown: 35.0, aoeRadius: 8, color: 0xffff88, desc: 'Electric ring shocks all nearby for 15s' },
+  
+  // ===== GEOMANCY (earth + nature + acid) =====
+  { id: 'stone_missile', name: 'Stone Missile',  school: 'geomancy', icon: '🪨', type: 'combat', level: 8,  mana: 9,  damage: 20, range: 70,  cooldown: 2.0, speed: 45,  color: 0x886633, desc: 'Hurled stone chunk' },
+  { id: 'tremor',        name: 'Tremor',         school: 'geomancy', icon: '🌍', type: 'combat', level: 25, mana: 18, damage: 35, range: 60,  cooldown: 3.0, speed: 40,  color: 0x886633, desc: 'Ground shockwave' },
+  { id: 'entangle',      name: 'Entangle',       school: 'geomancy', icon: '🌿', type: 'combat', level: 30, mana: 20, damage: 10, range: 60, cooldown: 10.0, speed: 35, color: 0x22aa22, desc: 'Root enemy in vines' },
+  { id: 'acid_splash',   name: 'Acid Splash',    school: 'geomancy', icon: '🧪', type: 'combat', level: 45, mana: 25, damage: 30, range: 80, cooldown: 4.0, speed: 55, dotDmg: 4, dotDur: 5, color: 0x88cc00, desc: 'Corrosive acid that melts armor' },
+  { id: 'meteor_rain',   name: 'Meteor Rain',    school: 'geomancy', icon: '☄️', type: 'combat', level: 85, mana: 70, damage: 90, range: 80, cooldown: 20.0, speed: 25, aoeRadius: 20, color: 0xcc4400, desc: 'Devastating meteor bombardment' },
+  
+  // ===== MYSTICAL ARTS (arcane + force + barriers) =====
+  { id: 'radiant_bolt',  name: 'Radiant Bolt',   school: 'mystical', icon: '🌟', type: 'combat', level: 10, mana: 10, damage: 18, range: 90,  cooldown: 1.8, speed: 80,  color: 0xcc88ff, desc: 'Bolt of pure arcane energy' },
+  { id: 'mana_drain',    name: 'Mana Drain',     school: 'mystical', icon: '💜', type: 'combat', level: 35, mana: 5,  damage: 20, range: 70,  cooldown: 6.0, speed: 55,  color: 0x8844cc, desc: 'Steal mana from target' },
+  { id: 'mirror_shield', name: 'Mirror Shield',  school: 'mystical', icon: '🪞', type: 'utility', level: 45, mana: 35, duration: 12, cooldown: 40.0, color: 0xeeddff, desc: 'Reflects projectiles back at attacker' },
+  { id: 'force_wall',    name: 'Force Wall',     school: 'mystical', icon: '🧱', type: 'combat', level: 55, mana: 30, damage: 25, range: 50, cooldown: 15.0, speed: 0, aoeRadius: 6, color: 0xbb88ff, desc: 'Barrier that blocks and damages' },
+  
+  // ===== DEATH ARTS (necromancy + blood + shadow) =====
+  { id: 'shadow_bolt',   name: 'Shadow Bolt',    school: 'death', icon: '💀', type: 'combat', level: 12, mana: 11, damage: 22, range: 85,  cooldown: 2.0, speed: 60,  color: 0x440044, desc: 'Bolt of dark energy' },
+  { id: 'soul_siphon',   name: 'Soul Siphon',    school: 'death', icon: '🩸', type: 'combat', level: 45, mana: 30, damage: 35, range: 70,  cooldown: 5.0, speed: 50, lifesteal: 0.3, color: 0xcc0033, desc: '30% lifesteal on hit' },
+  { id: 'blood_barrage',  name: 'Blood Barrage', school: 'death', icon: '🩸', type: 'combat', level: 80, mana: 55, damage: 50, range: 80,  cooldown: 6.0, speed: 45, lifesteal: 0.3, color: 0xcc0033, desc: 'Lifesteal AoE blast' },
+  { id: 'raise_dead',    name: 'Raise Dead',     school: 'death', icon: '☠️', type: 'summon', level: 55, mana: 45, duration: 30, cooldown: 60.0, color: 0x663366, desc: 'Raise a skeleton to fight for you' },
+  { id: 'corpse_explode', name: 'Corpse Blast',  school: 'death', icon: '💥', type: 'combat', level: 65, mana: 35, damage: 70, range: 50, cooldown: 8.0, speed: 0, aoeRadius: 12, color: 0x880022, desc: 'Explode nearby corpses for massive damage' },
+  
+  // ===== HYMN WEAVING (support + buffs + healing) =====
+  { id: 'hymn_restore',  name: 'Hymn of Restoration', school: 'hymn', icon: '🎵', type: 'utility', level: 10, mana: 15, healAmt: 35, cooldown: 10.0, color: 0x44ff88, desc: 'Song that heals over time' },
+  { id: 'life_bond',     name: 'Life Bond',      school: 'hymn', icon: '💞', type: 'utility', level: 30, mana: 20, healAmt: 15, duration: 20, cooldown: 25.0, color: 0x88ffaa, desc: 'Link HP with nearby ally — share damage' },
+  { id: 'war_chant',     name: 'War Chant',      school: 'hymn', icon: '🥁', type: 'utility', level: 45, mana: 30, duration: 15, cooldown: 40.0, color: 0xff8844, desc: '+25% damage for 15 seconds' },
+  { id: 'aegis_hymn',    name: 'Aegis Hymn',     school: 'hymn', icon: '📿', type: 'utility', level: 60, mana: 40, duration: 12, cooldown: 50.0, color: 0x44ddff, desc: 'Song of protection — reduce all damage 40%' },
+  
+  // ===== HEX CRAFTING (debuffs + curses + DoTs) =====
+  { id: 'swarm',         name: 'Swarm',          school: 'hex', icon: '🕷️', type: 'combat', level: 15, mana: 12, damage: 16, range: 70, cooldown: 3.0, speed: 40, dotDmg: 3, dotDur: 8, color: 0xaa44aa, desc: 'Cloud of biting insects' },
+  { id: 'hex_slow',      name: 'Crippling Hex',  school: 'hex', icon: '🐌', type: 'combat', level: 28, mana: 18, damage: 10, range: 80, cooldown: 12.0, speed: 55, color: 0x994499, desc: 'Slow target by 50% for 8s' },
+  { id: 'essence_drain', name: 'Essence Drain',  school: 'hex', icon: '👁️', type: 'combat', level: 50, mana: 28, damage: 25, range: 75, cooldown: 6.0, speed: 50, dotDmg: 6, dotDur: 6, lifesteal: 0.2, color: 0x882288, desc: 'Drain life force — DoT + heal self' },
+  { id: 'dread',         name: 'Dread',          school: 'hex', icon: '😱', type: 'combat', level: 70, mana: 45, damage: 40, range: 90, cooldown: 15.0, speed: 45, color: 0x660066, desc: 'Terror that weakens and damages' },
 ];
 
 let selectedSpell = null; // Currently selected spell ID
@@ -2237,7 +2298,32 @@ function createVengeanceSkull(){
   scene.add(sprite);
   return sprite;
 }
+let playerDamageBuff = 1.0;
+let playerDamageBuffTimer = 0;
+let playerHealOverTime = 0;
+let playerHealOverTimeTimer = 0;
+let playerVelocityX = 0;
+let playerVelocityZ = 0;
+let playerVelocityY = 0;
+let allNPCs = []; // Populated after NPCs spawn — for AoE targeting
 let spellbookOpen = false;
+let spellbookSchoolFilter = 'all';
+
+// Map spell school/color to element type for geometry selection
+function getSpellElement(spell){
+  var schoolMap = {
+    'novice': 'arcane', 'adept': 'force', 'pyromancy': 'fire',
+    'cryomancy': 'ice', 'tempest': 'lightning', 'geomancy': 'earth',
+    'mystical': 'holy', 'death': 'shadow', 'hymn': 'nature', 'hex': 'hex'
+  };
+  // Special overrides by spell ID
+  if(spell.id === 'acid_splash' || spell.id === 'envenom') return 'acid';
+  if(spell.id === 'blood_barrage' || spell.id === 'soul_siphon') return 'blood';
+  if(spell.id === 'swarm' || spell.id === 'essence_drain') return 'hex';
+  if(spell.id === 'gust') return 'wind';
+  if(spell.id === 'entangle') return 'nature';
+  return schoolMap[spell.school] || 'arcane';
+}
 
 // Spell projectile pool
 const SPELL_PROJECTILE_POOL = 20;
@@ -2249,17 +2335,7 @@ let spellTrailPool = [];
 let spellTrailActive = [];
 
 // Spell element type mapping
-function getSpellElement(id){
-  if(id === 'fire_strike' || id === 'fire_surge') return 'fire';
-  if(id === 'water_blast') return 'water';
-  if(id === 'earth_wave') return 'earth';
-  if(id === 'ice_barrage') return 'ice';
-  if(id === 'wind_bolt') return 'wind';
-  if(id === 'blood_barrage') return 'blood';
-  if(id === 'entangle') return 'nature';
-  if(id === 'lightning_bolt') return 'lightning';
-  return 'default';
-}
+
 
 // Element-specific projectile geometries
 const spellElementGeos = {
@@ -2403,7 +2479,7 @@ function castSpell(spellId){
   if(spell.type === 'combat' && spell.speed){
     // Fire projectile
     fireSpellProjectile(spell);
-  } else if(spell.id === 'heal'){
+  } else if(spell.id === 'mend_self' || spell.id === 'hymn_restore'){
     // Heal self
     playerHP = Math.min(playerMaxHP, playerHP + spell.healAmt);
     // Healing particles VFX
@@ -2415,7 +2491,7 @@ function castSpell(spellId){
     // Green flash
     var flash = document.getElementById('damage-flash');
     if(flash){ flash.style.background = 'rgba(0,255,0,0.2)'; flash.style.display = 'block'; damageFlashTimer = 0.3; }
-  } else if(spell.id === 'light'){
+  } else if(spell.id === 'candlelight'){
     // Create light orb following player
     if(!playerLightOrb){
       playerLightOrb = new THREE.PointLight(0xffffcc, 4, 80);
@@ -2424,7 +2500,7 @@ function castSpell(spellId){
     playerLightOrb.visible = true;
     setTimeout(function(){ if(playerLightOrb) playerLightOrb.visible = false; }, spell.duration * 1000);
     showVashraAlert('💡 LIGHT', 'Orb created', 1.5);
-  } else if(spell.id === 'shield'){
+  } else if(spell.id === 'ward' || spell.id === 'aegis_hymn'){
     playerShield = 0.5; // 50% damage reduction
     playerShieldTimer = spell.duration;
     // Shield barrier VFX
@@ -2432,7 +2508,7 @@ function castSpell(spellId){
       spawnShieldBarrier(characterPivot, spell.color, spell.duration);
     }
     showVashraAlert('🛡️ SHIELD', spell.duration + 's protection', 2);
-  } else if(spell.id === 'teleport'){
+  } else if(spell.id === 'blink'){
     // Teleport to crosshair target (raycast through screen center)
     var _tRay = new THREE.Raycaster();
     _tRay.setFromCamera(new THREE.Vector2(0, 0), camera);
@@ -2459,12 +2535,55 @@ function castSpell(spellId){
     // Arrival VFX
     spawnCastingCircle({x:tx, y:playerPos.y, z:tz}, spell.color, 4);
     showVashraAlert('✨ TELEPORT', 'Blinked to target!', 1.5);
-  } else if(spell.id === 'vengeance'){
+  } else if(spell.id === 'retribution'){
     playerVengeance = true;
     playerVengeanceTimer = spell.duration;
     if(!vengeanceSkull) vengeanceSkull = createVengeanceSkull();
     vengeanceSkull.visible = true;
-    showVashraAlert('💀 VENGEANCE', '25% damage reflected for ' + spell.duration + 's!', 2);
+    showVashraAlert('💀 RETRIBUTION', '25% damage reflected for ' + spell.duration + 's!', 2);
+  } else if(spell.id === 'repulse'){
+    // Physics launcher — launch player forward like a bunny hop
+    var _lDir = new THREE.Vector3();
+    camera.getWorldDirection(_lDir);
+    _lDir.y = 0; _lDir.normalize();
+    playerVelocityX = _lDir.x * 80;
+    playerVelocityZ = _lDir.z * 80;
+    playerVelocityY = 15;
+    if(characterPivot) spawnCastingCircle(characterPivot.position, spell.color, 4);
+    showVashraAlert('💫 REPULSE', 'Launched forward!', 1.5);
+  } else if(spell.aoeRadius && spell.speed === 0){
+    // Self-centered AoE spell (immolation, frost_nova, corpse_blast, etc.)
+    if(characterPivot){
+      spawnAoEGround(characterPivot.position, spell.color, spell.aoeRadius);
+      // Damage all NPCs in radius
+      var aoePos = characterPivot.position;
+      allNPCs.forEach(function(npc){
+        if(!npc || !npc.position) return;
+        var dx = npc.position.x - aoePos.x;
+        var dz = npc.position.z - aoePos.z;
+        if(Math.sqrt(dx*dx + dz*dz) < spell.aoeRadius){
+          if(npc.hp !== undefined){ npc.hp -= spell.damage; spawnBloodEffect(npc.position); }
+        }
+      });
+    }
+    showVashraAlert(spell.icon + ' ' + spell.name.toUpperCase(), spell.desc, 2);
+  } else if(spell.id === 'war_chant'){
+    // Damage buff
+    playerDamageBuff = 1.25;
+    playerDamageBuffTimer = spell.duration;
+    if(characterPivot) spawnCastingCircle(characterPivot.position, spell.color, 3);
+    showVashraAlert('🥁 WAR CHANT', '+25% damage for ' + spell.duration + 's!', 2);
+  } else if(spell.id === 'mirror_shield'){
+    // Projectile reflect
+    playerShield = 0.8;
+    playerShieldTimer = spell.duration;
+    if(characterPivot) spawnShieldBarrier(characterPivot, spell.color, spell.duration);
+    showVashraAlert('🪞 MIRROR SHIELD', 'Reflecting projectiles for ' + spell.duration + 's!', 2);
+  } else if(spell.id === 'life_bond'){
+    playerHealOverTime = spell.healAmt / spell.duration;
+    playerHealOverTimeTimer = spell.duration;
+    if(characterPivot) spawnHealEffect(characterPivot.position, spell.color);
+    showVashraAlert('💞 LIFE BOND', 'Healing over ' + spell.duration + 's!', 2);
   }
 }
 
@@ -2485,7 +2604,7 @@ function fireSpellProjectile(spell){
   proj.position.set(startX, startY, startZ);
   
   // Element-specific geometry
-  var elem = getSpellElement(spell.id);
+  var elem = getSpellElement(spell);
   proj.geometry = spellElementGeos[elem] || spellElementGeos['default'];
   
   // Core color
@@ -2708,7 +2827,7 @@ function updateSpellProjectiles(dt){
           bd.hp -= p.spell.damage;
           hitSomething = true;
           // Lifesteal for Blood Barrage
-          if(p.spell.id === 'blood_barrage'){
+          if(p.spell.lifesteal){
             var healAmt = Math.floor(p.spell.damage * 0.3);
             playerHP = Math.min(playerMaxHP, playerHP + healAmt);
             showVashraAlert('🩸 LIFESTEAL', '+' + healAmt + ' HP', 1.5);
@@ -2810,7 +2929,7 @@ function updateSpellProjectiles(dt){
       if(dx*dx + dy*dy + dz*dz < 2500){ // 50 unit radius for dragon
         vashraHP -= p.spell.damage;
         hitSomething = true;
-        if(p.spell.id === 'blood_barrage'){
+        if(p.spell.lifesteal){
           var healAmt = Math.floor(p.spell.damage * 0.3);
           playerHP = Math.min(playerMaxHP, playerHP + healAmt);
           showVashraAlert('🩸 LIFESTEAL', '-' + p.spell.damage + ' to Vashra, +' + healAmt + ' HP', 2);
@@ -2839,7 +2958,7 @@ function updateSpellProjectiles(dt){
 
 // Element-specific ground impact VFX
 function spellGroundImpact(x, y, z, spell){
-  var elem = getSpellElement(spell.id);
+  var elem = getSpellElement(spell);
   var color = spell.color;
   
   // Ground decal (scorch mark / frost patch / crater)
@@ -5090,20 +5209,56 @@ function renderSpellbook(){
   grid.innerHTML = '';
   var magicLevel = getLevel(playerSkills.magic);
   
-  SPELLS.forEach(function(spell){
+  // School filter tabs
+  var tabBar = document.createElement('div');
+  tabBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;justify-content:center;width:100%';
+  
+  var allTab = document.createElement('div');
+  allTab.style.cssText = 'padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;border:1px solid ' + (spellbookSchoolFilter === 'all' ? '#bb88ff' : '#333') + ';background:' + (spellbookSchoolFilter === 'all' ? 'rgba(100,50,200,0.3)' : 'rgba(30,15,60,0.5)') + ';color:#ccc';
+  allTab.textContent = '📚 All';
+  allTab.addEventListener('click', function(){ spellbookSchoolFilter = 'all'; renderSpellbook(); });
+  tabBar.appendChild(allTab);
+  
+  SPELL_SCHOOLS.forEach(function(school){
+    var tab = document.createElement('div');
+    var isActive = spellbookSchoolFilter === school.id;
+    tab.style.cssText = 'padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;border:1px solid ' + (isActive ? school.color : '#333') + ';background:' + (isActive ? 'rgba(100,50,200,0.3)' : 'rgba(30,15,60,0.5)') + ';color:' + (isActive ? school.color : '#888');
+    tab.textContent = school.icon + ' ' + school.name;
+    tab.addEventListener('click', function(){ spellbookSchoolFilter = school.id; renderSpellbook(); });
+    tabBar.appendChild(tab);
+  });
+  grid.appendChild(tabBar);
+  
+  // Filter spells by selected school
+  var filteredSpells = SPELLS.filter(function(s){
+    return spellbookSchoolFilter === 'all' || s.school === spellbookSchoolFilter;
+  });
+  
+  // Spell count
+  var countEl = document.createElement('div');
+  countEl.style.cssText = 'color:#666;font-size:10px;text-align:center;width:100%;margin-bottom:4px';
+  countEl.textContent = filteredSpells.length + ' spells' + (spellbookSchoolFilter !== 'all' ? ' in ' + (SPELL_SCHOOLS.find(function(s){return s.id===spellbookSchoolFilter})||{}).name : ' total');
+  grid.appendChild(countEl);
+  
+  var cardContainer = document.createElement('div');
+  cardContainer.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%';
+  
+  filteredSpells.forEach(function(spell){
     var card = document.createElement('div');
-    card.className = 'spell-card' + (!isAdmin && spell.level > magicLevel ? ' locked' : '') + (selectedSpell === spell.id ? ' selected' : '');
+    var locked = !isAdmin && spell.level > magicLevel;
+    card.className = 'spell-card' + (locked ? ' locked' : '') + (selectedSpell === spell.id ? ' selected' : '');
     var cd = spellCooldowns[spell.id] || 0;
+    var schoolObj = SPELL_SCHOOLS.find(function(s){ return s.id === spell.school; }) || {};
     card.innerHTML = '<div class="spell-icon">' + spell.icon + '</div>' +
-      '<div class="spell-name">' + spell.name + '</div>' +
-      '<div class="spell-info">Lv ' + spell.level + (spell.damage ? ' | ' + spell.damage + ' dmg' : '') + '</div>' +
-      '<div class="spell-mana">' + spell.mana + ' mana' + (cd > 0 ? ' | ' + cd.toFixed(1) + 's' : '') + '</div>';
+      '<div class="spell-name" style="color:' + (schoolObj.color || '#fff') + '">' + spell.name + '</div>' +
+      '<div class="spell-info">Lv ' + spell.level + (spell.damage ? ' | ' + spell.damage + ' dmg' : '') + (spell.healAmt ? ' | +' + spell.healAmt + ' hp' : '') + '</div>' +
+      '<div class="spell-mana">' + spell.mana + ' mana' + (cd > 0 ? ' | ' + cd.toFixed(1) + 's' : '') + '</div>' +
+      '<div style="color:#555;font-size:9px;margin-top:2px">' + spell.desc + '</div>';
     
-    if(isAdmin || spell.level <= magicLevel){
+    if(!locked){
       card.addEventListener('click', function(){
         selectedSpell = spell.id;
         renderSpellbook();
-        // Update cast button appearance
         var castBtn = document.getElementById('btn-cast');
         if(castBtn){
           castBtn.textContent = spell.icon;
@@ -5111,8 +5266,9 @@ function renderSpellbook(){
         }
       });
     }
-    grid.appendChild(card);
+    cardContainer.appendChild(card);
   });
+  grid.appendChild(cardContainer);
   
   document.getElementById('spell-mana-display').textContent = 'Mana: ' + Math.round(playerMana) + ' / ' + Math.round(playerMaxMana) + ' | Magic Lv: ' + magicLevel;
 }
@@ -5355,7 +5511,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=138', function(gltf){
+queueLoad(1, 'character-walk.glb?v=139', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -5422,7 +5578,7 @@ queueLoad(1, 'character-walk.glb?v=138', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=138&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=139&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -5490,7 +5646,7 @@ queueLoad(1, 'character-walk.glb?v=138', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=138', function(gltf){
+queueLoad(2, 'grass-model.glb?v=139', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -5550,7 +5706,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=138', function(gltf){
+queueLoad(2, 'sun-model.glb?v=139', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -5582,7 +5738,7 @@ queueLoad(2, 'sun-model.glb?v=138', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=138', function(gltf){
+queueLoad(2, 'moon-model.glb?v=139', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -5636,7 +5792,7 @@ queueLoad(2, 'moon-model.glb?v=138', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=138', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=139', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -5745,7 +5901,7 @@ queueLoad(4, 'bear-walk.glb?v=138', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=138', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=139', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5826,7 +5982,7 @@ queueLoad(4, 'freak-walk.glb?v=138', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=138', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=139', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5913,7 +6069,7 @@ queueLoad(3, 'stallion-walk.glb?v=138', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=138', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=139', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5976,7 +6132,7 @@ queueLoad(4, 'dreugh-model.glb?v=138', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=138', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=139', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -6003,7 +6159,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=138', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=139', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -6049,7 +6205,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=138', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=139', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -6064,7 +6220,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=138', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=139', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -6083,7 +6239,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=138', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=139', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -6098,7 +6254,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=138', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=139', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -6113,7 +6269,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=138', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=139', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -6129,7 +6285,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=138', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=139', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -6145,7 +6301,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=138', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=139', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -6160,7 +6316,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=138', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=139', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -6181,7 +6337,7 @@ queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=138', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=139', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -9722,6 +9878,28 @@ function animate(){
   // === MINING UPDATE ===
   updateMining(dt);
   
+  // === BUFF TIMERS (v139) ===
+  if(playerDamageBuffTimer > 0){ playerDamageBuffTimer -= dt; if(playerDamageBuffTimer <= 0){ playerDamageBuff = 1.0; } }
+  if(playerHealOverTimeTimer > 0){
+    playerHealOverTimeTimer -= dt;
+    playerHP = Math.min(playerMaxHP, playerHP + playerHealOverTime * dt);
+    if(playerHealOverTimeTimer <= 0){ playerHealOverTime = 0; }
+  }
+  // Apply physics velocity (Repulse spell)
+  if(Math.abs(playerVelocityX) > 0.1 || Math.abs(playerVelocityZ) > 0.1){
+    playerPos.x += playerVelocityX * dt;
+    playerPos.z += playerVelocityZ * dt;
+    playerVelocityX *= 0.95;
+    playerVelocityZ *= 0.95;
+    if(Math.abs(playerVelocityX) < 0.5) playerVelocityX = 0;
+    if(Math.abs(playerVelocityZ) < 0.5) playerVelocityZ = 0;
+  }
+  if(playerVelocityY !== 0){
+    playerPos.y += playerVelocityY * dt;
+    playerVelocityY -= 30 * dt;
+    var groundH = getHeight(playerPos.x, playerPos.z) + 0.3;
+    if(playerPos.y <= groundH){ playerPos.y = groundH; playerVelocityY = 0; }
+  }
   // === SPELL COOLDOWNS ===
   Object.keys(spellCooldowns).forEach(function(id){
     if(spellCooldowns[id] > 0) spellCooldowns[id] = Math.max(0, spellCooldowns[id] - dt);

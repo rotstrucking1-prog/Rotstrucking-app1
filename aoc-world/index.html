@@ -739,21 +739,32 @@ queueLoad(8, 'snowflake-model.glb?v=121', function(gltf){
   }
 });
 
-// Load Brad's sky texture as panoramic background
+// Load day & night sky textures for day/night cycle
 const skyLoader = new THREE.TextureLoader();
-const skyTex = skyLoader.load('sky-texture.jpg?v=121', function(){
-  // Once loaded, apply it
-  scene.background = skyTex;
-  scene.environment = skyTex;
+var daySkyTex = null;
+var nightSkyTex = null;
+var skyColorFallback = new THREE.Color(0x87CEEB);
+
+skyLoader.load('day-sky.png?v=121', function(tex){
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  daySkyTex = tex;
+  scene.background = daySkyTex;
+  scene.environment = daySkyTex;
+  debugLog('☀️ Day sky texture loaded');
 }, undefined, function(){
-  // Fallback to blue if sky fails to load
-  console.warn('Sky texture failed to load, using fallback blue');
-  scene.background = new THREE.Color(0x87CEEB);
+  debugLog('Day sky texture failed — using color fallback');
+  scene.background = skyColorFallback;
 });
 
-// Map equirectangular texture to proper format
-skyTex.mapping = THREE.EquirectangularReflectionMapping;
-skyTex.colorSpace = THREE.SRGBColorSpace;
+skyLoader.load('night-sky.png?v=121', function(tex){
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  nightSkyTex = tex;
+  debugLog('🌙 Night sky texture loaded');
+}, undefined, function(){
+  debugLog('Night sky texture failed');
+});
 
 scene.fog = new THREE.FogExp2(0x87CEEB, 0.00015); // Extended for massive world
 
@@ -5215,9 +5226,19 @@ function updateDayNight(time){
   if(scene.fog){
     scene.fog.color.setRGB(skyR, skyG, skyB);
   }
-  // Update scene background if not using skybox
-  if(scene.background && scene.background.isColor){
-    scene.background.setRGB(skyR, skyG, skyB);
+  // Swap sky texture based on time of day
+  if(time >= 7 && time < 17){
+    // Full daytime — use day sky texture
+    if(daySkyTex) scene.background = daySkyTex;
+    else { scene.background = skyColorFallback; skyColorFallback.setRGB(skyR, skyG, skyB); }
+  } else if(time >= 19 || time < 5){
+    // Full night — use night sky texture
+    if(nightSkyTex) scene.background = nightSkyTex;
+    else { scene.background = skyColorFallback; skyColorFallback.setRGB(skyR, skyG, skyB); }
+  } else {
+    // Dawn (5-7) or Dusk (17-19) — use computed color for smooth transition
+    scene.background = skyColorFallback;
+    skyColorFallback.setRGB(skyR, skyG, skyB);
   }
 }
 

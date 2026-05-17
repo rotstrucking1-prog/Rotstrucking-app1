@@ -162,6 +162,43 @@ setTimeout(function(){
   }
 }, 15000);
 
+// === COMPREHENSIVE DIAGNOSTICS (v138) ===
+window.getDiagnostics = function() {
+  var diag = {
+    build: 'v138',
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    screen: {w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio},
+    webgl: 'unknown',
+    fps: window._lastFps || 0,
+    gfxQuality: typeof gfxQuality !== 'undefined' ? gfxQuality : 'unknown',
+    gameTime: typeof gameTime !== 'undefined' ? gameTime : -1,
+    crashLog: window._crashLog || [],
+    memoryMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 'N/A',
+    totalMemoryMB: performance.memory ? Math.round(performance.memory.totalJSHeapSize / 1048576) : 'N/A'
+  };
+  try {
+    var c = document.createElement('canvas');
+    var gl = c.getContext('webgl2') || c.getContext('webgl');
+    if(gl) {
+      diag.webgl = gl.getParameter(gl.VERSION);
+      diag.renderer = gl.getParameter(gl.RENDERER);
+      diag.vendor = gl.getParameter(gl.VENDOR);
+      var ext = gl.getExtension('WEBGL_debug_renderer_info');
+      if(ext) diag.gpuRenderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+    }
+  } catch(e){}
+  return diag;
+};
+window.downloadCrashReport = function() {
+  var data = window.getDiagnostics();
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aoc-crash-report-' + Date.now() + '.json';
+  a.click();
+};
+
 // Force start if stuck after 40s
 setTimeout(function(){
   if(document.getElementById('loading').style.display !== 'none'){
@@ -329,6 +366,12 @@ import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 
+// === AUTO CRASH REPORT SYSTEM (v138) ===
+// Set this to the webhook URL to enable auto crash reporting to Tasklet agent
+const CRASH_REPORT_URL = ''; // Will be filled with webhook URL
+window._lastFps = 0;
+var _fpsFrames = 0, _fpsTime = performance.now();
+
 // ===== SCENE =====
 const scene = new THREE.Scene();
 
@@ -345,48 +388,33 @@ window.setGraphics = function(level) {
   document.querySelectorAll('.gfx-btn').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('gfx-' + level).classList.add('active');
   
+  // === GRAPHICS TIERS (v138+) ===
+  // Brad's rule: Low = what old High was. All tiers pushed UP.
+  // Low is the new baseline — playable on iPhone 13 LTE
   if(level === 'low') {
-    renderer.shadowMap.enabled = false;
-    sunLight.castShadow = false;
-    renderer.setPixelRatio(1);
-    renderer.toneMapping = THREE.NoToneMapping;
-    gfxWaterWaves = false;
-    gfxParticlesVisible = false;
-    if(ambientParticles) ambientParticles.visible = false;
-    scene.fog.density = 0.001;
-    gfxPostProcessing = false;
-    gfxBloom = false;
-    if(bloomPass) bloomPass.enabled = false;
-    if(sharpenPass) sharpenPass.enabled = false;
-    if(colorPass) colorPass.enabled = false;
-    if(ssaoPass) ssaoPass.enabled = false;
-    if(vignettePass) vignettePass.enabled = false;
-    if(godRayPass) godRayPass.enabled = false;
-    gfxSSAO = false; gfxGodRays = false;
-    gfxFurEnabled = false;
-    gfxGrassWind = false;
-  } else if(level === 'medium') {
+    // LOW = old HIGH: shadows, tone mapping, bloom, SSAO, god rays
     renderer.shadowMap.enabled = true;
     sunLight.castShadow = true;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.8;
-    gfxWaterWaves = false;
-    gfxParticlesVisible = false;
-    if(ambientParticles) ambientParticles.visible = false;
-    scene.fog.density = 0.0008;
+    gfxWaterWaves = true;
+    gfxParticlesVisible = true;
+    if(ambientParticles) ambientParticles.visible = true;
+    scene.fog.density = 0.0007;
     gfxPostProcessing = true;
-    gfxBloom = false;
+    gfxBloom = true;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.3; }
     if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.25; colorPass.uniforms.contrast.value = 1.08; colorPass.uniforms.brightness.value = 0.01; colorPass.uniforms.gamma.value = 0.9; }
-    if(bloomPass) bloomPass.enabled = false;
-    if(ssaoPass) ssaoPass.enabled = false;
-    if(vignettePass){ vignettePass.enabled = true; vignettePass.uniforms.darkness.value = 0.35; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.25; bloomPass.radius = 0.4; bloomPass.threshold = 0.8; }
+    if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 6; }
+    if(vignettePass){ vignettePass.enabled = true; vignettePass.uniforms.darkness.value = 0.3; }
     if(godRayPass) godRayPass.enabled = true;
-    gfxSSAO = false; gfxGodRays = true;
+    gfxSSAO = true; gfxGodRays = true;
     gfxFurEnabled = false;
     gfxGrassWind = false;
-  } else if(level === 'high') {
+  } else if(level === 'medium') {
+    // MEDIUM = old MAX + enhanced color grading
     renderer.shadowMap.enabled = true;
     sunLight.castShadow = true;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -395,22 +423,23 @@ window.setGraphics = function(level) {
     gfxWaterWaves = true;
     gfxParticlesVisible = true;
     if(ambientParticles) ambientParticles.visible = true;
-    scene.fog.density = 0.0006;
+    scene.fog.density = 0.0005;
     gfxPostProcessing = true;
     gfxBloom = true;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.4; }
-    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.35; colorPass.uniforms.contrast.value = 1.1; colorPass.uniforms.brightness.value = 0.02; colorPass.uniforms.gamma.value = 0.88; }
-    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.3; bloomPass.radius = 0.5; bloomPass.threshold = 0.75; }
-    if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 8; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.35; colorPass.uniforms.contrast.value = 1.12; colorPass.uniforms.brightness.value = 0.02; colorPass.uniforms.gamma.value = 0.88; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.5; bloomPass.radius = 0.6; bloomPass.threshold = 0.7; }
+    if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 12; }
     if(vignettePass){ vignettePass.enabled = true; vignettePass.uniforms.darkness.value = 0.4; }
     if(godRayPass) godRayPass.enabled = true;
     gfxSSAO = true; gfxGodRays = true;
     gfxFurEnabled = false;
     gfxGrassWind = false;
-  } else if(level === 'max') {
+  } else if(level === 'high') {
+    // HIGH = cinematic quality — heavy bloom, strong SSAO, rich colors
     renderer.shadowMap.enabled = true;
     sunLight.castShadow = true;
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 2.2;
     gfxWaterWaves = true;
@@ -420,10 +449,32 @@ window.setGraphics = function(level) {
     gfxPostProcessing = true;
     gfxBloom = true;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.5; }
-    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.5; colorPass.uniforms.contrast.value = 1.15; colorPass.uniforms.brightness.value = 0.03; colorPass.uniforms.gamma.value = 0.85; }
-    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.6; bloomPass.radius = 0.7; bloomPass.threshold = 0.6; }
-    if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 16; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.45; colorPass.uniforms.contrast.value = 1.15; colorPass.uniforms.brightness.value = 0.03; colorPass.uniforms.gamma.value = 0.85; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.7; bloomPass.radius = 0.7; bloomPass.threshold = 0.6; }
+    if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 20; }
     if(vignettePass){ vignettePass.enabled = true; vignettePass.uniforms.darkness.value = 0.5; }
+    if(godRayPass) godRayPass.enabled = true;
+    gfxSSAO = true; gfxGodRays = true;
+    gfxFurEnabled = false;
+    gfxGrassWind = false;
+  } else if(level === 'max') {
+    // MAX = ULTRA — everything cranked to absolute maximum
+    renderer.shadowMap.enabled = true;
+    sunLight.castShadow = true;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 2.4;
+    gfxWaterWaves = true;
+    gfxParticlesVisible = true;
+    if(ambientParticles) ambientParticles.visible = true;
+    scene.fog.density = 0.00015;
+    gfxPostProcessing = true;
+    gfxBloom = true;
+    if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.6; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.6; colorPass.uniforms.contrast.value = 1.2; colorPass.uniforms.brightness.value = 0.04; colorPass.uniforms.gamma.value = 0.82; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.9; bloomPass.radius = 0.8; bloomPass.threshold = 0.5; }
+    if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 32; }
+    if(vignettePass){ vignettePass.enabled = true; vignettePass.uniforms.darkness.value = 0.6; }
     if(godRayPass) godRayPass.enabled = true;
     gfxSSAO = true; gfxGodRays = true;
     gfxFurEnabled = false;
@@ -1243,12 +1294,7 @@ terrainMat.onBeforeCompile = function(shader){
   // Add varying for world position
   shader.vertexShader = shader.vertexShader.replace(
     '#include <common>',
-    '#include <common>\nvarying vec3 vBiomeWorldPos;
-uniform sampler2D uGrassNorm;
-uniform sampler2D uSnowNorm;
-uniform sampler2D uSandNorm;
-uniform sampler2D uVolcNorm;
-uniform sampler2D uJungleNorm;'
+    '#include <common>\nvarying vec3 vBiomeWorldPos;\nuniform sampler2D uGrassNorm;\nuniform sampler2D uSnowNorm;\nuniform sampler2D uSandNorm;\nuniform sampler2D uVolcNorm;\nuniform sampler2D uJungleNorm;'
   );
   shader.vertexShader = shader.vertexShader.replace(
     '#include <fog_vertex>',
@@ -2946,6 +2992,10 @@ function spellImpactEffect(x, y, z, color, intensityMul){
         var sc = startSize * (1 - t * 0.5);
         sprite.scale.set(sc, sc, 1);
         requestAnimationFrame(animate);
+  // Track FPS for crash reports
+  _fpsFrames++;
+  var _fpsNow = performance.now();
+  if(_fpsNow - _fpsTime > 1000) { window._lastFps = Math.round(_fpsFrames * 1000 / (_fpsNow - _fpsTime)); _fpsFrames = 0; _fpsTime = _fpsNow; }
       }
       requestAnimationFrame(animate);
     })(s, pVx, pVy, pVz, size);
@@ -10053,6 +10103,28 @@ function animate(){
     window._crashLog.push({t: Date.now(), msg: e.message, stack: e.stack ? e.stack.substring(0, 300) : ''});
     if(window._crashLog.length <= 3) {
       debugLog('<span style="color:red">💀 CRASH: ' + e.message + '</span>');
+    }
+    // Auto-send crash report (max 1 per session to avoid spam)
+    if(!window._crashReportSent && CRASH_REPORT_URL) {
+      window._crashReportSent = true;
+      try {
+        var report = {
+          build: 'v138',
+          time: new Date().toISOString(),
+          error: e.message,
+          stack: e.stack ? e.stack.substring(0, 500) : '',
+          fps: window._lastFps || 0,
+          biome: typeof getBiome === 'function' ? getBiome() : 'unknown',
+          gfxQuality: gfxQuality,
+          userAgent: navigator.userAgent,
+          screen: window.innerWidth + 'x' + window.innerHeight,
+          pixelRatio: window.devicePixelRatio,
+          crashLog: (window._crashLog || []).slice(-10),
+          gameTime: typeof gameTime !== 'undefined' ? gameTime : -1,
+          playerPos: characterPivot ? {x: characterPivot.position.x.toFixed(1), y: characterPivot.position.y.toFixed(1), z: characterPivot.position.z.toFixed(1)} : null
+        };
+        fetch(CRASH_REPORT_URL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(report)}).catch(function(){});
+      } catch(ignored){}
     }
   }
 }

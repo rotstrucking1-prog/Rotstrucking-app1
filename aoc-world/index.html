@@ -230,7 +230,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v137</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v138</div>
   <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
@@ -323,6 +323,9 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+import { Sky } from 'three/addons/objects/Sky.js';
+import { Water } from 'three/addons/objects/Water.js';
+import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 
@@ -823,7 +826,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=137', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=138', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -858,7 +861,7 @@ queueLoad(4, 'snowflake-model.glb?v=137', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=137', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=138', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -888,34 +891,55 @@ queueLoad(4, 'raindrop-model.glb?v=137', function(gltf){
   debugLog('🌧️ Raindrop model loaded — ' + RAINDROP_POOL_SIZE + ' drops ready');
 });
 
-// Load day & night sky textures for day/night cycle
-const skyLoader = new THREE.TextureLoader();
-var daySkyTex = null;
-var nightSkyTex = null;
-var skyColorFallback = new THREE.Color(0x87CEEB);
+// Sky textures replaced by Sky shader (Preetham model)
 
-skyLoader.load('day-sky.png?v=137', function(tex){
-  tex.mapping = THREE.EquirectangularReflectionMapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  daySkyTex = tex;
-  scene.background = daySkyTex;
-  scene.environment = daySkyTex;
-  debugLog('☀️ Day sky texture loaded');
-}, undefined, function(){
-  debugLog('Day sky texture failed — using color fallback');
-  scene.background = skyColorFallback;
-});
-
-skyLoader.load('night-sky.png?v=137', function(tex){
-  tex.mapping = THREE.EquirectangularReflectionMapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  nightSkyTex = tex;
-  debugLog('🌙 Night sky texture loaded');
-}, undefined, function(){
-  debugLog('Night sky texture failed');
-});
 
 scene.fog = new THREE.FogExp2(0x87CEEB, 0.00015); // Extended for massive world
+
+
+// === SKY SHADER (Preetham Atmospheric Model) ===
+var sky = new Sky();
+sky.scale.setScalar(45000);
+scene.add(sky);
+var skyUniforms = sky.material.uniforms;
+skyUniforms['turbidity'].value = 10;
+skyUniforms['rayleigh'].value = 3;
+skyUniforms['mieCoefficient'].value = 0.005;
+skyUniforms['mieDirectionalG'].value = 0.7;
+var skyDomeSunVec = new THREE.Vector3();
+scene.background = null; // Sky shader IS the background via the dome mesh
+
+// === LENS FLARE ===
+var lensflareCanvas = document.createElement('canvas');
+lensflareCanvas.width = 128; lensflareCanvas.height = 128;
+var lfCtx = lensflareCanvas.getContext('2d');
+var lfGrad = lfCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+lfGrad.addColorStop(0, 'rgba(255, 255, 200, 1.0)');
+lfGrad.addColorStop(0.2, 'rgba(255, 220, 100, 0.8)');
+lfGrad.addColorStop(0.4, 'rgba(255, 180, 50, 0.3)');
+lfGrad.addColorStop(1.0, 'rgba(255, 150, 0, 0.0)');
+lfCtx.fillStyle = lfGrad;
+lfCtx.fillRect(0, 0, 128, 128);
+var lfTexture = new THREE.CanvasTexture(lensflareCanvas);
+
+var lensflareHex = document.createElement('canvas');
+lensflareHex.width = 64; lensflareHex.height = 64;
+var lhCtx = lensflareHex.getContext('2d');
+var lhGrad = lhCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+lhGrad.addColorStop(0, 'rgba(100, 200, 255, 0.15)');
+lhGrad.addColorStop(0.5, 'rgba(80, 150, 255, 0.05)');
+lhGrad.addColorStop(1.0, 'rgba(50, 100, 255, 0.0)');
+lhCtx.fillStyle = lhGrad;
+lhCtx.fillRect(0, 0, 64, 64);
+var lfHexTex = new THREE.CanvasTexture(lensflareHex);
+
+var lensflare = new Lensflare();
+lensflare.addElement(new LensflareElement(lfTexture, 700, 0, new THREE.Color(1, 0.95, 0.8)));
+lensflare.addElement(new LensflareElement(lfHexTex, 60, 0.6));
+lensflare.addElement(new LensflareElement(lfHexTex, 100, 0.7));
+lensflare.addElement(new LensflareElement(lfHexTex, 120, 0.9));
+lensflare.addElement(new LensflareElement(lfHexTex, 80, 1.0));
+sunLight.add(lensflare);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
 // Hemisphere light for sky/ground color bleed — makes scene feel more natural
@@ -1095,7 +1119,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=137');
+const grassTex = texLoader.load('grass-texture.jpg?v=138');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1104,61 +1128,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=137');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=138');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=137');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=138');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=137');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=138');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=137');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=138');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=137');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=138');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=137');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=138');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=137');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=138');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=137');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=138');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=137');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=138');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=137');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=138');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=137');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=138');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=137');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=138');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=137');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=138');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=137');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=138');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=137');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=138');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=137');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=138');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -1409,91 +1433,44 @@ var terrainMesh = terrain; // Global reference for mining deformation
 scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
-// ===== WATER =====
-const waterGeo = new THREE.PlaneGeometry(WORLD_SIZE*2, WORLD_SIZE*2, 60, 60);
-waterGeo.rotateX(-Math.PI/2);
+// ===== REFLECTIVE WATER (Three.js Water Addon) =====
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=138', function(t){
+  t.wrapS = THREE.RepeatWrapping;
+  t.wrapT = THREE.RepeatWrapping;
+});
+const waterGeo = new THREE.PlaneGeometry(WORLD_SIZE*2, WORLD_SIZE*2);
+const water = new Water(waterGeo, {
+  textureWidth: 512,
+  textureHeight: 512,
+  waterNormals: waterNormTex,
+  sunDirection: new THREE.Vector3(0.7, 0.5, 0.3).normalize(),
+  sunColor: 0xffffff,
+  waterColor: 0x001e0f,
+  distortionScale: 3.7,
+  fog: true
+});
+water.rotation.x = -Math.PI / 2;
+water.position.y = -6;
+water.userData.isWater = true;
+scene.add(water);
+var waterMesh = water; // Alias for any old references
 
-// Load Brad's water texture with tiling and animation support
-const waterTexLoader = new THREE.TextureLoader();
-const waterTex = waterTexLoader.load('water-texture.jpg?v=137');
-waterTex.wrapS = THREE.RepeatWrapping;
-waterTex.wrapT = THREE.RepeatWrapping;
-waterTex.repeat.set(16, 16);
-waterTex.minFilter = THREE.LinearMipmapLinearFilter;
-waterTex.magFilter = THREE.LinearFilter;
-waterTex.anisotropy = 16;
-
-// Load frozen water texture for Ice Tundra coastline
-const frozenWaterTex = waterTexLoader.load('frozen-water-tex.png?v=137');
+// Frozen water overlay for Ice Tundra
+var frozenWaterTexLoader = new THREE.TextureLoader();
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=138');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
 frozenWaterTex.minFilter = THREE.LinearMipmapLinearFilter;
-frozenWaterTex.magFilter = THREE.LinearFilter;
-frozenWaterTex.anisotropy = 16;
-
-const waterMat = new THREE.MeshStandardMaterial({
-  map: waterTex,
-  color: 0x1a6688,
-  transparent: true,
-  opacity: 0.88,
-  roughness: 0.1,
-  metalness: 0.4,
-  side: THREE.DoubleSide,
-  envMapIntensity: 0.8
+var frozenOverlayGeo = new THREE.PlaneGeometry(4800, 4800);
+frozenOverlayGeo.rotateX(-Math.PI/2);
+var frozenOverlayMat = new THREE.MeshStandardMaterial({
+  map: frozenWaterTex, transparent: true, opacity: 0.0,
+  roughness: 0.3, metalness: 0.1, color: 0xbbddff
 });
-
-// Inject frozen water texture blending near Ice Tundra
-waterMat.onBeforeCompile = function(shader){
-  shader.uniforms.frozenWaterMap = { value: frozenWaterTex };
-  
-  // Add uniform + varying to vertex shader
-  shader.vertexShader = shader.vertexShader.replace(
-    'void main() {',
-    'varying vec3 vWorldPos;\nvoid main() {'
-  );
-  shader.vertexShader = shader.vertexShader.replace(
-    '#include <worldpos_vertex>',
-    '#include <worldpos_vertex>\nvWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;'
-  );
-  
-  // Add frozen texture sampling to fragment shader
-  shader.fragmentShader = 'uniform sampler2D frozenWaterMap;\n' + shader.fragmentShader;
-  shader.fragmentShader = shader.fragmentShader.replace(
-    'void main() {',
-    'varying vec3 vWorldPos;\nvoid main() {'
-  );
-  
-  // After the map fragment, blend in frozen texture based on proximity to ice biome
-  shader.fragmentShader = shader.fragmentShader.replace(
-    '#include <map_fragment>',
-    `#include <map_fragment>
-    // Ice Tundra frozen water blend
-    // Ice biome is z < -1800.0, transition starts at z < -1200.0
-    float iceBlend = 0.0;
-    float absX = abs(vWorldPos.x);
-    
-    // Main ice zone — south (z < -1800)
-    if(vWorldPos.z < -1200.0 && absX < 2400.0){
-      float zFade = smoothstep(-1200.0, -1800.0, vWorldPos.z);
-      float xFade = 1.0 - smoothstep(1800.0, 2400.0, absX);
-      iceBlend = zFade * xFade;
-    }
-    
-    if(iceBlend > 0.01){
-      // Sample frozen texture at world position with large tiling
-      vec2 frozenUV = vWorldPos.xz * 0.008;
-      vec4 frozenColor = texture2D(frozenWaterMap, frozenUV);
-      
-      // Blend with existing diffuse — frozen areas are whiter, less transparent
-      diffuseColor.rgb = mix(diffuseColor.rgb, frozenColor.rgb * 0.9, iceBlend);
-      diffuseColor.a = mix(diffuseColor.a, 0.97, iceBlend);
-    }`
-  );
-  
-  waterMat.userData.shader = shader;
-};
-waterMat.customProgramCacheKey = function(){ return 'frozenWater'; };
+var frozenOverlay = new THREE.Mesh(frozenOverlayGeo, frozenOverlayMat);
+frozenOverlay.position.set(0, -5.5, -3600);
+scene.add(frozenOverlay);
 
 // === RIVERBED / SAND LAYER UNDERNEATH WATER ===
 const riverbedGeo = new THREE.PlaneGeometry(WORLD_SIZE*2, WORLD_SIZE*2, 1, 1);
@@ -1504,13 +1481,9 @@ const riverbedMat = new THREE.MeshStandardMaterial({
   metalness: 0.0
 });
 const riverbed = new THREE.Mesh(riverbedGeo, riverbedMat);
-riverbed.position.y = -12; // Well below water surface
+riverbed.position.y = -12;
 riverbed.receiveShadow = true;
 scene.add(riverbed);
-const water = new THREE.Mesh(waterGeo, waterMat);
-water.position.y = -6;
-water.userData.isWater = true;
-scene.add(water);
 
 // ===== TREES REMOVED (Brad requested permanent removal v84) =====
 assetsLoaded++;  // Tree slot removed — increment to keep loading count correct
@@ -1518,7 +1491,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=137', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=138', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1562,7 +1535,7 @@ queueLoad(5, 'rock-pile-model.glb?v=137', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=137', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=138', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -1615,7 +1588,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=137', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=137', function(gltf){
+queueLoad(3, 'bass-model.glb?v=138', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -1707,7 +1680,7 @@ queueLoad(3, 'bass-model.glb?v=137', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=137', function(gltf){
+queueLoad(3, 'deer-model.glb?v=138', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1816,7 +1789,7 @@ queueLoad(3, 'deer-model.glb?v=137', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=137', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=138', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -5333,7 +5306,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=137', function(gltf){
+queueLoad(1, 'character-walk.glb?v=138', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -5400,7 +5373,7 @@ queueLoad(1, 'character-walk.glb?v=137', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=137&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=138&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -5468,7 +5441,7 @@ queueLoad(1, 'character-walk.glb?v=137', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=137', function(gltf){
+queueLoad(2, 'grass-model.glb?v=138', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -5528,7 +5501,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=137', function(gltf){
+queueLoad(2, 'sun-model.glb?v=138', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -5560,7 +5533,7 @@ queueLoad(2, 'sun-model.glb?v=137', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=137', function(gltf){
+queueLoad(2, 'moon-model.glb?v=138', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -5614,7 +5587,7 @@ queueLoad(2, 'moon-model.glb?v=137', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=137', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=138', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -5723,7 +5696,7 @@ queueLoad(4, 'bear-walk.glb?v=137', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=137', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=138', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5804,7 +5777,7 @@ queueLoad(4, 'freak-walk.glb?v=137', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=137', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=138', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5891,7 +5864,7 @@ queueLoad(3, 'stallion-walk.glb?v=137', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=137', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=138', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5954,7 +5927,7 @@ queueLoad(4, 'dreugh-model.glb?v=137', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=137', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=138', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5981,7 +5954,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=137', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=138', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -6027,7 +6000,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=137', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=138', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -6042,7 +6015,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=137', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=138', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -6061,7 +6034,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=137', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=138', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -6076,7 +6049,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=137', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=138', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -6091,7 +6064,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=137', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=138', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -6107,7 +6080,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=137', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=138', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -6123,7 +6096,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=137', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=138', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -6138,7 +6111,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=137', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=138', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -6159,7 +6132,7 @@ queueLoad(7, 'vashra-dragon.glb?v=137', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=137', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=138', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -7650,6 +7623,29 @@ function updateDayNight(time){
     var sunX = Math.cos(sunAngle) * 400;
     var sunY = Math.max(Math.sin(sunAngle) * 600, -200);
     sunLight.position.set(sunX, Math.max(sunY, 20), 300);
+
+    // Update Sky shader sun position
+    var sunElevDeg = Math.atan2(sunY, Math.sqrt(sunX*sunX + 300*300)) * 180 / Math.PI;
+    var sunAzDeg = Math.atan2(sunX, 300) * 180 / Math.PI;
+    var phi = THREE.MathUtils.degToRad(90 - sunElevDeg);
+    var theta = THREE.MathUtils.degToRad(sunAzDeg);
+    skyDomeSunVec.setFromSphericalCoords(1, phi, theta);
+    skyUniforms['sunPosition'].value.copy(skyDomeSunVec);
+    // Night: reduce rayleigh to darken sky
+    var nightFactor = Math.max(0, Math.min(1, sunElevDeg / 15)); // 0 at horizon, 1 at 15+ deg
+    skyUniforms['rayleigh'].value = 0.1 + nightFactor * 2.9; // 0.1 at night, 3.0 at day
+    skyUniforms['turbidity'].value = 2 + nightFactor * 8; // low at night
+    // Water sun direction
+    if(water && water.material && water.material.uniforms) {
+      water.material.uniforms['sunDirection'].value.copy(skyDomeSunVec);
+      water.material.uniforms['time'].value += 1.0 / 60.0;
+    }
+    // Frozen overlay opacity based on distance to Ice Tundra
+    if(frozenOverlay && characterPivot) {
+      var pz = characterPivot.position.z;
+      var frozenDist = Math.max(0, -pz - 1200);
+      frozenOverlay.material.opacity = Math.min(0.85, frozenDist / 600);
+    }
     
     // Move sun model to follow light
     if(sunModel){
@@ -7684,16 +7680,13 @@ function updateDayNight(time){
   // Swap sky texture based on time of day
   if(time >= 7 && time < 17){
     // Full daytime — use day sky texture
-    if(daySkyTex) scene.background = daySkyTex;
-    else { scene.background = skyColorFallback; skyColorFallback.setRGB(skyR, skyG, skyB); }
+    // Sky shader handles daytime automatically
   } else if(time >= 19 || time < 5){
     // Full night — use night sky texture
-    if(nightSkyTex) scene.background = nightSkyTex;
-    else { scene.background = skyColorFallback; skyColorFallback.setRGB(skyR, skyG, skyB); }
+    // Sky shader handles nighttime automatically
   } else {
     // Dawn (5-7) or Dusk (17-19) — use computed color for smooth transition
-    scene.background = skyColorFallback;
-    skyColorFallback.setRGB(skyR, skyG, skyB);
+    // Sky shader handles dawn/dusk automatically
   }
 }
 
@@ -9919,10 +9912,6 @@ function animate(){
   water.position.y = -6 + Math.sin(clock.elapsedTime*0.5)*0.3;
   
   // Animate water texture — scroll in two directions for ripple effect
-  if(water.material.map){
-    water.material.map.offset.x += 0.001;
-    water.material.map.offset.y += 0.0008;
-  }
   
   // Water wave vertex displacement
   if(gfxWaterWaves && water.geometry.attributes.position) {

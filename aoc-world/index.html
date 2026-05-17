@@ -2429,7 +2429,7 @@ function toggleGateIfNear() {
   var dist = characterPivot.position.distanceTo(gatePosWorld);
   if(dist < 15) {
     gateOpen = !gateOpen;
-    addSystemMessage(gateOpen ? '⚙️ Castle gate opens...' : '⚙️ Castle gate closes...');
+    systemMsg(gateOpen ? '⚙️ Castle gate opens...' : '⚙️ Castle gate closes...');
   }
 }
 
@@ -2466,13 +2466,7 @@ let npcNameplateEl = null;
 let npcHintEl = null;
 
 function loadNPCGuard() {
-  var baseUrl = '';
-  if(window.location.hostname.includes('github.io')) {
-    var pathParts = window.location.pathname.split('/');
-    baseUrl = '/' + pathParts[1] + '/' + pathParts[2] + '/';
-  }
-  
-  loadGLB(baseUrl + 'npc-guard-model.glb?v=164', function(gltf) {
+  queueLoad(3, 'npc-guard-model.glb?v=164', function(gltf) {
     npcGuard = gltf.scene;
     npcGuard.scale.set(3.5, 3.5, 3.5); // Scale to match game world
     
@@ -2806,7 +2800,7 @@ function startDialogue() {
   dialogueNode = 'start';
   showDialogueNode();
   document.getElementById('dialogue-overlay').style.display = 'block';
-  addSystemMessage('💬 Speaking with Sir Aldric...');
+  systemMsg('💬 Speaking with Sir Aldric...');
 }
 
 function showDialogueNode() {
@@ -14091,7 +14085,7 @@ function animate(){
     // v164: Castle + NPC + Player run updates
     try {
       updateCastleGate(dt);
-      if(typeof dayProgress !== 'undefined') updateCastleWindows(dayProgress);
+      if(typeof gameTime !== 'undefined') updateCastleWindows(gameTime / 24);
       updateNPCGuard(dt);
       updatePlayerRunAnimation(dt, playerIsWalking, isSprinting);
     } catch(e) { /* v164 update error */ }

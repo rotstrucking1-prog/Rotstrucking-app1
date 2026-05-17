@@ -674,6 +674,21 @@ const FISH_SPOT_RADIUS = 25;
 const MAINLAND_SIZE = 2400; // NPCs spawn within mainland area
 const MAINLAND_BOUND = MAINLAND_SIZE / 2; // ±350
 const SMOKE_POOL_SIZE = 50;
+// VFX system constants (v128+)
+const DUST_PARTICLE_POOL = 30;
+const CASTING_CIRCLE_LIFETIME = 1.5;
+const SHIELD_SPHERE_SEGMENTS = 16;
+const HEAL_PARTICLE_LIFETIME = 1.8;
+const HEAL_PARTICLE_COUNT = 20;
+const AOE_GROUND_LIFETIME = 2.0;
+const METAL_SPARK_COUNT = 12;
+// VFX state arrays
+let shieldEffect = null;
+let healEffects = [];
+let aoeGroundEffects = [];
+let slashTrails = [];
+let castingCircles = [];
+let dustParticles = [];
 const FIREBALL_MAX_ACTIVE = 3;
 const FIREBALL_TRAIL_COUNT = 20;
 const FIREBALL_EXPLOSION_COUNT = 40;

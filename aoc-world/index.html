@@ -10181,8 +10181,8 @@ function animate(){
   if(playerVelocityY !== 0){
     playerPos.y += playerVelocityY * dt;
     playerVelocityY -= 30 * dt;
-    var groundH = getHeight(playerPos.x, playerPos.z) + 0.3;
-    if(playerPos.y <= groundH){ playerPos.y = groundH; playerVelocityY = 0; }
+    const gndClamp = getHeight(playerPos.x, playerPos.z) + 0.3;
+    if(playerPos.y <= gndClamp){ playerPos.y = gndClamp; playerVelocityY = 0; }
   }
   // === SPELL COOLDOWNS ===
   Object.keys(spellCooldowns).forEach(function(id){

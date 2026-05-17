@@ -227,7 +227,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v130aa</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v131</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -719,7 +719,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(8, 'snowflake-model.glb?v=130aa', function(gltf){
+queueLoad(8, 'snowflake-model.glb?v=131', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -754,7 +754,7 @@ queueLoad(8, 'snowflake-model.glb?v=130aa', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(8, 'raindrop-model.glb?v=130aa', function(gltf){
+queueLoad(8, 'raindrop-model.glb?v=131', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -790,7 +790,7 @@ var daySkyTex = null;
 var nightSkyTex = null;
 var skyColorFallback = new THREE.Color(0x87CEEB);
 
-skyLoader.load('day-sky.png?v=130aa', function(tex){
+skyLoader.load('day-sky.png?v=131', function(tex){
   tex.mapping = THREE.EquirectangularReflectionMapping;
   tex.colorSpace = THREE.SRGBColorSpace;
   daySkyTex = tex;
@@ -802,7 +802,7 @@ skyLoader.load('day-sky.png?v=130aa', function(tex){
   scene.background = skyColorFallback;
 });
 
-skyLoader.load('night-sky.png?v=130aa', function(tex){
+skyLoader.load('night-sky.png?v=131', function(tex){
   tex.mapping = THREE.EquirectangularReflectionMapping;
   tex.colorSpace = THREE.SRGBColorSpace;
   nightSkyTex = tex;
@@ -985,7 +985,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=130aa');
+const grassTex = texLoader.load('grass-texture.jpg?v=131');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -994,45 +994,45 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=130aa');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=131');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=130aa');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=131');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=130aa');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=131');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=130aa');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=131');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=130aa');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=131');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=130aa');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=131');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=130aa');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=131');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=130aa');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=131');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=130aa');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=131');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=130aa');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=131');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=130aa');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=131');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -1256,7 +1256,7 @@ waterGeo.rotateX(-Math.PI/2);
 
 // Load Brad's water texture with tiling and animation support
 const waterTexLoader = new THREE.TextureLoader();
-const waterTex = waterTexLoader.load('water-texture.jpg?v=130aa');
+const waterTex = waterTexLoader.load('water-texture.jpg?v=131');
 waterTex.wrapS = THREE.RepeatWrapping;
 waterTex.wrapT = THREE.RepeatWrapping;
 waterTex.repeat.set(16, 16);
@@ -1265,7 +1265,7 @@ waterTex.magFilter = THREE.LinearFilter;
 waterTex.anisotropy = 16;
 
 // Load frozen water texture for Ice Tundra coastline
-const frozenWaterTex = waterTexLoader.load('frozen-water-tex.png?v=130aa');
+const frozenWaterTex = waterTexLoader.load('frozen-water-tex.png?v=131');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -1359,7 +1359,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=130aa', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=131', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1403,7 +1403,7 @@ queueLoad(5, 'rock-pile-model.glb?v=130aa', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=130aa', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=131', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -1456,7 +1456,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=130aa', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=130aa', function(gltf){
+queueLoad(3, 'bass-model.glb?v=131', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -1548,7 +1548,7 @@ queueLoad(3, 'bass-model.glb?v=130aa', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=130aa', function(gltf){
+queueLoad(3, 'deer-model.glb?v=131', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1657,7 +1657,7 @@ queueLoad(3, 'deer-model.glb?v=130aa', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=130aa', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=131', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -2031,6 +2031,7 @@ function initSpellProjectiles(){
     
     // Outer glow sprite — additive blending halo
     var glowMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: 0xff4400,
       transparent: true,
       opacity: 0.6,
@@ -2044,6 +2045,7 @@ function initSpellProjectiles(){
     
     // Second halo — softer, larger
     var haloMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: 0xff8800,
       transparent: true,
       opacity: 0.25,
@@ -2068,6 +2070,7 @@ function initSpellProjectiles(){
   // Initialize trail particle pool
   for(var t = 0; t < SPELL_TRAIL_POOL; t++){
     var tMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: 0xff4400,
       transparent: true,
       opacity: 0.7,
@@ -2375,6 +2378,12 @@ function updateSpellProjectiles(dt){
         if(dx*dx + dz*dz < 25){ // 5 unit radius
           bd.hp -= p.spell.damage;
           hitSomething = true;
+          // Lifesteal for Blood Barrage
+          if(p.spell.id === 'blood_barrage'){
+            var healAmt = Math.floor(p.spell.damage * 0.3);
+            playerHP = Math.min(playerMaxHP, playerHP + healAmt);
+            showVashraAlert('🩸 LIFESTEAL', '+' + healAmt + ' HP', 1.5);
+          }
           if(bd.hp <= 0){
             bd.isDead = true;
             bd.model.rotation.z = Math.PI/2;
@@ -2392,7 +2401,13 @@ function updateSpellProjectiles(dt){
       if(dx*dx + dy*dy + dz*dz < 2500){ // 50 unit radius for dragon
         vashraHP -= p.spell.damage;
         hitSomething = true;
-        showVashraAlert('✨ HIT!', '-' + p.spell.damage + ' to Vashra', 1.5);
+        if(p.spell.id === 'blood_barrage'){
+          var healAmt = Math.floor(p.spell.damage * 0.3);
+          playerHP = Math.min(playerMaxHP, playerHP + healAmt);
+          showVashraAlert('🩸 LIFESTEAL', '-' + p.spell.damage + ' to Vashra, +' + healAmt + ' HP', 2);
+        } else {
+          showVashraAlert('✨ HIT!', '-' + p.spell.damage + ' to Vashra', 1.5);
+        }
       }
     }
     
@@ -2425,6 +2440,7 @@ function spellImpactEffect(x, y, z, color, intensityMul){
     var size = (1.5 + Math.random() * 2.5) * intensity;
     
     var sMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: color,
       transparent: true,
       opacity: 0.9,
@@ -2459,6 +2475,7 @@ function spellImpactEffect(x, y, z, color, intensityMul){
   // Central flash — big bright white-ish burst
   if(intensity > 0.5){
     var flashMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: 0xffffff,
       transparent: true,
       opacity: 0.9,
@@ -2486,6 +2503,7 @@ function spellImpactEffect(x, y, z, color, intensityMul){
     
     // Colored shockwave ring
     var ringMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: color,
       transparent: true,
       opacity: 0.5,
@@ -3100,10 +3118,12 @@ function playSpellImpact(){
 
 // === FOOTSTEP — soft thud ===
 let lastFootstepTime = 0;
-function playFootstep(){
+let footstepInterval = 0.45;
+function playFootstep(running){
   if(!soundEnabled || !audioCtx) return;
   var now = audioCtx.currentTime;
-  if(now - lastFootstepTime < 0.35) return;
+  var interval = running ? 0.28 : 0.45;
+  if(now - lastFootstepTime < interval) return;
   lastFootstepTime = now;
   resumeAudio();
   var osc = audioCtx.createOscillator();
@@ -4712,7 +4732,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=130aa', function(gltf){
+queueLoad(1, 'character-walk.glb?v=131', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -4779,7 +4799,7 @@ queueLoad(1, 'character-walk.glb?v=130aa', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=130aa&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=131&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -4847,7 +4867,7 @@ queueLoad(1, 'character-walk.glb?v=130aa', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=130aa', function(gltf){
+queueLoad(2, 'grass-model.glb?v=131', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -4907,7 +4927,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=130aa', function(gltf){
+queueLoad(2, 'sun-model.glb?v=131', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -4939,7 +4959,7 @@ queueLoad(2, 'sun-model.glb?v=130aa', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=130aa', function(gltf){
+queueLoad(2, 'moon-model.glb?v=131', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -4993,7 +5013,7 @@ queueLoad(2, 'moon-model.glb?v=130aa', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=130aa', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=131', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -5102,7 +5122,7 @@ queueLoad(4, 'bear-walk.glb?v=130aa', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=130aa', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=131', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5183,7 +5203,7 @@ queueLoad(4, 'freak-walk.glb?v=130aa', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=130aa', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=131', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5270,7 +5290,7 @@ queueLoad(3, 'stallion-walk.glb?v=130aa', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=130aa', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=131', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5333,7 +5353,7 @@ queueLoad(4, 'dreugh-model.glb?v=130aa', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=130aa', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=131', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -5360,7 +5380,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=130aa', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=131', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -5406,7 +5426,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=130aa', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=131', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -5421,7 +5441,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=130aa', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=131', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -5440,7 +5460,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=130aa', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=131', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -5455,7 +5475,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=130aa', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=131', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -5470,7 +5490,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=130aa', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=131', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -5486,7 +5506,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=130aa', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=131', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -5502,7 +5522,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=130aa', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=131', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -5517,7 +5537,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=130aa', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=131', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -5538,7 +5558,7 @@ queueLoad(7, 'vashra-dragon.glb?v=130aa', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=130aa', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=131', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -6460,6 +6480,7 @@ function spawnSlashTrail(attackerPos, heading, weaponReach){
     var z = attackerPos.z + Math.cos(ang) * reach;
     var y = attackerPos.y + 2.0 + Math.sin(t * Math.PI) * 1.5;
     var sMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: 0xeeeeff,
       transparent: true,
       opacity: 0.8,
@@ -6503,6 +6524,7 @@ function spawnMetalSparks(position, count, intensity){
   var cnt = count || METAL_SPARK_COUNT;
   for(var i = 0; i < cnt; i++){
     var sMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: (Math.random() > 0.3) ? 0xffaa33 : 0xffff88,
       transparent: true,
       opacity: 1.0,
@@ -6581,6 +6603,7 @@ function spawnCastingCircle(position, color, radius){
   
   // Glow sprite at center
   var glowMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
     color: color,
     transparent: true,
     opacity: 0.3,
@@ -6631,6 +6654,7 @@ function spawnHealEffect(position, color){
   var effect = { particles: [], age: 0, maxAge: HEAL_PARTICLE_LIFETIME, center: position.clone() };
   for(var i = 0; i < HEAL_PARTICLE_COUNT; i++){
     var sMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: (Math.random() > 0.4) ? col : 0xffffff,
       transparent: true,
       opacity: 0.7,
@@ -6769,6 +6793,7 @@ function spawnAoEGround(position, color, radius, type){
     var ang = Math.random() * Math.PI * 2;
     var dist = Math.random() * rad;
     var sMat = new THREE.SpriteMaterial({
+      map: circleParticleTex,
       color: color,
       transparent: true,
       opacity: 0.5,
@@ -7335,6 +7360,7 @@ function initStars(){
   var starMat = new THREE.PointsMaterial({
     color: 0xffffff,
     size: 2.5,
+    map: circleParticleTex,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -7541,7 +7567,7 @@ function animate(){
         playerIsWalking = true;
       }
       playerWalkAction.timeScale = isSprinting ? 1.8 : 1.0;
-      playFootstep();
+      playFootstep(isSprinting);
     } else {
       if(playerIsWalking){
         playerWalkAction.fadeOut(0.3);

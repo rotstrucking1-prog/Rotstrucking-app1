@@ -2,6 +2,21 @@
 <!-- v29-remove-sky-boxes -->
 <html lang="en">
 <head>
+
+<!-- OSRS-Style Dialogue Overlay -->
+<div id="dialogue-overlay">
+  <div id="dialogue-box">
+    <div id="dialogue-header">
+      <div id="dialogue-portrait">⚔️</div>
+      <div id="dialogue-name">Sir Aldric</div>
+    </div>
+    <div id="dialogue-text"></div>
+    <div id="dialogue-options"></div>
+    <div id="dialogue-continue" style="display:none">Click to continue</div>
+  </div>
+</div>
+<div id="npc-nameplate-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:15"></div>
+
 <script type="importmap">
 {
   "imports": {
@@ -204,6 +219,26 @@ canvas{display:block;width:100%;height:100%}
 
 /* === ANIMATIONS === */
 @keyframes btnPulse{0%,100%{box-shadow:0 0 8px rgba(80,0,120,0.3)}50%{box-shadow:0 0 14px rgba(80,0,120,0.5)}}
+
+/* === OSRS DIALOGUE SYSTEM === */
+#dialogue-overlay{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:min(500px,92vw);z-index:200;pointer-events:auto}
+#dialogue-box{background:rgba(10,8,5,0.92);border:2px solid rgba(180,155,100,0.6);border-radius:8px;padding:14px 16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 4px 24px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,220,140,0.08);font-family:'Segoe UI',sans-serif}
+#dialogue-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+#dialogue-portrait{width:48px;height:48px;border-radius:50%;border:2px solid rgba(180,155,100,0.5);background:linear-gradient(135deg,#2a1f0e,#3d2b15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+#dialogue-name{color:#f0c040;font-weight:700;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,0.6)}
+#dialogue-text{color:#e8dcc8;font-size:13.5px;line-height:1.5;min-height:40px;margin-bottom:8px}
+#dialogue-options{display:flex;flex-direction:column;gap:4px}
+.dialogue-option{background:rgba(180,155,100,0.08);border:1px solid rgba(180,155,100,0.2);border-radius:4px;padding:7px 12px;color:#f0c040;font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;font-family:inherit}
+.dialogue-option:hover,.dialogue-option:active{background:rgba(180,155,100,0.2);border-color:rgba(180,155,100,0.5)}
+.dialogue-option .opt-num{color:#a08040;margin-right:6px;font-weight:700}
+#dialogue-continue{color:rgba(180,155,100,0.5);font-size:11px;text-align:center;margin-top:6px;cursor:pointer;animation:dlgBlink 1.5s infinite}
+@keyframes dlgBlink{0%,100%{opacity:0.4}50%{opacity:1}}
+/* NPC nameplate */
+.npc-nameplate{position:absolute;pointer-events:none;color:#f0c040;font-size:11px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.9),0 0 8px rgba(0,0,0,0.5);white-space:nowrap;text-align:center;transform:translate(-50%,-100%);font-family:'Segoe UI',sans-serif}
+.npc-interact-hint{position:absolute;pointer-events:none;color:rgba(255,255,255,0.5);font-size:10px;text-shadow:0 1px 3px rgba(0,0,0,0.8);white-space:nowrap;text-align:center;transform:translate(-50%,0);font-family:'Segoe UI',sans-serif;animation:dlgBlink 2s infinite}
+/* Castle gate indicator */
+.gate-label{position:absolute;pointer-events:none;color:rgba(200,180,140,0.7);font-size:10px;text-shadow:0 1px 3px rgba(0,0,0,0.8);white-space:nowrap;text-align:center;transform:translate(-50%,-100%);font-family:'Segoe UI',sans-serif}
+
 </style>
 
 <!-- Loading -->
@@ -374,7 +409,7 @@ canvas{display:block;width:100%;height:100%}
   <div id="crash-debug"></div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Cam: 3rd</div>
-  <div style="color:rgba(255,215,0,0.3);font-size:7px">BUILD v163</div>
+  <div style="color:rgba(255,215,0,0.3);font-size:7px">BUILD v164</div>
 </div>
 <div id="controls">WASD Move | Shift Sprint | Space Jump | V Camera</div>
 
@@ -480,7 +515,7 @@ function loadAndDecodeSounds(){
   var keys = Object.keys(SOUND_FILES);
   console.log('🔊 Loading ' + keys.length + ' sound files...');
   keys.forEach(function(key){
-    fetch(SOUND_FILES[key] + '?v=163')
+    fetch(SOUND_FILES[key] + '?v=164')
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
       .then(function(audioBuffer){
@@ -1598,7 +1633,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=163', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=164', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -1633,7 +1668,7 @@ queueLoad(4, 'snowflake-model.glb?v=163', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=163', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=164', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1890,7 +1925,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=163');
+const grassTex = texLoader.load('grass-texture.jpg?v=164');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1899,61 +1934,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=163');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=164');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=163');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=164');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=163');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=164');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=163');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=164');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=163');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=164');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=163');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=164');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=163');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=164');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=163');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=164');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=163');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=164');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=163');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=164');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=163');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=164');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=163');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=164');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=163');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=164');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=163');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=164');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=163');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=164');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=163');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=164');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -2197,10 +2232,806 @@ const terrain = new THREE.Mesh(terrainGeo, terrainMat);
 terrain.receiveShadow = true;
 var terrainMesh = terrain; // Global reference for mining deformation
 scene.add(terrain);
+
+
+// =====================================================
+// === v164: MEDIEVAL CASTLE + NPC GUARD + DIALOGUE ===
+// =====================================================
+
+// --- CASTLE VARIABLES ---
+let castleGroup = null;
+let castleGate = null;
+let gateOpen = false;
+let gateY = 0;
+const GATE_CLOSED_Y = 0;
+const GATE_OPEN_Y = 7;
+const CASTLE_POS = new THREE.Vector3(400, 0, 1400); // Forest biome area
+
+function buildMedievalCastle() {
+  castleGroup = new THREE.Group();
+  
+  const stoneMat = new THREE.MeshStandardMaterial({color:0x8B8378, roughness:0.85, metalness:0.05});
+  const darkStoneMat = new THREE.MeshStandardMaterial({color:0x6B6358, roughness:0.9, metalness:0.05});
+  const woodMat = new THREE.MeshStandardMaterial({color:0x5C3A1E, roughness:0.8, metalness:0.0});
+  const roofMat = new THREE.MeshStandardMaterial({color:0x4A2520, roughness:0.7, metalness:0.1});
+  const windowMat = new THREE.MeshStandardMaterial({color:0xFFE88A, emissive:0xFFD040, emissiveIntensity:0.3, transparent:true, opacity:0.7});
+  const ironMat = new THREE.MeshStandardMaterial({color:0x3A3A3A, roughness:0.4, metalness:0.8});
+  
+  // Main castle body
+  const wallW = 30, wallD = 25, wallH = 14;
+  const mainWalls = new THREE.Mesh(new THREE.BoxGeometry(wallW, wallH, wallD), stoneMat);
+  mainWalls.position.y = wallH/2;
+  mainWalls.castShadow = true;
+  mainWalls.receiveShadow = true;
+  castleGroup.add(mainWalls);
+  
+  // Inner courtyard (subtract by adding darker floor)
+  const courtyard = new THREE.Mesh(new THREE.BoxGeometry(wallW-4, 0.3, wallD-4), darkStoneMat);
+  courtyard.position.y = 0.15;
+  courtyard.receiveShadow = true;
+  castleGroup.add(courtyard);
+  
+  // Crenellations (battlements on top)
+  for(let cx = -wallW/2+1; cx <= wallW/2-1; cx += 2.5) {
+    for(let side of [-1, 1]) {
+      const crenel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 1.5), stoneMat);
+      crenel.position.set(cx, wallH+1, side * wallD/2);
+      crenel.castShadow = true;
+      castleGroup.add(crenel);
+    }
+  }
+  for(let cz = -wallD/2+1; cz <= wallD/2-1; cz += 2.5) {
+    for(let side of [-1, 1]) {
+      const crenel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 1.5), stoneMat);
+      crenel.position.set(side * wallW/2, wallH+1, cz);
+      crenel.castShadow = true;
+      castleGroup.add(crenel);
+    }
+  }
+  
+  // Four corner towers
+  const towerR = 4, towerH = 20;
+  const towerGeo = new THREE.CylinderGeometry(towerR, towerR+0.5, towerH, 12);
+  const towerCapGeo = new THREE.ConeGeometry(towerR+1.5, 6, 12);
+  const corners = [[-1,-1],[-1,1],[1,-1],[1,1]];
+  corners.forEach(function(c) {
+    const tower = new THREE.Mesh(towerGeo, stoneMat);
+    tower.position.set(c[0]*wallW/2, towerH/2, c[1]*wallD/2);
+    tower.castShadow = true;
+    tower.receiveShadow = true;
+    castleGroup.add(tower);
+    
+    const cap = new THREE.Mesh(towerCapGeo, roofMat);
+    cap.position.set(c[0]*wallW/2, towerH+3, c[1]*wallD/2);
+    cap.castShadow = true;
+    castleGroup.add(cap);
+    
+    // Tower crenellations
+    for(let a = 0; a < Math.PI*2; a += Math.PI/4) {
+      const tc = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 1.2), stoneMat);
+      tc.position.set(
+        c[0]*wallW/2 + Math.cos(a)*(towerR+0.3),
+        towerH+0.9,
+        c[1]*wallD/2 + Math.sin(a)*(towerR+0.3)
+      );
+      castleGroup.add(tc);
+    }
+  });
+  
+  // Main gate (front, -Z side) — portcullis that raises
+  const gateW = 6, gateH = 8;
+  // Gate frame (stone archway)
+  const frameL = new THREE.Mesh(new THREE.BoxGeometry(2, gateH+2, 3), darkStoneMat);
+  frameL.position.set(-gateW/2-1, (gateH+2)/2, -wallD/2);
+  frameL.castShadow = true;
+  castleGroup.add(frameL);
+  
+  const frameR = new THREE.Mesh(new THREE.BoxGeometry(2, gateH+2, 3), darkStoneMat);
+  frameR.position.set(gateW/2+1, (gateH+2)/2, -wallD/2);
+  frameR.castShadow = true;
+  castleGroup.add(frameR);
+  
+  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(gateW+4, 3, 3), darkStoneMat);
+  frameTop.position.set(0, gateH+1.5, -wallD/2);
+  frameTop.castShadow = true;
+  castleGroup.add(frameTop);
+  
+  // Portcullis (iron gate that moves up/down)
+  castleGate = new THREE.Group();
+  // Vertical bars
+  for(let bx = -gateW/2+0.5; bx <= gateW/2-0.5; bx += 1) {
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, gateH, 6), ironMat);
+    bar.position.set(bx, gateH/2, 0);
+    castleGate.add(bar);
+  }
+  // Horizontal bars
+  for(let by = 1; by <= gateH-1; by += 1.5) {
+    const hbar = new THREE.Mesh(new THREE.BoxGeometry(gateW, 0.15, 0.15), ironMat);
+    hbar.position.set(0, by, 0);
+    castleGate.add(hbar);
+  }
+  castleGate.position.set(0, 0, -wallD/2);
+  castleGroup.add(castleGate);
+  
+  // Windows (glowing, on all sides)
+  const winGeo = new THREE.PlaneGeometry(1.5, 2.2);
+  const winPositions = [
+    // Front wall
+    {x:-6, y:9, z:-wallD/2-0.1, ry:0}, {x:6, y:9, z:-wallD/2-0.1, ry:0},
+    // Back wall
+    {x:-6, y:9, z:wallD/2+0.1, ry:Math.PI}, {x:6, y:9, z:wallD/2+0.1, ry:Math.PI},
+    {x:0, y:9, z:wallD/2+0.1, ry:Math.PI},
+    // Side walls
+    {x:-wallW/2-0.1, y:9, z:-4, ry:Math.PI/2}, {x:-wallW/2-0.1, y:9, z:4, ry:Math.PI/2},
+    {x:wallW/2+0.1, y:9, z:-4, ry:-Math.PI/2}, {x:wallW/2+0.1, y:9, z:4, ry:-Math.PI/2}
+  ];
+  winPositions.forEach(function(wp) {
+    const win = new THREE.Mesh(winGeo, windowMat);
+    win.position.set(wp.x, wp.y, wp.z);
+    win.rotation.y = wp.ry;
+    win.userData.isWindow = true;
+    castleGroup.add(win);
+  });
+  
+  // Castle banner (tall pole with cloth)
+  const poleGeo = new THREE.CylinderGeometry(0.12, 0.12, 8, 6);
+  const pole = new THREE.Mesh(poleGeo, ironMat);
+  pole.position.set(0, wallH+4, -wallD/2+2);
+  castleGroup.add(pole);
+  
+  const bannerGeo = new THREE.PlaneGeometry(3, 4);
+  const bannerMat = new THREE.MeshStandardMaterial({
+    color:0x1a3a7a, emissive:0x0a1530, emissiveIntensity:0.15,
+    side:THREE.DoubleSide, roughness:0.6
+  });
+  const banner = new THREE.Mesh(bannerGeo, bannerMat);
+  banner.position.set(1.5, wallH+6, -wallD/2+2);
+  banner.userData.isBanner = true;
+  castleGroup.add(banner);
+  
+  // Set position on terrain
+  const castleGroundH = getHeight(CASTLE_POS.x, CASTLE_POS.z);
+  castleGroup.position.set(CASTLE_POS.x, castleGroundH, CASTLE_POS.z);
+  
+  // Flatten terrain under castle (visual platform)
+  const platform = new THREE.Mesh(
+    new THREE.BoxGeometry(wallW+12, 1, wallD+12),
+    new THREE.MeshStandardMaterial({color:0x6B6358, roughness:0.9})
+  );
+  platform.position.y = -0.5;
+  platform.receiveShadow = true;
+  castleGroup.add(platform);
+  
+  // Path leading from gate
+  const pathGeo = new THREE.BoxGeometry(7, 0.15, 20);
+  const pathMat = new THREE.MeshStandardMaterial({color:0x7B7368, roughness:0.95});
+  const path = new THREE.Mesh(pathGeo, pathMat);
+  path.position.set(0, 0.1, -wallD/2-10);
+  path.receiveShadow = true;
+  castleGroup.add(path);
+  
+  scene.add(castleGroup);
+  console.log('[v164] Medieval castle built at', CASTLE_POS.x, CASTLE_POS.z);
+}
+
+// Castle gate animation
+function updateCastleGate(dt) {
+  if(!castleGate) return;
+  var targetY = gateOpen ? GATE_OPEN_Y : GATE_CLOSED_Y;
+  gateY += (targetY - gateY) * Math.min(1, 3 * dt);
+  castleGate.position.y = gateY;
+}
+
+// Toggle gate when player is near and presses interact
+function toggleGateIfNear() {
+  if(!characterPivot || !castleGroup) return;
+  var gatePosWorld = new THREE.Vector3(CASTLE_POS.x, 0, CASTLE_POS.z - 12.5);
+  var dist = characterPivot.position.distanceTo(gatePosWorld);
+  if(dist < 15) {
+    gateOpen = !gateOpen;
+    addSystemMessage(gateOpen ? '⚙️ Castle gate opens...' : '⚙️ Castle gate closes...');
+  }
+}
+
+// Window glow intensity based on time of day
+function updateCastleWindows(timeOfDay) {
+  if(!castleGroup) return;
+  // Glow more at night
+  var nightFactor = 0;
+  if(timeOfDay > 0.75 || timeOfDay < 0.25) {
+    nightFactor = timeOfDay > 0.75 ? (timeOfDay - 0.75) * 4 : (0.25 - timeOfDay) * 4;
+    nightFactor = Math.min(1, nightFactor);
+  }
+  castleGroup.traverse(function(child) {
+    if(child.userData && child.userData.isWindow && child.material) {
+      child.material.emissiveIntensity = 0.15 + nightFactor * 0.8;
+      child.material.opacity = 0.5 + nightFactor * 0.4;
+    }
+    // Banner gentle wave
+    if(child.userData && child.userData.isBanner) {
+      child.rotation.y = Math.sin(Date.now() * 0.001) * 0.15;
+    }
+  });
+}
+
+// --- NPC GUARD SYSTEM ---
+let npcGuard = null;
+let npcGuardMixer = null;
+let npcGuardActions = {};
+let npcGuardState = 'idle'; // idle, greeting, talking
+let npcGuardLoaded = false;
+const NPC_GUARD_POS = new THREE.Vector3(CASTLE_POS.x, 0, CASTLE_POS.z - 22); // In front of gate
+const NPC_INTERACT_RANGE = 12;
+let npcNameplateEl = null;
+let npcHintEl = null;
+
+function loadNPCGuard() {
+  var baseUrl = '';
+  if(window.location.hostname.includes('github.io')) {
+    var pathParts = window.location.pathname.split('/');
+    baseUrl = '/' + pathParts[1] + '/' + pathParts[2] + '/';
+  }
+  
+  loadGLB(baseUrl + 'npc-guard-model.glb?v=164', function(gltf) {
+    npcGuard = gltf.scene;
+    npcGuard.scale.set(3.5, 3.5, 3.5); // Scale to match game world
+    
+    var groundH = getHeight(NPC_GUARD_POS.x, NPC_GUARD_POS.z);
+    npcGuard.position.set(NPC_GUARD_POS.x, groundH, NPC_GUARD_POS.z);
+    npcGuard.rotation.y = Math.PI; // Face away from castle (toward player approach)
+    
+    npcGuard.traverse(function(child) {
+      if(child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    
+    scene.add(npcGuard);
+    
+    // Setup animation mixer
+    npcGuardMixer = new THREE.AnimationMixer(npcGuard);
+    if(gltf.animations && gltf.animations.length > 0) {
+      var idleClip = gltf.animations[0];
+      npcGuardActions['idle'] = npcGuardMixer.clipAction(idleClip);
+      npcGuardActions['idle'].setLoop(THREE.LoopRepeat);
+      npcGuardActions['idle'].play();
+    }
+    
+    npcGuardLoaded = true;
+    console.log('[v164] NPC Guard loaded — Sir Aldric stationed at castle gate');
+    
+    // Create nameplate
+    var container = document.getElementById('npc-nameplate-container');
+    if(container) {
+      npcNameplateEl = document.createElement('div');
+      npcNameplateEl.className = 'npc-nameplate';
+      npcNameplateEl.textContent = '⚔️ Sir Aldric';
+      npcNameplateEl.style.display = 'none';
+      container.appendChild(npcNameplateEl);
+      
+      npcHintEl = document.createElement('div');
+      npcHintEl.className = 'npc-interact-hint';
+      npcHintEl.textContent = 'Tap to talk';
+      npcHintEl.style.display = 'none';
+      container.appendChild(npcHintEl);
+    }
+  }, undefined, function(err) {
+    console.warn('[v164] NPC Guard model failed to load:', err);
+    // Fallback: create simple guard from primitives
+    createFallbackGuard();
+  });
+}
+
+function createFallbackGuard() {
+  npcGuard = new THREE.Group();
+  
+  // Body
+  var bodyMat = new THREE.MeshStandardMaterial({color:0x707070, roughness:0.5, metalness:0.6});
+  var body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.2, 0.8), bodyMat);
+  body.position.y = 2.3;
+  body.castShadow = true;
+  npcGuard.add(body);
+  
+  // Head
+  var headMat = new THREE.MeshStandardMaterial({color:0xD4A574, roughness:0.6});
+  var head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.8), headMat);
+  head.position.y = 3.9;
+  head.castShadow = true;
+  npcGuard.add(head);
+  
+  // Helmet
+  var helmetMat = new THREE.MeshStandardMaterial({color:0x606060, roughness:0.3, metalness:0.8});
+  var helmet = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.7, 8), helmetMat);
+  helmet.position.y = 4.5;
+  npcGuard.add(helmet);
+  
+  // Legs
+  var legMat = new THREE.MeshStandardMaterial({color:0x505050, roughness:0.5, metalness:0.5});
+  [-0.25, 0.25].forEach(function(lx) {
+    var leg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.6, 0.5), legMat);
+    leg.position.set(lx, 0.8, 0);
+    leg.castShadow = true;
+    npcGuard.add(leg);
+  });
+  
+  // Sword
+  var swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.8, 0.2), 
+    new THREE.MeshStandardMaterial({color:0xC0C0C0, roughness:0.2, metalness:0.9}));
+  swordBlade.position.set(0.9, 2.8, 0);
+  npcGuard.add(swordBlade);
+  var swordHilt = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.12),
+    new THREE.MeshStandardMaterial({color:0x4A2520, roughness:0.7}));
+  swordHilt.position.set(0.9, 1.85, 0);
+  npcGuard.add(swordHilt);
+  
+  // Cape
+  var capeMat = new THREE.MeshStandardMaterial({color:0x1a3a7a, roughness:0.6, side:THREE.DoubleSide});
+  var cape = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.0), capeMat);
+  cape.position.set(0, 2.2, -0.5);
+  npcGuard.add(cape);
+  
+  var groundH = getHeight(NPC_GUARD_POS.x, NPC_GUARD_POS.z);
+  npcGuard.position.set(NPC_GUARD_POS.x, groundH, NPC_GUARD_POS.z);
+  npcGuard.rotation.y = Math.PI;
+  scene.add(npcGuard);
+  npcGuardLoaded = true;
+  
+  // Create nameplate
+  var container = document.getElementById('npc-nameplate-container');
+  if(container) {
+    npcNameplateEl = document.createElement('div');
+    npcNameplateEl.className = 'npc-nameplate';
+    npcNameplateEl.textContent = '⚔️ Sir Aldric';
+    npcNameplateEl.style.display = 'none';
+    container.appendChild(npcNameplateEl);
+    
+    npcHintEl = document.createElement('div');
+    npcHintEl.className = 'npc-interact-hint';
+    npcHintEl.textContent = 'Tap to talk';
+    npcHintEl.style.display = 'none';
+    container.appendChild(npcHintEl);
+  }
+  
+  console.log('[v164] Fallback guard created');
+}
+
+function updateNPCGuard(dt) {
+  if(!npcGuard || !npcGuardLoaded) return;
+  
+  // Update animation
+  if(npcGuardMixer) npcGuardMixer.update(dt);
+  
+  // Idle bobbing for fallback guard
+  if(!npcGuardMixer && npcGuard) {
+    npcGuard.position.y = getHeight(NPC_GUARD_POS.x, NPC_GUARD_POS.z) + Math.sin(Date.now() * 0.002) * 0.1;
+  }
+  
+  // Face player when nearby
+  if(characterPivot) {
+    var dist = characterPivot.position.distanceTo(npcGuard.position);
+    if(dist < NPC_INTERACT_RANGE * 1.5) {
+      var dx = characterPivot.position.x - npcGuard.position.x;
+      var dz = characterPivot.position.z - npcGuard.position.z;
+      var targetRot = Math.atan2(dx, dz);
+      npcGuard.rotation.y += (targetRot - npcGuard.rotation.y) * Math.min(1, 3 * dt);
+    }
+  }
+  
+  // Update nameplate position
+  if(npcNameplateEl && camera) {
+    var npcScreenPos = npcGuard.position.clone();
+    npcScreenPos.y += 6; // Above head
+    npcScreenPos.project(camera);
+    
+    if(npcScreenPos.z < 1 && npcScreenPos.z > -1) {
+      var x = (npcScreenPos.x * 0.5 + 0.5) * window.innerWidth;
+      var y = (-npcScreenPos.y * 0.5 + 0.5) * window.innerHeight;
+      npcNameplateEl.style.display = 'block';
+      npcNameplateEl.style.left = x + 'px';
+      npcNameplateEl.style.top = y + 'px';
+      
+      // Show interact hint when close
+      if(characterPivot) {
+        var pdist = characterPivot.position.distanceTo(npcGuard.position);
+        if(pdist < NPC_INTERACT_RANGE && !dialogueActive) {
+          npcHintEl.style.display = 'block';
+          npcHintEl.style.left = x + 'px';
+          npcHintEl.style.top = (y + 16) + 'px';
+        } else {
+          npcHintEl.style.display = 'none';
+        }
+      }
+    } else {
+      npcNameplateEl.style.display = 'none';
+      npcHintEl.style.display = 'none';
+    }
+  }
+}
+
+// --- OSRS DIALOGUE ENGINE ---
+let dialogueActive = false;
+let dialogueData = null;
+let dialogueNode = null;
+let dialogueTyping = false;
+let dialogueTypingTimer = null;
+let dialogueFullText = '';
+let dialogueCharIndex = 0;
+
+const DIALOGUE_TREE = {
+  'start': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Greetings, adventurer! I am Sir Aldric, guardian of Castle Thornwall. What brings you to these ancient lands?",
+    options: [
+      {text: "I seek adventure and glory!", next: 'adventure'},
+      {text: "Tell me about this castle.", next: 'castle_lore'},
+      {text: "What dangers lurk in these lands?", next: 'dangers'},
+      {text: "Farewell, Sir Aldric.", next: 'farewell'}
+    ]
+  },
+  'adventure': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Ha! A brave soul! You\'ve come to the right place. These lands teem with wild beasts and ancient magic. I\'ve seen many adventurers pass through these gates...",
+    continue: 'adventure_2'
+  },
+  'adventure_2': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Master the nine schools of magic — from Pyromancy\'s flames to the forbidden Death arts. Each has power beyond imagination. But beware... the dragon Vashra circles above, hunting the unwary.",
+    options: [
+      {text: "Tell me more about the magic schools.", next: 'magic_schools'},
+      {text: "Who is Vashra?", next: 'vashra'},
+      {text: "I\'ll be careful. Thanks!", next: 'farewell_brave'}
+    ]
+  },
+  'magic_schools': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "There are nine schools: Pyromancy commands fire, Cryomancy wields ice, Tempest summons storms, Geomancy shapes earth, Hymn channels holy light, Hex weaves curses, Death commands the dark arts, Enchantment bends the mind, and Druidism communes with nature.",
+    continue: 'magic_schools_2'
+  },
+  'magic_schools_2': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Each school has spells from novice to master rank. Train hard, cast often, and your power will grow. The spell tome in your inventory holds all you need to know.",
+    options: [
+      {text: "Thanks for the wisdom!", next: 'farewell_brave'},
+      {text: "Tell me about the dangers.", next: 'dangers'}
+    ]
+  },
+  'castle_lore': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Castle Thornwall has stood for over a thousand years, built by the Order of the Silver Dawn to guard the passage between the Forest and the Desert realms.",
+    continue: 'castle_lore_2'
+  },
+  'castle_lore_2': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Ancient enchantments still protect these walls. The windows glow with residual magic at nightfall, and the portcullis can be raised by those who prove themselves worthy.",
+    options: [
+      {text: "Can I enter the castle?", next: 'enter_castle'},
+      {text: "What else can you tell me?", next: 'start'}
+    ]
+  },
+  'enter_castle': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Of course! I shall open the gate for you. Walk through the courtyard and explore — but mind the battlements, the wind is fierce up top.",
+    continue: 'gate_opens'
+  },
+  'gate_opens': {
+    speaker: 'system',
+    text: '⚙️ Sir Aldric raises his hand. The ancient portcullis groans as it rises...',
+    action: 'open_gate',
+    continue: 'after_gate'
+  },
+  'after_gate': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "The castle is yours to explore, adventurer. Return to me if you need guidance. Safe travels!",
+    options: [
+      {text: "Thank you, Sir Aldric!", next: 'end'}
+    ]
+  },
+  'dangers': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "The bears in the Forest have grown aggressive of late. Dreughs lurk near the volcanic shores to the south. And stallions roam wild across the plains...",
+    continue: 'dangers_2'
+  },
+  'dangers_2': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "But the greatest danger is Vashra — an ancient dragon who circles the world, raining fire upon any who draw her attention. If you see her shadow, RUN.",
+    options: [
+      {text: "I\'m not afraid of a dragon!", next: 'vashra'},
+      {text: "Thanks for the warning.", next: 'farewell_brave'}
+    ]
+  },
+  'vashra': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Vashra the Dreadwing... She has terrorized these lands for centuries. Her fire breath can reduce a knight to ashes in seconds. She swoops from the sky without warning.",
+    continue: 'vashra_2'
+  },
+  'vashra_2': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Some say she guards an ancient treasure at the heart of the Volcanic Wastes. Many have tried to slay her. None have returned. Perhaps you will be the one to change that... but not today, friend.",
+    options: [
+      {text: "Challenge accepted!", next: 'farewell_brave'},
+      {text: "Maybe someday. Farewell!", next: 'farewell'}
+    ]
+  },
+  'farewell': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Safe travels, adventurer. The gates of Thornwall are always open to those of noble heart. Return whenever you need aid.",
+    continue: 'end'
+  },
+  'farewell_brave': {
+    speaker: 'npc',
+    portrait: '⚔️',
+    name: 'Sir Aldric',
+    text: "Go forth with courage! May the Silver Dawn guide your blade and your magic strike true. I shall be here when you return!",
+    continue: 'end'
+  },
+  'end': {
+    speaker: 'system',
+    text: '',
+    action: 'close'
+  }
+};
+
+function startDialogue() {
+  if(dialogueActive) return;
+  dialogueActive = true;
+  dialogueNode = 'start';
+  showDialogueNode();
+  document.getElementById('dialogue-overlay').style.display = 'block';
+  addSystemMessage('💬 Speaking with Sir Aldric...');
+}
+
+function showDialogueNode() {
+  var node = DIALOGUE_TREE[dialogueNode];
+  if(!node) { closeDialogue(); return; }
+  
+  var overlay = document.getElementById('dialogue-overlay');
+  var textEl = document.getElementById('dialogue-text');
+  var optionsEl = document.getElementById('dialogue-options');
+  var continueEl = document.getElementById('dialogue-continue');
+  var headerEl = document.getElementById('dialogue-header');
+  var portraitEl = document.getElementById('dialogue-portrait');
+  var nameEl = document.getElementById('dialogue-name');
+  
+  // Handle actions
+  if(node.action === 'close') { closeDialogue(); return; }
+  if(node.action === 'open_gate') { gateOpen = true; }
+  
+  // Set speaker info
+  if(node.speaker === 'npc') {
+    headerEl.style.display = 'flex';
+    portraitEl.textContent = node.portrait || '⚔️';
+    nameEl.textContent = node.name || 'NPC';
+  } else if(node.speaker === 'player') {
+    headerEl.style.display = 'flex';
+    portraitEl.textContent = '🧙';
+    nameEl.textContent = 'You';
+  } else {
+    headerEl.style.display = 'none';
+  }
+  
+  // Clear previous
+  optionsEl.innerHTML = '';
+  continueEl.style.display = 'none';
+  
+  // Typewriter effect
+  dialogueFullText = node.text || '';
+  dialogueCharIndex = 0;
+  dialogueTyping = true;
+  textEl.textContent = '';
+  
+  if(dialogueTypingTimer) clearInterval(dialogueTypingTimer);
+  dialogueTypingTimer = setInterval(function() {
+    if(dialogueCharIndex < dialogueFullText.length) {
+      textEl.textContent += dialogueFullText[dialogueCharIndex];
+      dialogueCharIndex++;
+    } else {
+      clearInterval(dialogueTypingTimer);
+      dialogueTyping = false;
+      // Show options or continue
+      if(node.options) {
+        node.options.forEach(function(opt, i) {
+          var btn = document.createElement('button');
+          btn.className = 'dialogue-option';
+          btn.innerHTML = '<span class="opt-num">' + (i+1) + '.</span> ' + opt.text;
+          btn.onclick = function() { dialogueNode = opt.next; showDialogueNode(); };
+          optionsEl.appendChild(btn);
+        });
+      } else if(node.continue) {
+        continueEl.style.display = 'block';
+      } else {
+        continueEl.style.display = 'block';
+        continueEl.textContent = 'Click to close';
+      }
+    }
+  }, 25); // 25ms per character
+}
+
+function advanceDialogue() {
+  if(!dialogueActive) return;
+  
+  var node = DIALOGUE_TREE[dialogueNode];
+  if(!node) { closeDialogue(); return; }
+  
+  if(dialogueTyping) {
+    // Skip to end of text
+    clearInterval(dialogueTypingTimer);
+    dialogueTyping = false;
+    document.getElementById('dialogue-text').textContent = dialogueFullText;
+    
+    var optionsEl = document.getElementById('dialogue-options');
+    var continueEl = document.getElementById('dialogue-continue');
+    
+    if(node.options) {
+      node.options.forEach(function(opt, i) {
+        var btn = document.createElement('button');
+        btn.className = 'dialogue-option';
+        btn.innerHTML = '<span class="opt-num">' + (i+1) + '.</span> ' + opt.text;
+        btn.onclick = function() { dialogueNode = opt.next; showDialogueNode(); };
+        optionsEl.appendChild(btn);
+      });
+    } else if(node.continue) {
+      continueEl.style.display = 'block';
+    }
+    return;
+  }
+  
+  // Advance to next node
+  if(node.continue) {
+    dialogueNode = node.continue;
+    showDialogueNode();
+  } else if(!node.options) {
+    closeDialogue();
+  }
+}
+
+function closeDialogue() {
+  dialogueActive = false;
+  document.getElementById('dialogue-overlay').style.display = 'none';
+  if(dialogueTypingTimer) clearInterval(dialogueTypingTimer);
+  dialogueTyping = false;
+}
+
+// Click handlers for dialogue
+document.getElementById('dialogue-continue').addEventListener('click', function(e) {
+  e.stopPropagation();
+  advanceDialogue();
+});
+document.getElementById('dialogue-box').addEventListener('click', function(e) {
+  if(e.target.classList.contains('dialogue-option')) return;
+  advanceDialogue();
+});
+
+// Keyboard support for dialogue (1-4 for options, space/enter to continue)
+document.addEventListener('keydown', function(e) {
+  if(!dialogueActive) return;
+  
+  var node = DIALOGUE_TREE[dialogueNode];
+  if(!node) return;
+  
+  if(e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    advanceDialogue();
+  }
+  
+  // Number keys for options
+  if(node.options && !dialogueTyping) {
+    var num = parseInt(e.key);
+    if(num >= 1 && num <= node.options.length) {
+      dialogueNode = node.options[num-1].next;
+      showDialogueNode();
+    }
+  }
+});
+
+// NPC interaction on click/tap
+function checkNPCInteraction(screenX, screenY) {
+  if(!npcGuard || !npcGuardLoaded || !characterPivot || dialogueActive) return false;
+  
+  var dist = characterPivot.position.distanceTo(npcGuard.position);
+  if(dist > NPC_INTERACT_RANGE) return false;
+  
+  // Check if click/tap is near NPC on screen
+  var npcScreenPos = npcGuard.position.clone();
+  npcScreenPos.y += 3;
+  npcScreenPos.project(camera);
+  
+  var npcX = (npcScreenPos.x * 0.5 + 0.5) * window.innerWidth;
+  var npcY = (-npcScreenPos.y * 0.5 + 0.5) * window.innerHeight;
+  
+  var clickDist = Math.sqrt(Math.pow(screenX - npcX, 2) + Math.pow(screenY - npcY, 2));
+  if(clickDist < 100) { // 100px radius tap target
+    startDialogue();
+    return true;
+  }
+  return false;
+}
+
+// Hook into click/tap events
+document.getElementById('c').addEventListener('click', function(e) {
+  checkNPCInteraction(e.clientX, e.clientY);
+});
+
+// --- PLAYER RUNNING ANIMATION ENHANCEMENT ---
+let playerRunAction = null;
+let playerCurrentAnimState = 'idle'; // idle, walking, running
+
+// The walk animation already speeds up when sprinting (timeScale = 1.8)
+// We enhance with body bobbing and dust effects
+let runBobPhase = 0;
+
+function updatePlayerRunAnimation(dt, isWalking, isSprint) {
+  if(!characterPivot) return;
+  
+  if(isWalking && isSprint) {
+    // Running: more dramatic bob
+    runBobPhase += dt * 14; // Faster bob
+    var bobY = Math.abs(Math.sin(runBobPhase)) * 0.15; // Vertical bounce
+    var bobX = Math.sin(runBobPhase * 0.5) * 0.05; // Slight lateral sway
+    characterPivot.position.y = playerPos.y + bobY;
+    // Slight forward lean
+    if(characterPivot.children[0]) {
+      characterPivot.children[0].rotation.x = 0.08; // Lean forward while running
+    }
+    playerCurrentAnimState = 'running';
+  } else if(isWalking) {
+    // Walking: gentle bob
+    runBobPhase += dt * 8;
+    var bobY = Math.abs(Math.sin(runBobPhase)) * 0.06;
+    characterPivot.position.y = playerPos.y + bobY;
+    if(characterPivot.children[0]) {
+      characterPivot.children[0].rotation.x = 0.02;
+    }
+    playerCurrentAnimState = 'walking';
+  } else {
+    // Idle: smooth return
+    runBobPhase = 0;
+    if(characterPivot.children[0]) {
+      characterPivot.children[0].rotation.x *= 0.9; // Smoothly return to upright
+    }
+    playerCurrentAnimState = 'idle';
+  }
+}
+
+// Build castle and load NPC after scene is ready
+setTimeout(function() {
+  try { buildMedievalCastle(); } catch(e) { console.warn('Castle build error:', e); }
+  try { loadNPCGuard(); } catch(e) { console.warn('NPC load error:', e); }
+}, 2000);
+
+
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=163', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=164', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -2223,7 +3054,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=163');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=164');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -2257,7 +3088,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=163', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=164', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -2301,7 +3132,7 @@ queueLoad(5, 'rock-pile-model.glb?v=163', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=163', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=164', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -2354,7 +3185,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=163', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=163', function(gltf){
+queueLoad(3, 'bass-model.glb?v=164', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -2446,7 +3277,7 @@ queueLoad(3, 'bass-model.glb?v=163', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=163', function(gltf){
+queueLoad(3, 'deer-model.glb?v=164', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -2555,7 +3386,7 @@ queueLoad(3, 'deer-model.glb?v=163', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=163', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=164', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -10148,7 +10979,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=163', function(gltf){
+queueLoad(1, 'character-walk.glb?v=164', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -10283,7 +11114,7 @@ queueLoad(1, 'character-walk.glb?v=163', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=163', function(gltf){
+queueLoad(2, 'grass-model.glb?v=164', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -10343,7 +11174,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=163', function(gltf){
+queueLoad(2, 'sun-model.glb?v=164', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -10375,7 +11206,7 @@ queueLoad(2, 'sun-model.glb?v=163', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=163', function(gltf){
+queueLoad(2, 'moon-model.glb?v=164', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -10429,7 +11260,7 @@ queueLoad(2, 'moon-model.glb?v=163', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=163', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=164', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -10538,7 +11369,7 @@ queueLoad(4, 'bear-walk.glb?v=163', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=163', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=164', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10619,7 +11450,7 @@ queueLoad(4, 'freak-walk.glb?v=163', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=163', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=164', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10706,7 +11537,7 @@ queueLoad(3, 'stallion-walk.glb?v=163', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=163', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=164', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10769,7 +11600,7 @@ queueLoad(4, 'dreugh-model.glb?v=163', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=163', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=164', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -10796,7 +11627,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=163', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=164', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -10842,7 +11673,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=163', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=164', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -10857,7 +11688,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=163', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=164', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -10876,7 +11707,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=163', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=164', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -10891,7 +11722,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=163', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=164', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -10906,7 +11737,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=163', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=164', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -10922,7 +11753,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=163', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=164', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -10938,7 +11769,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=163', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=164', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -10953,7 +11784,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=163', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=164', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -10974,7 +11805,7 @@ queueLoad(7, 'vashra-dragon.glb?v=163', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=163', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=164', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -13256,6 +14087,15 @@ function animate(){
   playerPlaceholder.position.copy(playerPos);
   
   if(playerMixer) playerMixer.update(dt);
+
+    // v164: Castle + NPC + Player run updates
+    try {
+      updateCastleGate(dt);
+      if(typeof dayProgress !== 'undefined') updateCastleWindows(dayProgress);
+      updateNPCGuard(dt);
+      updatePlayerRunAnimation(dt, playerIsWalking, isSprinting);
+    } catch(e) { /* v164 update error */ }
+
   
   // Dust kick VFX while moving
   if(characterPivot && playerIsWalking){

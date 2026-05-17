@@ -273,7 +273,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v159e</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v160</div>
   <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
@@ -400,7 +400,7 @@ function initRealSounds(){
   }
   Object.keys(SOUND_FILES).forEach(function(key){
     function loadSound(retries){
-      fetch(SOUND_FILES[key] + '?v=159e')
+      fetch(SOUND_FILES[key] + '?v=160')
         .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
         .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
         .then(function(decoded){ soundBuffers[key] = decoded; console.log('🔊 Sound loaded:', key); })
@@ -1491,7 +1491,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=159e', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=160', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -1526,7 +1526,7 @@ queueLoad(4, 'snowflake-model.glb?v=159e', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=159e', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=160', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1783,7 +1783,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=159e');
+const grassTex = texLoader.load('grass-texture.jpg?v=160');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1792,61 +1792,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=159e');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=160');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=159e');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=160');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=159e');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=160');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=159e');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=160');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=159e');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=160');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=159e');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=160');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=159e');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=160');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=159e');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=160');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=159e');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=160');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=159e');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=160');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=159e');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=160');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=159e');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=160');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=159e');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=160');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=159e');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=160');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=159e');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=160');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=159e');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=160');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -2093,7 +2093,7 @@ scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=159e', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=160', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -2116,7 +2116,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=159e');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=160');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -2150,7 +2150,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=159e', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=160', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -2194,7 +2194,7 @@ queueLoad(5, 'rock-pile-model.glb?v=159e', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=159e', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=160', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -2247,7 +2247,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=159e', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=159e', function(gltf){
+queueLoad(3, 'bass-model.glb?v=160', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -2339,7 +2339,7 @@ queueLoad(3, 'bass-model.glb?v=159e', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=159e', function(gltf){
+queueLoad(3, 'deer-model.glb?v=160', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -2448,7 +2448,7 @@ queueLoad(3, 'deer-model.glb?v=159e', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=159e', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=160', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -3489,7 +3489,7 @@ function castLightningBolt(spell){
     impLight.position.copy(endPos);
     scene.add(impLight);
   }
-  screenShake(0.2, 5);
+  screenShake(0.3, 2);
   playSound('lightning', 0.7, 0.8 + Math.random() * 0.4);
   damageNPCsInRadius(hitX, hitZ, 5, spell.damage * playerSpellPowerBuff);
   // Fade and cleanup
@@ -3635,7 +3635,7 @@ function castEruption(spell){
   var radius = spell.aoeRadius || 15;
   showVashraAlert('ERUPTION', 'Volcanic fury!', 2);
   playSound('explosion', 0.7, 0.4);
-  screenShake(0.6, 10);
+  screenShake(0.35, 2.5);
   // 1) Ground crack ring — expanding dark fissure
   var crackRingGeo = new THREE.RingGeometry(0.3, 2, 24);
   var crackRingMat = new THREE.MeshBasicMaterial({color: 0xff2200, transparent: true, opacity: 0.9, side: THREE.DoubleSide});
@@ -3664,11 +3664,20 @@ function castEruption(spell){
         var gY = getHeight(ox, oz);
         var pillarH = 8 + Math.random() * 10;
         // Outer lava core — dark red with emissive
-        var outerGeo = new THREE.CylinderGeometry(0.4 + Math.random() * 0.4, 1.2 + Math.random() * 0.6, pillarH, 6);
+        var outerGeo = new THREE.CylinderGeometry(0.3 + Math.random() * 0.7, 1.0 + Math.random() * 1.2, pillarH, 6);
         var outerMat = new THREE.MeshStandardMaterial({color: 0x881100, emissive: 0xff3300, emissiveIntensity: 2.0, transparent: true, opacity: 0.85});
         var outer = new THREE.Mesh(outerGeo, outerMat);
         outer.position.set(ox, gY - pillarH * 0.5, oz);
+        outer.rotation.x = (Math.random() - 0.5) * 0.15;
+        outer.rotation.z = (Math.random() - 0.5) * 0.15;
         scene.add(outer);
+        // Molten lava pool at base
+        var poolGeoE = new THREE.CircleGeometry(1.4 + Math.random() * 0.8, 16);
+        poolGeoE.rotateX(-Math.PI / 2);
+        var poolMatE = new THREE.MeshBasicMaterial({color: 0xff4400, emissive: 0xff2200, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false});
+        var lavaPool = new THREE.Mesh(poolGeoE, poolMatE);
+        lavaPool.position.set(ox, gY + 0.15, oz);
+        scene.add(lavaPool);
         // Inner magma core — bright yellow-orange, slightly smaller
         var innerGeo = new THREE.CylinderGeometry(0.2, 0.7, pillarH * 0.9, 6);
         var innerMat = new THREE.MeshBasicMaterial({color: 0xffaa00, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending});
@@ -3736,9 +3745,9 @@ function castEruption(spell){
             topGlow.material.opacity = 0.8 * (1 - fade);
             if(lavaLight) lavaLight.intensity = 8 * (1 - fade);
           } else {
-            scene.remove(outer); scene.remove(inner); scene.remove(topGlow);
+            scene.remove(outer); scene.remove(inner); scene.remove(topGlow); scene.remove(lavaPool);
             outerMat.dispose(); outerGeo.dispose(); innerMat.dispose(); innerGeo.dispose();
-            topGlow.material.dispose();
+            topGlow.material.dispose(); poolMatE.dispose(); poolGeoE.dispose();
             if(lavaLight){ scene.remove(lavaLight); lavaLight.dispose(); }
             return true;
           }
@@ -3760,7 +3769,7 @@ function castEruption(spell){
         meteorAnimators.push(animEruption);
         damageNPCsInRadius(ox, oz, 5, (spell.damage || 60) * 0.2 * playerSpellPowerBuff);
         if(idx === 0) playSound('fire', 0.6, 0.3 + Math.random() * 0.2);
-        if(idx % 2 === 0) screenShake(0.05, 2);
+        if(idx % 2 === 0) screenShake(0.03, 0.5);
       }, idx * 180);
     })(i);
   }
@@ -3850,7 +3859,7 @@ function castTremor(spell){
   var cx = playerPos.x + Math.sin(aimYaw) * dist;
   var cz = playerPos.z + Math.cos(aimYaw) * dist;
   var gY = getHeight(cx, cz);
-  screenShake(0.6, 12);
+  screenShake(0.4, 2.5);
   playSound('earth', 0.8, 0.35);
   showVashraAlert('TREMOR', 'The ground ruptures!', 1.5);
   // 1) Expanding shockwave ring on ground — brown dust cloud
@@ -3901,9 +3910,9 @@ function castTremor(spell){
       var oz = cz + Math.sin(rAngle) * rDist;
       var rGY = getHeight(ox, oz);
       var rockSize = 0.4 + Math.random() * 1.2;
-      var rockGeo = new THREE.DodecahedronGeometry(rockSize, 0);
+      var rockGeo = new THREE.IcosahedronGeometry(rockSize, 1);
       var shade = Math.random();
-      var rockCol = shade < 0.33 ? 0x664422 : (shade < 0.66 ? 0x887755 : 0x554433);
+      var stoneColors = [0x888888, 0x999999, 0x777766, 0xaa9988, 0x666655]; var rockCol = stoneColors[Math.floor(Math.random() * stoneColors.length)];
       var rockMat = new THREE.MeshStandardMaterial({color: rockCol, roughness: 0.95, metalness: 0.05});
       var rock = new THREE.Mesh(rockGeo, rockMat);
       rock.position.set(ox, rGY, oz);
@@ -4048,6 +4057,47 @@ function castSpell(spellId){
   playerSkills.magic += xpGain;
   playerXP += xpGain;
   
+
+
+  // v160: Gale Step — dedicated handler with wind VFX
+  if(spell.id === 'gale_step'){
+    playerSpeedBuff = 1.4;
+    playerSpeedBuffTimer = 20;
+    activeBuffIcons['speed'] = {name: 'Gale Step', timer: 20, color: 0xccffcc};
+    updateBuffHUD();
+    showVashraAlert('💨 GALE STEP', '+40% speed for 20s!', 2);
+    playSpellSound(spell);
+    // Wind VFX — streaks trailing behind player for 20s
+    var galeAge = 0;
+    var galeSpawnTimer = 0;
+    meteorAnimators.push(function(dt2){
+      galeAge += dt2;
+      if(galeAge >= 20 || playerSpeedBuffTimer <= 0) return true;
+      galeSpawnTimer += dt2;
+      if(galeSpawnTimer > 0.3){
+        galeSpawnTimer = 0;
+        // Spawn wind streak sprites at player feet
+        for(var wi = 0; wi < 3; wi++){
+          var wSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: circleParticleTex, color: [0xccffcc, 0xaaffaa, 0xeeffee][wi],
+            transparent: true, opacity: 0.5,
+            blending: THREE.AdditiveBlending, depthWrite: false
+          }));
+          wSpr.scale.set(0.4, 2.0 + Math.random(), 1);
+          var wGY = getHeight(playerPos.x, playerPos.z);
+          wSpr.position.set(
+            playerPos.x + (Math.random() - 0.5) * 2,
+            wGY + 0.5 + Math.random() * 1.5,
+            playerPos.z + (Math.random() - 0.5) * 2
+          );
+          scene.add(wSpr);
+          (function(s){ var a=0; meteorAnimators.push(function(dt3){ a+=dt3; s.position.y+=dt3*3; s.scale.y+=dt3*2; s.material.opacity-=dt3*1.2; if(a>0.6){scene.remove(s); s.material.dispose(); return true;} return false; }); })(wSpr);
+        }
+      }
+      return false;
+    });
+    return;
+  }
 
   // === v141: Handle new 'buff' type spells (expanded Darkfall+OSRS inspired) ===
   if(spell.type === 'buff'){
@@ -4485,11 +4535,11 @@ function castSpell(spellId){
       showVashraAlert('🌀 WHIRLPOOL', 'Water vortex active for 15s!', 2);
     } else if(spell.id === 'cyclone'){
       // Chasing tornado 12 seconds
-      spawnPersistentAoE(physX, physY, physZ, spell, 12, 'cyclone');
+      spawnTornado(physX, physY, physZ, spell);
       showVashraAlert('🌪️ CYCLONE', 'Tornado unleashed for 12s!', 2);
     } else if(spell.id === 'static_field'){
       // Electric ring around caster 15 seconds
-      spawnPersistentAoE(playerPos.x, physY, playerPos.z, spell, 15, 'static_field');
+      spawnStaticField(playerPos.x, physY, playerPos.z, spell);
       showVashraAlert('⚡ STATIC FIELD', 'Electric ring active for 15s!', 2);
     } else if(spell.id === 'repulse'){
       // BUNNY HOP LAUNCHER — massive forward launch + dramatic VFX
@@ -4629,15 +4679,211 @@ function castSpell(spellId){
     return;
   }
   if(spell.id === 'fire_surge'){
-    // Extra large fireball — scale up, add screen shake
-    fireSpellProjectile(spell);
-    screenShake(0.1, 2);
+    // v160: Custom oversized fireball with orbiting embers and fire trail
+    playSpellSound(spell);
+    spawnSpellCastVFX(spell, playerPos.clone());
+    var fsYaw = playerYaw + cameraYawOffset;
+    var fsPitch = cameraPitch || 0;
+    var fsDx = Math.sin(fsYaw) * Math.cos(fsPitch);
+    var fsDy = -Math.sin(fsPitch);
+    var fsDz = Math.cos(fsYaw) * Math.cos(fsPitch);
+    var fsGroup = new THREE.Group();
+    // Core fireball mesh — oversized icosahedron
+    var fsCore = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.0, 1),
+      new THREE.MeshStandardMaterial({color: 0xff4400, emissive: 0xff6600, emissiveIntensity: 3.0, transparent: true, opacity: 0.9})
+    );
+    fsCore.scale.set(2.5, 2.5, 2.5);
+    fsGroup.add(fsCore);
+    // Outer glow sprite
+    var fsGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: circleParticleTex, color: 0xff8800, transparent: true, opacity: 0.6,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    fsGlow.scale.set(8, 8, 1);
+    fsGroup.add(fsGlow);
+    // 8 orbiting ember sprites
+    var fsEmbers = [];
+    for(var fei = 0; fei < 8; fei++){
+      var feAngle = (fei / 8) * Math.PI * 2;
+      var feSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: circleParticleTex, color: [0xff2200,0xff6600,0xffaa00,0xff4400][fei%4],
+        transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      feSpr.scale.set(1.2, 1.2, 1);
+      feSpr.position.set(Math.cos(feAngle)*2.2, Math.sin(feAngle)*2.2, 0);
+      fsGroup.add(feSpr);
+      fsEmbers.push({spr: feSpr, angle: feAngle, r: 2.2});
+    }
+    fsGroup.position.set(playerPos.x, playerPos.y + 2.5, playerPos.z);
+    scene.add(fsGroup);
+    var fsSpeed = spell.speed || 70;
+    var fsProj = {
+      mesh: fsGroup, spell: spell,
+      vx: fsDx * fsSpeed, vy: fsDy * fsSpeed, vz: fsDz * fsSpeed,
+      life: (spell.range || 100) / fsSpeed, age: 0,
+      trailTimer: 0, lastTrailX: playerPos.x, lastTrailY: playerPos.y + 2.5, lastTrailZ: playerPos.z
+    };
+    activeProjectiles.push(fsProj);
+    // Animate orbiting embers + fire trail via meteorAnimators
+    var fsAnimDone = false;
+    meteorAnimators.push(function(dt2){
+      if(fsAnimDone || !fsGroup.parent) return true;
+      // Rotate embers
+      for(var k = 0; k < fsEmbers.length; k++){
+        fsEmbers[k].angle += dt2 * 8;
+        fsEmbers[k].spr.position.set(
+          Math.cos(fsEmbers[k].angle) * fsEmbers[k].r,
+          Math.sin(fsEmbers[k].angle) * fsEmbers[k].r, 0
+        );
+      }
+      fsCore.rotation.x += dt2 * 3;
+      fsCore.rotation.y += dt2 * 5;
+      // Spawn fire trail sprite behind projectile
+      fsProj._trailCd = (fsProj._trailCd || 0) + dt2;
+      if(fsProj._trailCd > 0.03){
+        fsProj._trailCd = 0;
+        var trSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: circleParticleTex, color: [0xff4400,0xff8800,0xffcc00][Math.floor(Math.random()*3)],
+          transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        var trSize = 1.5 + Math.random() * 2;
+        trSpr.scale.set(trSize, trSize, 1);
+        trSpr.position.copy(fsGroup.position);
+        scene.add(trSpr);
+        (function(s){ var a=0; meteorAnimators.push(function(dt3){ a+=dt3; s.scale.x+=dt3*3; s.scale.y+=dt3*3; s.material.opacity-=dt3*2.5; if(a>0.4){scene.remove(s); s.material.dispose(); return true;} return false; }); })(trSpr);
+      }
+      return false;
+    });
+    // Hook into projectile removal to trigger explosion
+    fsGroup.userData.onImpact = function(){
+      fsAnimDone = true;
+      var impPos = fsGroup.position.clone();
+      screenShake(0.3, 1.5);
+      damageNPCsInRadius(impPos.x, impPos.z, 8, spell.damage * playerSpellPowerBuff);
+      // Big explosion burst
+      for(var bi = 0; bi < 16; bi++){
+        var bSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: circleParticleTex, color: [0xff2200,0xff6600,0xffaa00,0xffcc00][bi%4],
+          transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        var bSize = 2 + Math.random() * 3;
+        bSpr.scale.set(bSize, bSize, 1);
+        bSpr.position.copy(impPos);
+        scene.add(bSpr);
+        var bAngle = Math.random()*Math.PI*2, bElev = (Math.random()-0.3)*Math.PI;
+        var bSpd = 8 + Math.random() * 12;
+        (function(s,vx,vy,vz){ var a=0; meteorAnimators.push(function(dt3){ a+=dt3; s.position.x+=vx*dt3; s.position.y+=vy*dt3; s.position.z+=vz*dt3; s.scale.x+=dt3*4; s.scale.y+=dt3*4; s.material.opacity-=dt3*1.8; if(a>0.6){scene.remove(s); s.material.dispose(); return true;} return false; }); })(bSpr, Math.cos(bAngle)*bSpd*Math.cos(bElev), Math.sin(bElev)*bSpd+5, Math.sin(bAngle)*bSpd*Math.cos(bElev));
+      }
+      // Flash
+      var fFlash = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: circleParticleTex, color: 0xffffff, transparent: true, opacity: 1.0,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      fFlash.scale.set(20, 20, 1);
+      fFlash.position.copy(impPos);
+      scene.add(fFlash);
+      (function(s){ var a=0; meteorAnimators.push(function(dt3){ a+=dt3; s.material.opacity-=dt3*4; if(a>0.3){scene.remove(s); s.material.dispose(); return true;} return false; }); })(fFlash);
+    };
     return;
   }
   if(spell.id === 'spark_orb'){
-    // Slow-moving electric orb — halve speed, add wobble
-    var slowSpell = Object.assign({}, spell, {speed: 25});
-    fireSpellProjectile(slowSpell);
+    // v160: Glowing electric orb with orbiting sparks + electric arcs
+    playSpellSound(spell);
+    spawnSpellCastVFX(spell, playerPos.clone());
+    var soYaw = playerYaw + cameraYawOffset;
+    var soPitch = cameraPitch || 0;
+    var soDx = Math.sin(soYaw) * Math.cos(soPitch);
+    var soDy = -Math.sin(soPitch);
+    var soDz = Math.cos(soYaw) * Math.cos(soPitch);
+    var soGroup = new THREE.Group();
+    // Central yellow sphere
+    var soCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.3, 12, 12),
+      new THREE.MeshStandardMaterial({color: 0xffff44, emissive: 0xffff00, emissiveIntensity: 3.0, transparent: true, opacity: 0.95})
+    );
+    soCore.scale.set(0.6, 0.6, 0.6);
+    soGroup.add(soCore);
+    // Glow sprite
+    var soGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: circleParticleTex, color: 0xffff88, transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    soGlow.scale.set(4, 4, 1);
+    soGroup.add(soGlow);
+    // 6 orbiting spark sprites
+    var soSparks = [];
+    for(var si = 0; si < 6; si++){
+      var sAngle = (si / 6) * Math.PI * 2;
+      var sSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: circleParticleTex, color: 0xffffaa, transparent: true, opacity: 0.9,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      sSpr.scale.set(0.5, 0.5, 1);
+      sSpr.position.set(Math.cos(sAngle) * 1.2, Math.sin(sAngle) * 1.2, 0);
+      soGroup.add(sSpr);
+      soSparks.push({spr: sSpr, angle: sAngle, phase: si * 1.05});
+    }
+    // 4 electric arc sprites (randomly jut out)
+    var soArcs = [];
+    for(var ai = 0; ai < 4; ai++){
+      var aSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: circleParticleTex, color: 0xffffff, transparent: true, opacity: 0.8,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      aSpr.scale.set(0.3, 1.5, 1);
+      soGroup.add(aSpr);
+      soArcs.push(aSpr);
+    }
+    soGroup.position.set(playerPos.x, playerPos.y + 2.5, playerPos.z);
+    scene.add(soGroup);
+    var soSpeed = 35;
+    var soProj = {
+      mesh: soGroup, spell: spell,
+      vx: soDx * soSpeed, vy: soDy * soSpeed, vz: soDz * soSpeed,
+      life: (spell.range || 80) / soSpeed, age: 0,
+      trailTimer: 0, lastTrailX: playerPos.x, lastTrailY: playerPos.y + 2.5, lastTrailZ: playerPos.z
+    };
+    activeProjectiles.push(soProj);
+    var soAnimDone = false;
+    meteorAnimators.push(function(dt2){
+      if(soAnimDone || !soGroup.parent) return true;
+      for(var k = 0; k < soSparks.length; k++){
+        soSparks[k].angle += dt2 * 10;
+        var sr = 1.2 + Math.sin(soSparks[k].angle * 2 + soSparks[k].phase) * 0.4;
+        soSparks[k].spr.position.set(
+          Math.cos(soSparks[k].angle) * sr,
+          Math.sin(soSparks[k].angle) * sr,
+          Math.sin(soSparks[k].angle * 0.7) * sr * 0.5
+        );
+      }
+      // Reposition arc sprites randomly each frame
+      for(var j = 0; j < soArcs.length; j++){
+        var aDir = Math.random() * Math.PI * 2;
+        var aDist = 0.8 + Math.random() * 1.2;
+        soArcs[j].position.set(Math.cos(aDir) * aDist, Math.sin(aDir) * aDist, (Math.random()-0.5)*aDist);
+        soArcs[j].rotation.z = aDir + Math.PI * 0.5;
+        soArcs[j].material.opacity = Math.random() > 0.3 ? 0.8 : 0.2;
+      }
+      soGlow.material.opacity = 0.4 + Math.sin(soProj.age * 20) * 0.15;
+      return false;
+    });
+    soGroup.userData.onImpact = function(){
+      soAnimDone = true;
+      var impP = soGroup.position.clone();
+      // Electric burst — 12 sparks outward
+      for(var bi = 0; bi < 12; bi++){
+        var bSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: circleParticleTex, color: [0xffff44,0xffffaa,0xffffff][bi%3],
+          transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false
+        }));
+        bSpr.scale.set(0.8, 0.8, 1);
+        bSpr.position.copy(impP);
+        scene.add(bSpr);
+        var bA = (bi/12)*Math.PI*2, bSpd = 10 + Math.random()*8;
+        (function(s,vx,vy,vz){ var a=0; meteorAnimators.push(function(dt3){ a+=dt3; s.position.x+=vx*dt3; s.position.y+=vy*dt3; s.position.z+=vz*dt3; s.material.opacity-=dt3*3; if(a>0.4){scene.remove(s); s.material.dispose(); return true;} return false; }); })(bSpr, Math.cos(bA)*bSpd, (Math.random()-0.3)*bSpd*0.5, Math.sin(bA)*bSpd);
+      }
+    };
     return;
   }
   if(spell.id === 'shadow_bolt'){
@@ -4727,9 +4973,129 @@ function castSpell(spellId){
     return;
   }
   if(spell.id === 'tidal_wave'){
-    // Tidal Wave — wide spread of water projectiles
-    castMultiShot(spell, 6, 0.1);
+    // v160: Massive wall of water that rises and crashes forward
     playSpellSound(spell);
+    spawnSpellCastVFX(spell, playerPos.clone());
+    showVashraAlert('🌊 TIDAL WAVE', 'Massive wave incoming!', 2);
+    var twYaw = playerYaw + cameraYawOffset;
+    var twStartX = playerPos.x;
+    var twStartZ = playerPos.z;
+    var twGY = getHeight(twStartX, twStartZ);
+    // Wave wall mesh — wide curved plane
+    var twGeo = new THREE.PlaneGeometry(20, 8, 12, 4);
+    // Curve the plane vertices for a wave shape
+    var twPos = twGeo.attributes.position;
+    for(var vi = 0; vi < twPos.count; vi++){
+      var px2 = twPos.getX(vi), py2 = twPos.getY(vi);
+      var curve = Math.sin(px2 * 0.15) * 2.0;
+      twPos.setZ(vi, curve);
+      // Add a crest curl at the top
+      if(py2 > 2.5) twPos.setZ(vi, curve - (py2 - 2.5) * 1.5);
+    }
+    twGeo.computeVertexNormals();
+    var twMat = new THREE.MeshStandardMaterial({
+      color: 0x2288cc, emissive: 0x115588, emissiveIntensity: 0.5,
+      transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false
+    });
+    var twWave = new THREE.Mesh(twGeo, twMat);
+    twWave.position.set(twStartX - Math.sin(twYaw)*2, twGY, twStartZ - Math.cos(twYaw)*2);
+    twWave.rotation.y = -twYaw;
+    twWave.scale.set(1, 0.01, 1);
+    scene.add(twWave);
+    // Foam sprites along bottom
+    var twFoam = [];
+    for(var fi2 = 0; fi2 < 10; fi2++){
+      var fSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: circleParticleTex, color: 0xcceeFF, transparent: true, opacity: 0.6,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      fSpr.scale.set(3, 1.5, 1);
+      var fOff = (fi2 - 4.5) * 2.0;
+      fSpr.position.set(
+        twStartX + Math.cos(twYaw) * fOff,
+        twGY + 0.5,
+        twStartZ - Math.sin(twYaw) * fOff
+      );
+      scene.add(fSpr);
+      twFoam.push(fSpr);
+    }
+    // Spray particles along top
+    var twSpray = [];
+    for(var si2 = 0; si2 < 12; si2++){
+      var sSpr2 = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: circleParticleTex, color: 0x88ddff, transparent: true, opacity: 0.5,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      sSpr2.scale.set(1.5 + Math.random(), 1.5 + Math.random(), 1);
+      sSpr2.position.set(
+        twStartX + Math.cos(twYaw) * ((si2-5.5)*1.8),
+        twGY + 6 + Math.random()*3,
+        twStartZ - Math.sin(twYaw) * ((si2-5.5)*1.8)
+      );
+      scene.add(sSpr2);
+      twSpray.push({spr: sSpr2, vy: 2 + Math.random()*3, drift: (Math.random()-0.5)*2});
+    }
+    var twAge = 0;
+    var twDamaged = false;
+    meteorAnimators.push(function(dt2){
+      twAge += dt2;
+      var waveX = twWave.position.x;
+      var waveZ = twWave.position.z;
+      // Phase 1: Rise (0-0.3s)
+      if(twAge < 0.3){
+        var rise = twAge / 0.3;
+        twWave.scale.y = rise;
+        twWave.position.y = twGY + rise * 4;
+      }
+      // Phase 2: Crash forward (0.3-1.5s)
+      else if(twAge < 1.5){
+        var crash = (twAge - 0.3) / 1.2;
+        var moveSpeed = 25;
+        twWave.position.x += Math.sin(twYaw) * moveSpeed * dt2;
+        twWave.position.z += Math.cos(twYaw) * moveSpeed * dt2;
+        twWave.position.y = twGY + 4 * (1 - crash * 0.6);
+        twWave.scale.y = 1 - crash * 0.3;
+        twMat.opacity = 0.7 - crash * 0.15;
+        // Move foam + spray with wave
+        for(var fi3 = 0; fi3 < twFoam.length; fi3++){
+          twFoam[fi3].position.x += Math.sin(twYaw) * moveSpeed * dt2;
+          twFoam[fi3].position.z += Math.cos(twYaw) * moveSpeed * dt2;
+        }
+        for(var si3 = 0; si3 < twSpray.length; si3++){
+          twSpray[si3].spr.position.x += Math.sin(twYaw) * moveSpeed * dt2;
+          twSpray[si3].spr.position.z += Math.cos(twYaw) * moveSpeed * dt2;
+          twSpray[si3].spr.position.y += twSpray[si3].vy * dt2;
+          twSpray[si3].spr.material.opacity -= dt2 * 0.4;
+        }
+        // Damage NPCs in path
+        if(!twDamaged && crash > 0.3){
+          twDamaged = true;
+          screenShake(0.25, 1.5);
+          // Damage along wave path
+          var dmgX = twWave.position.x;
+          var dmgZ = twWave.position.z;
+          damageNPCsInRadius(dmgX, dmgZ, spell.aoeRadius || 18, spell.damage * playerSpellPowerBuff);
+        }
+        if(crash > 0.6 && !twWave.userData._dmg2){
+          twWave.userData._dmg2 = true;
+          damageNPCsInRadius(twWave.position.x, twWave.position.z, spell.aoeRadius || 18, spell.damage * 0.5 * playerSpellPowerBuff);
+        }
+      }
+      // Phase 3: Fade (1.5-2.2s)
+      else {
+        twMat.opacity -= dt2 * 1.5;
+        twWave.position.y -= dt2 * 4;
+        for(var fi4 = 0; fi4 < twFoam.length; fi4++) twFoam[fi4].material.opacity -= dt2 * 2;
+        for(var si4 = 0; si4 < twSpray.length; si4++) twSpray[si4].spr.material.opacity -= dt2 * 2;
+      }
+      if(twAge > 2.2){
+        scene.remove(twWave); twMat.dispose(); twGeo.dispose();
+        twFoam.forEach(function(f){ scene.remove(f); f.material.dispose(); });
+        twSpray.forEach(function(s){ scene.remove(s.spr); s.spr.material.dispose(); });
+        return true;
+      }
+      return false;
+    });
     return;
   }
   if(spell.id === 'immolation'){
@@ -6112,72 +6478,387 @@ function damageNPCsInRadius(cx, cz, radius, damage){
 var activePersistentAoEs = [];
 
 
-function spawnWhirlpoolVortex(x, y, z, spell){
-  var dur = 15, radius = 10, aoe = {
-    x: x, y: y, z: z, spell: spell, duration: dur,
-    elapsed: 0, tickTimer: 0, type: 'whirlpool',
-    meshes: [], radius: radius
-  };
-  // Large water disc at ground level — spinning pool
-  var poolGeo = new THREE.CircleGeometry(radius, 32);
-  poolGeo.rotateX(-Math.PI/2);
-  var poolMat = new THREE.MeshBasicMaterial({
-    color: 0x1166aa, transparent: true, opacity: 0.55,
-    side: THREE.DoubleSide, depthWrite: false
-  });
-  var pool = new THREE.Mesh(poolGeo, poolMat);
-  pool.position.set(x, y + 0.2, z);
-  scene.add(pool);
-  aoe.meshes.push(pool);
-  aoe.ring = pool;
-  // Concentric spinning rings at different heights
-  for(var ri = 0; ri < 4; ri++){
-    var rr = radius * (1 - ri * 0.2);
-    var rGeo = new THREE.RingGeometry(rr * 0.7, rr, 24);
-    rGeo.rotateX(-Math.PI/2);
+
+// v160: Tornado/Cyclone — proper funnel with stacked rings, debris, chase AI
+function spawnTornado(x, y, z, spell){
+  var dur = 12, radius = spell.aoeRadius || 8;
+  var tornadoMeshes = [];
+  var tornadoPos = {x: x, y: y, z: z};
+  // Stack 8 spinning rings (wide at bottom, narrow at top)
+  var tornadoRings = [];
+  for(var ri = 0; ri < 8; ri++){
+    var ringR = radius * (1 - ri * 0.1) * (1 - ri * 0.03);
+    var rGeo = new THREE.TorusGeometry(ringR, 0.25 + (8 - ri) * 0.05, 6, 24);
     var rMat = new THREE.MeshBasicMaterial({
-      color: 0x2299dd, transparent: true, opacity: 0.35 - ri * 0.05,
+      color: 0xccddee, transparent: true, opacity: 0.35 - ri * 0.02,
       side: THREE.DoubleSide, depthWrite: false
     });
     var rMesh = new THREE.Mesh(rGeo, rMat);
-    rMesh.position.set(x, y + 0.3 + ri * 0.8, z);
+    rMesh.rotation.x = Math.PI / 2;
+    rMesh.position.set(x, y + 0.5 + ri * 1.8, z);
     scene.add(rMesh);
-    rMesh.userData.ringLayer = ri;
-    rMesh.userData.spinSpeed = 2 + ri * 1.5;
-    aoe.meshes.push(rMesh);
+    tornadoMeshes.push(rMesh);
+    tornadoRings.push({mesh: rMesh, speed: 3 + ri * 1.5, height: 0.5 + ri * 1.8, radius: ringR});
   }
-  // Water spray particles spiraling upward
-  for(var pi = 0; pi < 30; pi++){
-    var pAngle = (pi / 30) * Math.PI * 2;
-    var pR = radius * (0.3 + Math.random() * 0.7);
-    var sMat = new THREE.SpriteMaterial({
+  // Central semi-transparent cone (inverted — wide at bottom)
+  var coneGeo = new THREE.ConeGeometry(radius * 0.7, 14, 12, 1, true);
+  var coneMat = new THREE.MeshBasicMaterial({
+    color: 0xddeeff, transparent: true, opacity: 0.15,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  var cone = new THREE.Mesh(coneGeo, coneMat);
+  cone.rotation.x = Math.PI; // Invert — wide at bottom
+  cone.position.set(x, y + 7, z);
+  scene.add(cone);
+  tornadoMeshes.push(cone);
+  // Dust cloud at base
+  var dustBase = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: circleParticleTex, color: 0xbbaa88, transparent: true, opacity: 0.4,
+    depthWrite: false
+  }));
+  dustBase.scale.set(radius * 2.5, radius * 1.2, 1);
+  dustBase.position.set(x, y + 0.3, z);
+  scene.add(dustBase);
+  tornadoMeshes.push(dustBase);
+  // 20 debris particles orbiting at high speed
+  var debris = [];
+  for(var di = 0; di < 20; di++){
+    var dSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: circleParticleTex, color: [0xbbaa88, 0x998877, 0xaabb99, 0xccccbb][di % 4],
+      transparent: true, opacity: 0.6,
+      blending: THREE.NormalBlending, depthWrite: false
+    }));
+    dSpr.scale.set(0.4 + Math.random() * 0.6, 0.4 + Math.random() * 0.6, 1);
+    var dAngle = Math.random() * Math.PI * 2;
+    var dH = Math.random() * 12;
+    var dR = (radius * 0.3) + Math.random() * radius * 0.7;
+    dSpr.position.set(x + Math.cos(dAngle) * dR, y + dH, z + Math.sin(dAngle) * dR);
+    scene.add(dSpr);
+    tornadoMeshes.push(dSpr);
+    debris.push({spr: dSpr, angle: dAngle, h: dH, r: dR, speed: 6 + Math.random() * 8});
+  }
+  var tAge = 0, tTickTimer = 0;
+  playSound('wind', 0.5, 0.6);
+  meteorAnimators.push(function(dt2){
+    tAge += dt2;
+    if(tAge >= dur){
+      tornadoMeshes.forEach(function(m){ scene.remove(m); if(m.material) m.material.dispose(); if(m.geometry) m.geometry.dispose(); });
+      return true;
+    }
+    // Chase nearest NPC
+    var nearest = null, nearDist = 9999;
+    allNPCs.forEach(function(npc){
+      if(!npc || !npc.position) return;
+      var dx2 = npc.position.x - tornadoPos.x, dz2 = npc.position.z - tornadoPos.z;
+      var d = Math.sqrt(dx2*dx2 + dz2*dz2);
+      if(d < nearDist && d < 80){ nearDist = d; nearest = npc; }
+    });
+    if(nearest){
+      var chaseSpeed = 12 * dt2;
+      var cdx = nearest.position.x - tornadoPos.x;
+      var cdz = nearest.position.z - tornadoPos.z;
+      var cd = Math.sqrt(cdx*cdx + cdz*cdz);
+      if(cd > 1){
+        tornadoPos.x += (cdx / cd) * chaseSpeed;
+        tornadoPos.z += (cdz / cd) * chaseSpeed;
+      }
+    }
+    tornadoPos.y = getHeight(tornadoPos.x, tornadoPos.z);
+    // Move all meshes to new position
+    for(var ri2 = 0; ri2 < tornadoRings.length; ri2++){
+      var tr = tornadoRings[ri2];
+      tr.mesh.position.x = tornadoPos.x;
+      tr.mesh.position.z = tornadoPos.z;
+      tr.mesh.position.y = tornadoPos.y + tr.height;
+      tr.mesh.rotation.z += dt2 * tr.speed * (ri2 % 2 === 0 ? 1 : -1);
+    }
+    cone.position.set(tornadoPos.x, tornadoPos.y + 7, tornadoPos.z);
+    cone.rotation.y += dt2 * 4;
+    dustBase.position.set(tornadoPos.x, tornadoPos.y + 0.3, tornadoPos.z);
+    dustBase.material.opacity = 0.3 + Math.sin(tAge * 3) * 0.1;
+    dustBase.scale.x = radius * 2.5 + Math.sin(tAge * 5) * 2;
+    // Animate debris
+    for(var di2 = 0; di2 < debris.length; di2++){
+      var db = debris[di2];
+      db.angle += dt2 * db.speed;
+      db.h += dt2 * 2;
+      if(db.h > 14) db.h = 0;
+      var dbR = db.r * (1 - db.h / 20);
+      db.spr.position.set(
+        tornadoPos.x + Math.cos(db.angle) * dbR,
+        tornadoPos.y + db.h,
+        tornadoPos.z + Math.sin(db.angle) * dbR
+      );
+    }
+    // Fade in/out
+    var fadeIn = Math.min(1, tAge * 2);
+    var fadeOut = Math.max(0, 1 - (tAge - dur + 1.5));
+    coneMat.opacity = 0.15 * fadeIn * fadeOut;
+    // Damage tick
+    tTickTimer += dt2;
+    if(tTickTimer >= 1.0){
+      tTickTimer = 0;
+      damageNPCsInRadius(tornadoPos.x, tornadoPos.z, radius, spell.damage * playerSpellPowerBuff);
+    }
+    return false;
+  });
+}
+
+// v160: Static Field — electric ring that follows player with flickering sparks
+function spawnStaticField(x, y, z, spell){
+  var dur = 15, radius = spell.aoeRadius || 8;
+  var sfMeshes = [];
+  // Base: glowing yellow ring on ground
+  var sfRingGeo = new THREE.RingGeometry(radius * 0.85, radius, 32);
+  sfRingGeo.rotateX(-Math.PI / 2);
+  var sfRingMat = new THREE.MeshBasicMaterial({
+    color: 0xffff44, transparent: true, opacity: 0.5,
+    side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  var sfRing = new THREE.Mesh(sfRingGeo, sfRingMat);
+  sfRing.position.set(x, y + 0.15, z);
+  scene.add(sfRing);
+  sfMeshes.push(sfRing);
+  // Inner glow disc
+  var sfGlowGeo = new THREE.CircleGeometry(radius * 0.8, 24);
+  sfGlowGeo.rotateX(-Math.PI / 2);
+  var sfGlowMat = new THREE.MeshBasicMaterial({
+    color: 0xffff88, transparent: true, opacity: 0.08,
+    side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  var sfGlow = new THREE.Mesh(sfGlowGeo, sfGlowMat);
+  sfGlow.position.set(x, y + 0.1, z);
+  scene.add(sfGlow);
+  sfMeshes.push(sfGlow);
+  // 20 spark sprites on ring perimeter (flicker on/off)
+  var sfSparks = [];
+  for(var si2 = 0; si2 < 20; si2++){
+    var spAngle = (si2 / 20) * Math.PI * 2;
+    var spSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: circleParticleTex, color: [0xffff44, 0xffffaa, 0xffffff][si2 % 3],
+      transparent: true, opacity: 0.8,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    spSpr.scale.set(0.6 + Math.random() * 0.4, 0.6 + Math.random() * 0.4, 1);
+    spSpr.position.set(
+      x + Math.cos(spAngle) * radius * 0.93,
+      y + 0.3 + Math.random() * 1.5,
+      z + Math.sin(spAngle) * radius * 0.93
+    );
+    scene.add(spSpr);
+    sfMeshes.push(spSpr);
+    sfSparks.push({spr: spSpr, angle: spAngle, flickerRate: 3 + Math.random() * 8});
+  }
+  // Central electric glow sprite pulsing
+  var sfCenter = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: circleParticleTex, color: 0xffff88, transparent: true, opacity: 0.3,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  }));
+  sfCenter.scale.set(5, 5, 1);
+  sfCenter.position.set(x, y + 1, z);
+  scene.add(sfCenter);
+  sfMeshes.push(sfCenter);
+  var sfAge = 0, sfTickTimer = 0, sfFlashTimer = 0;
+  meteorAnimators.push(function(dt2){
+    sfAge += dt2;
+    if(sfAge >= dur){
+      sfMeshes.forEach(function(m){ scene.remove(m); if(m.material) m.material.dispose(); if(m.geometry) m.geometry.dispose(); });
+      return true;
+    }
+    // Follow player position
+    var cx2 = playerPos.x, cz2 = playerPos.z;
+    var cy2 = getHeight(cx2, cz2);
+    sfRing.position.set(cx2, cy2 + 0.15, cz2);
+    sfGlow.position.set(cx2, cy2 + 0.1, cz2);
+    sfCenter.position.set(cx2, cy2 + 1, cz2);
+    sfRing.rotation.z += dt2 * 2;
+    // Pulse center
+    sfCenter.material.opacity = 0.2 + Math.sin(sfAge * 6) * 0.15;
+    sfCenter.scale.set(5 + Math.sin(sfAge * 4) * 1.5, 5 + Math.sin(sfAge * 4) * 1.5, 1);
+    // Flicker sparks + reposition on ring
+    for(var si3 = 0; si3 < sfSparks.length; si3++){
+      var sp = sfSparks[si3];
+      sp.spr.position.set(
+        cx2 + Math.cos(sp.angle) * radius * 0.93,
+        cy2 + 0.3 + Math.random() * 1.5,
+        cz2 + Math.sin(sp.angle) * radius * 0.93
+      );
+      sp.spr.visible = Math.sin(sfAge * sp.flickerRate + si3) > -0.3;
+    }
+    // Crackle flash every ~0.5s
+    sfFlashTimer += dt2;
+    if(sfFlashTimer > 0.5){
+      sfFlashTimer = 0;
+      var fAngle2 = Math.random() * Math.PI * 2;
+      var fSpr2 = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: circleParticleTex, color: 0xffffff, transparent: true, opacity: 1.0,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      fSpr2.scale.set(3, 3, 1);
+      fSpr2.position.set(
+        cx2 + Math.cos(fAngle2) * radius * 0.9,
+        cy2 + 0.5,
+        cz2 + Math.sin(fAngle2) * radius * 0.9
+      );
+      scene.add(fSpr2);
+      sfMeshes.push(fSpr2);
+      (function(s){ var a=0; meteorAnimators.push(function(dt3){ a+=dt3; s.material.opacity-=dt3*6; if(a>0.2){scene.remove(s); s.material.dispose(); return true;} return false; }); })(fSpr2);
+    }
+    // Fade in/out
+    var fadeIn2 = Math.min(1, sfAge * 2);
+    var fadeOut2 = Math.max(0, 1 - (sfAge - dur + 1));
+    sfRingMat.opacity = 0.5 * fadeIn2 * fadeOut2;
+    // Damage tick
+    sfTickTimer += dt2;
+    if(sfTickTimer >= 1.0){
+      sfTickTimer = 0;
+      damageNPCsInRadius(cx2, cz2, radius, spell.damage * playerSpellPowerBuff);
+    }
+    return false;
+  });
+}
+
+function spawnWhirlpoolVortex(x, y, z, spell){
+  // v160: Proper water vortex with funnel, concentric rings, spiral spray
+  var dur = 15, radius = 10;
+  var wpMeshes = [];
+  var wpPos = {x: x, y: y, z: z};
+  // Central inverted cone — the funnel
+  var funnelGeo = new THREE.ConeGeometry(radius * 0.6, 10, 16, 1, true);
+  var funnelMat = new THREE.MeshBasicMaterial({
+    color: 0x1166aa, transparent: true, opacity: 0.3,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  var funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
+  funnelMesh.position.set(x, y + 5, z);
+  scene.add(funnelMesh);
+  wpMeshes.push(funnelMesh);
+  // Dark vortex center at bottom
+  var darkGeo = new THREE.CircleGeometry(2.5, 16);
+  darkGeo.rotateX(-Math.PI / 2);
+  var darkMat = new THREE.MeshBasicMaterial({
+    color: 0x002244, transparent: true, opacity: 0.7,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  var darkCenter = new THREE.Mesh(darkGeo, darkMat);
+  darkCenter.position.set(x, y + 0.15, z);
+  scene.add(darkCenter);
+  wpMeshes.push(darkCenter);
+  // 3 concentric water ring meshes at different heights/speeds
+  var wpRings = [];
+  for(var ri = 0; ri < 3; ri++){
+    var rr = radius * (1 - ri * 0.22);
+    var rGeo = new THREE.TorusGeometry(rr, 0.6 - ri * 0.12, 8, 24);
+    var rMat = new THREE.MeshBasicMaterial({
+      color: [0x2299dd, 0x1188cc, 0x0077bb][ri],
+      transparent: true, opacity: 0.4 - ri * 0.08,
+      side: THREE.DoubleSide, depthWrite: false
+    });
+    var rMesh = new THREE.Mesh(rGeo, rMat);
+    rMesh.rotation.x = Math.PI / 2;
+    rMesh.position.set(x, y + 0.5 + ri * 2.5, z);
+    scene.add(rMesh);
+    wpMeshes.push(rMesh);
+    wpRings.push({mesh: rMesh, speed: 2.5 + ri * 2, height: 0.5 + ri * 2.5});
+  }
+  // 40 spray particles spiraling upward
+  var wpParticles = [];
+  for(var pi = 0; pi < 40; pi++){
+    var pAngle = (pi / 40) * Math.PI * 2;
+    var pR = radius * (0.2 + Math.random() * 0.8);
+    var pSpr = new THREE.Sprite(new THREE.SpriteMaterial({
       map: circleParticleTex, color: pi % 3 === 0 ? 0x88ddff : 0x2288cc,
       transparent: true, opacity: 0.6,
       blending: THREE.AdditiveBlending, depthWrite: false
-    });
-    var spr = new THREE.Sprite(sMat);
-    spr.position.set(x + Math.cos(pAngle) * pR, y + Math.random() * 5, z + Math.sin(pAngle) * pR);
-    spr.scale.set(0.6 + Math.random() * 0.4, 0.6 + Math.random() * 0.4, 1);
-    scene.add(spr);
-    spr.userData.angle = pAngle;
-    spr.userData.pr = pR;
-    spr.userData.baseY = y;
-    spr.userData.speed = 3 + Math.random() * 4;
-    spr.userData.riseSpeed = 1 + Math.random() * 2;
-    aoe.meshes.push(spr);
+    }));
+    pSpr.scale.set(0.5 + Math.random() * 0.5, 0.5 + Math.random() * 0.5, 1);
+    pSpr.position.set(x + Math.cos(pAngle) * pR, y + Math.random() * 8, z + Math.sin(pAngle) * pR);
+    scene.add(pSpr);
+    wpMeshes.push(pSpr);
+    wpParticles.push({spr: pSpr, angle: pAngle, r: pR, baseR: pR, h: Math.random() * 8, speed: 4 + Math.random() * 5, rise: 1.5 + Math.random() * 3});
   }
-  // Central funnel glow
-  var funnelMat = new THREE.SpriteMaterial({
-    map: circleParticleTex, color: 0x44aaee, transparent: true,
-    opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false
+  // Edge splash sprites
+  var wpSplash = [];
+  for(var ei = 0; ei < 8; ei++){
+    var eAngle = (ei / 8) * Math.PI * 2;
+    var eSpr = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: circleParticleTex, color: 0xcceeFF, transparent: true, opacity: 0.4,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    eSpr.scale.set(2.5, 1.5, 1);
+    eSpr.position.set(x + Math.cos(eAngle) * radius, y + 1, z + Math.sin(eAngle) * radius);
+    scene.add(eSpr);
+    wpMeshes.push(eSpr);
+    wpSplash.push({spr: eSpr, angle: eAngle});
+  }
+  // Central glow
+  var wpGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: circleParticleTex, color: 0x44aaee, transparent: true, opacity: 0.35,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  }));
+  wpGlow.scale.set(8, 10, 1);
+  wpGlow.position.set(x, y + 3, z);
+  scene.add(wpGlow);
+  wpMeshes.push(wpGlow);
+  playSound('water', 0.4, 0.5);
+  var wpAge = 0, wpTickTimer = 0;
+  meteorAnimators.push(function(dt2){
+    wpAge += dt2;
+    if(wpAge >= dur){
+      wpMeshes.forEach(function(m){ scene.remove(m); if(m.material) m.material.dispose(); if(m.geometry) m.geometry.dispose(); });
+      return true;
+    }
+    // Spin funnel
+    funnelMesh.rotation.y += dt2 * 3;
+    funnelMesh.position.set(wpPos.x, wpPos.y + 5, wpPos.z);
+    darkCenter.position.set(wpPos.x, wpPos.y + 0.15, wpPos.z);
+    wpGlow.position.set(wpPos.x, wpPos.y + 3, wpPos.z);
+    wpGlow.material.opacity = 0.25 + Math.sin(wpAge * 4) * 0.1;
+    // Spin concentric rings
+    for(var ri2 = 0; ri2 < wpRings.length; ri2++){
+      var wr = wpRings[ri2];
+      wr.mesh.rotation.z += dt2 * wr.speed * (ri2 % 2 === 0 ? 1 : -1);
+      wr.mesh.position.set(wpPos.x, wpPos.y + wr.height, wpPos.z);
+    }
+    // Spiral particles — move toward center (pull-in effect) then rise
+    for(var pi2 = 0; pi2 < wpParticles.length; pi2++){
+      var wp = wpParticles[pi2];
+      wp.angle += dt2 * wp.speed;
+      wp.h += dt2 * wp.rise;
+      if(wp.h > 10) wp.h = 0;
+      // Pull inward as they rise (spiral toward center)
+      wp.r = wp.baseR * (1 - wp.h / 14);
+      if(wp.r < 0.5) wp.r = 0.5;
+      wp.spr.position.set(
+        wpPos.x + Math.cos(wp.angle) * wp.r,
+        wpPos.y + wp.h,
+        wpPos.z + Math.sin(wp.angle) * wp.r
+      );
+      wp.spr.material.opacity = 0.5 + Math.sin(wpAge * 3 + wp.angle) * 0.2;
+    }
+    // Edge splashes
+    for(var ei2 = 0; ei2 < wpSplash.length; ei2++){
+      var es = wpSplash[ei2];
+      es.angle += dt2 * 1.5;
+      es.spr.position.set(
+        wpPos.x + Math.cos(es.angle) * radius,
+        wpPos.y + 1 + Math.abs(Math.sin(wpAge * 5 + ei2)) * 2,
+        wpPos.z + Math.sin(es.angle) * radius
+      );
+      es.spr.material.opacity = 0.3 + Math.sin(wpAge * 4 + ei2) * 0.15;
+    }
+    // Fade in/out
+    var fi = Math.min(1, wpAge * 2);
+    var fo = Math.max(0, 1 - (wpAge - dur + 1.5));
+    funnelMat.opacity = 0.3 * fi * fo;
+    // Damage tick
+    wpTickTimer += dt2;
+    if(wpTickTimer >= 1.0){
+      wpTickTimer = 0;
+      damageNPCsInRadius(wpPos.x, wpPos.z, radius, (spell.damage || 6) * playerSpellPowerBuff);
+    }
+    return false;
   });
-  var funnel = new THREE.Sprite(funnelMat);
-  funnel.position.set(x, y + 2, z);
-  funnel.scale.set(6, 8, 1);
-  scene.add(funnel);
-  aoe.meshes.push(funnel);
-  aoe.funnel = funnel;
-  activePersistentAoEs.push(aoe);
 }
 function spawnPersistentAoE(x, y, z, spell, duration, effectType){
   var aoe = {
@@ -9252,7 +9933,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=159e', function(gltf){
+queueLoad(1, 'character-walk.glb?v=160', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -9319,7 +10000,7 @@ queueLoad(1, 'character-walk.glb?v=159e', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=159e&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=160&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -9387,7 +10068,7 @@ queueLoad(1, 'character-walk.glb?v=159e', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=159e', function(gltf){
+queueLoad(2, 'grass-model.glb?v=160', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -9447,7 +10128,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=159e', function(gltf){
+queueLoad(2, 'sun-model.glb?v=160', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -9479,7 +10160,7 @@ queueLoad(2, 'sun-model.glb?v=159e', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=159e', function(gltf){
+queueLoad(2, 'moon-model.glb?v=160', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -9533,7 +10214,7 @@ queueLoad(2, 'moon-model.glb?v=159e', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=159e', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=160', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -9642,7 +10323,7 @@ queueLoad(4, 'bear-walk.glb?v=159e', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=159e', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=160', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -9723,7 +10404,7 @@ queueLoad(4, 'freak-walk.glb?v=159e', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=159e', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=160', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -9810,7 +10491,7 @@ queueLoad(3, 'stallion-walk.glb?v=159e', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=159e', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=160', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -9873,7 +10554,7 @@ queueLoad(4, 'dreugh-model.glb?v=159e', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=159e', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=160', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -9900,7 +10581,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=159e', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=160', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -9946,7 +10627,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=159e', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=160', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -9961,7 +10642,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=159e', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=160', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -9980,7 +10661,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=159e', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=160', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -9995,7 +10676,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=159e', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=160', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -10010,7 +10691,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=159e', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=160', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -10026,7 +10707,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=159e', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=160', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -10042,7 +10723,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=159e', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=160', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -10057,7 +10738,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=159e', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=160', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -10078,7 +10759,7 @@ queueLoad(7, 'vashra-dragon.glb?v=159e', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=159e', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=160', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){

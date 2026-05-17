@@ -4507,16 +4507,13 @@ function renderSpellbook(){
 // Override cast button for spell casting
 document.getElementById('btn-cast').addEventListener('touchstart', function(e){
   e.preventDefault();
-  if(selectedSpell){
+  if(fishingEquipped){
+    handleFishingAction();
+  } else if(selectedSpell){
     castSpell(selectedSpell);
   }
 });
-document.getElementById('btn-cast').addEventListener('click', function(){
-    playFishingCast();
-  if(selectedSpell){
-    castSpell(selectedSpell);
-  }
-});
+// btn-cast click handler removed — consolidated into single handler below (line ~6275)
 // Keyboard shortcut: press 1-5 to cast spells, Q to open spellbook
 
 
@@ -5670,7 +5667,7 @@ function updateFishingPolePosition(){
 
 function castFishingLine(){
   if(fishingState !== 'idle') return;
-  
+  playFishingCast();
   fishingState = 'casting';
   fishingCastTime = 0;
   castStartPos.copy(fishingPole.position);
@@ -6274,7 +6271,11 @@ document.addEventListener('click', function(e){
 // Mobile cast button
 document.getElementById('btn-cast').addEventListener('click', function(e){
   e.stopPropagation();
-  handleFishingAction();
+  if(fishingEquipped){
+    handleFishingAction();
+  } else if(selectedSpell){
+    castSpell(selectedSpell);
+  }
 });
 
 // Update cast button visibility based on fishing state

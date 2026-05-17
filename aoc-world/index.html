@@ -267,7 +267,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v146</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v147</div>
   <div id="compass-hud" style="color:#fff;font-size:15px;font-weight:bold;text-shadow:0 0 6px rgba(0,200,255,0.7);letter-spacing:1px">🧭 N 0°</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
@@ -394,7 +394,7 @@ function initRealSounds(){
   }
   Object.keys(SOUND_FILES).forEach(function(key){
     function loadSound(retries){
-      fetch(SOUND_FILES[key] + '?v=146')
+      fetch(SOUND_FILES[key] + '?v=147')
         .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
         .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
         .then(function(decoded){ soundBuffers[key] = decoded; console.log('🔊 Sound loaded:', key); })
@@ -950,7 +950,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=146', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=147', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -985,7 +985,7 @@ queueLoad(4, 'snowflake-model.glb?v=146', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=146', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=147', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1242,7 +1242,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=146');
+const grassTex = texLoader.load('grass-texture.jpg?v=147');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1251,61 +1251,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=146');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=147');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=146');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=147');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=146');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=147');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=146');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=147');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=146');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=147');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=146');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=147');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=146');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=147');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=146');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=147');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=146');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=147');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=146');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=147');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=146');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=147');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=146');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=147');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=146');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=147');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=146');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=147');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=146');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=147');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=146');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=147');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -1552,7 +1552,7 @@ scene.add(terrain);
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=146', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=147', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -1575,7 +1575,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=146');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=147');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -1609,7 +1609,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=146', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=147', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1653,7 +1653,7 @@ queueLoad(5, 'rock-pile-model.glb?v=146', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=146', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=147', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -1706,7 +1706,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=146', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=146', function(gltf){
+queueLoad(3, 'bass-model.glb?v=147', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -1798,7 +1798,7 @@ queueLoad(3, 'bass-model.glb?v=146', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=146', function(gltf){
+queueLoad(3, 'deer-model.glb?v=147', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1907,7 +1907,7 @@ queueLoad(3, 'deer-model.glb?v=146', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=146', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=147', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -2477,6 +2477,78 @@ let playerEarthResist = 0, playerEarthResistTimer = 0;
 let playerDeflectMagic = 0, playerDeflectMagicTimer = 0;
 let playerDeflectMelee = 0, playerDeflectMeleeTimer = 0;
 let activeBuffIcons = {};
+
+// === NPC DoT & DEBUFF SYSTEM (v147) ===
+var npcActiveDots = []; // [{target, dmgPerSec, remaining, color}]
+var npcActiveDebuffs = []; // [{target, type, remaining, val}]
+
+function applyDoTToNPC(npcObj, dotDmg, dotDur, color){
+  npcActiveDots.push({target: npcObj, dmgPerSec: dotDmg, remaining: dotDur, color: color || 0x44cc00});
+}
+
+function applyDebuffToNPC(npcObj, debuffType, dur, val){
+  // Remove existing debuff of same type on same target
+  npcActiveDebuffs = npcActiveDebuffs.filter(function(d){ return !(d.target === npcObj && d.type === debuffType); });
+  npcActiveDebuffs.push({target: npcObj, type: debuffType, remaining: dur, val: val});
+  // Visual indicator — colored ring under NPC
+  if(npcObj.position || (npcObj.model && npcObj.model.position)){
+    var pos = npcObj.position || npcObj.model.position;
+    spawnDebuffRing(pos, debuffType);
+  }
+}
+
+function spawnDebuffRing(pos, debuffType){
+  var debuffColors = {slow: 0x88ccff, weaken: 0x884488, silence: 0x663366, armorBreak: 0xcc8844, manaBurn: 0x4444ff, fatigue: 0x886644, disease: 0x88aa00, exhaust: 0x666644, confusion: 0x886688, accuracy: 0x440044};
+  var color = debuffColors[debuffType] || 0xffffff;
+  var ring = new THREE.Mesh(
+    new THREE.RingGeometry(2, 2.8, 16),
+    new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.6, side: THREE.DoubleSide})
+  );
+  ring.position.set(pos.x, (pos.y || 0) + 0.3, pos.z);
+  ring.rotation.x = -Math.PI/2;
+  scene.add(ring);
+  var startTime = performance.now();
+  meteorAnimators.push(function(t){
+    var elapsed = (t - startTime) / 1000;
+    ring.scale.set(1 + elapsed * 0.5, 1 + elapsed * 0.5, 1);
+    ring.material.opacity = 0.6 * Math.max(0, 1 - elapsed / 1.5);
+    if(elapsed > 1.5){ scene.remove(ring); ring.geometry.dispose(); ring.material.dispose(); return true; }
+    return false;
+  });
+}
+
+function updateDotsAndDebuffs(dt){
+  // Tick DoTs
+  for(var i = npcActiveDots.length - 1; i >= 0; i--){
+    var dot = npcActiveDots[i];
+    dot.remaining -= dt;
+    if(dot.remaining <= 0){ npcActiveDots.splice(i, 1); continue; }
+    // Apply damage per tick
+    var tgt = dot.target;
+    var hpProp = (tgt.hp !== undefined) ? 'hp' : null;
+    if(hpProp){
+      tgt[hpProp] -= dot.dmgPerSec * dt;
+      // Poison drip VFX every 0.5s
+      if(Math.random() < dt * 2){
+        var pos = tgt.position || (tgt.model && tgt.model.position);
+        if(pos) spawnBlood({x: pos.x + (Math.random()-0.5)*2, y: (pos.y||0) + 2, z: pos.z + (Math.random()-0.5)*2}, 3, 0.08);
+      }
+    }
+  }
+  // Tick debuffs
+  for(var j = npcActiveDebuffs.length - 1; j >= 0; j--){
+    npcActiveDebuffs[j].remaining -= dt;
+    if(npcActiveDebuffs[j].remaining <= 0) npcActiveDebuffs.splice(j, 1);
+  }
+}
+
+function getNPCDebuff(npcObj, debuffType){
+  for(var i = 0; i < npcActiveDebuffs.length; i++){
+    if(npcActiveDebuffs[i].target === npcObj && npcActiveDebuffs[i].type === debuffType) return npcActiveDebuffs[i].val;
+  }
+  return 0;
+}
+
 
 let allNPCs = []; // Populated after NPCs spawn — for AoE targeting
 let spellbookOpen = false;
@@ -3403,6 +3475,259 @@ function castSpell(spellId){
     return;
   }
   
+
+  // === v147: MORE UNIQUE SPELL HANDLERS ===
+  if(spell.id === 'mana_drain'){
+    // Mana Drain — purple beam that steals mana
+    castSoulSiphon(Object.assign({}, spell, {color: 0x8844cc}));
+    // Restore mana to player on hit (beam already does damage)
+    playerMana = Math.min(playerMaxMana, playerMana + 20);
+    showVashraAlert('💜 MANA DRAIN', '+20 Mana stolen!', 1.5);
+    return;
+  }
+  if(spell.id === 'force_wall'){
+    // Force Wall — create barrier at range
+    var fwYaw = playerYaw + cameraYawOffset;
+    var fwDist = 25;
+    var fwX = playerPos.x + Math.sin(fwYaw) * fwDist;
+    var fwZ = playerPos.z + Math.cos(fwYaw) * fwDist;
+    var fwY = getHeight(fwX, fwZ);
+    // Create a visible wall mesh
+    var wallGeo = new THREE.BoxGeometry(12, 6, 1);
+    var wallMat = new THREE.MeshBasicMaterial({color: spell.color, transparent: true, opacity: 0.5, side: THREE.DoubleSide});
+    var wallMesh = new THREE.Mesh(wallGeo, wallMat);
+    wallMesh.position.set(fwX, fwY + 3, fwZ);
+    wallMesh.rotation.y = fwYaw;
+    scene.add(wallMesh);
+    // Shimmer particles
+    for(var fw=0; fw<8; fw++){
+      var sp = new THREE.Sprite(new THREE.SpriteMaterial({map: circleParticleTex, color: spell.color, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false}));
+      sp.scale.set(1.5,1.5,1);
+      sp.position.set(fwX + (Math.random()-0.5)*10, fwY + Math.random()*6, fwZ + (Math.random()-0.5)*2);
+      scene.add(sp);
+      (function(s){
+        var st = performance.now();
+        meteorAnimators.push(function(t){
+          var e = (t-st)/1000;
+          s.position.y += 0.02;
+          s.material.opacity = 0.6 * Math.max(0, 1-e/2);
+          if(e>2){scene.remove(s);s.material.dispose();return true;}
+          return false;
+        });
+      })(sp);
+    }
+    // Damage NPCs in wall area + fade out wall
+    damageNPCsInRadius(fwX, fwZ, spell.aoeRadius, spell.damage * playerSpellPowerBuff);
+    var wallStart = performance.now();
+    meteorAnimators.push(function(t){
+      var e = (t - wallStart)/1000;
+      wallMesh.material.opacity = 0.5 * Math.max(0, 1 - e/4);
+      if(e > 4){ scene.remove(wallMesh); wallGeo.dispose(); wallMat.dispose(); return true; }
+      return false;
+    });
+    playSpellSound(spell);
+    showVashraAlert('🧱 FORCE WALL', 'Barrier created!', 1.5);
+    return;
+  }
+  if(spell.id === 'entangle'){
+    // Entangle — green vines burst from ground at target
+    var enYaw = playerYaw + cameraYawOffset;
+    var enDist = 25;
+    var enX = playerPos.x + Math.sin(enYaw) * enDist;
+    var enZ = playerPos.z + Math.cos(enYaw) * enDist;
+    var enY = getHeight(enX, enZ);
+    // Create vine tendrils rising from ground
+    for(var vi=0; vi<6; vi++){
+      var vineGeo = new THREE.CylinderGeometry(0.15, 0.3, 4 + Math.random()*3, 6);
+      var vineMat = new THREE.MeshBasicMaterial({color: 0x228822, transparent: true, opacity: 0.7});
+      var vine = new THREE.Mesh(vineGeo, vineMat);
+      var angle = (vi/6) * Math.PI * 2;
+      var rad = 2 + Math.random()*2;
+      vine.position.set(enX + Math.cos(angle)*rad, enY - 2, enZ + Math.sin(angle)*rad);
+      vine.rotation.x = (Math.random()-0.5)*0.4;
+      vine.rotation.z = (Math.random()-0.5)*0.4;
+      scene.add(vine);
+      (function(v, finalY){
+        var st = performance.now();
+        meteorAnimators.push(function(t){
+          var e = (t-st)/1000;
+          if(e < 0.5) v.position.y = finalY - 2 + (e/0.5) * 4;
+          else v.material.opacity = 0.7 * Math.max(0, 1 - (e-0.5)/3);
+          if(e > 3.5){scene.remove(v);vineGeo.dispose();vineMat.dispose();return true;}
+          return false;
+        });
+      })(vine, enY);
+    }
+    // Green burst particles
+    spawnAoEGround({x:enX, y:enY, z:enZ}, spell.color, 5);
+    // Damage + apply slow (root) to nearby NPCs
+    damageNPCsInRadius(enX, enZ, 8, spell.damage * playerSpellPowerBuff);
+    // Apply root debuff to all NPCs in range
+    var allTargets = [].concat(typeof bearData !== 'undefined' ? bearData : [], deerData, stallionData, dreughData, freakData);
+    allTargets.forEach(function(npc){
+      if(!npc || npc.isDead || npc.state === 'dead') return;
+      var pos = npc.position || (npc.model && npc.model.position);
+      if(!pos) return;
+      var dx = pos.x - enX, dz = pos.z - enZ;
+      if(dx*dx + dz*dz < 64) applyDebuffToNPC(npc, 'slow', 5, 1);
+    });
+    playSpellSound(spell);
+    showVashraAlert('🌿 ENTANGLE', 'Vines erupt!', 1.5);
+    return;
+  }
+  if(spell.id === 'swarm'){
+    // Swarm — cloud of insects at target location
+    var swYaw = playerYaw + cameraYawOffset;
+    var swDist = 20;
+    var swX = playerPos.x + Math.sin(swYaw) * swDist;
+    var swZ = playerPos.z + Math.cos(swYaw) * swDist;
+    var swY = getHeight(swX, swZ) + 3;
+    // Create buzzing insect cloud — 20 tiny dark sprites orbiting
+    var swarmGroup = new THREE.Group();
+    swarmGroup.position.set(swX, swY, swZ);
+    scene.add(swarmGroup);
+    for(var si=0; si<20; si++){
+      var bug = new THREE.Sprite(new THREE.SpriteMaterial({map: circleParticleTex, color: 0x332211, transparent: true, opacity: 0.8, depthWrite: false}));
+      bug.scale.set(0.3, 0.3, 1);
+      var bAngle = Math.random() * Math.PI * 2;
+      var bRad = 1 + Math.random() * 3;
+      bug.position.set(Math.cos(bAngle)*bRad, (Math.random()-0.5)*3, Math.sin(bAngle)*bRad);
+      bug.userData = {angle: bAngle, rad: bRad, speed: 2 + Math.random()*3, yOff: bug.position.y};
+      swarmGroup.add(bug);
+    }
+    var swStart = performance.now();
+    var swDotTimer = 0;
+    meteorAnimators.push(function(t){
+      var e = (t - swStart)/1000;
+      // Animate bugs orbiting
+      swarmGroup.children.forEach(function(b){
+        if(!b.userData) return;
+        b.userData.angle += b.userData.speed * 0.016;
+        b.position.x = Math.cos(b.userData.angle) * b.userData.rad;
+        b.position.z = Math.sin(b.userData.angle) * b.userData.rad;
+        b.position.y = b.userData.yOff + Math.sin(e * 5 + b.userData.angle) * 0.5;
+      });
+      // DoT tick every 1s
+      swDotTimer += 0.016;
+      if(swDotTimer >= 1.0){
+        swDotTimer = 0;
+        damageNPCsInRadius(swX, swZ, 6, spell.dotDmg || 3);
+      }
+      // Fade and remove after duration
+      if(e > (spell.dotDur || 8)){
+        scene.remove(swarmGroup);
+        return true;
+      }
+      if(e > (spell.dotDur || 8) - 1){
+        swarmGroup.children.forEach(function(b){ b.material.opacity = Math.max(0, 0.8 * (1 - (e - (spell.dotDur||8) + 1))); });
+      }
+      return false;
+    });
+    // Initial damage
+    damageNPCsInRadius(swX, swZ, 6, spell.damage * playerSpellPowerBuff);
+    playSpellSound(spell);
+    showVashraAlert('🕷️ SWARM', 'Insects descend!', 1.5);
+    return;
+  }
+  if(spell.id === 'dread'){
+    // Dread — dark cloud projectile that leaves fear trail
+    fireSpellProjectile(spell);
+    // Dark mist at player
+    if(characterPivot) spawnCastingCircle(characterPivot.position, 0x440044, 3);
+    playSpellSound(spell);
+    return;
+  }
+  if(spell.id === 'essence_drain'){
+    // Essence Drain — dark purple beam, DoT + lifesteal
+    castSoulSiphon(Object.assign({}, spell, {color: 0x882288}));
+    playSpellSound(spell);
+    return;
+  }
+  if(spell.id === 'raise_dead'){
+    // Raise Dead — summon a skeleton warrior (placeholder: dark pillar + VFX)
+    var rdYaw = playerYaw + cameraYawOffset;
+    var rdDist = 10;
+    var rdX = playerPos.x + Math.sin(rdYaw) * rdDist;
+    var rdZ = playerPos.z + Math.cos(rdYaw) * rdDist;
+    var rdY = getHeight(rdX, rdZ);
+    // Dark summoning circle
+    spawnCastingCircle({x:rdX, y:rdY, z:rdZ}, 0x663366, 4);
+    // Rising dark pillar
+    var pillarGeo = new THREE.CylinderGeometry(0.5, 1.5, 8, 8);
+    var pillarMat = new THREE.MeshBasicMaterial({color: 0x663366, transparent: true, opacity: 0.6});
+    var pillar = new THREE.Mesh(pillarGeo, pillarMat);
+    pillar.position.set(rdX, rdY - 4, rdZ);
+    scene.add(pillar);
+    // Skeleton figure (simple stick figure for now)
+    var skelGroup = new THREE.Group();
+    // Body
+    var bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 2, 6);
+    var boneMat = new THREE.MeshBasicMaterial({color: 0xddccbb});
+    skelGroup.add(new THREE.Mesh(bodyGeo, boneMat));
+    // Head
+    var headGeo = new THREE.SphereGeometry(0.5, 8, 6);
+    var head = new THREE.Mesh(headGeo, boneMat);
+    head.position.y = 1.5;
+    skelGroup.add(head);
+    // Arms
+    for(var arm = -1; arm <= 1; arm += 2){
+      var armGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.5, 4);
+      var armMesh = new THREE.Mesh(armGeo, boneMat);
+      armMesh.position.set(arm * 0.7, 0.3, 0);
+      armMesh.rotation.z = arm * 0.4;
+      skelGroup.add(armMesh);
+    }
+    // Legs
+    for(var leg = -1; leg <= 1; leg += 2){
+      var legGeo = new THREE.CylinderGeometry(0.15, 0.15, 1.8, 4);
+      var legMesh = new THREE.Mesh(legGeo, boneMat);
+      legMesh.position.set(leg * 0.3, -1.8, 0);
+      skelGroup.add(legMesh);
+    }
+    // Eye glow
+    for(var eye = -1; eye <= 1; eye += 2){
+      var eyeSprite = new THREE.Sprite(new THREE.SpriteMaterial({map: circleParticleTex, color: 0xff0000, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
+      eyeSprite.scale.set(0.3, 0.3, 1);
+      eyeSprite.position.set(eye * 0.2, 1.5, 0.4);
+      skelGroup.add(eyeSprite);
+    }
+    skelGroup.position.set(rdX, rdY - 3, rdZ);
+    skelGroup.visible = false;
+    scene.add(skelGroup);
+    var rdStart = performance.now();
+    meteorAnimators.push(function(t){
+      var e = (t - rdStart)/1000;
+      // Pillar rises
+      if(e < 1){
+        pillar.position.y = rdY - 4 + e * 6;
+        pillar.material.opacity = 0.6;
+      } else if(e < 2){
+        pillar.material.opacity = 0.6 * (1 - (e-1));
+        skelGroup.visible = true;
+        skelGroup.position.y = rdY + Math.min(0, (e - 1.5) * 6);
+      } else {
+        pillar.material.opacity = 0;
+        skelGroup.position.y = rdY;
+        // Skeleton idles — slight bob
+        skelGroup.rotation.y += 0.01;
+        // Attack nearby NPCs every 2s
+        if(Math.floor(e * 10) % 20 === 0){
+          damageNPCsInRadius(rdX, rdZ, 8, 15);
+        }
+      }
+      // Duration check
+      if(e > (spell.duration || 30)){
+        scene.remove(pillar); scene.remove(skelGroup);
+        pillarGeo.dispose(); pillarMat.dispose();
+        return true;
+      }
+      return false;
+    });
+    playSpellSound(spell);
+    showVashraAlert('☠️ RAISE DEAD', 'Skeleton rises!', 2);
+    return;
+  }
+
   if(spell.type === 'combat' && spell.speed){
     // Fire projectile
     fireSpellProjectile(spell);
@@ -4155,7 +4480,7 @@ function updateSpellProjectiles(dt){
           hitSomething = true;
           // Lifesteal for Blood Barrage
           if(p.spell.lifesteal){
-            var healAmt = Math.floor(p.spell.damage * 0.3);
+            var healAmt = Math.floor(p.spell.damage * (p.spell.lifesteal || 0.3));
             playerHP = Math.min(playerMaxHP, playerHP + healAmt);
             showVashraAlert('🩸 LIFESTEAL', '+' + healAmt + ' HP', 1.5);
           }
@@ -4164,6 +4489,10 @@ function updateSpellProjectiles(dt){
             bd.model.rotation.z = Math.PI/2;
             bd.model.position.y += 0.5;
           }
+          // Apply DoT/Debuff on hit (v147)
+          if(p.spell.dotDmg && p.spell.dotDur) applyDoTToNPC(bd, p.spell.dotDmg, p.spell.dotDur, p.spell.color);
+          if(p.spell.debuff && p.spell.debuffDur) applyDebuffToNPC(bd, p.spell.debuff, p.spell.debuffDur, 1);
+          if(p.spell.debuffType && p.spell.debuffDur) applyDebuffToNPC(bd, p.spell.debuffType, p.spell.debuffDur, p.spell.debuffVal || 1);
         }
       });
     }
@@ -4186,6 +4515,9 @@ function updateSpellProjectiles(dt){
             if(dd.actions && dd.actions.walk) dd.actions.walk.stop();
             if(dd.actions && dd.actions.idle) dd.actions.idle.stop();
           }
+          if(p.spell.dotDmg && p.spell.dotDur) applyDoTToNPC(dd, p.spell.dotDmg, p.spell.dotDur, p.spell.color);
+          if(p.spell.debuff && p.spell.debuffDur) applyDebuffToNPC(dd, p.spell.debuff, p.spell.debuffDur, 1);
+          if(p.spell.debuffType && p.spell.debuffDur) applyDebuffToNPC(dd, p.spell.debuffType, p.spell.debuffDur, p.spell.debuffVal || 1);
         }
       }
     }
@@ -4203,6 +4535,9 @@ function updateSpellProjectiles(dt){
           var sblood = sd2.model.position.clone(); sblood.y += sd2.scale * 0.3;
           spawnBlood(sblood, 12, 0.2);
           if(sd2.hp <= 0) stallionDeath(si2);
+          if(p.spell.dotDmg && p.spell.dotDur) applyDoTToNPC(sd2, p.spell.dotDmg, p.spell.dotDur, p.spell.color);
+          if(p.spell.debuff && p.spell.debuffDur) applyDebuffToNPC(sd2, p.spell.debuff, p.spell.debuffDur, 1);
+          if(p.spell.debuffType && p.spell.debuffDur) applyDebuffToNPC(sd2, p.spell.debuffType, p.spell.debuffDur, p.spell.debuffVal || 1);
         }
       }
     }
@@ -4223,6 +4558,9 @@ function updateSpellProjectiles(dt){
             gd.state = 'dead';
             gd.model.rotation.z = Math.PI / 2;
           }
+          if(p.spell.dotDmg && p.spell.dotDur) applyDoTToNPC(gd, p.spell.dotDmg, p.spell.dotDur, p.spell.color);
+          if(p.spell.debuff && p.spell.debuffDur) applyDebuffToNPC(gd, p.spell.debuff, p.spell.debuffDur, 1);
+          if(p.spell.debuffType && p.spell.debuffDur) applyDebuffToNPC(gd, p.spell.debuffType, p.spell.debuffDur, p.spell.debuffVal || 1);
         }
       }
     }
@@ -4244,6 +4582,9 @@ function updateSpellProjectiles(dt){
             fd2.model.rotation.z = Math.PI / 2;
             if(fd2.walkAction) fd2.walkAction.stop();
           }
+          if(p.spell.dotDmg && p.spell.dotDur) applyDoTToNPC(fd2, p.spell.dotDmg, p.spell.dotDur, p.spell.color);
+          if(p.spell.debuff && p.spell.debuffDur) applyDebuffToNPC(fd2, p.spell.debuff, p.spell.debuffDur, 1);
+          if(p.spell.debuffType && p.spell.debuffDur) applyDebuffToNPC(fd2, p.spell.debuffType, p.spell.debuffDur, p.spell.debuffVal || 1);
         }
       }
     }
@@ -4257,7 +4598,7 @@ function updateSpellProjectiles(dt){
         vashraHP -= p.spell.damage;
         hitSomething = true;
         if(p.spell.lifesteal){
-          var healAmt = Math.floor(p.spell.damage * 0.3);
+          var healAmt = Math.floor(p.spell.damage * (p.spell.lifesteal || 0.3));
           playerHP = Math.min(playerMaxHP, playerHP + healAmt);
           showVashraAlert('🩸 LIFESTEAL', '-' + p.spell.damage + ' to Vashra, +' + healAmt + ' HP', 2);
         } else {
@@ -6872,7 +7213,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=146', function(gltf){
+queueLoad(1, 'character-walk.glb?v=147', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -6939,7 +7280,7 @@ queueLoad(1, 'character-walk.glb?v=146', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=146&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=147&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -7007,7 +7348,7 @@ queueLoad(1, 'character-walk.glb?v=146', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=146', function(gltf){
+queueLoad(2, 'grass-model.glb?v=147', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -7067,7 +7408,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=146', function(gltf){
+queueLoad(2, 'sun-model.glb?v=147', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -7099,7 +7440,7 @@ queueLoad(2, 'sun-model.glb?v=146', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=146', function(gltf){
+queueLoad(2, 'moon-model.glb?v=147', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -7153,7 +7494,7 @@ queueLoad(2, 'moon-model.glb?v=146', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=146', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=147', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -7262,7 +7603,7 @@ queueLoad(4, 'bear-walk.glb?v=146', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=146', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=147', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -7343,7 +7684,7 @@ queueLoad(4, 'freak-walk.glb?v=146', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=146', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=147', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -7430,7 +7771,7 @@ queueLoad(3, 'stallion-walk.glb?v=146', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=146', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=147', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -7493,7 +7834,7 @@ queueLoad(4, 'dreugh-model.glb?v=146', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=146', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=147', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -7520,7 +7861,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=146', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=147', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -7566,7 +7907,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=146', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=147', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -7581,7 +7922,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=146', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=147', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -7600,7 +7941,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=146', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=147', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -7615,7 +7956,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=146', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=147', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -7630,7 +7971,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=146', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=147', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -7646,7 +7987,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=146', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=147', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -7662,7 +8003,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=146', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=147', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -7677,7 +8018,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=146', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=147', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -7698,7 +8039,7 @@ queueLoad(7, 'vashra-dragon.glb?v=146', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=146', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=147', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -11286,6 +11627,7 @@ function animate(){
   if(playerDeflectMeleeTimer > 0){ playerDeflectMeleeTimer -= dt; if(playerDeflectMeleeTimer <= 0){ playerDeflectMelee = 0; delete activeBuffIcons['deflectMelee']; updateBuffHUD(); } }
 
   // === BUFF TIMERS (v139) ===
+  updateDotsAndDebuffs(dt);
   if(playerDamageBuffTimer > 0){ playerDamageBuffTimer -= dt; if(playerDamageBuffTimer <= 0){ playerDamageBuff = 1.0; } }
   if(playerHealOverTimeTimer > 0){
     playerHealOverTimeTimer -= dt;

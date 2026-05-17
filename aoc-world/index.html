@@ -224,7 +224,7 @@ setTimeout(function(){
 <div id="btn-skin" style="position:fixed;bottom:180px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(180,120,50,0.6);border:3px solid rgba(180,120,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Skin</div>
 <div id="loot-popup" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);color:#ffdd44;font-size:16px;font-weight:bold;text-shadow:1px 1px 3px #000;z-index:20;text-align:center;pointer-events:none;display:none"></div>
 <div id="hud">
-  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v128</div>
+  <div style="color:#ff0;font-size:16px;font-weight:bold">BUILD v129</div>
   <div id="hud-pos">Position: 0, 0, 0</div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Camera: 3rd Person</div>
@@ -236,7 +236,7 @@ setTimeout(function(){
 <div class="touch-btn" id="btn-camera">Cam</div>
 <div id="btn-cast">Cast</div>
 <div id="btn-attack" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:rgba(220,50,50,0.6);border:3px solid rgba(220,50,50,0.9);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:bold;z-index:20;-webkit-user-select:none;user-select:none">Attack</div>
-<div id="settings-btn">⚙️</div>
+<div id="settings-btn"> <button id="sound-btn" style="position:fixed;top:10px;right:60px;z-index:1000;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:8px;padding:6px 10px;font-size:16px;cursor:pointer;" onclick="window.toggleSound()">🔊</button><span>⚙️</div>
 <div id="settings-panel">
   <h3>⚙️ Settings</h3>
   <div style="color:#aaa;font-size:11px;margin-bottom:6px;text-align:center">GRAPHICS QUALITY</div>
@@ -696,6 +696,7 @@ function checkReady(){
     setTimeout(function(){
       document.getElementById('loading').style.display = 'none';
       if('ontouchstart' in window){
+        initAudio(); startWindSound();
         showTouchControls();
       } else {
         document.getElementById('click-to-play').style.display = 'flex';
@@ -706,7 +707,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(8, 'snowflake-model.glb?v=128', function(gltf){
+queueLoad(8, 'snowflake-model.glb?v=129', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -741,7 +742,7 @@ queueLoad(8, 'snowflake-model.glb?v=128', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(8, 'raindrop-model.glb?v=128', function(gltf){
+queueLoad(8, 'raindrop-model.glb?v=129', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -777,7 +778,7 @@ var daySkyTex = null;
 var nightSkyTex = null;
 var skyColorFallback = new THREE.Color(0x87CEEB);
 
-skyLoader.load('day-sky.png?v=128', function(tex){
+skyLoader.load('day-sky.png?v=129', function(tex){
   tex.mapping = THREE.EquirectangularReflectionMapping;
   tex.colorSpace = THREE.SRGBColorSpace;
   daySkyTex = tex;
@@ -789,7 +790,7 @@ skyLoader.load('day-sky.png?v=128', function(tex){
   scene.background = skyColorFallback;
 });
 
-skyLoader.load('night-sky.png?v=128', function(tex){
+skyLoader.load('night-sky.png?v=129', function(tex){
   tex.mapping = THREE.EquirectangularReflectionMapping;
   tex.colorSpace = THREE.SRGBColorSpace;
   nightSkyTex = tex;
@@ -822,6 +823,23 @@ scene.add(sunLight);
 const particleCount = 80;
 const particleGeo = new THREE.BufferGeometry();
 const particlePositions = new Float32Array(particleCount * 3);
+
+// === SOFT CIRCLE TEXTURE (fixes floating squares on mobile) ===
+function createCircleTexture(){
+  var c = document.createElement('canvas');
+  c.width = 32; c.height = 32;
+  var ctx = c.getContext('2d');
+  var grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.6)');
+  grad.addColorStop(0.7, 'rgba(255,255,255,0.2)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(c);
+}
+const circleParticleTex = createCircleTexture();
+
 const particleSpeeds = new Float32Array(particleCount);
 for(let pi = 0; pi < particleCount; pi++){
   particlePositions[pi * 3] = (Math.random() - 0.5) * 200;
@@ -832,11 +850,13 @@ for(let pi = 0; pi < particleCount; pi++){
 particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
 const particleMat = new THREE.PointsMaterial({
   color: 0xffffee,
-  size: 0.6,
+  size: 1.2,
+  map: circleParticleTex,
   transparent: true,
-  opacity: 0.4,
+  opacity: 0.5,
   sizeAttenuation: true,
-  depthWrite: false
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
 });
 const ambientParticles = new THREE.Points(particleGeo, particleMat);
 scene.add(ambientParticles);
@@ -953,7 +973,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=128');
+const grassTex = texLoader.load('grass-texture.jpg?v=129');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -962,45 +982,45 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=128');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=129');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=128');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=129');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=128');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=129');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=128');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=129');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=128');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=129');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=128');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=129');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=128');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=129');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=128');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=129');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=128');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=129');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=128');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=129');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=128');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=129');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -1224,7 +1244,7 @@ waterGeo.rotateX(-Math.PI/2);
 
 // Load Brad's water texture with tiling and animation support
 const waterTexLoader = new THREE.TextureLoader();
-const waterTex = waterTexLoader.load('water-texture.jpg?v=128');
+const waterTex = waterTexLoader.load('water-texture.jpg?v=129');
 waterTex.wrapS = THREE.RepeatWrapping;
 waterTex.wrapT = THREE.RepeatWrapping;
 waterTex.repeat.set(16, 16);
@@ -1233,7 +1253,7 @@ waterTex.magFilter = THREE.LinearFilter;
 waterTex.anisotropy = 16;
 
 // Load frozen water texture for Ice Tundra coastline
-const frozenWaterTex = waterTexLoader.load('frozen-water-tex.png?v=128');
+const frozenWaterTex = waterTexLoader.load('frozen-water-tex.png?v=129');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -1327,7 +1347,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=128', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=129', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -1371,7 +1391,7 @@ queueLoad(5, 'rock-pile-model.glb?v=128', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=128', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=129', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -1424,7 +1444,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=128', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=128', function(gltf){
+queueLoad(3, 'bass-model.glb?v=129', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -1516,7 +1536,7 @@ queueLoad(3, 'bass-model.glb?v=128', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=128', function(gltf){
+queueLoad(3, 'deer-model.glb?v=129', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -1625,7 +1645,7 @@ queueLoad(3, 'deer-model.glb?v=128', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=128', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=129', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -1910,7 +1930,8 @@ let gameTime = 8.0;  // Start at 8:00 AM (0-24 range)
 // Day/night: 10 real minutes = 1 in-game hour (full cycle = 4 real hours)
 
 // === WEATHER SYSTEM ===
-let currentWeather = 'clear'; // clear, rain, snow, storm
+let currentWeather = 'clear';
+      stopRainSound(); // clear, rain, snow, storm
 let weatherTimer = 0;
 let weatherDuration = 300; // seconds until next weather change
 let raindrops = [];
@@ -2097,6 +2118,7 @@ function castSpell(spellId){
   // Casting circle VFX under player feet
   if(characterPivot){
     spawnCastingCircle(characterPivot.position, spell.color, 2.5 + (spell.damage || 10) * 0.02);
+      playSpellCast();
   }
   
   // Grant magic XP
@@ -2113,6 +2135,7 @@ function castSpell(spellId){
     // Healing particles VFX
     if(characterPivot){
       spawnHealEffect(characterPivot.position, spell.color);
+        playHeal();
     }
     showVashraAlert('💚 HEAL', '+' + spell.healAmt + ' HP', 2);
     // Green flash
@@ -2368,6 +2391,7 @@ function updateSpellProjectiles(dt){
       // AoE ground effect for powerful spells
       if((p.spell.damage || 0) >= 35){
         spawnAoEGround({x:px, y:p.mesh.position.y, z:pz}, p.spell.color, 4 + (p.spell.damage || 10) * 0.05, p.spell.id);
+        playSpellImpact();
       }
       p.mesh.visible = false;
       p.mesh.userData.light.visible = false;
@@ -2615,6 +2639,7 @@ function updateMining(dt){
     
     // Grant mining XP
     var xpGain = 15 + Math.floor(Math.random() * 10);
+    playMiningClink();
     playerSkills.mining += xpGain;
     playerXP += xpGain;
     
@@ -2763,6 +2788,633 @@ function updateSmokeParticles(dt){
 }
 
 
+
+
+// ===== DRAGON VFX SYSTEM =====
+const DRAGON_EMBER_COUNT = 60;
+const DRAGON_DUST_COUNT = 30;
+let dragonEmbers = [];
+let dragonDustParts = [];
+let dragonVFXInited = false;
+
+function initDragonVFX(){
+  if(dragonVFXInited) return;
+  dragonVFXInited = true;
+  
+  // Fire ember trail particles
+  var emberCanvas = document.createElement('canvas');
+  emberCanvas.width = 16; emberCanvas.height = 16;
+  var ectx = emberCanvas.getContext('2d');
+  var egrad = ectx.createRadialGradient(8, 8, 0, 8, 8, 8);
+  egrad.addColorStop(0, 'rgba(255,255,200,1)');
+  egrad.addColorStop(0.3, 'rgba(255,180,50,0.9)');
+  egrad.addColorStop(0.6, 'rgba(255,80,10,0.5)');
+  egrad.addColorStop(1, 'rgba(180,30,0,0)');
+  ectx.fillStyle = egrad;
+  ectx.fillRect(0, 0, 16, 16);
+  var emberTex = new THREE.CanvasTexture(emberCanvas);
+  
+  for(var i = 0; i < DRAGON_EMBER_COUNT; i++){
+    var sMat = new THREE.SpriteMaterial({
+      map: emberTex, color: 0xffaa33,
+      blending: THREE.AdditiveBlending, transparent: true,
+      opacity: 0.9, depthWrite: false
+    });
+    var s = new THREE.Sprite(sMat);
+    s.visible = false;
+    scene.add(s);
+    dragonEmbers.push({
+      sprite: s, active: false,
+      x:0, y:0, z:0, vx:0, vy:0, vz:0,
+      life:0, maxLife:0, size:0
+    });
+  }
+  
+  // Landing dust cloud particles (brown/tan)
+  var dustCanvas = document.createElement('canvas');
+  dustCanvas.width = 32; dustCanvas.height = 32;
+  var dctx = dustCanvas.getContext('2d');
+  var dgrad = dctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  dgrad.addColorStop(0, 'rgba(180,160,120,0.8)');
+  dgrad.addColorStop(0.5, 'rgba(150,130,100,0.4)');
+  dgrad.addColorStop(1, 'rgba(120,100,70,0)');
+  dctx.fillStyle = dgrad;
+  dctx.fillRect(0, 0, 32, 32);
+  var dustTex = new THREE.CanvasTexture(dustCanvas);
+  
+  for(var i = 0; i < DRAGON_DUST_COUNT; i++){
+    var dMat = new THREE.SpriteMaterial({
+      map: dustTex, color: 0xccaa88,
+      transparent: true, opacity: 0.7, depthWrite: false
+    });
+    var ds = new THREE.Sprite(dMat);
+    ds.visible = false;
+    scene.add(ds);
+    dragonDustParts.push({
+      sprite: ds, active: false,
+      x:0, y:0, z:0, vx:0, vy:0, vz:0,
+      life:0, maxLife:0, size:0
+    });
+  }
+}
+
+// Fire embers — trail behind dragon while flying
+function spawnDragonEmbers(dragonPos, count){
+  if(!dragonVFXInited) initDragonVFX();
+  var spawned = 0;
+  for(var i = 0; i < DRAGON_EMBER_COUNT && spawned < count; i++){
+    if(!dragonEmbers[i].active){
+      var e = dragonEmbers[i];
+      e.active = true;
+      e.x = dragonPos.x + (Math.random()-0.5)*8;
+      e.y = dragonPos.y + (Math.random()-0.5)*4;
+      e.z = dragonPos.z + (Math.random()-0.5)*8;
+      e.vx = (Math.random()-0.5)*6;
+      e.vy = -2 + Math.random()*4;
+      e.vz = (Math.random()-0.5)*6;
+      e.life = 0;
+      e.maxLife = 0.5 + Math.random()*1.0;
+      e.size = 0.8 + Math.random()*1.5;
+      e.sprite.visible = true;
+      e.sprite.position.set(e.x, e.y, e.z);
+      e.sprite.scale.set(e.size, e.size, 1);
+      spawned++;
+    }
+  }
+}
+
+// Landing dust cloud — big dramatic dust explosion
+function spawnDragonLandingDust(landPos){
+  if(!dragonVFXInited) initDragonVFX();
+  for(var i = 0; i < DRAGON_DUST_COUNT; i++){
+    var d = dragonDustParts[i];
+    d.active = true;
+    var angle = Math.random() * Math.PI * 2;
+    var speed = 8 + Math.random()*15;
+    d.x = landPos.x + (Math.random()-0.5)*4;
+    d.y = landPos.y + Math.random()*2;
+    d.z = landPos.z + (Math.random()-0.5)*4;
+    d.vx = Math.cos(angle) * speed;
+    d.vy = 3 + Math.random()*6;
+    d.vz = Math.sin(angle) * speed;
+    d.life = 0;
+    d.maxLife = 1.5 + Math.random()*1.5;
+    d.size = 3 + Math.random()*5;
+    d.sprite.visible = true;
+    d.sprite.position.set(d.x, d.y, d.z);
+    d.sprite.scale.set(d.size, d.size, 1);
+  }
+}
+
+// Update all dragon VFX particles
+function updateDragonVFX(dt){
+  if(!dragonVFXInited) return;
+  // Update embers
+  for(var i = 0; i < DRAGON_EMBER_COUNT; i++){
+    var e = dragonEmbers[i];
+    if(!e.active) continue;
+    e.life += dt;
+    if(e.life >= e.maxLife){
+      e.active = false;
+      e.sprite.visible = false;
+      continue;
+    }
+    var t = e.life / e.maxLife;
+    e.vy -= 3 * dt; // slight gravity
+    e.x += e.vx * dt;
+    e.y += e.vy * dt;
+    e.z += e.vz * dt;
+    e.sprite.position.set(e.x, e.y, e.z);
+    var scale = e.size * (1 - t*0.5);
+    e.sprite.scale.set(scale, scale, 1);
+    e.sprite.material.opacity = 0.9 * (1 - t);
+    // Color shift: yellow → orange → red
+    var r = 1.0;
+    var g = Math.max(0, 0.7 - t*0.6);
+    var b = Math.max(0, 0.2 - t*0.3);
+    e.sprite.material.color.setRGB(r, g, b);
+  }
+  // Update dust clouds
+  for(var i = 0; i < DRAGON_DUST_COUNT; i++){
+    var d = dragonDustParts[i];
+    if(!d.active) continue;
+    d.life += dt;
+    if(d.life >= d.maxLife){
+      d.active = false;
+      d.sprite.visible = false;
+      continue;
+    }
+    var t = d.life / d.maxLife;
+    d.vx *= (1 - 2*dt); // drag
+    d.vy -= 4 * dt; // gravity
+    d.vz *= (1 - 2*dt);
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.z += d.vz * dt;
+    // Don't go below ground
+    var gh = getHeight(d.x, d.z);
+    if(d.y < gh + 0.5) { d.y = gh + 0.5; d.vy = Math.abs(d.vy)*0.3; }
+    d.sprite.position.set(d.x, d.y, d.z);
+    var scale = d.size * (1 + t*0.5); // dust expands as it rises
+    d.sprite.scale.set(scale, scale, 1);
+    d.sprite.material.opacity = 0.7 * (1 - t*t);
+  }
+}
+
+
+// ===== PROCEDURAL SOUND SYSTEM =====
+let audioCtx = null;
+let masterVolume = null;
+let soundEnabled = true;
+const MASTER_VOL = 0.35;
+
+function initAudio(){
+  if(audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterVolume = audioCtx.createGain();
+    masterVolume.gain.value = MASTER_VOL;
+    masterVolume.connect(audioCtx.destination);
+  } catch(e){ soundEnabled = false; }
+}
+
+// Resume audio context on user interaction (mobile requirement)
+function resumeAudio(){
+  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+// === NOISE BUFFER (shared for all noise-based sounds) ===
+let noiseBuffer = null;
+function getNoiseBuffer(){
+  if(noiseBuffer) return noiseBuffer;
+  if(!audioCtx) return null;
+  var len = audioCtx.sampleRate * 2;
+  noiseBuffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  var data = noiseBuffer.getChannelData(0);
+  for(var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  return noiseBuffer;
+}
+
+// === SWORD SWING — whoosh ===
+function playSwordSwing(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var nb = getNoiseBuffer(); if(!nb) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = nb;
+  var bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(800, now);
+  bp.frequency.exponentialRampToValueAtTime(2500, now+0.05);
+  bp.frequency.exponentialRampToValueAtTime(400, now+0.2);
+  bp.Q.value = 1.5;
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.5, now+0.03);
+  g.gain.exponentialRampToValueAtTime(0.01, now+0.25);
+  src.connect(bp); bp.connect(g); g.connect(masterVolume);
+  src.start(now); src.stop(now+0.3);
+}
+
+// === SWORD HIT — thud + metallic ring ===
+function playSwordHit(isFlesh){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  // Low thud
+  var osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(isFlesh ? 80 : 200, now);
+  osc.frequency.exponentialRampToValueAtTime(isFlesh ? 40 : 80, now+0.15);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.6, now);
+  g.gain.exponentialRampToValueAtTime(0.01, now+0.2);
+  osc.connect(g); g.connect(masterVolume);
+  osc.start(now); osc.stop(now+0.25);
+  // Metallic ring (only for non-flesh)
+  if(!isFlesh){
+    var ring = audioCtx.createOscillator();
+    ring.type = 'square';
+    ring.frequency.setValueAtTime(1200 + Math.random()*400, now);
+    ring.frequency.exponentialRampToValueAtTime(600, now+0.3);
+    var rg = audioCtx.createGain();
+    rg.gain.setValueAtTime(0.15, now);
+    rg.gain.exponentialRampToValueAtTime(0.001, now+0.35);
+    ring.connect(rg); rg.connect(masterVolume);
+    ring.start(now); ring.stop(now+0.4);
+  }
+}
+
+// === SPELL CAST — rising magical tone ===
+function playSpellCast(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var osc1 = audioCtx.createOscillator();
+  osc1.type = 'sine';
+  osc1.frequency.setValueAtTime(300, now);
+  osc1.frequency.exponentialRampToValueAtTime(1200, now+0.3);
+  var osc2 = audioCtx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(450, now);
+  osc2.frequency.exponentialRampToValueAtTime(1800, now+0.3);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.3, now);
+  g.gain.linearRampToValueAtTime(0.4, now+0.1);
+  g.gain.exponentialRampToValueAtTime(0.01, now+0.4);
+  osc1.connect(g); osc2.connect(g); g.connect(masterVolume);
+  osc1.start(now); osc1.stop(now+0.45);
+  osc2.start(now); osc2.stop(now+0.45);
+}
+
+// === SPELL IMPACT — explosion burst ===
+function playSpellImpact(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var nb = getNoiseBuffer(); if(!nb) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = nb;
+  var lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(3000, now);
+  lp.frequency.exponentialRampToValueAtTime(200, now+0.5);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.7, now);
+  g.gain.exponentialRampToValueAtTime(0.01, now+0.5);
+  src.connect(lp); lp.connect(g); g.connect(masterVolume);
+  src.start(now); src.stop(now+0.6);
+}
+
+// === FOOTSTEP — soft thud ===
+let lastFootstepTime = 0;
+function playFootstep(){
+  if(!soundEnabled || !audioCtx) return;
+  var now = audioCtx.currentTime;
+  if(now - lastFootstepTime < 0.35) return;
+  lastFootstepTime = now;
+  resumeAudio();
+  var osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(60 + Math.random()*30, now);
+  osc.frequency.exponentialRampToValueAtTime(30, now+0.08);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.2, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now+0.1);
+  osc.connect(g); g.connect(masterVolume);
+  osc.start(now); osc.stop(now+0.12);
+}
+
+// === DRAGON ROAR — terrifying low growl ===
+function playDragonRoar(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  // Deep base growl
+  var osc1 = audioCtx.createOscillator();
+  osc1.type = 'sawtooth';
+  osc1.frequency.setValueAtTime(60, now);
+  osc1.frequency.linearRampToValueAtTime(120, now+0.3);
+  osc1.frequency.linearRampToValueAtTime(40, now+1.5);
+  // Sub harmonic
+  var osc2 = audioCtx.createOscillator();
+  osc2.type = 'sawtooth';
+  osc2.frequency.setValueAtTime(30, now);
+  osc2.frequency.linearRampToValueAtTime(60, now+0.3);
+  osc2.frequency.linearRampToValueAtTime(20, now+1.5);
+  // Distortion
+  var dist = audioCtx.createWaveShaper();
+  var curve = new Float32Array(256);
+  for(var i = 0; i < 256; i++){
+    var x = i*2/255 - 1;
+    curve[i] = (Math.PI + 200) * x / (Math.PI + 200 * Math.abs(x));
+  }
+  dist.curve = curve;
+  // Low pass to make it rumble
+  var lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(300, now);
+  lp.frequency.linearRampToValueAtTime(800, now+0.3);
+  lp.frequency.linearRampToValueAtTime(150, now+1.5);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.6, now+0.1);
+  g.gain.linearRampToValueAtTime(0.5, now+0.8);
+  g.gain.exponentialRampToValueAtTime(0.01, now+2.0);
+  osc1.connect(dist); osc2.connect(dist);
+  dist.connect(lp); lp.connect(g); g.connect(masterVolume);
+  osc1.start(now); osc1.stop(now+2.0);
+  osc2.start(now); osc2.stop(now+2.0);
+}
+
+// === DRAGON FIRE BREATH — sustained roaring fire ===
+function playDragonFire(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var nb = getNoiseBuffer(); if(!nb) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = nb;
+  var bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(500, now);
+  bp.frequency.linearRampToValueAtTime(2000, now+0.5);
+  bp.frequency.linearRampToValueAtTime(800, now+2.0);
+  bp.Q.value = 0.8;
+  var lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 4000;
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.5, now+0.2);
+  g.gain.setValueAtTime(0.5, now+1.5);
+  g.gain.exponentialRampToValueAtTime(0.01, now+2.5);
+  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(masterVolume);
+  src.start(now); src.stop(now+2.6);
+}
+
+// === DRAGON WING FLAP — deep whoosh ===
+function playWingFlap(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var nb = getNoiseBuffer(); if(!nb) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = nb;
+  var bp = audioCtx.createBiquadFilter();
+  bp.type = 'lowpass';
+  bp.frequency.setValueAtTime(300, now);
+  bp.frequency.linearRampToValueAtTime(800, now+0.15);
+  bp.frequency.exponentialRampToValueAtTime(100, now+0.5);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.25, now+0.1);
+  g.gain.exponentialRampToValueAtTime(0.01, now+0.5);
+  src.connect(bp); bp.connect(g); g.connect(masterVolume);
+  src.start(now); src.stop(now+0.55);
+}
+
+// === THUNDER — dramatic low boom ===
+function playThunder(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var nb = getNoiseBuffer(); if(!nb) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = nb;
+  var lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(600, now);
+  lp.frequency.exponentialRampToValueAtTime(60, now+2.5);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.8, now+0.02);
+  g.gain.setValueAtTime(0.6, now+0.5);
+  g.gain.exponentialRampToValueAtTime(0.01, now+3.0);
+  src.connect(lp); lp.connect(g); g.connect(masterVolume);
+  src.start(now); src.stop(now+3.2);
+  // Sharp crack on top
+  var crack = audioCtx.createOscillator();
+  crack.type = 'sawtooth';
+  crack.frequency.setValueAtTime(4000, now);
+  crack.frequency.exponentialRampToValueAtTime(100, now+0.1);
+  var cg = audioCtx.createGain();
+  cg.gain.setValueAtTime(0.4, now);
+  cg.gain.exponentialRampToValueAtTime(0.01, now+0.15);
+  crack.connect(cg); cg.connect(masterVolume);
+  crack.start(now); crack.stop(now+0.2);
+}
+
+// === RAIN AMBIENT — continuous pink noise ===
+let rainAudioSrc = null;
+let rainAudioGain = null;
+function startRainSound(){
+  if(!soundEnabled || !audioCtx || rainAudioSrc) return;
+  resumeAudio();
+  var nb = getNoiseBuffer(); if(!nb) return;
+  rainAudioSrc = audioCtx.createBufferSource();
+  rainAudioSrc.buffer = nb;
+  rainAudioSrc.loop = true;
+  var bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 3000;
+  bp.Q.value = 0.3;
+  rainAudioGain = audioCtx.createGain();
+  rainAudioGain.gain.value = 0;
+  rainAudioSrc.connect(bp); bp.connect(rainAudioGain); rainAudioGain.connect(masterVolume);
+  rainAudioSrc.start();
+}
+function setRainVolume(vol){
+  if(rainAudioGain) rainAudioGain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.5);
+}
+function stopRainSound(){
+  if(rainAudioSrc){ try{ rainAudioSrc.stop(); }catch(e){} rainAudioSrc = null; rainAudioGain = null; }
+}
+
+// === PICKUP ITEM — ascending chime ===
+function playPickup(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var notes = [523, 659, 784]; // C5, E5, G5
+  for(var i = 0; i < notes.length; i++){
+    var osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = notes[i];
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, now + i*0.08);
+    g.gain.linearRampToValueAtTime(0.25, now + i*0.08 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, now + i*0.08 + 0.3);
+    osc.connect(g); g.connect(masterVolume);
+    osc.start(now + i*0.08); osc.stop(now + i*0.08 + 0.35);
+  }
+}
+
+// === LEVEL UP — triumphant fanfare ===
+function playLevelUp(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+  for(var i = 0; i < notes.length; i++){
+    var osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = notes[i];
+    var osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = notes[i] * 2;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, now + i*0.12);
+    g.gain.linearRampToValueAtTime(0.35, now + i*0.12 + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.01, now + i*0.12 + 0.6);
+    osc.connect(g); osc2.connect(g); g.connect(masterVolume);
+    osc.start(now + i*0.12); osc.stop(now + i*0.12 + 0.65);
+    osc2.start(now + i*0.12); osc2.stop(now + i*0.12 + 0.65);
+  }
+}
+
+// === HEAL SOUND — gentle ascending sparkle ===
+function playHeal(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  for(var i = 0; i < 5; i++){
+    var osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 800 + i*200 + Math.random()*100;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, now + i*0.1);
+    g.gain.linearRampToValueAtTime(0.15, now + i*0.1 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, now + i*0.1 + 0.25);
+    osc.connect(g); g.connect(masterVolume);
+    osc.start(now + i*0.1); osc.stop(now + i*0.1 + 0.3);
+  }
+}
+
+// === PLAYER DAMAGE — dull thud ===
+function playPlayerDamage(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var nb = getNoiseBuffer(); if(!nb) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = nb;
+  var lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(400, now);
+  lp.frequency.exponentialRampToValueAtTime(80, now+0.2);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.5, now);
+  g.gain.exponentialRampToValueAtTime(0.01, now+0.25);
+  src.connect(lp); lp.connect(g); g.connect(masterVolume);
+  src.start(now); src.stop(now+0.3);
+}
+
+// === MINING CLINK — metallic tap ===
+function playMiningClink(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var osc = audioCtx.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(2000 + Math.random()*500, now);
+  osc.frequency.exponentialRampToValueAtTime(800, now+0.1);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.3, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now+0.15);
+  osc.connect(g); g.connect(masterVolume);
+  osc.start(now); osc.stop(now+0.2);
+}
+
+// === FISHING CAST — swoosh ===
+function playFishingCast(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var nb = getNoiseBuffer(); if(!nb) return;
+  var src = audioCtx.createBufferSource();
+  src.buffer = nb;
+  var bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(1000, now);
+  bp.frequency.exponentialRampToValueAtTime(3000, now+0.1);
+  bp.frequency.exponentialRampToValueAtTime(500, now+0.4);
+  bp.Q.value = 2;
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.3, now+0.05);
+  g.gain.exponentialRampToValueAtTime(0.01, now+0.4);
+  src.connect(bp); bp.connect(g); g.connect(masterVolume);
+  src.start(now); src.stop(now+0.45);
+}
+
+// === UI CLICK — subtle blip ===
+function playUIClick(){
+  if(!soundEnabled || !audioCtx) return;
+  resumeAudio();
+  var now = audioCtx.currentTime;
+  var osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = 1000;
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.15, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now+0.06);
+  osc.connect(g); g.connect(masterVolume);
+  osc.start(now); osc.stop(now+0.08);
+}
+
+// === AMBIENT WIND — gentle continuous breeze ===
+let windAudioSrc = null;
+let windAudioGain = null;
+function startWindSound(){
+  if(!soundEnabled || !audioCtx || windAudioSrc) return;
+  resumeAudio();
+  var nb = getNoiseBuffer(); if(!nb) return;
+  windAudioSrc = audioCtx.createBufferSource();
+  windAudioSrc.buffer = nb;
+  windAudioSrc.loop = true;
+  var lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 400;
+  windAudioGain = audioCtx.createGain();
+  windAudioGain.gain.value = 0.08;
+  windAudioSrc.connect(lp); lp.connect(windAudioGain); windAudioGain.connect(masterVolume);
+  windAudioSrc.start();
+}
+
+// Sound toggle
+window.toggleSound = function(){
+  soundEnabled = !soundEnabled;
+  var btn = document.getElementById('sound-btn');
+  if(btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+  if(!soundEnabled){
+    if(rainAudioSrc) stopRainSound();
+    if(windAudioSrc){ try{ windAudioSrc.stop(); }catch(e){} windAudioSrc = null; windAudioGain = null; }
+  } else {
+    startWindSound();
+  }
+};
 
 // ===== FIREBALL PARTICLE SYSTEM =====
 function createFireTexture(){
@@ -2923,7 +3575,7 @@ function triggerEarthquakeLanding(epicenterX, epicenterZ) {
     if(qDist < VASHRA_QUAKE_RADIUS) {
       var falloff = 1.0 - qDist / VASHRA_QUAKE_RADIUS;
       var dmg = VASHRA_QUAKE_DAMAGE * falloff;
-      var shieldedDmg = playerShield ? dmg * (1 - playerShield) : dmg; playerHP = Math.max(0, playerHP - shieldedDmg);
+      var shieldedDmg = playerShield ? dmg * (1 - playerShield) : dmg; playerHP = Math.max(0, playerHP - shieldedDmg); playPlayerDamage();
       damageFlashTimer = 0.5;
       // Knockback away from epicenter
       var kbDist = VASHRA_QUAKE_KNOCKBACK * falloff;
@@ -3252,7 +3904,7 @@ function dragonFireImpactDamage(impactX, impactY, impactZ) {
   if(pDist2 < blastR2) {
     var falloff = 1.0 - Math.sqrt(pDist2) / DRAGON_FIREBALL_BLAST_RADIUS;
     var dmg = DRAGON_FIREBALL_DAMAGE * falloff;
-    playerHP = Math.max(0, playerHP - dmg);
+    playerHP = Math.max(0, playerHP - dmg); playPlayerDamage();
     damageFlashTimer = 0.3;
     debugLog('💥 Player hit by dragon fire! -' + dmg.toFixed(0) + ' HP (' + Math.round(playerHP) + ' remaining)');
   }
@@ -3516,6 +4168,7 @@ function updateFireballs(dt){
       }
       // Spawn explosion + fire ring + DAMAGE ALL NEARBY
       spawnExplosion(fb.x, groundAtFB + 1, fb.z);
+      playSpellImpact();
       spawnFireRing(fb.x, groundAtFB, fb.z);
       dragonFireImpactDamage(fb.x, groundAtFB, fb.z);
     }
@@ -3583,6 +4236,7 @@ function updateFireballs(dt){
 }
 
 function spawnBlood(position, count, scale){
+  playSwordHit(true);
   for(let i = 0; i < count; i++){
     let bp;
     // Reuse dead particles from pool
@@ -3843,6 +4497,7 @@ document.getElementById('btn-cast').addEventListener('touchstart', function(e){
   }
 });
 document.getElementById('btn-cast').addEventListener('click', function(){
+    playFishingCast();
   if(selectedSpell){
     castSpell(selectedSpell);
   }
@@ -4049,7 +4704,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=128', function(gltf){
+queueLoad(1, 'character-walk.glb?v=129', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -4116,7 +4771,7 @@ queueLoad(1, 'character-walk.glb?v=128', function(gltf){
   console.warn('Character load error — retrying in 3s...', err);
   debugLog('⚠️ Character load FAILED — retrying...');
   setTimeout(function(){
-    loader.load('character-walk.glb?v=128&retry=' + Date.now(), function(gltf){
+    loader.load('character-walk.glb?v=129&retry=' + Date.now(), function(gltf){
       playerModel = gltf.scene;
       // Remove ALL placeholders, use existing characterPivot
       while(characterPivot.children.length > 0) {
@@ -4184,7 +4839,7 @@ queueLoad(1, 'character-walk.glb?v=128', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=128', function(gltf){
+queueLoad(2, 'grass-model.glb?v=129', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -4244,7 +4899,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=128', function(gltf){
+queueLoad(2, 'sun-model.glb?v=129', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -4276,7 +4931,7 @@ queueLoad(2, 'sun-model.glb?v=128', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=128', function(gltf){
+queueLoad(2, 'moon-model.glb?v=129', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -4330,7 +4985,7 @@ queueLoad(2, 'moon-model.glb?v=128', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=128', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=129', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -4439,7 +5094,7 @@ queueLoad(4, 'bear-walk.glb?v=128', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=128', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=129', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -4520,7 +5175,7 @@ queueLoad(4, 'freak-walk.glb?v=128', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=128', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=129', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -4607,7 +5262,7 @@ queueLoad(3, 'stallion-walk.glb?v=128', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=128', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=129', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -4670,7 +5325,7 @@ queueLoad(4, 'dreugh-model.glb?v=128', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=128', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=129', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -4697,7 +5352,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=128', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=129', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -4743,7 +5398,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=128', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=129', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -4758,7 +5413,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=128', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=129', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -4777,7 +5432,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=128', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=129', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -4792,7 +5447,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=128', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=129', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -4807,7 +5462,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=128', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=129', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -4823,7 +5478,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=128', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=129', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -4839,7 +5494,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=128', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=129', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -4854,7 +5509,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=128', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=129', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -4875,7 +5530,7 @@ queueLoad(7, 'vashra-dragon.glb?v=128', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=128', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=129', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -5090,7 +5745,7 @@ function successfulCatch(){
   playerSkills.fishing += xpGain; playerXP += xpGain;
   playerCaughtFish++;
   const fishItemName = FISH_NAMES[fishNpcId] || 'Raw Bass';
-  addToInventory(fishItemName);
+  addToInventory(fishItemName); playPickup();
   
   // Remove fish from world (it's caught)
   if(nearbyFish){
@@ -5123,7 +5778,7 @@ const keys = {};
 let mouseLocked = false;
 let isMobile = 'ontouchstart' in window;
 
-document.getElementById('click-to-play').addEventListener('click', function(){
+document.getElementById('click-to-play').addEventListener('click', function(){ initAudio(); startWindSound();
   renderer.domElement.requestPointerLock();
   document.getElementById('click-to-play').style.display = 'none';
 });
@@ -5178,6 +5833,7 @@ function performPlayerAttack(){
   // Sword slash trail VFX
   if(characterPivot){
     spawnSlashTrail(characterPivot.position, playerYaw + cameraYawOffset, PLAYER_ATTACK_RANGE * 0.8);
+    playSwordSwing();
   }
   
   // Find closest bear within attack range
@@ -5530,7 +6186,7 @@ function completeSkinning(){
   // Award drops to inventory
   const drops = npc.pendingDrops || [];
   drops.forEach(function(item){
-    addToInventory(item);
+    addToInventory(item); playPickup();
   });
   
   const dropText = drops.length > 0 ? drops.join(', ') : 'Nothing';
@@ -5564,7 +6220,7 @@ function showLootNotification(text){
 
 function pickupLoot(loot){
   loot.items.forEach(function(item){
-    addToInventory(item);
+    addToInventory(item); playPickup();
   });
   showLootNotification('Picked up: ' + loot.items.join(', '));
   scene.remove(loot.mesh);
@@ -5690,7 +6346,7 @@ jZone.addEventListener('touchcancel', function(e){
 });
 
 // Camera orbit — track specific touch ID, explicitly exclude joystick touches
-document.addEventListener('touchstart', function(e){
+document.addEventListener('touchstart', function(e){ initAudio(); resumeAudio();
   for(let i=0;i<e.changedTouches.length;i++){
     const t = e.changedTouches[i];
     // Skip joystick finger
@@ -6505,6 +7161,7 @@ function updateWeather(dt){
       if(lightningTimer > 5 + Math.random() * 15){
         lightningTimer = 0;
         lightningFlash = 0.8;
+        playThunder();
       }
       if(lightningFlash > 0){
         lightningFlash -= dt * 4;
@@ -6708,10 +7365,13 @@ function initAmbientDust(){
   geo.setAttribute('position', new THREE.BufferAttribute(ambientDustPositions, 3));
   var mat = new THREE.PointsMaterial({
     color: 0xffffcc,
-    size: 0.4,
+    size: 0.8,
+    map: circleParticleTex,
     transparent: true,
-    opacity: 0.3,
-    depthWrite: false
+    opacity: 0.35,
+    sizeAttenuation: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
   });
   ambientDustParticles = new THREE.Points(geo, mat);
   scene.add(ambientDustParticles);
@@ -6868,6 +7528,7 @@ function animate(){
         playerIsWalking = true;
       }
       playerWalkAction.timeScale = isSprinting ? 1.8 : 1.0;
+      playFootstep();
     } else {
       if(playerIsWalking){
         playerWalkAction.fadeOut(0.3);
@@ -7488,6 +8149,7 @@ function animate(){
             // Handled in sleep state
           } else if(nextStep.action === 'ascend'){
             vashraState = 'ascending';
+            playWingFlap();
             vashraStateTimer = 0;
             vashraAscendStartY = vashraModel ? vashraModel.position.y : 10;
             if(vashraFlightAction){ vashraFlightAction.reset(); vashraFlightAction.play(); }
@@ -7687,6 +8349,7 @@ function animate(){
           flyAct.crossFadeTo(descendAnim, 0.5);
           triggerFearRoar();  // ROAR as it dives!
           debugLog('🦅 VASHRA SWOOPING AT PLAYER!');
+          playDragonRoar();
           
         } else if(choice === 'strafingRun'){
           // === STRAFING FIRE RUN: Low altitude pass, machine-gun fireballs ===
@@ -7731,6 +8394,7 @@ function animate(){
       
       if(!vashraFireballFired && vashraStateTimer >= VASHRA_FIRE_AT){
         vashraFireballFired = true;
+      playDragonFire();
         var mouthFwdX = -Math.sin(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
         var mouthFwdZ = -Math.cos(vashraModel.rotation.y) * 0.25 * VASHRA_SCALE;
         var mX = vashraModel.position.x + mouthFwdX;
@@ -7767,6 +8431,8 @@ function animate(){
       }
       if(descT >= 1){
         vashraState = 'landed';
+        if(vashraMesh) spawnDragonLandingDust(vashraMesh.position);
+        playDragonRoar();
         vashraStateTimer = 0;
         vashraSittingIdleTransitioned = false;
         vashraModel.position.set(vashraLandX, vashraLandTargetY, vashraLandZ);
@@ -8262,6 +8928,11 @@ function animate(){
   // Update smoke particles (weapon hit effects)
   updateSmokeParticles(dt);
     updateAllVFX(dt);
+  updateDragonVFX(dt);
+  // Dragon ember trail while flying
+  if(vashraMesh && (vashraState === 'flying' || vashraState === 'strafing')){
+    if(Math.random() < 0.3) spawnDragonEmbers(vashraMesh.position, 2);
+  }
   updateFireballs(dt);  // Dragon fireball projectiles + explosions + fire rings
   updateFireRingDamage(dt);  // Continuous fire ring damage to NPCs + player
   
@@ -8348,7 +9019,9 @@ function animate(){
       var r = Math.random();
     if(r < 0.4) currentWeather = 'clear';
     else if(r < 0.65) currentWeather = 'rain';
+      initAudio(); startRainSound(); setRainVolume(0.15);
     else if(r < 0.8) currentWeather = 'storm';
+      initAudio(); startRainSound(); setRainVolume(0.3);
     else currentWeather = 'clear';
     }
   }

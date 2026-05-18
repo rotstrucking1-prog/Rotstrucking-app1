@@ -244,7 +244,7 @@ canvas{display:block;width:100%;height:100%}
 <!-- Loading -->
 <div id="loading">
   <h1>Architect of Creation</h1>
-  <p style="color:rgba(255,215,0,0.4);font-size:11px;margin-top:2px;letter-spacing:2px;font-weight:300">v164c</p>
+  <p style="color:rgba(255,215,0,0.4);font-size:11px;margin-top:2px;letter-spacing:2px;font-weight:300">v165</p>
   <p id="load-text">Loading world...</p>
   <div id="bar-wrap"><div id="bar"></div></div>
 </div>
@@ -410,7 +410,7 @@ canvas{display:block;width:100%;height:100%}
   <div id="crash-debug"></div>
   <div id="hud-fps">FPS: 0</div>
   <div id="hud-mode">Cam: 3rd</div>
-  <div style="color:rgba(255,215,0,0.3);font-size:7px">BUILD v164c</div>
+  <div style="color:rgba(255,215,0,0.3);font-size:7px">BUILD v165</div>
 </div>
 <div id="controls">WASD Move | Shift Sprint | Space Jump | V Camera</div>
 
@@ -516,7 +516,7 @@ function loadAndDecodeSounds(){
   var keys = Object.keys(SOUND_FILES);
   console.log('🔊 Loading ' + keys.length + ' sound files...');
   keys.forEach(function(key){
-    fetch(SOUND_FILES[key] + '?v=164c')
+    fetch(SOUND_FILES[key] + '?v=165')
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(function(buf){ return realSoundCtx.decodeAudioData(buf); })
       .then(function(audioBuffer){
@@ -1159,7 +1159,7 @@ window.setGraphics = function(level) {
     sunLight.castShadow = true;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.35;
+    renderer.toneMappingExposure = 1.1;
     gfxWaterWaves = true;
     gfxParticlesVisible = true;
     if(ambientParticles) ambientParticles.visible = true;
@@ -1167,8 +1167,8 @@ window.setGraphics = function(level) {
     gfxPostProcessing = true;
     gfxBloom = true;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.4; }
-    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.35; colorPass.uniforms.contrast.value = 1.12; colorPass.uniforms.brightness.value = 0.02; colorPass.uniforms.gamma.value = 0.88; }
-    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.2; bloomPass.radius = 0.4; bloomPass.threshold = 0.85; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.35; colorPass.uniforms.contrast.value = 1.12; colorPass.uniforms.brightness.value = 0.0; colorPass.uniforms.gamma.value = 0.88; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.12; bloomPass.radius = 0.3; bloomPass.threshold = 0.9; }
     if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 12; }
     if(vignettePass){ vignettePass.enabled = true; vignettePass.uniforms.darkness.value = 0.4; }
     if(godRayPass) godRayPass.enabled = true;
@@ -1181,7 +1181,7 @@ window.setGraphics = function(level) {
     sunLight.castShadow = true;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.5;
+    renderer.toneMappingExposure = 1.15;
     gfxWaterWaves = true;
     gfxParticlesVisible = true;
     if(ambientParticles) ambientParticles.visible = true;
@@ -1189,8 +1189,8 @@ window.setGraphics = function(level) {
     gfxPostProcessing = true;
     gfxBloom = true;
     if(sharpenPass){ sharpenPass.enabled = true; sharpenPass.uniforms.strength.value = 0.5; }
-    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.45; colorPass.uniforms.contrast.value = 1.15; colorPass.uniforms.brightness.value = 0.03; colorPass.uniforms.gamma.value = 0.85; }
-    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.3; bloomPass.radius = 0.5; bloomPass.threshold = 0.8; }
+    if(colorPass){ colorPass.enabled = true; colorPass.uniforms.saturation.value = 1.45; colorPass.uniforms.contrast.value = 1.15; colorPass.uniforms.brightness.value = 0.0; colorPass.uniforms.gamma.value = 0.85; }
+    if(bloomPass){ bloomPass.enabled = true; bloomPass.strength = 0.15; bloomPass.radius = 0.35; bloomPass.threshold = 0.88; }
     if(ssaoPass){ ssaoPass.enabled = true; ssaoPass.kernelRadius = 20; }
     if(vignettePass){ vignettePass.enabled = true; vignettePass.uniforms.darkness.value = 0.5; }
     if(godRayPass) godRayPass.enabled = true;
@@ -1203,7 +1203,7 @@ window.setGraphics = function(level) {
     sunLight.castShadow = true;
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.6;
+    renderer.toneMappingExposure = 1.2;
     gfxWaterWaves = true;
     gfxParticlesVisible = true;
     if(ambientParticles) ambientParticles.visible = true;
@@ -1634,7 +1634,7 @@ function checkReady(){
 
 // ===== LIGHTING =====
 // Load snowflake GLB for weather system
-queueLoad(4, 'snowflake-model.glb?v=164c', function(gltf){
+queueLoad(4, 'snowflake-model.glb?v=165', function(gltf){
   snowflakeTemplate = gltf.scene;
   var foundMesh = null;
   snowflakeTemplate.traverse(function(child){
@@ -1669,7 +1669,7 @@ queueLoad(4, 'snowflake-model.glb?v=164c', function(gltf){
 });
 
 // Load raindrop GLB for weather system
-queueLoad(4, 'raindrop-model.glb?v=164c', function(gltf){
+queueLoad(4, 'raindrop-model.glb?v=165', function(gltf){
   raindropTemplate = gltf.scene;
   raindropTemplate.scale.set(RAINDROP_SCALE, RAINDROP_SCALE, RAINDROP_SCALE);
   raindropTemplate.traverse(function(child){
@@ -1926,7 +1926,7 @@ terrainGeo.computeVertexNormals();
 
 // Load Brad's grass texture and tile it across terrain
 const texLoader = new THREE.TextureLoader();
-const grassTex = texLoader.load('grass-texture.jpg?v=164c');
+const grassTex = texLoader.load('grass-texture.jpg?v=165');
 grassTex.wrapS = THREE.RepeatWrapping;
 grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(80, 80);
@@ -1935,61 +1935,61 @@ grassTex.magFilter = THREE.LinearFilter;
 grassTex.anisotropy = 16;
 
 // Load snow textures for Ice Tundra biome
-var snowIceTex = texLoader.load('snow-ice-texture.png?v=164c');
+var snowIceTex = texLoader.load('snow-ice-texture.png?v=165');
 snowIceTex.wrapS = THREE.RepeatWrapping;
 snowIceTex.wrapT = THREE.RepeatWrapping;
 snowIceTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowIceTex.magFilter = THREE.LinearFilter;
-var snowGroundTex = texLoader.load('snow-ground-texture.png?v=164c');
+var snowGroundTex = texLoader.load('snow-ground-texture.png?v=165');
 snowGroundTex.wrapS = THREE.RepeatWrapping;
 snowGroundTex.wrapT = THREE.RepeatWrapping;
 snowGroundTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowGroundTex.magFilter = THREE.LinearFilter;
-var snowPatchTex = texLoader.load('snow-patches-texture.png?v=164c');
+var snowPatchTex = texLoader.load('snow-patches-texture.png?v=165');
 snowPatchTex.wrapS = THREE.RepeatWrapping;
 snowPatchTex.wrapT = THREE.RepeatWrapping;
 snowPatchTex.minFilter = THREE.LinearMipmapLinearFilter;
 snowPatchTex.magFilter = THREE.LinearFilter;
 
 // Load biome ground textures (CC0 from ambientCG)
-var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=164c');
+var mainGrass2Tex = texLoader.load('mainland-grass-2.jpg?v=165');
 mainGrass2Tex.wrapS = THREE.RepeatWrapping; mainGrass2Tex.wrapT = THREE.RepeatWrapping;
 mainGrass2Tex.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex1 = texLoader.load('desert-sand-1.jpg?v=164c');
+var desertTex1 = texLoader.load('desert-sand-1.jpg?v=165');
 desertTex1.wrapS = THREE.RepeatWrapping; desertTex1.wrapT = THREE.RepeatWrapping;
 desertTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var desertTex2 = texLoader.load('desert-sand-2.jpg?v=164c');
+var desertTex2 = texLoader.load('desert-sand-2.jpg?v=165');
 desertTex2.wrapS = THREE.RepeatWrapping; desertTex2.wrapT = THREE.RepeatWrapping;
 desertTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=164c');
+var volcanicTex1 = texLoader.load('volcanic-ground-1.jpg?v=165');
 volcanicTex1.wrapS = THREE.RepeatWrapping; volcanicTex1.wrapT = THREE.RepeatWrapping;
 volcanicTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=164c');
+var volcanicTex2 = texLoader.load('volcanic-ground-2.jpg?v=165');
 volcanicTex2.wrapS = THREE.RepeatWrapping; volcanicTex2.wrapT = THREE.RepeatWrapping;
 volcanicTex2.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=164c');
+var jungleTex1 = texLoader.load('jungle-ground-1.jpg?v=165');
 jungleTex1.wrapS = THREE.RepeatWrapping; jungleTex1.wrapT = THREE.RepeatWrapping;
 jungleTex1.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=164c');
+var jungleTex2 = texLoader.load('jungle-ground-2.jpg?v=165');
 jungleTex2.wrapS = THREE.RepeatWrapping; jungleTex2.wrapT = THREE.RepeatWrapping;
 jungleTex2.minFilter = THREE.LinearMipmapLinearFilter;
 // PBR Normal Maps (ambientCG CC0 — adds surface detail without extra geometry)
-var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=164c');
+var grassNormalTex = texLoader.load('grass-pbr-normal.jpg?v=165');
 grassNormalTex.wrapS = THREE.RepeatWrapping; grassNormalTex.wrapT = THREE.RepeatWrapping;
 grassNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=164c');
+var snowNormalTex = texLoader.load('snow-pbr-normal.jpg?v=165');
 snowNormalTex.wrapS = THREE.RepeatWrapping; snowNormalTex.wrapT = THREE.RepeatWrapping;
 snowNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=164c');
+var sandNormalTex = texLoader.load('sand-pbr-normal.jpg?v=165');
 sandNormalTex.wrapS = THREE.RepeatWrapping; sandNormalTex.wrapT = THREE.RepeatWrapping;
 sandNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=164c');
+var volcNormalTex = texLoader.load('volcanic-pbr-normal.jpg?v=165');
 volcNormalTex.wrapS = THREE.RepeatWrapping; volcNormalTex.wrapT = THREE.RepeatWrapping;
 volcNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=164c');
+var jungleNormalTex = texLoader.load('jungle-pbr-normal.jpg?v=165');
 jungleNormalTex.wrapS = THREE.RepeatWrapping; jungleNormalTex.wrapT = THREE.RepeatWrapping;
 jungleNormalTex.minFilter = THREE.LinearMipmapLinearFilter;
-var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=164c');
+var mainGrass1Tex = texLoader.load('mainland-grass-1.jpg?v=165');
 mainGrass1Tex.wrapS = THREE.RepeatWrapping; mainGrass1Tex.wrapT = THREE.RepeatWrapping;
 mainGrass1Tex.minFilter = THREE.LinearMipmapLinearFilter;
 
@@ -2242,6 +2242,7 @@ scene.add(terrain);
 // --- CASTLE VARIABLES ---
 let castleGroup = null;
 let castleGate = null;
+let castleWindows = [];
 let gateOpen = false;
 let gateY = 0;
 const GATE_CLOSED_Y = 0;
@@ -2251,168 +2252,350 @@ const CASTLE_POS = new THREE.Vector3(400, 0, 1400); // Forest biome area
 function buildMedievalCastle() {
   castleGroup = new THREE.Group();
   
-  const stoneMat = new THREE.MeshStandardMaterial({color:0x8B8378, roughness:0.85, metalness:0.05});
+  // Materials — rich medieval palette
+  const stoneMat = new THREE.MeshStandardMaterial({color:0x9B9080, roughness:0.85, metalness:0.05});
   const darkStoneMat = new THREE.MeshStandardMaterial({color:0x6B6358, roughness:0.9, metalness:0.05});
+  const lightStoneMat = new THREE.MeshStandardMaterial({color:0xB8A898, roughness:0.8, metalness:0.03});
   const woodMat = new THREE.MeshStandardMaterial({color:0x5C3A1E, roughness:0.8, metalness:0.0});
+  const darkWoodMat = new THREE.MeshStandardMaterial({color:0x3A2210, roughness:0.85, metalness:0.0});
   const roofMat = new THREE.MeshStandardMaterial({color:0x4A2520, roughness:0.7, metalness:0.1});
   const windowMat = new THREE.MeshStandardMaterial({color:0xFFE88A, emissive:0xFFD040, emissiveIntensity:0.3, transparent:true, opacity:0.7});
   const ironMat = new THREE.MeshStandardMaterial({color:0x3A3A3A, roughness:0.4, metalness:0.8});
+  const flagMat = new THREE.MeshStandardMaterial({color:0xCC2222, roughness:0.6, side:2}); // DoubleSide
+  const torchMat = new THREE.MeshStandardMaterial({color:0xFF8800, emissive:0xFF6600, emissiveIntensity:1.0});
   
-  // Main castle body
-  const wallW = 30, wallD = 25, wallH = 14;
-  const mainWalls = new THREE.Mesh(new THREE.BoxGeometry(wallW, wallH, wallD), stoneMat);
-  mainWalls.position.y = wallH/2;
-  mainWalls.castShadow = true;
-  mainWalls.receiveShadow = true;
-  castleGroup.add(mainWalls);
+  // === OUTER CURTAIN WALL (larger perimeter) ===
+  const outerW = 50, outerD = 45, wallH = 12, wallThickness = 2;
   
-  // Inner courtyard (subtract by adding darker floor)
-  const courtyard = new THREE.Mesh(new THREE.BoxGeometry(wallW-4, 0.3, wallD-4), darkStoneMat);
+  // Front wall (left of gate)
+  var fwL = new THREE.Mesh(new THREE.BoxGeometry(outerW/2-5, wallH, wallThickness), stoneMat);
+  fwL.position.set(-outerW/4-2.5, wallH/2, -outerD/2);
+  fwL.castShadow = true; fwL.receiveShadow = true;
+  castleGroup.add(fwL);
+  
+  // Front wall (right of gate)
+  var fwR = new THREE.Mesh(new THREE.BoxGeometry(outerW/2-5, wallH, wallThickness), stoneMat);
+  fwR.position.set(outerW/4+2.5, wallH/2, -outerD/2);
+  fwR.castShadow = true; fwR.receiveShadow = true;
+  castleGroup.add(fwR);
+  
+  // Back wall
+  var bw = new THREE.Mesh(new THREE.BoxGeometry(outerW, wallH, wallThickness), stoneMat);
+  bw.position.set(0, wallH/2, outerD/2);
+  bw.castShadow = true; bw.receiveShadow = true;
+  castleGroup.add(bw);
+  
+  // Left wall
+  var lw = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallH, outerD), stoneMat);
+  lw.position.set(-outerW/2, wallH/2, 0);
+  lw.castShadow = true; lw.receiveShadow = true;
+  castleGroup.add(lw);
+  
+  // Right wall
+  var rw = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallH, outerD), stoneMat);
+  rw.position.set(outerW/2, wallH/2, 0);
+  rw.castShadow = true; rw.receiveShadow = true;
+  castleGroup.add(rw);
+  
+  // === WALL WALK (walkway on top of walls) ===
+  var walkways = [
+    {x:0, z:-outerD/2, w:outerW+2, d:3}, // front
+    {x:0, z:outerD/2, w:outerW+2, d:3},  // back
+    {x:-outerW/2, z:0, w:3, d:outerD+2}, // left
+    {x:outerW/2, z:0, w:3, d:outerD+2},  // right
+  ];
+  walkways.forEach(function(wk) {
+    var walk = new THREE.Mesh(new THREE.BoxGeometry(wk.w, 0.5, wk.d), darkStoneMat);
+    walk.position.set(wk.x, wallH, wk.z);
+    walk.receiveShadow = true;
+    castleGroup.add(walk);
+  });
+  
+  // === CRENELLATIONS (battlements) ===
+  var crenelGeo = new THREE.BoxGeometry(1.2, 2, 1.2);
+  // Front + back
+  for(var cx = -outerW/2+1; cx <= outerW/2-1; cx += 2.5) {
+    [-1, 1].forEach(function(side) {
+      var c = new THREE.Mesh(crenelGeo, stoneMat);
+      c.position.set(cx, wallH+1.2, side * outerD/2);
+      c.castShadow = true;
+      castleGroup.add(c);
+    });
+  }
+  // Left + right
+  for(var cz = -outerD/2+1; cz <= outerD/2-1; cz += 2.5) {
+    [-1, 1].forEach(function(side) {
+      var c = new THREE.Mesh(crenelGeo, stoneMat);
+      c.position.set(side * outerW/2, wallH+1.2, cz);
+      c.castShadow = true;
+      castleGroup.add(c);
+    });
+  }
+  
+  // === SIX CORNER/MID TOWERS ===
+  var towerPositions = [
+    [-outerW/2, -outerD/2],  // front-left
+    [outerW/2, -outerD/2],   // front-right  
+    [-outerW/2, outerD/2],   // back-left
+    [outerW/2, outerD/2],    // back-right
+    [-outerW/2, 0],          // mid-left
+    [outerW/2, 0],           // mid-right
+  ];
+  var towerR = 4.5, towerH = 22;
+  var towerGeo = new THREE.CylinderGeometry(towerR, towerR+0.8, towerH, 16);
+  var towerCapGeo = new THREE.ConeGeometry(towerR+1.5, 7, 16);
+  
+  towerPositions.forEach(function(tp) {
+    // Tower body
+    var tower = new THREE.Mesh(towerGeo, stoneMat);
+    tower.position.set(tp[0], towerH/2, tp[1]);
+    tower.castShadow = true; tower.receiveShadow = true;
+    castleGroup.add(tower);
+    
+    // Conical roof
+    var cap = new THREE.Mesh(towerCapGeo, roofMat);
+    cap.position.set(tp[0], towerH+3.5, tp[1]);
+    cap.castShadow = true;
+    castleGroup.add(cap);
+    
+    // Tower platform
+    var plat = new THREE.Mesh(new THREE.CylinderGeometry(towerR+1, towerR+1, 0.5, 16), darkStoneMat);
+    plat.position.set(tp[0], towerH, tp[1]);
+    castleGroup.add(plat);
+    
+    // Tower crenellations
+    for(var a = 0; a < Math.PI*2; a += Math.PI/5) {
+      var tc = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.8, 1.0), stoneMat);
+      tc.position.set(
+        tp[0] + Math.cos(a)*(towerR+0.8),
+        towerH+1.2,
+        tp[1] + Math.sin(a)*(towerR+0.8)
+      );
+      castleGroup.add(tc);
+    }
+    
+    // Arrow slit windows on each tower
+    for(var aw = 0; aw < 4; aw++) {
+      var angle = (aw / 4) * Math.PI * 2;
+      var slot = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.0, 0.15), new THREE.MeshStandardMaterial({color:0x111111}));
+      slot.position.set(
+        tp[0] + Math.cos(angle)*(towerR+0.5),
+        towerH*0.5 + aw*0.5,
+        tp[1] + Math.sin(angle)*(towerR+0.5)
+      );
+      slot.rotation.y = angle;
+      castleGroup.add(slot);
+    }
+  });
+  
+  // === MAIN GATEHOUSE (front center) ===
+  var gateW = 7, gateH = 10;
+  
+  // Two gatehouse towers flanking the gate
+  var ghTowerGeo = new THREE.BoxGeometry(5, 16, 5);
+  var ghL = new THREE.Mesh(ghTowerGeo, darkStoneMat);
+  ghL.position.set(-gateW/2-2.5, 8, -outerD/2);
+  ghL.castShadow = true; ghL.receiveShadow = true;
+  castleGroup.add(ghL);
+  
+  var ghR = new THREE.Mesh(ghTowerGeo, darkStoneMat);
+  ghR.position.set(gateW/2+2.5, 8, -outerD/2);
+  ghR.castShadow = true; ghR.receiveShadow = true;
+  castleGroup.add(ghR);
+  
+  // Gatehouse roof (flat with crenellations)
+  var ghRoofL = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 6), darkStoneMat);
+  ghRoofL.position.set(-gateW/2-2.5, 16, -outerD/2);
+  castleGroup.add(ghRoofL);
+  var ghRoofR = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 6), darkStoneMat);
+  ghRoofR.position.set(gateW/2+2.5, 16, -outerD/2);
+  castleGroup.add(ghRoofR);
+  
+  // Stone arch over gate
+  var arch = new THREE.Mesh(new THREE.TorusGeometry(gateW/2, 0.8, 8, 12, Math.PI), darkStoneMat);
+  arch.position.set(0, gateH, -outerD/2);
+  arch.rotation.x = Math.PI/2;
+  arch.rotation.z = Math.PI;
+  arch.castShadow = true;
+  castleGroup.add(arch);
+  
+  // === PORTCULLIS (working iron gate) ===
+  castleGate = new THREE.Group();
+  for(var bx = -gateW/2+0.5; bx <= gateW/2-0.5; bx += 0.8) {
+    var bar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, gateH, 6), ironMat);
+    bar.position.set(bx, gateH/2, 0);
+    castleGate.add(bar);
+  }
+  for(var by = 1; by <= gateH-1; by += 1.2) {
+    var hbar = new THREE.Mesh(new THREE.BoxGeometry(gateW, 0.12, 0.12), ironMat);
+    hbar.position.set(0, by, 0);
+    castleGate.add(hbar);
+  }
+  // Spikes at bottom
+  for(var sx = -gateW/2+0.5; sx <= gateW/2-0.5; sx += 1.6) {
+    var spike = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.8, 6), ironMat);
+    spike.position.set(sx, -0.4, 0);
+    spike.rotation.x = Math.PI;
+    castleGate.add(spike);
+  }
+  castleGate.position.set(0, 0, -outerD/2);
+  castleGroup.add(castleGate);
+  
+  // === INNER KEEP (tall central building) ===
+  var keepW = 18, keepD = 14, keepH = 20;
+  var keep = new THREE.Mesh(new THREE.BoxGeometry(keepW, keepH, keepD), lightStoneMat);
+  keep.position.set(0, keepH/2, 6);
+  keep.castShadow = true; keep.receiveShadow = true;
+  castleGroup.add(keep);
+  
+  // Keep roof (pitched)
+  var keepRoof = new THREE.Mesh(new THREE.BoxGeometry(keepW+2, 1.5, keepD+2), roofMat);
+  keepRoof.position.set(0, keepH+0.75, 6);
+  keepRoof.castShadow = true;
+  castleGroup.add(keepRoof);
+  
+  // Keep ridge roof
+  var ridge = new THREE.Mesh(new THREE.BoxGeometry(keepW-2, 3, 2), roofMat);
+  ridge.position.set(0, keepH+2.5, 6);
+  ridge.rotation.z = Math.PI/36;
+  castleGroup.add(ridge);
+  
+  // Keep windows (3 rows of arched windows)
+  for(var wy = 0; wy < 3; wy++) {
+    for(var wx = 0; wx < 4; wx++) {
+      var winX = -keepW/2 + 3 + wx * (keepW-6)/3;
+      var winY = 5 + wy * 5;
+      // Window frame
+      var winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.8, 0.3), darkStoneMat);
+      winFrame.position.set(winX, winY, 6 - keepD/2 - 0.1);
+      castleGroup.add(winFrame);
+      // Window glass (glows at night)
+      var winGlass = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, 0.1), windowMat);
+      winGlass.position.set(winX, winY, 6 - keepD/2 - 0.2);
+      winGlass.userData.isCastleWindow = true;
+      castleGroup.add(winGlass);
+    }
+    // Back side windows
+    for(var wx2 = 0; wx2 < 3; wx2++) {
+      var bwinX = -keepW/2 + 4 + wx2 * (keepW-8)/2;
+      var bwinY = 5 + wy * 5;
+      var bwinGlass = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, 0.1), windowMat);
+      bwinGlass.position.set(bwinX, bwinY, 6 + keepD/2 + 0.1);
+      bwinGlass.userData.isCastleWindow = true;
+      castleGroup.add(bwinGlass);
+    }
+  }
+  
+  // Keep crenellations
+  for(var kcx = -keepW/2+1; kcx <= keepW/2-1; kcx += 2) {
+    [-1,1].forEach(function(s) {
+      var kc = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 1), lightStoneMat);
+      kc.position.set(kcx, keepH+1.5, 6 + s*keepD/2);
+      castleGroup.add(kc);
+    });
+  }
+  
+  // === COURTYARD ===
+  var courtyard = new THREE.Mesh(new THREE.BoxGeometry(outerW-4, 0.3, outerD-4), darkStoneMat);
   courtyard.position.y = 0.15;
   courtyard.receiveShadow = true;
   castleGroup.add(courtyard);
   
-  // Crenellations (battlements on top)
-  for(let cx = -wallW/2+1; cx <= wallW/2-1; cx += 2.5) {
-    for(let side of [-1, 1]) {
-      const crenel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 1.5), stoneMat);
-      crenel.position.set(cx, wallH+1, side * wallD/2);
-      crenel.castShadow = true;
-      castleGroup.add(crenel);
-    }
-  }
-  for(let cz = -wallD/2+1; cz <= wallD/2-1; cz += 2.5) {
-    for(let side of [-1, 1]) {
-      const crenel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 1.5), stoneMat);
-      crenel.position.set(side * wallW/2, wallH+1, cz);
-      crenel.castShadow = true;
-      castleGroup.add(crenel);
-    }
+  // Cobblestone texture strips
+  for(var ci = 0; ci < 8; ci++) {
+    var strip = new THREE.Mesh(
+      new THREE.BoxGeometry(outerW-8, 0.05, 0.3),
+      new THREE.MeshStandardMaterial({color: ci%2 ? 0x7A7060 : 0x8A8070, roughness:0.95})
+    );
+    strip.position.set(0, 0.35, -outerD/2+5 + ci * (outerD-10)/7);
+    castleGroup.add(strip);
   }
   
-  // Four corner towers
-  const towerR = 4, towerH = 20;
-  const towerGeo = new THREE.CylinderGeometry(towerR, towerR+0.5, towerH, 12);
-  const towerCapGeo = new THREE.ConeGeometry(towerR+1.5, 6, 12);
-  const corners = [[-1,-1],[-1,1],[1,-1],[1,1]];
-  corners.forEach(function(c) {
-    const tower = new THREE.Mesh(towerGeo, stoneMat);
-    tower.position.set(c[0]*wallW/2, towerH/2, c[1]*wallD/2);
-    tower.castShadow = true;
-    tower.receiveShadow = true;
-    castleGroup.add(tower);
-    
-    const cap = new THREE.Mesh(towerCapGeo, roofMat);
-    cap.position.set(c[0]*wallW/2, towerH+3, c[1]*wallD/2);
-    cap.castShadow = true;
-    castleGroup.add(cap);
-    
-    // Tower crenellations
-    for(let a = 0; a < Math.PI*2; a += Math.PI/4) {
-      const tc = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 1.2), stoneMat);
-      tc.position.set(
-        c[0]*wallW/2 + Math.cos(a)*(towerR+0.3),
-        towerH+0.9,
-        c[1]*wallD/2 + Math.sin(a)*(towerR+0.3)
-      );
-      castleGroup.add(tc);
-    }
-  });
+  // === WELL in courtyard ===
+  var wellBase = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 1.2, 12), stoneMat);
+  wellBase.position.set(-8, 0.6, -5);
+  castleGroup.add(wellBase);
+  var wellInner = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 1.3, 12), new THREE.MeshStandardMaterial({color:0x222233}));
+  wellInner.position.set(-8, 0.65, -5);
+  castleGroup.add(wellInner);
+  // Well roof
+  var wellPostL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.5, 0.2), woodMat);
+  wellPostL.position.set(-9.2, 2.5, -5);
+  castleGroup.add(wellPostL);
+  var wellPostR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.5, 0.2), woodMat);
+  wellPostR.position.set(-6.8, 2.5, -5);
+  castleGroup.add(wellPostR);
+  var wellRoof = new THREE.Mesh(new THREE.ConeGeometry(2, 1.5, 4), roofMat);
+  wellRoof.position.set(-8, 4.2, -5);
+  wellRoof.rotation.y = Math.PI/4;
+  castleGroup.add(wellRoof);
   
-  // Main gate (front, -Z side) — portcullis that raises
-  const gateW = 6, gateH = 8;
-  // Gate frame (stone archway)
-  const frameL = new THREE.Mesh(new THREE.BoxGeometry(2, gateH+2, 3), darkStoneMat);
-  frameL.position.set(-gateW/2-1, (gateH+2)/2, -wallD/2);
-  frameL.castShadow = true;
-  castleGroup.add(frameL);
-  
-  const frameR = new THREE.Mesh(new THREE.BoxGeometry(2, gateH+2, 3), darkStoneMat);
-  frameR.position.set(gateW/2+1, (gateH+2)/2, -wallD/2);
-  frameR.castShadow = true;
-  castleGroup.add(frameR);
-  
-  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(gateW+4, 3, 3), darkStoneMat);
-  frameTop.position.set(0, gateH+1.5, -wallD/2);
-  frameTop.castShadow = true;
-  castleGroup.add(frameTop);
-  
-  // Portcullis (iron gate that moves up/down)
-  castleGate = new THREE.Group();
-  // Vertical bars
-  for(let bx = -gateW/2+0.5; bx <= gateW/2-0.5; bx += 1) {
-    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, gateH, 6), ironMat);
-    bar.position.set(bx, gateH/2, 0);
-    castleGate.add(bar);
-  }
-  // Horizontal bars
-  for(let by = 1; by <= gateH-1; by += 1.5) {
-    const hbar = new THREE.Mesh(new THREE.BoxGeometry(gateW, 0.15, 0.15), ironMat);
-    hbar.position.set(0, by, 0);
-    castleGate.add(hbar);
-  }
-  castleGate.position.set(0, 0, -wallD/2);
-  castleGroup.add(castleGate);
-  
-  // Windows (glowing, on all sides)
-  const winGeo = new THREE.PlaneGeometry(1.5, 2.2);
-  const winPositions = [
-    // Front wall
-    {x:-6, y:9, z:-wallD/2-0.1, ry:0}, {x:6, y:9, z:-wallD/2-0.1, ry:0},
-    // Back wall
-    {x:-6, y:9, z:wallD/2+0.1, ry:Math.PI}, {x:6, y:9, z:wallD/2+0.1, ry:Math.PI},
-    {x:0, y:9, z:wallD/2+0.1, ry:Math.PI},
-    // Side walls
-    {x:-wallW/2-0.1, y:9, z:-4, ry:Math.PI/2}, {x:-wallW/2-0.1, y:9, z:4, ry:Math.PI/2},
-    {x:wallW/2+0.1, y:9, z:-4, ry:-Math.PI/2}, {x:wallW/2+0.1, y:9, z:4, ry:-Math.PI/2}
+  // === TORCH SCONCES on walls ===
+  var torchPositions = [
+    [-outerW/2+0.5, wallH*0.6, -outerD/4],
+    [-outerW/2+0.5, wallH*0.6, outerD/4],
+    [outerW/2-0.5, wallH*0.6, -outerD/4],
+    [outerW/2-0.5, wallH*0.6, outerD/4],
+    [-gateW/2-3, 9, -outerD/2+1],
+    [gateW/2+3, 9, -outerD/2+1],
   ];
-  winPositions.forEach(function(wp) {
-    const win = new THREE.Mesh(winGeo, windowMat);
-    win.position.set(wp.x, wp.y, wp.z);
-    win.rotation.y = wp.ry;
-    win.userData.isWindow = true;
-    castleGroup.add(win);
+  torchPositions.forEach(function(tp) {
+    // Bracket
+    var bracket = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.5), ironMat);
+    bracket.position.set(tp[0], tp[1], tp[2]);
+    castleGroup.add(bracket);
+    // Torch
+    var torch = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.6, 6), darkWoodMat);
+    torch.position.set(tp[0], tp[1]+0.5, tp[2]);
+    castleGroup.add(torch);
+    // Flame glow
+    var flame = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), torchMat);
+    flame.position.set(tp[0], tp[1]+0.9, tp[2]);
+    castleGroup.add(flame);
+    // Point light for each torch
+    var tLight = new THREE.PointLight(0xFF8844, 1.5, 15);
+    tLight.position.set(tp[0], tp[1]+1.0, tp[2]);
+    castleGroup.add(tLight);
   });
   
-  // Castle banner (tall pole with cloth)
-  const poleGeo = new THREE.CylinderGeometry(0.12, 0.12, 8, 6);
-  const pole = new THREE.Mesh(poleGeo, ironMat);
-  pole.position.set(0, wallH+4, -wallD/2+2);
-  castleGroup.add(pole);
-  
-  const bannerGeo = new THREE.PlaneGeometry(3, 4);
-  const bannerMat = new THREE.MeshStandardMaterial({
-    color:0x1a3a7a, emissive:0x0a1530, emissiveIntensity:0.15,
-    side:THREE.DoubleSide, roughness:0.6
+  // === FLAGS on two front towers ===
+  [[-gateW/2-2.5, 17, -outerD/2], [gateW/2+2.5, 17, -outerD/2]].forEach(function(fp) {
+    // Flagpole
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 5, 6), ironMat);
+    pole.position.set(fp[0], fp[1]+2.5, fp[2]);
+    castleGroup.add(pole);
+    // Flag (simple banner)
+    var flag = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.8), flagMat);
+    flag.position.set(fp[0]+1.5, fp[1]+4, fp[2]);
+    castleGroup.add(flag);
   });
-  const banner = new THREE.Mesh(bannerGeo, bannerMat);
-  banner.position.set(1.5, wallH+6, -wallD/2+2);
-  banner.userData.isBanner = true;
-  castleGroup.add(banner);
   
-  // Set position on terrain
-  const castleGroundH = getHeight(CASTLE_POS.x, CASTLE_POS.z);
+  // === WOODEN STABLES (side building in courtyard) ===
+  var stable = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 6), woodMat);
+  stable.position.set(15, 2, 8);
+  stable.castShadow = true; stable.receiveShadow = true;
+  castleGroup.add(stable);
+  var stableRoof = new THREE.Mesh(new THREE.BoxGeometry(11, 0.5, 7), darkWoodMat);
+  stableRoof.position.set(15, 4.25, 8);
+  stableRoof.rotation.x = 0.1; // slight pitch
+  castleGroup.add(stableRoof);
+  // Stable door
+  var stableDoor = new THREE.Mesh(new THREE.BoxGeometry(2, 3.5, 0.3), darkWoodMat);
+  stableDoor.position.set(15, 1.75, 8-3);
+  castleGroup.add(stableDoor);
+  
+  // === POSITION IN WORLD ===
+  var castleGroundH = getHeight(CASTLE_POS.x, CASTLE_POS.z);
   castleGroup.position.set(CASTLE_POS.x, castleGroundH, CASTLE_POS.z);
-  
-  // Flatten terrain under castle (visual platform)
-  const platform = new THREE.Mesh(
-    new THREE.BoxGeometry(wallW+12, 1, wallD+12),
-    new THREE.MeshStandardMaterial({color:0x6B6358, roughness:0.9})
-  );
-  platform.position.y = -0.5;
-  platform.receiveShadow = true;
-  castleGroup.add(platform);
-  
-  // Path leading from gate
-  const pathGeo = new THREE.BoxGeometry(7, 0.15, 20);
-  const pathMat = new THREE.MeshStandardMaterial({color:0x7B7368, roughness:0.95});
-  const path = new THREE.Mesh(pathGeo, pathMat);
-  path.position.set(0, 0.1, -wallD/2-10);
-  path.receiveShadow = true;
-  castleGroup.add(path);
-  
   scene.add(castleGroup);
-  console.log('[v164] Medieval castle built at', CASTLE_POS.x, CASTLE_POS.z);
+  
+  // Store window references for day/night glow
+  castleWindows = [];
+  castleGroup.traverse(function(child) {
+    if(child.userData && child.userData.isCastleWindow) {
+      castleWindows.push(child);
+    }
+  });
 }
 
 // Castle gate animation
@@ -2467,7 +2650,7 @@ let npcNameplateEl = null;
 let npcHintEl = null;
 
 function loadNPCGuard() {
-  queueLoad(3, 'npc-guard-model.glb?v=164c', function(gltf) {
+  queueLoad(3, 'npc-guard-model.glb?v=165', function(gltf) {
     npcGuard = gltf.scene;
     npcGuard.scale.set(3.5, 3.5, 3.5); // Scale to match game world
     
@@ -2591,15 +2774,43 @@ function createFallbackGuard() {
   console.log('[v164] Fallback guard created');
 }
 
+let npcIdleTimer = 0;
+let npcBreathPhase = 0;
+let npcWeightShift = 0;
+let npcHeadLook = 0;
+let npcArmSway = 0;
+
 function updateNPCGuard(dt) {
   if(!npcGuard || !npcGuardLoaded) return;
   
-  // Update animation
+  npcIdleTimer += dt;
+  
+  // Update animation mixer if GLB has embedded animations
   if(npcGuardMixer) npcGuardMixer.update(dt);
   
-  // Idle bobbing for fallback guard
-  if(!npcGuardMixer && npcGuard) {
-    npcGuard.position.y = getHeight(NPC_GUARD_POS.x, NPC_GUARD_POS.z) + Math.sin(Date.now() * 0.002) * 0.1;
+  // Procedural idle animations (works with or without mixer)
+  npcBreathPhase += dt * 1.8;
+  npcWeightShift += dt * 0.4;
+  npcArmSway += dt * 0.7;
+  npcHeadLook += dt * 0.25;
+  
+  var groundH = getHeight(NPC_GUARD_POS.x, NPC_GUARD_POS.z);
+  
+  // Breathing: subtle Y bob (inhale up, exhale down)
+  var breathY = Math.sin(npcBreathPhase) * 0.06 + Math.sin(npcBreathPhase * 2.3) * 0.02;
+  npcGuard.position.y = groundH + breathY;
+  
+  // Weight shifting: slight lean side to side
+  var lean = Math.sin(npcWeightShift) * 0.015 + Math.sin(npcWeightShift * 1.7) * 0.008;
+  npcGuard.rotation.z = lean;
+  
+  // Subtle forward/back sway
+  var sway = Math.sin(npcArmSway) * 0.008;
+  npcGuard.rotation.x = sway;
+  
+  // Occasional head tilt (via slight rotation)
+  if(Math.sin(npcHeadLook) > 0.95) {
+    npcGuard.rotation.z += Math.sin(npcIdleTimer * 3) * 0.02;
   }
   
   // Face player when nearby
@@ -3026,7 +3237,7 @@ setTimeout(function() {
 updateLoading('Terrain generated...', 20);
 
 // ===== REFLECTIVE WATER (Three.js Water Addon) =====
-var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=164c', function(t){
+var waterNormTex = new THREE.TextureLoader().load('waternormals.jpg?v=165', function(t){
   t.wrapS = THREE.RepeatWrapping;
   t.wrapT = THREE.RepeatWrapping;
 });
@@ -3049,7 +3260,7 @@ var waterMesh = water; // Alias for any old references
 
 // Frozen water overlay for Ice Tundra
 var frozenWaterTexLoader = new THREE.TextureLoader();
-var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=164c');
+var frozenWaterTex = frozenWaterTexLoader.load('frozen-water-tex.png?v=165');
 frozenWaterTex.wrapS = THREE.RepeatWrapping;
 frozenWaterTex.wrapT = THREE.RepeatWrapping;
 frozenWaterTex.repeat.set(24, 24);
@@ -3083,7 +3294,7 @@ checkReady();
 
 // ===== PILE OF ROCKS (ENV-0005 - Brad's GLB Model) =====
 updateLoading('Loading rock piles...', 44);
-queueLoad(5, 'rock-pile-model.glb?v=164c', function(gltf){
+queueLoad(5, 'rock-pile-model.glb?v=165', function(gltf){
   const rockTemplate = gltf.scene;
   rockTemplate.traverse(function(child){
     if(child.isMesh){
@@ -3127,7 +3338,7 @@ queueLoad(5, 'rock-pile-model.glb?v=164c', function(gltf){
 
 // ===== IRON ORE DEPOSITS (Brad's GLB Model - ENV-0003) =====
 updateLoading('Loading iron ore deposits...', 47);
-queueLoad(5, 'iron-ore-deposit.glb?v=164c', function(gltf){
+queueLoad(5, 'iron-ore-deposit.glb?v=165', function(gltf){
   var oreTemplate = gltf.scene;
   var oreCount = 80;
   debugLog('⛏️ ORE model loaded');
@@ -3180,7 +3391,7 @@ queueLoad(5, 'iron-ore-deposit.glb?v=164c', function(gltf){
 });
 
 // Load BASS model (NPC-0001 Baby, NPC-0002 Medium, NPC-0003 Full Grown, NPC-0004 Overgrown)
-queueLoad(3, 'bass-model.glb?v=164c', function(gltf){
+queueLoad(3, 'bass-model.glb?v=165', function(gltf){
   const bassTemplate = gltf.scene;
   debugLog('🐟 BASS model loaded, traversing...');
       bassTemplate.traverse(function(child){
@@ -3272,7 +3483,7 @@ queueLoad(3, 'bass-model.glb?v=164c', function(gltf){
 
 // ===== DEER NPC MODEL (Rigged + Animated) =====
 updateLoading('Loading deer...', 53);
-queueLoad(3, 'deer-model.glb?v=164c', function(gltf){
+queueLoad(3, 'deer-model.glb?v=165', function(gltf){
   const deerTemplate = gltf.scene;
   const deerAnimClips = gltf.animations; // 5 animations from rigged model
   debugLog('🦌 DEER rigged model loaded! Animations: ' + deerAnimClips.map(a => a.name).join(', '));
@@ -3381,7 +3592,7 @@ queueLoad(3, 'deer-model.glb?v=164c', function(gltf){
 
 // ===== FISHING POLE MODEL =====
 updateLoading('Loading fishing pole...', 58);
-queueLoad(6, 'fishing-pole-model.glb?v=164c', function(gltf){
+queueLoad(6, 'fishing-pole-model.glb?v=165', function(gltf){
   fishingPoleModel = gltf.scene;
   fishingPoleModel.scale.set(1, 1, 1);
   debugLog('🎣 POLE model loaded');
@@ -10974,7 +11185,7 @@ characterPivot.add(placeholderMesh);
 scene.add(characterPivot);
 
 updateLoading('Loading character model...', 50);
-queueLoad(1, 'character-walk.glb?v=164c', function(gltf){
+queueLoad(1, 'character-walk.glb?v=165', function(gltf){
   playerModel = gltf.scene;
   // Remove ALL placeholders — nuke everything before adding real model
   while(characterPivot.children.length > 0) {
@@ -11109,7 +11320,7 @@ queueLoad(1, 'character-walk.glb?v=164c', function(gltf){
 
 // ===== GRASS INSTANCES =====
 updateLoading('Loading grass model...', 55);
-queueLoad(2, 'grass-model.glb?v=164c', function(gltf){
+queueLoad(2, 'grass-model.glb?v=165', function(gltf){
   const grassTemplate = gltf.scene;
   const grassCount = 1500;
   debugLog('🌿 GRASS model loaded');
@@ -11169,7 +11380,7 @@ var sunModel = null;
 var moonModel = null;
 var moonGlow = null;
 
-queueLoad(2, 'sun-model.glb?v=164c', function(gltf){
+queueLoad(2, 'sun-model.glb?v=165', function(gltf){
   sunModel = gltf.scene;
   sunModel.scale.set(150, 150, 150);
   sunModel.position.set(350, 450, 250);
@@ -11201,7 +11412,7 @@ queueLoad(2, 'sun-model.glb?v=164c', function(gltf){
 });
 
 // Load Moon model with realistic glow
-queueLoad(2, 'moon-model.glb?v=164c', function(gltf){
+queueLoad(2, 'moon-model.glb?v=165', function(gltf){
   moonModel = gltf.scene;
   moonModel.scale.set(60, 60, 60);
   moonModel.position.set(-350, -200, -250); // Start below horizon
@@ -11255,7 +11466,7 @@ queueLoad(2, 'moon-model.glb?v=164c', function(gltf){
 
 // ===== GRIZZLY BEAR NPC MODEL (NPC-0006 to NPC-0009) =====
 updateLoading('Loading grizzly bears...', 92);
-queueLoad(4, 'bear-walk.glb?v=164c', function(gltf){
+queueLoad(4, 'bear-walk.glb?v=165', function(gltf){
   bearTemplate = gltf.scene;
   bearAnimClip = gltf.animations[0]; // Walk_In_Place animation
   bearTemplate.traverse(function(child){
@@ -11364,7 +11575,7 @@ queueLoad(4, 'bear-walk.glb?v=164c', function(gltf){
 
 // Load dead grizzly carcass model
 // Load Freak-a-Zoid (animated walk-in-place)
-queueLoad(4, 'freak-walk.glb?v=164c', function(gltf){
+queueLoad(4, 'freak-walk.glb?v=165', function(gltf){
   freakTemplate = gltf.scene;
   freakTemplate.traverse(function(child){
     if(child.isMesh){
@@ -11445,7 +11656,7 @@ queueLoad(4, 'freak-walk.glb?v=164c', function(gltf){
 });
 
 // Load Stallion (animated walk)
-queueLoad(3, 'stallion-walk.glb?v=164c', function(gltf){
+queueLoad(3, 'stallion-walk.glb?v=165', function(gltf){
   stallionTemplate = gltf.scene;
   stallionTemplate.traverse(function(child){
     if(child.isMesh){
@@ -11532,7 +11743,7 @@ queueLoad(3, 'stallion-walk.glb?v=164c', function(gltf){
 });
 
 // Load Greater Skeletal Dreugh
-queueLoad(4, 'dreugh-model.glb?v=164c', function(gltf){
+queueLoad(4, 'dreugh-model.glb?v=165', function(gltf){
   dreughTemplate = gltf.scene;
   dreughTemplate.traverse(function(child){
     if(child.isMesh){
@@ -11595,7 +11806,7 @@ queueLoad(4, 'dreugh-model.glb?v=164c', function(gltf){
   checkReady();
 });
 
-queueLoad(4, 'dead-grizzly-model.glb?v=164c', function(gltf){
+queueLoad(4, 'dead-grizzly-model.glb?v=165', function(gltf){
   deadBearTemplate = gltf.scene;
   deadBearTemplate.traverse(function(child){
     if(child.isMesh){
@@ -11622,7 +11833,7 @@ queueLoad(4, 'dead-grizzly-model.glb?v=164c', function(gltf){
 // ===== FORGED OBSIDIAN SCIMITAR =====
 updateLoading('Loading legendary weapons...', 88);
 // Load Vashra Dragon (flight model + animation)
-queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
+queueLoad(7, 'vashra-dragon.glb?v=165', function(gltf){
   vashraModel = gltf.scene;
   vashraModel.traverse(function(child){
     if(child.isMesh){
@@ -11668,7 +11879,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   checkReady();
   
   // Load landing animation (separate GLB, same model — grab animation clip only)
-  queueLoad(8, 'vashra-dragon-landing.glb?v=164c', function(landGltf){
+  queueLoad(8, 'vashra-dragon-landing.glb?v=165', function(landGltf){
     if(landGltf.animations && landGltf.animations.length > 0 && vashraMixer){
       vashraLandAction = vashraMixer.clipAction(landGltf.animations[0]);
       vashraLandAction.setLoop(THREE.LoopRepeat);
@@ -11683,7 +11894,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   });
 
   // Load bank-right animation (used during circular orbit — dragon is always banking right)
-  queueLoad(8, 'vashra-dragon-bank-right.glb?v=164c', function(bankGltf){
+  queueLoad(8, 'vashra-dragon-bank-right.glb?v=165', function(bankGltf){
     if(bankGltf.animations && bankGltf.animations.length > 0 && vashraMixer){
       vashraBankAction = vashraMixer.clipAction(bankGltf.animations[0]);
       vashraBankAction.setLoop(THREE.LoopRepeat);
@@ -11702,7 +11913,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   });
 
   // Load bank-left animation (for varied orbit or direction changes)
-  queueLoad(8, 'vashra-dragon-bank-left.glb?v=164c', function(blGltf){
+  queueLoad(8, 'vashra-dragon-bank-left.glb?v=165', function(blGltf){
     if(blGltf.animations && blGltf.animations.length > 0 && vashraMixer){
       vashraBankLeftAction = vashraMixer.clipAction(blGltf.animations[0]);
       vashraBankLeftAction.setLoop(THREE.LoopRepeat);
@@ -11717,7 +11928,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   });
 
   // Load dive-to-land animation (nose-down diving descent)
-  queueLoad(8, 'vashra-dragon-dive-land.glb?v=164c', function(diveGltf){
+  queueLoad(8, 'vashra-dragon-dive-land.glb?v=165', function(diveGltf){
     if(diveGltf.animations && diveGltf.animations.length > 0 && vashraMixer){
       vashraDiveAction = vashraMixer.clipAction(diveGltf.animations[0]);
       vashraDiveAction.setLoop(THREE.LoopRepeat);
@@ -11732,7 +11943,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   });
 
   // Load dive-to-death animation (death crash with impact freeze)
-  queueLoad(8, 'vashra-dragon-dive-death.glb?v=164c', function(deathGltf){
+  queueLoad(8, 'vashra-dragon-dive-death.glb?v=165', function(deathGltf){
     if(deathGltf.animations && deathGltf.animations.length > 0 && vashraMixer){
       vashraDeathAction = vashraMixer.clipAction(deathGltf.animations[0]);
       vashraDeathAction.setLoop(THREE.LoopOnce);
@@ -11748,7 +11959,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   });
 
   // Load fireball animation (mouth opens to breathe fire)
-  queueLoad(8, 'vashra-dragon-fireball.glb?v=164c', function(fbGltf){
+  queueLoad(8, 'vashra-dragon-fireball.glb?v=165', function(fbGltf){
     if(fbGltf.animations && fbGltf.animations.length > 0 && vashraMixer){
       vashraFireballAction = vashraMixer.clipAction(fbGltf.animations[0]);
       vashraFireballAction.setLoop(THREE.LoopOnce);
@@ -11764,7 +11975,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   });
   
   // 8. Sitting Idle — dragon on ground, looking around, shifting wings (loops forever)
-  queueLoad(8, 'vashra-sitting-idle.glb?v=164c', function(idleGltf){
+  queueLoad(8, 'vashra-sitting-idle.glb?v=165', function(idleGltf){
     if(idleGltf.animations && idleGltf.animations.length > 0 && vashraMixer){
       vashraSittingIdleAction = vashraMixer.clipAction(idleGltf.animations[0]);
       vashraSittingIdleAction.setLoop(THREE.LoopRepeat);
@@ -11779,7 +11990,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   });
   
   // 9. Idle-to-Sleep — dragon lays down to sleep (play once, freeze on final frame)
-  queueLoad(8, 'vashra-idle-to-sleep.glb?v=164c', function(sleepGltf){
+  queueLoad(8, 'vashra-idle-to-sleep.glb?v=165', function(sleepGltf){
     if(sleepGltf.animations && sleepGltf.animations.length > 0 && vashraMixer){
       vashraIdleToSleepAction = vashraMixer.clipAction(sleepGltf.animations[0]);
       vashraIdleToSleepAction.setLoop(THREE.LoopOnce);
@@ -11800,7 +12011,7 @@ queueLoad(7, 'vashra-dragon.glb?v=164c', function(gltf){
   checkReady();
 });
 
-queueLoad(6, 'obsidian-scimitar.glb?v=164c', function(gltf){
+queueLoad(6, 'obsidian-scimitar.glb?v=165', function(gltf){
   swordModel = gltf.scene;
   swordModel.traverse(function(child){
     if(child.isMesh){
@@ -13292,15 +13503,15 @@ function updateDayNight(time){
   
   if(time >= 7 && time < 17){
     // Full daytime
-    sunIntensity = 6.0;
-    ambientIntensity = 1.5;
+    sunIntensity = 3.5;
+    ambientIntensity = 1.0;
     skyR = 0.53; skyG = 0.81; skyB = 0.92; // #87CEEB
     if(overlay) overlay.style.background = 'transparent';
   } else if(time >= 5 && time < 7){
     // Sunrise
     var t = (time - 5) / 2.0; // 0 to 1
-    sunIntensity = 1.0 + t * 5.0;
-    ambientIntensity = 0.4 + t * 1.1;
+    sunIntensity = 0.8 + t * 2.7;
+    ambientIntensity = 0.3 + t * 0.7;
     // Blend from dark blue to orange-pink to day blue
     if(t < 0.5){
       var st = t * 2;
@@ -13313,8 +13524,8 @@ function updateDayNight(time){
   } else if(time >= 17 && time < 19){
     // Sunset
     var t = (time - 17) / 2.0; // 0 to 1
-    sunIntensity = 6.0 - t * 5.0;
-    ambientIntensity = 1.5 - t * 1.1;
+    sunIntensity = 3.5 - t * 2.7;
+    ambientIntensity = 1.0 - t * 0.7;
     if(t < 0.5){
       var st = t * 2;
       skyR = 0.53 + st * 0.42; skyG = 0.81 - st * 0.41; skyB = 0.92 - st * 0.52;
@@ -14073,6 +14284,9 @@ function animate(){
       playerPos.copy(characterPivot.position);
     } else {
       characterPivot.position.copy(playerPos);
+      // HARD FLOOR CLAMP — prevent falling through terrain under any circumstance
+      var hardFloor = getHeight(playerPos.x, playerPos.z) + 0.1;
+      if(characterPivot.position.y < hardFloor) characterPivot.position.y = hardFloor;
     }
     // Walk animation hip yaw ≈ 0°, idle hip yaw ≈ 91° — compensate the ~90° difference
     const walkRotTarget = playerIsWalking ? -Math.PI / 2 : 0;

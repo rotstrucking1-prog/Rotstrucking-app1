@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Architect of Creation — Create Character</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:100vw; height:100vh; overflow:hidden; font-family:'Inter',sans-serif; color:#c4b59a; background:#0a0a0a; }
+
+  .titlebar { position:fixed; top:0; left:0; right:0; height:32px; -webkit-app-region:drag; z-index:1000; display:flex; justify-content:flex-end; align-items:center; padding-right:4px; }
+  .titlebar-btn { -webkit-app-region:no-drag; width:36px; height:28px; border:none; background:transparent; color:#666; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:'Segoe MDL2 Assets',sans-serif; }
+  .titlebar-btn:hover { color:#fff; background:rgba(255,255,255,.1); }
+  .titlebar-btn.close:hover { background:#c0392b; color:#fff; }
+
+  .bg { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+  .bg img { width:100%; height:100%; object-fit:cover; filter:brightness(.3); }
+  .bg::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.1) 0%, rgba(0,0,0,.7) 80%); }
+
+  .main { position:relative; z-index:10; width:100%; height:100%; display:grid;
+    grid-template-columns:300px 1fr 320px; grid-template-rows:60px 1fr 80px; padding:32px 24px 0; gap:0 16px; }
+
+  .header { grid-column:1/-1; display:flex; justify-content:center; align-items:center; }
+  .page-title { font-family:'Cinzel Decorative','Cinzel',serif; font-size:26px; font-weight:700; color:#c41e1e; letter-spacing:8px; text-shadow:0 0 30px rgba(196,30,30,.3); }
+
+  /* ── Tabs (Left) ── */
+  .tabs-panel { display:flex; flex-direction:column; gap:4px; padding:10px 0; }
+  .tab-btn { height:48px; background:rgba(15,10,8,.6); border:1px solid rgba(138,115,80,.1); border-radius:4px; color:#5a4d3a; font-family:'Cinzel',serif; font-size:11px; font-weight:600; letter-spacing:3px; cursor:pointer; transition:all .3s; display:flex; align-items:center; padding:0 16px; gap:10px; }
+  .tab-btn:hover { border-color:rgba(138,115,80,.2); color:#c4b59a; background:rgba(20,14,10,.8); }
+  .tab-btn.active { border-color:rgba(196,30,30,.4); color:#c41e1e; background:rgba(40,10,10,.6); box-shadow:inset 3px 0 0 #c41e1e; }
+  .tab-btn .icon { font-size:18px; width:24px; text-align:center; }
+
+  .tab-content { display:none; flex-direction:column; gap:12px; overflow-y:auto; padding:10px 0; }
+  .tab-content.active { display:flex; }
+
+  /* ── Options Panel ── */
+  .options-area { overflow-y:auto; padding:10px 0; }
+  .option-group { background:rgba(15,10,8,.65); border:1px solid rgba(138,115,80,.1); border-radius:4px; padding:16px; margin-bottom:10px; backdrop-filter:blur(10px); }
+  .option-group-title { font-family:'Cinzel',serif; font-size:10px; font-weight:700; letter-spacing:4px; color:#6b5a42; margin-bottom:12px; text-transform:uppercase; }
+
+  .option-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .option-card { background:rgba(0,0,0,.3); border:1px solid rgba(138,115,80,.1); border-radius:4px; padding:10px; cursor:pointer; transition:all .3s; text-align:center; }
+  .option-card:hover { border-color:rgba(138,115,80,.25); background:rgba(20,14,10,.6); }
+  .option-card.selected { border-color:rgba(196,30,30,.5); background:rgba(40,10,10,.5); box-shadow:0 0 12px rgba(196,30,30,.1); }
+  .option-card .emoji { font-size:28px; margin-bottom:4px; }
+  .option-card .name { font-family:'Cinzel',serif; font-size:11px; font-weight:600; color:#e8d5b5; }
+  .option-card .desc { font-size:9px; color:#5a4d3a; margin-top:2px; line-height:1.3; }
+
+  .option-grid-3 { grid-template-columns:1fr 1fr 1fr; }
+
+  /* Sliders */
+  .slider-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .slider-label { font-size:11px; color:#5a4d3a; width:80px; flex-shrink:0; }
+  .slider-input { flex:1; -webkit-appearance:none; height:4px; background:rgba(138,115,80,.15); border-radius:2px; outline:none; }
+  .slider-input::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#c41e1e; cursor:pointer; border:2px solid rgba(0,0,0,.4); }
+  .slider-value { font-family:'Cinzel',serif; font-size:11px; color:#c4b59a; width:24px; text-align:right; }
+
+  /* Stat Allocation */
+  .stat-alloc-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .stat-alloc-label { font-family:'Cinzel',serif; font-size:11px; font-weight:600; color:#8a7350; width:36px; letter-spacing:2px; }
+  .stat-btn { width:26px; height:26px; background:rgba(0,0,0,.4); border:1px solid rgba(138,115,80,.2); border-radius:3px; color:#c4b59a; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:'Inter',sans-serif; line-height:1; }
+  .stat-btn:hover { border-color:rgba(196,30,30,.4); color:#c41e1e; background:rgba(40,10,10,.4); }
+  .stat-btn:active { transform:scale(.9); }
+  .stat-btn:disabled { opacity:.25; cursor:not-allowed; transform:none; }
+  .stat-alloc-val { font-family:'Cinzel',serif; font-size:14px; font-weight:700; color:#e8d5b5; width:32px; text-align:center; }
+  .stat-alloc-bar { flex:1; height:4px; background:rgba(138,115,80,.1); border-radius:2px; overflow:hidden; }
+  .stat-alloc-fill { height:100%; background:linear-gradient(90deg,#8b0000,#c41e1e); border-radius:2px; transition:width .2s; }
+  .points-counter { font-family:'Cinzel',serif; font-size:12px; color:#c41e1e; text-align:center; margin-bottom:14px; letter-spacing:2px; }
+  .points-counter span { font-weight:700; font-size:14px; }
+  .racial-bonus { font-size:9px; color:#6b8a50; margin-top:3px; letter-spacing:1px; line-height:1.3; }
+
+  /* Name input */
+  .name-input { width:100%; height:44px; background:rgba(0,0,0,.5); border:1px solid rgba(138,115,80,.2); border-radius:3px; padding:0 14px; color:#e8d5b5; font-family:'Cinzel',serif; font-size:16px; font-weight:600; letter-spacing:2px; outline:none; transition:border-color .3s; text-align:center; }
+  .name-input:focus { border-color:rgba(196,30,30,.5); box-shadow:0 0 12px rgba(196,30,30,.15); }
+
+  /* ── Preview (Center) ── */
+  .preview-area { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .preview-model { font-size:160px; filter:drop-shadow(0 0 40px rgba(196,30,30,.2)); animation:bob 3s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .preview-pedestal { width:160px; height:5px; background:radial-gradient(ellipse,rgba(196,30,30,.25),transparent); border-radius:50%; margin-top:-10px; }
+  .preview-name { font-family:'Cinzel Decorative','Cinzel',serif; font-size:22px; color:#e8d5b5; margin-top:20px; letter-spacing:4px; text-shadow:0 2px 8px rgba(0,0,0,.6); min-height:30px; }
+  .preview-race { font-size:11px; color:#8a7350; letter-spacing:4px; margin-top:4px; min-height:18px; }
+
+  /* Stats summary */
+  .stat-summary { margin-top:20px; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; width:280px; }
+  .stat-pill { background:rgba(15,10,8,.6); border:1px solid rgba(138,115,80,.1); border-radius:3px; padding:6px 8px; text-align:center; }
+  .stat-pill .val { font-family:'Cinzel',serif; font-size:14px; font-weight:700; color:#c41e1e; }
+  .stat-pill .lbl { font-size:8px; color:#5a4d3a; letter-spacing:2px; margin-top:2px; }
+
+  /* Footer */
+  .footer { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; }
+  .btn-back { height:36px; padding:0 16px; background:transparent; border:1px solid rgba(138,115,80,.15); border-radius:3px; color:#5a4d3a; font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; cursor:pointer; transition:all .3s; }
+  .btn-back:hover { border-color:rgba(138,115,80,.3); color:#c4b59a; }
+
+  .btn-create { height:52px; padding:0 40px; background:linear-gradient(180deg,#a01515,#7a0f0f); border:1px solid rgba(196,30,30,.4); border-radius:3px; color:#e8d5b5; font-family:'Cinzel',serif; font-size:15px; font-weight:700; letter-spacing:5px; cursor:pointer; transition:all .3s; text-shadow:0 2px 4px rgba(0,0,0,.5); }
+  .btn-create:hover { background:linear-gradient(180deg,#c41e1e,#8b0000); box-shadow:0 0 40px rgba(196,30,30,.3); transform:translateY(-1px); }
+  .btn-create:disabled { opacity:.4; cursor:not-allowed; }
+
+  .footer-step { font-size:9px; color:#2a1f14; letter-spacing:2px; }
+</style>
+</head>
+<body>
+  <div class="titlebar">
+    <button class="titlebar-btn" onclick="aocAPI.minimize()">&#xE949;</button>
+    <button class="titlebar-btn close" onclick="aocAPI.close()">&#xE106;</button>
+  </div>
+  <div class="bg"><img src="img/bg-charcreate.jpg" alt=""></div>
+
+  <div class="main">
+    <div class="header"><div class="page-title">Forge Your Adventurer</div></div>
+
+    <!-- Left: Tabs -->
+    <div style="display:flex;flex-direction:column;overflow:hidden">
+      <div class="tabs-panel">
+        <button class="tab-btn active" onclick="switchTab('race')"><span class="icon">🧬</span>RACE</button>
+        <button class="tab-btn" onclick="switchTab('appearance')"><span class="icon">🎨</span>APPEARANCE</button>
+        <button class="tab-btn" onclick="switchTab('identity')"><span class="icon">📜</span>IDENTITY</button>
+      </div>
+    </div>
+
+    <!-- Center: Preview -->
+    <div style="display:flex;flex-direction:column;overflow:hidden">
+      <div class="preview-area" style="flex:1">
+        <div class="preview-model" id="previewEmoji">🧑</div>
+        <div class="preview-pedestal"></div>
+        <div class="preview-name" id="previewName">Unnamed Adventurer</div>
+        <div class="preview-race" id="previewRace">Human</div>
+        <div class="stat-summary" id="statSummary">
+          <div class="stat-pill"><div class="val" id="sStr">50</div><div class="lbl">STR</div></div>
+          <div class="stat-pill"><div class="val" id="sDex">50</div><div class="lbl">DEX</div></div>
+          <div class="stat-pill"><div class="val" id="sInt">50</div><div class="lbl">INT</div></div>
+          <div class="stat-pill"><div class="val" id="sCon">50</div><div class="lbl">CON</div></div>
+          <div class="stat-pill"><div class="val" id="sWis">50</div><div class="lbl">WIS</div></div>
+          <div class="stat-pill"><div class="val" id="sVit">50</div><div class="lbl">VIT</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Options Content -->
+    <div class="options-area" id="optionsArea">
+      <!-- Race Tab -->
+      <div class="tab-content active" id="tab-race">
+        <div class="option-group">
+          <div class="option-group-title">Choose Your Race</div>
+          <div class="option-grid">
+            <div class="option-card selected" onclick="selectRace(this,'Human','🧑',{str:0,dex:0,int:0,con:0,wis:0,vit:0})"><div class="emoji">🧑</div><div class="name">Human</div><div class="desc">Versatile &amp; balanced</div><div class="racial-bonus">No racial bonus</div></div>
+            <div class="option-card" onclick="selectRace(this,'Elf','🧝',{str:0,dex:5,int:5,con:0,wis:0,vit:0})"><div class="emoji">🧝</div><div class="name">Elf</div><div class="desc">Agile &amp; magical</div><div class="racial-bonus">Racial Bonus: +5 DEX, +5 INT</div></div>
+            <div class="option-card" onclick="selectRace(this,'Dwarf','⛏️',{str:5,dex:0,int:0,con:5,wis:0,vit:0})"><div class="emoji">⛏️</div><div class="name">Dwarf</div><div class="desc">Tough &amp; resilient</div><div class="racial-bonus">Racial Bonus: +5 STR, +5 CON</div></div>
+            <div class="option-card" onclick="selectRace(this,'Orc','👹',{str:5,dex:0,int:0,con:0,wis:0,vit:5})"><div class="emoji">👹</div><div class="name">Orc</div><div class="desc">Brutal &amp; strong</div><div class="racial-bonus">Racial Bonus: +5 STR, +5 VIT</div></div>
+            <div class="option-card" onclick="selectRace(this,'Dark Elf','🌑',{str:0,dex:5,int:5,con:0,wis:0,vit:0})"><div class="emoji">🌑</div><div class="name">Dark Elf</div><div class="desc">Cunning &amp; shadowy</div><div class="racial-bonus">Racial Bonus: +5 INT, +5 DEX</div></div>
+            <div class="option-card" onclick="selectRace(this,'Halfling','🍀',{str:0,dex:5,int:0,con:0,wis:5,vit:0})"><div class="emoji">🍀</div><div class="name">Halfling</div><div class="desc">Lucky &amp; nimble</div><div class="racial-bonus">Racial Bonus: +5 DEX, +5 WIS</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance Tab (with Stat Allocation) -->
+      <div class="tab-content" id="tab-appearance">
+        <div class="option-group">
+          <div class="option-group-title">Customize Appearance</div>
+          <div class="slider-row"><span class="slider-label">Skin Tone</span><input class="slider-input" type="range" min="1" max="10" value="5"><span class="slider-value">5</span></div>
+          <div class="slider-row"><span class="slider-label">Hair Style</span><input class="slider-input" type="range" min="1" max="12" value="1"><span class="slider-value">1</span></div>
+          <div class="slider-row"><span class="slider-label">Hair Color</span><input class="slider-input" type="range" min="1" max="10" value="3"><span class="slider-value">3</span></div>
+          <div class="slider-row"><span class="slider-label">Face Shape</span><input class="slider-input" type="range" min="1" max="8" value="1"><span class="slider-value">1</span></div>
+          <div class="slider-row"><span class="slider-label">Eye Color</span><input class="slider-input" type="range" min="1" max="8" value="2"><span class="slider-value">2</span></div>
+          <div class="slider-row"><span class="slider-label">Body Build</span><input class="slider-input" type="range" min="1" max="5" value="3"><span class="slider-value">3</span></div>
+          <div class="slider-row"><span class="slider-label">Height</span><input class="slider-input" type="range" min="1" max="5" value="3"><span class="slider-value">3</span></div>
+          <div class="slider-row"><span class="slider-label">Scars</span><input class="slider-input" type="range" min="0" max="5" value="0"><span class="slider-value">0</span></div>
+          <div class="slider-row"><span class="slider-label">Tattoos</span><input class="slider-input" type="range" min="0" max="8" value="0"><span class="slider-value">0</span></div>
+        </div>
+        <div class="option-group">
+          <div class="option-group-title">Stat Allocation</div>
+          <div class="points-counter">Points Remaining: <span id="pointsLeft">0</span></div>
+          <div class="stat-alloc-row">
+            <span class="stat-alloc-label">STR</span>
+            <button class="stat-btn" onclick="adjustStat('str',-1)">−</button>
+            <span class="stat-alloc-val" id="allocStr">50</span>
+            <div class="stat-alloc-bar"><div class="stat-alloc-fill" id="barStr" style="width:50%"></div></div>
+            <button class="stat-btn" onclick="adjustStat('str',1)">+</button>
+          </div>
+          <div class="stat-alloc-row">
+            <span class="stat-alloc-label">DEX</span>
+            <button class="stat-btn" onclick="adjustStat('dex',-1)">−</button>
+            <span class="stat-alloc-val" id="allocDex">50</span>
+            <div class="stat-alloc-bar"><div class="stat-alloc-fill" id="barDex" style="width:50%"></div></div>
+            <button class="stat-btn" onclick="adjustStat('dex',1)">+</button>
+          </div>
+          <div class="stat-alloc-row">
+            <span class="stat-alloc-label">INT</span>
+            <button class="stat-btn" onclick="adjustStat('int',-1)">−</button>
+            <span class="stat-alloc-val" id="allocInt">50</span>
+            <div class="stat-alloc-bar"><div class="stat-alloc-fill" id="barInt" style="width:50%"></div></div>
+            <button class="stat-btn" onclick="adjustStat('int',1)">+</button>
+          </div>
+          <div class="stat-alloc-row">
+            <span class="stat-alloc-label">CON</span>
+            <button class="stat-btn" onclick="adjustStat('con',-1)">−</button>
+            <span class="stat-alloc-val" id="allocCon">50</span>
+            <div class="stat-alloc-bar"><div class="stat-alloc-fill" id="barCon" style="width:50%"></div></div>
+            <button class="stat-btn" onclick="adjustStat('con',1)">+</button>
+          </div>
+          <div class="stat-alloc-row">
+            <span class="stat-alloc-label">WIS</span>
+            <button class="stat-btn" onclick="adjustStat('wis',-1)">−</button>
+            <span class="stat-alloc-val" id="allocWis">50</span>
+            <div class="stat-alloc-bar"><div class="stat-alloc-fill" id="barWis" style="width:50%"></div></div>
+            <button class="stat-btn" onclick="adjustStat('wis',1)">+</button>
+          </div>
+          <div class="stat-alloc-row">
+            <span class="stat-alloc-label">VIT</span>
+            <button class="stat-btn" onclick="adjustStat('vit',-1)">−</button>
+            <span class="stat-alloc-val" id="allocVit">50</span>
+            <div class="stat-alloc-bar"><div class="stat-alloc-fill" id="barVit" style="width:50%"></div></div>
+            <button class="stat-btn" onclick="adjustStat('vit',1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identity Tab -->
+      <div class="tab-content" id="tab-identity">
+        <div class="option-group">
+          <div class="option-group-title">Name Your Adventurer</div>
+          <input class="name-input" id="charName" type="text" placeholder="Enter a name..." maxlength="20" oninput="updateName()">
+        </div>
+        <div class="option-group">
+          <div class="option-group-title">Alignment</div>
+          <div class="option-grid option-grid-3">
+            <div class="option-card" onclick="selectAlign(this,'Lawful Good')"><div class="name" style="font-size:10px">Lawful Good</div></div>
+            <div class="option-card" onclick="selectAlign(this,'Neutral Good')"><div class="name" style="font-size:10px">Neutral Good</div></div>
+            <div class="option-card" onclick="selectAlign(this,'Chaotic Good')"><div class="name" style="font-size:10px">Chaotic Good</div></div>
+            <div class="option-card selected" onclick="selectAlign(this,'Lawful Neutral')"><div class="name" style="font-size:10px">Lawful Neutral</div></div>
+            <div class="option-card" onclick="selectAlign(this,'True Neutral')"><div class="name" style="font-size:10px">True Neutral</div></div>
+            <div class="option-card" onclick="selectAlign(this,'Chaotic Neutral')"><div class="name" style="font-size:10px">Chaotic Neutral</div></div>
+            <div class="option-card" onclick="selectAlign(this,'Lawful Evil')"><div class="name" style="font-size:10px">Lawful Evil</div></div>
+            <div class="option-card" onclick="selectAlign(this,'Neutral Evil')"><div class="name" style="font-size:10px">Neutral Evil</div></div>
+            <div class="option-card" onclick="selectAlign(this,'Chaotic Evil')"><div class="name" style="font-size:10px">Chaotic Evil</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <button class="btn-back" onclick="goBack()">← BACK</button>
+      <button class="btn-create" id="createBtn" onclick="createCharacter()">BEGIN JOURNEY</button>
+      <div class="footer-step" id="stepInfo">STEP 1 OF 3 — RACE</div>
+    </div>
+  </div>
+
+  <script>
+    const TOTAL_POINTS = 300;
+    const STAT_MIN = 10;
+    const STAT_MAX = 99;
+
+    let charData = {
+      race: 'Human',
+      alignment: 'Lawful Neutral',
+      name: '',
+      emoji: '🧑',
+      stats: { str:50, dex:50, int:50, con:50, wis:50, vit:50 },
+      racialBonus: { str:0, dex:0, int:0, con:0, wis:0, vit:0 }
+    };
+
+    // Slider value display
+    document.querySelectorAll('.slider-input').forEach(s => {
+      s.addEventListener('input', () => { s.nextElementSibling.textContent = s.value; });
+    });
+
+    function getPointsUsed() {
+      const s = charData.stats;
+      return s.str + s.dex + s.int + s.con + s.wis + s.vit;
+    }
+
+    function getPointsRemaining() {
+      return TOTAL_POINTS - getPointsUsed();
+    }
+
+    function adjustStat(stat, delta) {
+      const current = charData.stats[stat];
+      const newVal = current + delta;
+      if (newVal < STAT_MIN || newVal > STAT_MAX) return;
+      if (delta > 0 && getPointsRemaining() <= 0) return;
+      charData.stats[stat] = newVal;
+      updateStatDisplay();
+      updatePreview();
+    }
+
+    function updateStatDisplay() {
+      const stats = ['str','dex','int','con','wis','vit'];
+      stats.forEach(s => {
+        const val = charData.stats[s];
+        const capName = s.charAt(0).toUpperCase() + s.slice(1);
+        document.getElementById('alloc' + capName).textContent = val;
+        document.getElementById('bar' + capName).style.width = (val / STAT_MAX * 100) + '%';
+      });
+      document.getElementById('pointsLeft').textContent = getPointsRemaining();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById('tab-'+tab).classList.add('active');
+      const steps = { race:'STEP 1 OF 3 — RACE', appearance:'STEP 2 OF 3 — APPEARANCE', identity:'STEP 3 OF 3 — IDENTITY' };
+      document.getElementById('stepInfo').textContent = steps[tab] || '';
+    }
+
+    function selectRace(el, race, emoji, bonus) {
+      el.parentElement.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      charData.race = race;
+      charData.emoji = emoji;
+      charData.racialBonus = {...bonus};
+      updatePreview();
+    }
+
+    function selectAlign(el, align) {
+      el.parentElement.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      charData.alignment = align;
+    }
+
+    function updateName() {
+      charData.name = document.getElementById('charName').value;
+      document.getElementById('previewName').textContent = charData.name || 'Unnamed Adventurer';
+    }
+
+    function updatePreview() {
+      document.getElementById('previewEmoji').textContent = charData.emoji;
+      document.getElementById('previewRace').textContent = charData.race;
+      document.getElementById('sStr').textContent = charData.stats.str;
+      document.getElementById('sDex').textContent = charData.stats.dex;
+      document.getElementById('sInt').textContent = charData.stats.int;
+      document.getElementById('sCon').textContent = charData.stats.con;
+      document.getElementById('sWis').textContent = charData.stats.wis;
+      document.getElementById('sVit').textContent = charData.stats.vit;
+    }
+
+    async function createCharacter() {
+      if (!charData.name) { alert('Please name your adventurer first!'); return; }
+      if (getPointsRemaining() > 0) {
+        alert('You still have ' + getPointsRemaining() + ' stat points to allocate!');
+        return;
+      }
+
+      const btn = document.getElementById('createBtn');
+      btn.disabled = true;
+      btn.textContent = 'CREATING...';
+
+      try {
+        const result = await aocAPI.createCharacter(charData);
+        if (result.success) {
+          aocAPI.selectCharacter(result.character || charData);
+          aocAPI.navigate('server-select');
+        } else {
+          alert('Failed to create character: ' + (result.message || 'Unknown error'));
+          btn.disabled = false;
+          btn.textContent = 'BEGIN JOURNEY';
+        }
+      } catch(e) {
+        alert('Connection error. Is the server running?');
+        btn.disabled = false;
+        btn.textContent = 'BEGIN JOURNEY';
+      }
+    }
+
+    function goBack() {
+      aocAPI.navigate('character-select');
+    }
+
+    updatePreview();
+    updateStatDisplay();
+  </script>
+
+  <!-- Theme music -->
+  <audio id="bgTheme" autoplay loop preload="auto" style="display:none">
+    <source src="assets/audio/aoc-theme.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function() {
+      const a = document.getElementById('bgTheme');
+      if (a) {
+        a.volume = 0;
+        a.play().catch(() => {});
+        let fi = setInterval(() => {
+          if (a.volume < 0.2) a.volume = Math.min(0.2, a.volume + 0.005);
+          else clearInterval(fi);
+        }, 100);
+      }
+    })();
+  </script>
+
+</body>
+</html>

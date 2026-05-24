@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Architect of Creation — Select Server</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:100vw; height:100vh; overflow:hidden; font-family:'Inter',sans-serif; color:#c4b59a; background:#0a0a0a; }
+
+  .titlebar { position:fixed; top:0; left:0; right:0; height:32px; -webkit-app-region:drag; z-index:1000; display:flex; justify-content:flex-end; align-items:center; padding-right:4px; }
+  .titlebar-btn { -webkit-app-region:no-drag; width:36px; height:28px; border:none; background:transparent; color:#666; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:'Segoe MDL2 Assets',sans-serif; }
+  .titlebar-btn:hover { color:#fff; background:rgba(255,255,255,.1); }
+  .titlebar-btn.close:hover { background:#c0392b; color:#fff; }
+
+  .bg { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+  .bg img { width:100%; height:100%; object-fit:cover; filter:brightness(.35); }
+  .bg::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.2) 0%, rgba(0,0,0,.7) 80%); }
+
+  .main { position:relative; z-index:10; width:100%; height:100%; display:grid;
+    grid-template-columns:1fr 360px; grid-template-rows:60px 1fr 80px; padding:32px 24px 0; gap:0 20px; }
+
+  /* Header */
+  .header { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; }
+  .page-title { font-family:'Cinzel Decorative','Cinzel',serif; font-size:24px; font-weight:700; color:#c41e1e; letter-spacing:6px; text-shadow:0 0 30px rgba(196,30,30,.3); }
+  .header-right { display:flex; align-items:center; gap:12px; }
+  .header-right .server-count { font-size:10px; color:#5a4d3a; letter-spacing:2px; }
+  .btn-host { height:34px; padding:0 16px; background:transparent; border:1px solid rgba(196,30,30,.25); border-radius:3px; color:#8b4040; font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; cursor:pointer; transition:all .3s; }
+  .btn-host:hover { border-color:rgba(196,30,30,.5); color:#c41e1e; background:rgba(196,30,30,.05); }
+  .btn-host.active { background:rgba(196,30,30,.15); border-color:rgba(196,30,30,.5); color:#c41e1e; }
+
+  /* Server List */
+  .server-list { display:flex; flex-direction:column; gap:6px; padding:10px 0; overflow-y:auto; }
+
+  .server-row { background:rgba(15,10,8,.7); border:1px solid rgba(138,115,80,.12); border-radius:4px; padding:14px 18px; cursor:pointer; transition:all .3s; display:grid; grid-template-columns:1fr 140px 60px 70px 80px; align-items:center; gap:12px; backdrop-filter:blur(10px); }
+  .server-row:hover { border-color:rgba(138,115,80,.25); background:rgba(25,18,12,.8); }
+  .server-row.selected { border-color:rgba(196,30,30,.4); background:rgba(40,10,10,.7); box-shadow:0 0 20px rgba(196,30,30,.08); }
+
+  .srv-name { font-family:'Cinzel',serif; font-size:14px; font-weight:700; color:#e8d5b5; }
+  .srv-region { font-size:10px; color:#5a4d3a; margin-top:2px; }
+
+  .srv-pop { }
+  .pop-bar-outer { width:100%; height:6px; background:rgba(0,0,0,.4); border-radius:3px; overflow:hidden; margin-top:4px; }
+  .pop-bar-inner { height:100%; border-radius:3px; transition:width .5s; }
+  .pop-bar-inner.low { background:linear-gradient(90deg,#1a6b1a,#2ecc71); }
+  .pop-bar-inner.med { background:linear-gradient(90deg,#b8860b,#f39c12); }
+  .pop-bar-inner.high { background:linear-gradient(90deg,#8b0000,#c41e1e); }
+  .pop-text { font-size:9px; color:#5a4d3a; letter-spacing:1px; }
+
+  .srv-ping { font-family:'Cinzel',serif; font-size:12px; text-align:center; }
+  .srv-ping.good { color:#2ecc71; }
+  .srv-ping.ok { color:#f39c12; }
+  .srv-ping.bad { color:#c41e1e; }
+
+  .srv-mode { font-size:10px; color:#8a7350; text-align:center; letter-spacing:1px; }
+
+  .srv-status { text-align:center; }
+  .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; }
+  .status-dot.online { background:#2ecc71; box-shadow:0 0 8px rgba(46,204,113,.4); }
+  .status-dot.offline { background:#c0392b; }
+  .status-text { font-size:10px; color:#5a4d3a; letter-spacing:1px; }
+
+  .list-header { display:grid; grid-template-columns:1fr 140px 60px 70px 80px; gap:12px; padding:0 18px 8px; }
+  .list-header span { font-family:'Cinzel',serif; font-size:9px; font-weight:600; letter-spacing:3px; color:#3d3025; text-transform:uppercase; }
+  .list-header span:nth-child(n+3) { text-align:center; }
+
+  /* Server Details Panel */
+  .detail-panel { padding:10px 0; }
+  .detail-card { background:rgba(15,10,8,.8); border:1px solid rgba(138,115,80,.15); border-radius:4px; padding:24px 20px; backdrop-filter:blur(10px); height:100%; display:flex; flex-direction:column; }
+  .detail-card h2 { font-family:'Cinzel',serif; font-size:18px; font-weight:700; color:#e8d5b5; margin-bottom:4px; }
+  .detail-card .sub { font-size:10px; color:#5a4d3a; letter-spacing:2px; margin-bottom:20px; }
+
+  .detail-section { margin-bottom:16px; }
+  .detail-title { font-family:'Cinzel',serif; font-size:9px; font-weight:700; letter-spacing:4px; color:#6b5a42; margin-bottom:8px; text-transform:uppercase; display:flex; align-items:center; gap:8px; }
+  .detail-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(138,115,80,.2),transparent); }
+  .detail-row { display:flex; justify-content:space-between; margin-bottom:5px; }
+  .detail-row .label { font-size:11px; color:#5a4d3a; }
+  .detail-row .value { font-size:11px; color:#c4b59a; font-weight:500; }
+
+  .detail-desc { font-size:12px; color:#8a7350; line-height:1.6; font-style:italic; padding:12px; background:rgba(0,0,0,.3); border-radius:3px; border-left:2px solid rgba(196,30,30,.3); margin-top:auto; }
+
+  .no-selection { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:8px; }
+  .no-selection .icon { font-size:48px; opacity:.2; }
+  .no-selection .text { font-size:11px; color:#3d3025; letter-spacing:3px; }
+
+  /* Footer */
+  .footer { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; }
+  .btn-back { height:36px; padding:0 16px; background:transparent; border:1px solid rgba(138,115,80,.15); border-radius:3px; color:#5a4d3a; font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; cursor:pointer; transition:all .3s; }
+  .btn-back:hover { border-color:rgba(138,115,80,.3); color:#c4b59a; }
+
+  .btn-enter { height:52px; padding:0 50px; background:linear-gradient(180deg,#a01515,#7a0f0f); border:1px solid rgba(196,30,30,.4); border-radius:3px; color:#e8d5b5; font-family:'Cinzel',serif; font-size:16px; font-weight:700; letter-spacing:6px; cursor:pointer; transition:all .3s; text-shadow:0 2px 4px rgba(0,0,0,.5); }
+  .btn-enter:hover { background:linear-gradient(180deg,#c41e1e,#8b0000); box-shadow:0 0 40px rgba(196,30,30,.3); transform:translateY(-1px); }
+  .btn-enter:active { transform:translateY(1px); }
+  .btn-enter:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+  .footer-info { font-size:9px; color:#2a1f14; letter-spacing:2px; }
+
+  /* Particles */
+  .particle { position:fixed; width:2px; height:2px; background:rgba(196,30,30,.5); border-radius:50%; z-index:2; opacity:0; animation:pfloat linear infinite; }
+  @keyframes pfloat { 0%{opacity:0;transform:translateY(0)} 15%{opacity:.5} 85%{opacity:.1} 100%{opacity:0;transform:translateY(-100vh)} }
+</style>
+</head>
+<body>
+  <div class="titlebar">
+    <button class="titlebar-btn" onclick="aocAPI.minimize()">&#xE949;</button>
+    <button class="titlebar-btn close" onclick="aocAPI.close()">&#xE106;</button>
+  </div>
+  <div class="bg"><img src="img/bg-exploration.jpg" alt=""></div>
+
+  <div class="main">
+    <div class="header">
+      <div class="page-title">Select Server</div>
+      <div class="header-right">
+        <span class="server-count" id="serverCount">4 SERVERS AVAILABLE</span>
+        <button class="btn-host" id="hostBtn" onclick="toggleHost()">🖥️ START SERVER</button>
+      </div>
+    </div>
+
+    <!-- Server List -->
+    <div style="overflow:hidden;display:flex;flex-direction:column">
+      <div class="list-header">
+        <span>Server</span><span>Population</span><span>Ping</span><span>Mode</span><span>Status</span>
+      </div>
+      <div class="server-list" id="serverList"></div>
+    </div>
+
+    <!-- Details Panel -->
+    <div class="detail-panel">
+      <div class="detail-card" id="detailCard">
+        <div class="no-selection" id="noSelection">
+          <div class="icon">🌍</div>
+          <div class="text">SELECT A SERVER</div>
+        </div>
+        <div id="detailContent" style="display:none">
+          <h2 id="dName">—</h2>
+          <div class="sub" id="dRegion">—</div>
+          <div class="detail-section">
+            <div class="detail-title">Server Info</div>
+            <div class="detail-row"><span class="label">Game Mode</span><span class="value" id="dMode">—</span></div>
+            <div class="detail-row"><span class="label">Players Online</span><span class="value" id="dPlayers">—</span></div>
+            <div class="detail-row"><span class="label">Uptime</span><span class="value" id="dUptime">—</span></div>
+            <div class="detail-row"><span class="label">Rules</span><span class="value" id="dRules">—</span></div>
+          </div>
+          <div class="detail-desc" id="dDesc">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-back" onclick="goBack()">← BACK</button>
+        <button class="btn-back" onclick="aocAPI.navigate('settings')" style="border-color:rgba(138,115,80,.15);">⚙ SETTINGS</button>
+      </div>
+      <button class="btn-enter" id="enterBtn" onclick="enterWorld()" disabled>ENTER WORLD</button>
+      <div class="footer-info">v0.2.0-alpha</div>
+    </div>
+  </div>
+
+  <script>
+    // Particles
+    for(let i=0;i<15;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.bottom='-5px';p.style.animationDuration=(5+Math.random()*8)+'s';p.style.animationDelay=Math.random()*10+'s';document.body.appendChild(p);}
+
+    let servers = [];
+    let selectedIdx = -1;
+
+    async function loadServers() {
+      try {
+        const result = await aocAPI.getServerList();
+        if (result && result.servers) servers = result.servers;
+      } catch(e) {
+        servers = [
+          { name:'AoC Realm 1', region:'US-East', population:47, maxPop:500, ping:32, status:'online', mode:'PvPvE', uptime:'3d 14h', rules:'Full Loot PvP', description:'The original realm. Battle-hardened warriors clash over territory and ancient relics.' },
+          { name:'AoC Realm 2', region:'US-West', population:23, maxPop:500, ping:58, status:'online', mode:'PvE', uptime:'2d 8h', rules:'Safe Trading', description:'A peaceful realm for crafters, traders, and explorers seeking knowledge.' },
+          { name:'Shadowmere', region:'EU-Central', population:89, maxPop:500, ping:110, status:'online', mode:'Hardcore PvP', uptime:'5d 2h', rules:'Permadeath Enabled', description:'Only the strongest survive. Death is permanent. Glory is eternal.' },
+          { name:'Test Realm', region:'Local', population:1, maxPop:50, ping:5, status:'online', mode:'Development', uptime:'0d 1h', rules:'Admin Access', description:'Development testing realm. Expect frequent resets and experimental features.' }
+        ];
+      }
+      document.getElementById('serverCount').textContent = servers.length + ' SERVERS AVAILABLE';
+      renderServers();
+    }
+
+    function renderServers() {
+      const list = document.getElementById('serverList');
+      list.innerHTML = '';
+      servers.forEach((s, i) => {
+        const popPct = (s.population / s.maxPop) * 100;
+        const popClass = popPct > 70 ? 'high' : popPct > 40 ? 'med' : 'low';
+        const pingClass = s.ping < 50 ? 'good' : s.ping < 100 ? 'ok' : 'bad';
+
+        const row = document.createElement('div');
+        row.className = 'server-row' + (i === selectedIdx ? ' selected' : '');
+        row.onclick = () => selectServer(i);
+        row.innerHTML = `
+          <div><div class="srv-name">${s.name}</div><div class="srv-region">${s.region}</div></div>
+          <div class="srv-pop">
+            <div class="pop-text">${s.population} / ${s.maxPop}</div>
+            <div class="pop-bar-outer"><div class="pop-bar-inner ${popClass}" style="width:${popPct}%"></div></div>
+          </div>
+          <div class="srv-ping ${pingClass}">${s.ping}ms</div>
+          <div class="srv-mode">${s.mode}</div>
+          <div class="srv-status"><span class="status-dot ${s.status}"></span><span class="status-text">${s.status.toUpperCase()}</span></div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function selectServer(idx) {
+      selectedIdx = idx;
+      const s = servers[idx];
+
+      document.querySelectorAll('.server-row').forEach((r,i) => r.classList.toggle('selected', i===idx));
+
+      document.getElementById('noSelection').style.display = 'none';
+      document.getElementById('detailContent').style.display = 'block';
+      document.getElementById('dName').textContent = s.name;
+      document.getElementById('dRegion').textContent = s.region.toUpperCase();
+      document.getElementById('dMode').textContent = s.mode;
+      document.getElementById('dPlayers').textContent = s.population + ' / ' + s.maxPop;
+      document.getElementById('dUptime').textContent = s.uptime;
+      document.getElementById('dRules').textContent = s.rules;
+      document.getElementById('dDesc').textContent = s.description;
+
+      document.getElementById('enterBtn').disabled = false;
+      aocAPI.selectServer(s);
+    }
+
+    async function toggleHost() {
+      const btn = document.getElementById('hostBtn');
+      if (btn.classList.contains('active')) {
+        btn.textContent = '🖥️ START SERVER';
+        btn.classList.remove('active');
+        await aocAPI.stopServer();
+      } else {
+        btn.textContent = '⏳ STARTING...';
+        btn.disabled = true;
+        const result = await aocAPI.startServer();
+        btn.disabled = false;
+        if (result.success) {
+          btn.textContent = '🟢 SERVER RUNNING';
+          btn.classList.add('active');
+        } else {
+          btn.textContent = '❌ FAILED — RETRY';
+        }
+      }
+    }
+
+    function enterWorld() {
+      aocAPI.navigate('loading');
+    }
+
+    function goBack() {
+      aocAPI.navigate('character-select');
+    }
+
+    loadServers();
+  </script>
+
+  <!-- Theme music -->
+  <audio id="bgTheme" autoplay loop preload="auto" style="display:none">
+    <source src="assets/audio/aoc-theme.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function() {
+      const a = document.getElementById('bgTheme');
+      if (a) {
+        a.volume = 0;
+        a.play().catch(() => {});
+        let fi = setInterval(() => {
+          if (a.volume < 0.2) a.volume = Math.min(0.2, a.volume + 0.005);
+          else clearInterval(fi);
+        }, 100);
+      }
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Architect of Creation — Choose Your Champion</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:100vw; height:100vh; overflow:hidden; font-family:'Inter',sans-serif; color:#c4b59a; background:#0a0a0a; }
+
+  .titlebar { position:fixed; top:0; left:0; right:0; height:32px; -webkit-app-region:drag; z-index:1000; display:flex; justify-content:flex-end; align-items:center; padding-right:4px; }
+  .titlebar-btn { -webkit-app-region:no-drag; width:36px; height:28px; border:none; background:transparent; color:#666; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:'Segoe MDL2 Assets',sans-serif; }
+  .titlebar-btn:hover { color:#fff; background:rgba(255,255,255,.1); }
+  .titlebar-btn.close:hover { background:#c0392b; color:#fff; }
+
+  .bg { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+  .bg img { width:100%; height:100%; object-fit:cover; filter:brightness(.4) blur(2px); }
+  .bg::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.1) 0%, rgba(0,0,0,.6) 80%); }
+
+  .main { position:relative; z-index:10; width:100%; height:100%; display:grid;
+    grid-template-columns:280px 1fr 300px; grid-template-rows:60px 1fr 80px; padding:32px 20px 0; gap:0; }
+
+  /* ── Header ── */
+  .header { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; padding:0 10px; }
+  .page-title { font-family:'Cinzel Decorative','Cinzel',serif; font-size:24px; font-weight:700; color:#c41e1e; letter-spacing:6px; text-shadow:0 0 30px rgba(196,30,30,.3); }
+  .btn-create { height:38px; padding:0 20px; background:transparent; border:1px solid rgba(196,30,30,.3); border-radius:3px; color:#c41e1e; font-family:'Cinzel',serif; font-size:11px; font-weight:600; letter-spacing:3px; cursor:pointer; transition:all .3s; display:flex; align-items:center; gap:8px; }
+  .btn-create:hover { background:rgba(196,30,30,.1); border-color:rgba(196,30,30,.5); box-shadow:0 0 20px rgba(196,30,30,.15); }
+  .btn-create .plus { font-size:16px; }
+
+  /* ── Character List (Left) ── */
+  .char-list { display:flex; flex-direction:column; gap:8px; padding:10px 10px 10px 0; overflow-y:auto; }
+  .char-slot { background:rgba(15,10,8,.7); border:1px solid rgba(138,115,80,.15); border-radius:4px; padding:12px; cursor:pointer; transition:all .3s; display:flex; gap:12px; align-items:center; backdrop-filter:blur(10px); }
+  .char-slot:hover { border-color:rgba(138,115,80,.3); background:rgba(25,18,12,.8); }
+  .char-slot.selected { border-color:rgba(196,30,30,.5); background:rgba(40,10,10,.8); box-shadow:0 0 20px rgba(196,30,30,.1),inset 0 0 20px rgba(196,30,30,.05); }
+  .char-portrait { width:50px; height:50px; border-radius:4px; background:rgba(0,0,0,.4); border:1px solid rgba(138,115,80,.2); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .char-slot.selected .char-portrait { border-color:rgba(196,30,30,.4); }
+  .char-info { flex:1; min-width:0; }
+  .char-name { font-family:'Cinzel',serif; font-size:14px; font-weight:700; color:#e8d5b5; margin-bottom:2px; }
+  .char-meta { font-size:10px; color:#8a7350; letter-spacing:1px; }
+  .char-level { font-family:'Cinzel',serif; font-size:10px; color:#c41e1e; letter-spacing:1px; }
+
+  .empty-slot { border-style:dashed; border-color:rgba(138,115,80,.1); justify-content:center; min-height:76px; }
+  .empty-slot span { color:#3d3025; font-size:11px; letter-spacing:2px; }
+
+  /* ── Character Preview (Center) ── */
+  .char-preview { display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; }
+  .char-model-area { width:300px; height:380px; display:flex; align-items:center; justify-content:center; position:relative; }
+  .char-model-placeholder { font-size:180px; filter:drop-shadow(0 0 40px rgba(196,30,30,.3)); animation:idle-bob 3s ease-in-out infinite; }
+  @keyframes idle-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .char-pedestal { width:200px; height:6px; background:radial-gradient(ellipse at center,rgba(196,30,30,.3),transparent); border-radius:50%; margin-top:-10px; }
+  .char-selected-name { font-family:'Cinzel Decorative','Cinzel',serif; font-size:22px; font-weight:700; color:#e8d5b5; margin-top:16px; text-shadow:0 2px 8px rgba(0,0,0,.6); letter-spacing:4px; }
+  .char-selected-title { font-family:'Cinzel',serif; font-size:11px; color:#8a7350; letter-spacing:4px; margin-top:4px; }
+
+  /* ── Character Details (Right) ── */
+  .char-details { padding:10px 0 10px 10px; overflow-y:auto; }
+  .detail-panel { background:rgba(15,10,8,.75); border:1px solid rgba(138,115,80,.15); border-radius:4px; padding:20px 16px; backdrop-filter:blur(10px); }
+  .detail-section { margin-bottom:16px; }
+  .detail-section:last-child { margin-bottom:0; }
+  .detail-title { font-family:'Cinzel',serif; font-size:10px; font-weight:700; letter-spacing:4px; color:#6b5a42; margin-bottom:10px; text-transform:uppercase; display:flex; align-items:center; gap:8px; }
+  .detail-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(138,115,80,.2),transparent); }
+  .detail-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .detail-label { font-size:11px; color:#5a4d3a; display:flex; align-items:center; gap:6px; }
+  .detail-value { font-size:11px; color:#c4b59a; font-weight:500; }
+
+  .stat-bar-outer { width:80px; height:6px; background:rgba(0,0,0,.4); border-radius:3px; overflow:hidden; }
+  .stat-bar-inner { height:100%; background:linear-gradient(90deg,#8b0000,#c41e1e); border-radius:3px; transition:width .5s; }
+
+  .equipment-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .equip-slot { aspect-ratio:1; background:rgba(0,0,0,.4); border:1px solid rgba(138,115,80,.15); border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+
+  .last-played { background:rgba(0,0,0,.3); border-radius:3px; padding:10px; display:flex; gap:10px; align-items:center; }
+  .last-played-icon { font-size:28px; }
+  .last-played-info .zone { font-family:'Cinzel',serif; font-size:12px; color:#c4b59a; font-weight:600; }
+  .last-played-info .date { font-size:10px; color:#5a4d3a; margin-top:2px; }
+
+  /* ── Footer ── */
+  .footer { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; padding:0 10px; }
+  .footer-left { display:flex; align-items:center; gap:16px; }
+  .server-badge { font-size:10px; color:#5a4d3a; letter-spacing:2px; display:flex; align-items:center; gap:6px; }
+  .server-badge .dot { width:8px; height:8px; border-radius:50%; background:#2ecc71; box-shadow:0 0 8px rgba(46,204,113,.4); }
+  .btn-back { height:36px; padding:0 16px; background:transparent; border:1px solid rgba(138,115,80,.15); border-radius:3px; color:#5a4d3a; font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; cursor:pointer; transition:all .3s; }
+  .btn-back:hover { border-color:rgba(138,115,80,.3); color:#c4b59a; }
+
+  .footer-center { flex:1; display:flex; justify-content:center; }
+  .btn-enter { height:52px; padding:0 60px; background:linear-gradient(180deg,#a01515,#7a0f0f); border:1px solid rgba(196,30,30,.4); border-radius:3px; color:#e8d5b5; font-family:'Cinzel',serif; font-size:16px; font-weight:700; letter-spacing:6px; cursor:pointer; transition:all .3s; text-shadow:0 2px 4px rgba(0,0,0,.5); }
+  .btn-enter:hover { background:linear-gradient(180deg,#c41e1e,#8b0000); box-shadow:0 0 40px rgba(196,30,30,.3); transform:translateY(-1px); }
+  .btn-enter:active { transform:translateY(1px); }
+  .btn-enter:disabled { opacity:.4; cursor:not-allowed; }
+
+  .footer-right { display:flex; align-items:center; }
+  .btn-delete { height:36px; padding:0 16px; background:transparent; border:1px solid rgba(100,20,20,.3); border-radius:3px; color:#5a3030; font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; cursor:pointer; transition:all .3s; }
+  .btn-delete:hover { border-color:rgba(196,30,30,.4); color:#c41e1e; background:rgba(196,30,30,.05); }
+
+  /* No characters state */
+  .no-chars { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
+  .no-chars-text { font-family:'Cinzel',serif; font-size:18px; color:#5a4d3a; letter-spacing:4px; }
+  .btn-first-char { height:52px; padding:0 40px; background:linear-gradient(180deg,#a01515,#7a0f0f); border:1px solid rgba(196,30,30,.4); border-radius:3px; color:#e8d5b5; font-family:'Cinzel',serif; font-size:15px; font-weight:700; letter-spacing:5px; cursor:pointer; transition:all .3s; }
+  .btn-first-char:hover { background:linear-gradient(180deg,#c41e1e,#8b0000); box-shadow:0 0 40px rgba(196,30,30,.3); }
+</style>
+</head>
+<body>
+  <div class="titlebar">
+    <button class="titlebar-btn" onclick="aocAPI.minimize()">&#xE949;</button>
+    <button class="titlebar-btn close" onclick="aocAPI.close()">&#xE106;</button>
+  </div>
+  <div class="bg"><img src="img/bg-charselect.jpg" alt=""></div>
+
+  <div class="main" id="mainGrid">
+    <!-- Header -->
+    <div class="header">
+      <div class="page-title">Choose Your Champion</div>
+      <button class="btn-create" onclick="goCreate()"><span class="plus">+</span> CREATE NEW CHARACTER</button>
+    </div>
+
+    <!-- Character List -->
+    <div class="char-list" id="charList"></div>
+
+    <!-- Character Preview -->
+    <div class="char-preview" id="charPreview">
+      <div class="char-model-area">
+        <div class="char-model-placeholder" id="charEmoji">⚔️</div>
+      </div>
+      <div class="char-pedestal"></div>
+      <div class="char-selected-name" id="selName">—</div>
+      <div class="char-selected-title" id="selTitle">Select a champion</div>
+    </div>
+
+    <!-- Character Details -->
+    <div class="char-details" id="charDetails">
+      <div class="detail-panel" id="detailPanel">
+        <div class="detail-section">
+          <div class="detail-title">Character Details</div>
+          <div class="detail-row"><span class="detail-label">⚔️ Class</span><span class="detail-value" id="dClass">—</span></div>
+          <div class="detail-row"><span class="detail-label">🧬 Race</span><span class="detail-value" id="dRace">—</span></div>
+          <div class="detail-row"><span class="detail-label">⚖️ Alignment</span><span class="detail-value" id="dAlign">—</span></div>
+          <div class="detail-row"><span class="detail-label">🏰 Guild</span><span class="detail-value" id="dGuild">—</span></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Attributes</div>
+          <div id="statsContainer"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Equipment</div>
+          <div class="equipment-grid" id="equipGrid"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Last Played</div>
+          <div class="last-played">
+            <div class="last-played-icon">🗺️</div>
+            <div class="last-played-info">
+              <div class="zone" id="lpZone">—</div>
+              <div class="date" id="lpDate">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-left">
+        <button class="btn-back" onclick="goBack()">← BACK</button>
+        <div class="server-badge"><div class="dot"></div>SERVER: ONLINE</div>
+      </div>
+      <div class="footer-center">
+        <button class="btn-enter" id="enterBtn" onclick="enterWorld()" disabled>ENTER WORLD</button>
+      </div>
+      <div class="footer-right">
+        <button class="btn-delete" id="deleteBtn" onclick="deleteChar()">DELETE CHARACTER</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CLASS_EMOJI = {
+      'Warrior':'🗡️','Battlemage':'🔮','Ranger':'🏹','Shadow Priest':'🌑',
+      'Paladin':'🛡️','Necromancer':'💀','Druid':'🌿','Assassin':'🗡️',
+      'Elementalist':'🔥','Bard':'🎵','Monk':'👊','Cleric':'✨'
+    };
+
+    // Demo characters (will come from server)
+    let characters = [];
+    let selectedIdx = -1;
+
+    async function loadCharacters() {
+      try {
+        const result = await aocAPI.getCharacters();
+        if (result && result.characters) {
+          characters = result.characters;
+        }
+      } catch(e) {
+        // Use demo data if server fails
+        characters = [
+          { name:'Theron', level:42, className:'Battlemage', race:'Human', alignment:'Lawful Neutral', guild:'Iron Vanguard',
+            stats:{str:72,dex:48,int:91,con:68,wis:63,vit:70}, zone:'Dread Peak', lastPlayed:'May 23, 2025' },
+          { name:'Kira', level:28, className:'Ranger', race:'Elf', alignment:'Chaotic Good', guild:'Silvermoon Order',
+            stats:{str:45,dex:88,int:52,con:55,wis:70,vit:60}, zone:'Whispering Woods', lastPlayed:'May 22, 2025' },
+          { name:'Borgrim', level:35, className:'Warrior', race:'Dwarf', alignment:'Neutral Good', guild:'Stoneborn Legion',
+            stats:{str:90,dex:35,int:25,con:95,wis:40,vit:85}, zone:'Iron Peaks', lastPlayed:'May 20, 2025' },
+          { name:'Malric', level:19, className:'Shadow Priest', race:'Dark Elf', alignment:'Chaotic Neutral', guild:'—',
+            stats:{str:30,dex:55,int:85,con:40,wis:78,vit:45}, zone:'Shadowmere', lastPlayed:'May 18, 2025' }
+        ];
+      }
+      renderCharacters();
+    }
+
+    function renderCharacters() {
+      const list = document.getElementById('charList');
+      list.innerHTML = '';
+
+      if (characters.length === 0) {
+        // Show no characters state
+        document.getElementById('mainGrid').innerHTML = `
+          <div class="header">
+            <div class="page-title">Choose Your Champion</div>
+          </div>
+          <div class="no-chars">
+            <div style="font-size:80px;opacity:.3">⚔️</div>
+            <div class="no-chars-text">No Champions Found</div>
+            <div style="font-size:12px;color:#3d3025;letter-spacing:2px;margin-top:-8px">Create your first character to begin your journey</div>
+            <button class="btn-first-char" onclick="goCreate()">CREATE YOUR CHAMPION</button>
+            <button class="btn-back" onclick="goBack()" style="margin-top:8px">← BACK TO LOGIN</button>
+          </div>
+        `;
+        return;
+      }
+
+      characters.forEach((c, i) => {
+        const slot = document.createElement('div');
+        slot.className = 'char-slot' + (i === selectedIdx ? ' selected' : '');
+        slot.onclick = () => selectChar(i);
+        slot.innerHTML = `
+          <div class="char-portrait">${CLASS_EMOJI[c.className] || '⚔️'}</div>
+          <div class="char-info">
+            <div class="char-name">${c.name}</div>
+            <div class="char-level">LEVEL ${c.level}</div>
+            <div class="char-meta">${c.className.toUpperCase()}</div>
+          </div>
+        `;
+        list.appendChild(slot);
+      });
+
+      // Empty slots
+      for (let i = characters.length; i < 4; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'char-slot empty-slot';
+        slot.onclick = () => goCreate();
+        slot.innerHTML = '<span>+ Empty Slot</span>';
+        list.appendChild(slot);
+      }
+
+      if (selectedIdx >= 0) selectChar(selectedIdx);
+    }
+
+    function selectChar(idx) {
+      selectedIdx = idx;
+      const c = characters[idx];
+
+      // Update list selection
+      document.querySelectorAll('.char-slot').forEach((s,i) => {
+        s.classList.toggle('selected', i === idx);
+      });
+
+      // Update center
+      document.getElementById('charEmoji').textContent = CLASS_EMOJI[c.className] || '⚔️';
+      document.getElementById('selName').textContent = c.name;
+      document.getElementById('selTitle').textContent = `Level ${c.level} ${c.race} ${c.className}`;
+
+      // Update details
+      document.getElementById('dClass').textContent = c.className;
+      document.getElementById('dRace').textContent = c.race;
+      document.getElementById('dAlign').textContent = c.alignment;
+      document.getElementById('dGuild').textContent = c.guild || '—';
+
+      // Stats
+      const statsC = document.getElementById('statsContainer');
+      const statNames = { str:'Strength', dex:'Dexterity', int:'Intelligence', con:'Constitution', wis:'Wisdom', vit:'Vitality' };
+      statsC.innerHTML = '';
+      for (const [key, label] of Object.entries(statNames)) {
+        const val = c.stats?.[key] || 50;
+        statsC.innerHTML += `<div class="detail-row"><span class="detail-label">${label}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="stat-bar-outer"><div class="stat-bar-inner" style="width:${val}%"></div></div>
+            <span class="detail-value">${val}</span>
+          </div></div>`;
+      }
+
+      // Equipment
+      const equipG = document.getElementById('equipGrid');
+      const equipIcons = ['🗡️','🛡️','🪖','👕','🧤','👢','💍','📿'];
+      equipG.innerHTML = equipIcons.map(e => `<div class="equip-slot">${e}</div>`).join('');
+
+      // Last played
+      document.getElementById('lpZone').textContent = c.zone || 'Unknown';
+      document.getElementById('lpDate').textContent = c.lastPlayed || '—';
+
+      document.getElementById('enterBtn').disabled = false;
+    }
+
+    function enterWorld() {
+      if (selectedIdx < 0) return;
+      const c = characters[selectedIdx];
+      aocAPI.selectCharacter(c);
+      aocAPI.navigate('server-select');
+    }
+
+    function goCreate() {
+      aocAPI.navigate('character-creation');
+    }
+
+    function goBack() {
+      aocAPI.navigate('login');
+    }
+
+    async function deleteChar() {
+      if (selectedIdx < 0) return;
+      const c = characters[selectedIdx];
+      if (confirm(`Are you sure you want to permanently delete ${c.name}?\n\nThis cannot be undone!`)) {
+        const charId = c.id || c.name;
+        const result = await aocAPI.deleteCharacter(charId);
+        if (result.success) {
+          characters.splice(selectedIdx, 1);
+          selectedIdx = -1;
+          renderCharacters();
+          document.getElementById('enterBtn').disabled = true;
+          // If no characters left, go to creation
+          if (characters.length === 0) {
+            setTimeout(() => aocAPI.navigate('character-creation'), 500);
+          }
+        } else {
+          alert('Failed to delete character: ' + (result.message || 'Unknown error'));
+        }
+      }
+    }
+
+    // Init
+    loadCharacters();
+  </script>
+
+  <!-- Theme music -->
+  <audio id="bgTheme" autoplay loop preload="auto" style="display:none">
+    <source src="assets/audio/aoc-theme.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function() {
+      const a = document.getElementById('bgTheme');
+      if (a) {
+        a.volume = 0;
+        a.play().catch(() => {});
+        let fi = setInterval(() => {
+          if (a.volume < 0.2) a.volume = Math.min(0.2, a.volume + 0.005);
+          else clearInterval(fi);
+        }, 100);
+      }
+    })();
+  </script>
+
+</body>
+</html>

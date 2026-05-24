@@ -133,6 +133,10 @@
       if (currentPhase >= PHASES.length) {
         // Loading complete — launch game
         setTimeout(() => {
+          // Stop all music before launching game
+          try {
+            document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; a.src = ''; });
+          } catch(e) {}
           aocAPI.launchGame();
         }, 1500);
         return;

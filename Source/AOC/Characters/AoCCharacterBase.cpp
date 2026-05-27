@@ -4,6 +4,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "../AbilitySystem/AoCAbilitySystemComponent.h"
+#include "../Skills/AoCSkillComponent.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UAoCBaseAttributeSet

@@ -6,6 +6,7 @@
 #include "GameplayEffect.h"
 #include "Engine/World.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "../Combat/AoCProjectile.h"
 
 UAoCSpellCastingComponent::UAoCSpellCastingComponent()
 {

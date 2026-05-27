@@ -2,6 +2,7 @@
 
 #include "AoCPlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "../Skills/AoCSkillComponent.h"
 
 AAoCPlayerState::AAoCPlayerState()
 {

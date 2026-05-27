@@ -2,173 +2,92 @@
 
 #include "AoCDialogueWidget.h"
 #include "Components/TextBlock.h"
-#include "Components/VerticalBox.h"
 #include "Components/Image.h"
+#include "Components/VerticalBox.h"
 #include "Components/Button.h"
-#include "Blueprint/UserWidget.h"
-
-// Include dialogue data for the choice struct
-#include "AoCDialogueData.h"
-
-UAoCDialogueWidget::UAoCDialogueWidget(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
-{
-	TypewriterSpeed = 40.0f; // 40 characters per second
-	TypewriterIndex = 0;
-	TypewriterTimer = 0.0f;
-	bIsTypewriting = false;
-}
 
 void UAoCDialogueWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	// Start hidden
-	SetVisibility(ESlateVisibility::Hidden);
+	TypewriterSpeed = 0.03f;
+	TypewriterTimer = 0.0f;
+	CurrentCharIndex = 0;
+	bIsTypewriting = false;
 }
 
 void UAoCDialogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (!bIsTypewriting || !DialogueText)
+	if (bIsTypewriting)
 	{
-		return;
-	}
-
-	TypewriterTimer += InDeltaTime;
-
-	float CharInterval = (TypewriterSpeed > 0.0f) ? (1.0f / TypewriterSpeed) : 0.0f;
-
-	while (TypewriterTimer >= CharInterval && TypewriterIndex < FullDialogueText.Len())
-	{
-		TypewriterTimer -= CharInterval;
-		TypewriterIndex++;
-	}
-
-	// Update displayed text
-	FString DisplayedText = FullDialogueText.Left(TypewriterIndex);
-	DialogueText->SetText(FText::FromString(DisplayedText));
-
-	// Check if typewriter is complete
-	if (TypewriterIndex >= FullDialogueText.Len())
-	{
-		bIsTypewriting = false;
-		TypewriterTimer = 0.0f;
-
-		// Now show the choice buttons
-		SpawnChoiceButtons();
+		TypewriterTimer += InDeltaTime;
+		while (TypewriterTimer >= TypewriterSpeed && CurrentCharIndex < FullDialogueText.Len())
+		{
+			TypewriterTimer -= TypewriterSpeed;
+			CurrentCharIndex++;
+			DisplayedText = FullDialogueText.Left(CurrentCharIndex);
+			if (DialogueTextBlock)
+			{
+				DialogueTextBlock->SetText(FText::FromString(DisplayedText));
+			}
+		}
+		if (CurrentCharIndex >= FullDialogueText.Len())
+		{
+			bIsTypewriting = false;
+		}
 	}
 }
 
-void UAoCDialogueWidget::SetDialogueNode(const FString& SpeakerName, const FString& Text, const TArray<FAoCDialogueChoice>& Choices)
+void UAoCDialogueWidget::SetDialogueNode(const FText& SpeakerName, const FText& DialogueText, const TArray<FAoCDialogueChoice>& Choices)
 {
-	SetVisibility(ESlateVisibility::Visible);
-
-	// Set speaker name
 	if (SpeakerNameText)
 	{
-		SpeakerNameText->SetText(FText::FromString(SpeakerName));
+		SpeakerNameText->SetText(SpeakerName);
 	}
 
-	// Start typewriter effect
-	FullDialogueText = Text;
-	TypewriterIndex = 0;
+	FullDialogueText = DialogueText.ToString();
+	DisplayedText = TEXT("");
+	CurrentCharIndex = 0;
 	TypewriterTimer = 0.0f;
 	bIsTypewriting = true;
 
-	if (DialogueText)
+	if (ChoiceContainer)
 	{
-		DialogueText->SetText(FText::GetEmpty());
+		ChoiceContainer->ClearChildren();
 	}
 
-	// Cache choices — they'll be shown after typewriter finishes
-	PendingChoices = Choices;
-
-	// Clear existing choice buttons
-	ClearChoiceButtons();
+	for (int32 i = 0; i < Choices.Num(); ++i)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Dialogue Choice %d: %s"), i, *Choices[i].ChoiceText);
+	}
 }
 
-void UAoCDialogueWidget::SetPortrait(UTexture2D* Portrait)
+void UAoCDialogueWidget::SetPortrait(UTexture2D* PortraitTexture)
 {
-	if (PortraitImage)
+	if (PortraitImage && PortraitTexture)
 	{
-		if (Portrait)
-		{
-			PortraitImage->SetBrushFromTexture(Portrait);
-			PortraitImage->SetVisibility(ESlateVisibility::Visible);
-		}
-		else
-		{
-			PortraitImage->SetVisibility(ESlateVisibility::Hidden);
-		}
+		PortraitImage->SetBrushFromTexture(PortraitTexture);
 	}
 }
 
 void UAoCDialogueWidget::SkipTypewriter()
 {
-	if (!bIsTypewriting)
+	if (bIsTypewriting)
 	{
-		return;
-	}
-
-	bIsTypewriting = false;
-	TypewriterIndex = FullDialogueText.Len();
-	TypewriterTimer = 0.0f;
-
-	if (DialogueText)
-	{
-		DialogueText->SetText(FText::FromString(FullDialogueText));
-	}
-
-	SpawnChoiceButtons();
-}
-
-void UAoCDialogueWidget::SpawnChoiceButtons()
-{
-	ClearChoiceButtons();
-
-	if (!ChoiceContainer || !ChoiceButtonClass)
-	{
-		return;
-	}
-
-	for (int32 i = 0; i < PendingChoices.Num(); ++i)
-	{
-		const FAoCDialogueChoice& Choice = PendingChoices[i];
-
-		UUserWidget* ButtonWidget = CreateWidget<UUserWidget>(GetOwningPlayer(), ChoiceButtonClass);
-		if (!ButtonWidget)
+		bIsTypewriting = false;
+		CurrentCharIndex = FullDialogueText.Len();
+		DisplayedText = FullDialogueText;
+		if (DialogueTextBlock)
 		{
-			continue;
+			DialogueTextBlock->SetText(FText::FromString(DisplayedText));
 		}
-
-		// Find the text block inside the button widget to set the choice text
-		UTextBlock* LabelText = Cast<UTextBlock>(ButtonWidget->GetWidgetFromName(TEXT("ChoiceLabel")));
-		if (LabelText)
-		{
-			LabelText->SetText(FText::FromString(Choice.ChoiceText));
-		}
-
-		// Find the button for click binding
-		UButton* ClickButton = Cast<UButton>(ButtonWidget->GetWidgetFromName(TEXT("ChoiceButton")));
-		if (ClickButton)
-		{
-			int32 ChoiceIdx = i;
-			ClickButton->OnClicked.AddDynamic(this, &UAoCDialogueWidget::HandleChoiceClicked);
-			// Store the index on the widget for retrieval — use a custom subwidget in production
-		}
-
-		ChoiceContainer->AddChild(ButtonWidget);
 	}
 }
 
-void UAoCDialogueWidget::ClearChoiceButtons()
+bool UAoCDialogueWidget::IsTypewriterPlaying() const
 {
-	if (ChoiceContainer)
-	{
-		ChoiceContainer->ClearChildren();
-	}
+	return bIsTypewriting;
 }
 
 void UAoCDialogueWidget::HandleChoiceClicked(int32 ChoiceIndex)

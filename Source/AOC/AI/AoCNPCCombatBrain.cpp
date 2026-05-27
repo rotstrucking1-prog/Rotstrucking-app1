@@ -299,10 +299,10 @@ void UAoCNPCCombatBrain::BuildRotation()
 			CoreCandidates.Add(&Ab);
 		}
 	}
-	CoreCandidates.Sort([](const FCombatAbility* A, const FCombatAbility* B)
+	CoreCandidates.Sort([](const FCombatAbility& A, const FCombatAbility& B)
 	{
-		float DpsA = A->BaseDamage / FMath::Max(A->CooldownDuration, 0.5f);
-		float DpsB = B->BaseDamage / FMath::Max(B->CooldownDuration, 0.5f);
+		float DpsA = A.BaseDamage / FMath::Max(A.CooldownDuration, 0.5f);
+		float DpsB = B.BaseDamage / FMath::Max(B.CooldownDuration, 0.5f);
 		return DpsA > DpsB;
 	});
 

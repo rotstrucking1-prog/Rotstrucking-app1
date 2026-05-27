@@ -16,6 +16,8 @@
 #include "AoCNPCLootBrain.h"
 #include "AoCNPCSocialBrain.h"
 #include "AoCNPCLifeBrain.h"
+#include "AoCNPCTaskGovernor.h"
+#include "AoCNPCSpeech.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/World.h"
@@ -75,6 +77,11 @@ AoCHumanoidNPCV2::AoCHumanoidNPCV2()
 	LootBrain = CreateDefaultSubobject<UAoCNPCLootBrain>(TEXT("LootBrain"));
 	SocialBrain = CreateDefaultSubobject<UAoCNPCSocialBrain>(TEXT("SocialBrain"));
 	LifeBrain = CreateDefaultSubobject<UAoCNPCLifeBrain>(TEXT("LifeBrain"));
+
+	// v18 FIX: Create the 3 missing components that Oracle and all NPCs need
+	TaskGovernor = CreateDefaultSubobject<UAoCNPCTaskGovernor>(TEXT("TaskGovernor"));
+	Speech = CreateDefaultSubobject<UAoCNPCSpeech>(TEXT("Speech"));
+	Relationships = CreateDefaultSubobject<UAoCNPCRelationship>(TEXT("Relationships"));
 
 	// Sensible character movement defaults
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();

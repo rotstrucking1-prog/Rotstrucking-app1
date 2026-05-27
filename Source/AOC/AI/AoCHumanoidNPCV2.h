@@ -24,6 +24,9 @@ class UAoCNPCInventory;
 class UAoCNPCGoalPlanner;
 class UAoCNPCPersonality;
 class UAoCNPCBrainV2;
+class UAoCNPCTaskGovernor;
+class UAoCNPCSpeech;
+class UAoCNPCRelationship;
 
 
 
@@ -231,6 +234,16 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
 	UAoCNPCLifeBrain* LifeBrain = nullptr;
+
+	/** v18: Previously missing components — needed by Oracle and all NPCs */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
+	UAoCNPCTaskGovernor* TaskGovernor = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
+	UAoCNPCSpeech* Speech = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
+	UAoCNPCRelationship* Relationships = nullptr;
 
 private:
 	// --- Internal State ---

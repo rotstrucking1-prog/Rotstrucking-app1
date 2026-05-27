@@ -1,7 +1,7 @@
 // Copyright Architect of Creation. All Rights Reserved.
 
 #include "AoCCharacterBase.h"
-#include "GameplayEffect.h"
+#include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"

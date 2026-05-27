@@ -1,6 +1,7 @@
 // Copyright Architect of Creation. All Rights Reserved.
 
 #include "AoCPlayerState.h"
+#include "../Components/AoCSkillComponent.h"
 #include "Net/UnrealNetwork.h"
 
 AAoCPlayerState::AAoCPlayerState()

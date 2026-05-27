@@ -32,10 +32,10 @@ void UAoCSpellBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	// Tick down cooldowns for visual updates
 	for (int32 i = 0; i < SpellSlotCount; ++i)
 	{
-		FAoCSpellSlotWidgetData& Slot = SlotData[i];
-		if (Slot.CooldownRemaining > 0.0f)
+		FAoCSpellSlotWidgetData& SlotEntry = SlotData[i];
+		if (SlotEntry.CooldownRemaining > 0.0f)
 		{
-			Slot.CooldownRemaining = FMath::Max(0.0f, Slot.CooldownRemaining - InDeltaTime);
+			SlotEntry.CooldownRemaining = FMath::Max(0.0f, SlotEntry.CooldownRemaining - InDeltaTime);
 
 			// Update the slot widget's cooldown overlay
 			// In a full implementation, each slot would have its own overlay widget
@@ -58,15 +58,15 @@ void UAoCSpellBarWidget::SetSpell(int32 SlotIndex, FName SpellID, UTexture2D* Ic
 		return;
 	}
 
-	FAoCSpellSlotWidgetData& Slot = SlotData[SlotIndex];
-	Slot.SpellID = SpellID;
-	Slot.KeybindLabel = KeybindLabel;
-	Slot.CooldownRemaining = 0.0f;
-	Slot.CooldownTotal = 0.0f;
+	FAoCSpellSlotWidgetData& SlotEntry = SlotData[SlotIndex];
+	SlotEntry.SpellID = SpellID;
+	SlotEntry.KeybindLabel = KeybindLabel;
+	SlotEntry.CooldownRemaining = 0.0f;
+	SlotEntry.CooldownTotal = 0.0f;
 
 	if (Icon)
 	{
-		Slot.Icon = Icon;
+		SlotEntry.Icon = Icon;
 	}
 
 	// Update the visual slot widget in the container

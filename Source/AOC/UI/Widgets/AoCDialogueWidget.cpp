@@ -7,9 +7,6 @@
 #include "Components/Button.h"
 #include "Blueprint/UserWidget.h"
 
-// Include dialogue data for the choice struct
-#include "AoCDialogueData.h"
-
 UAoCDialogueWidget::UAoCDialogueWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {

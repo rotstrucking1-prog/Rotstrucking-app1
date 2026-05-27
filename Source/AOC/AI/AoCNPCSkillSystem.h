@@ -193,10 +193,10 @@ public:
 
 	// --- Combat Calculations ---
 
-	/** Overall combat rating based on top weapon + magic + attributes */
-	UFUNCTION(BlueprintCallable, Category = "AoC|NPC|Skills")
+	/** Get all skill levels — NOT a UFUNCTION because TMap<uint8,...> is not Blueprint-safe */
 	void GetAllSkillLevels(TMap<uint8, FNPCSkillData>& OutSkills) const { OutSkills = Skills; }
 
+	/** Overall combat rating based on top weapon + magic + attributes */
 	UFUNCTION(BlueprintCallable, Category = "AoC|NPC|Skills")
 	float GetCombatPower() const;
 

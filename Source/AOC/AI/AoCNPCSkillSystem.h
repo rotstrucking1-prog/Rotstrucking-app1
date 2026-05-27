@@ -197,6 +197,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AoC|NPC|Skills")
 	void GetAllSkillLevels(TMap<uint8, FNPCSkillData>& OutSkills) const { OutSkills = Skills; }
 
+	/** Get the total number of skills tracked by this system. */
+	int32 GetTotalSkillCount() const { return Skills.Num(); }
+
 	UFUNCTION(BlueprintCallable, Category = "AoC|NPC|Skills")
 	float GetCombatPower() const;
 

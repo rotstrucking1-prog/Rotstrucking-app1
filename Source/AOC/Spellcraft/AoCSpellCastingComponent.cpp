@@ -5,6 +5,7 @@
 #include "AbilitySystemInterface.h"
 #include "GameplayEffect.h"
 #include "Engine/World.h"
+#include "Engine/OverlapResult.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 UAoCSpellCastingComponent::UAoCSpellCastingComponent()

@@ -4,25 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "../../Dialogue/AoCDialogueData.h"
 #include "AoCDialogueWidget.generated.h"
-
-USTRUCT(BlueprintType)
-struct FAoCDialogueChoice
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString ChoiceText;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 NextNodeID = -1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName RequiredQuestID = NAME_None;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 RequiredSkillLevel = 0;
-};
 
 
 class UTextBlock;

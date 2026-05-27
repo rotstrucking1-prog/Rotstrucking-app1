@@ -1,0 +1,20 @@
+{
+  "project_root": "C:\\Users\\Bradh\\Documents\\Unreal Projects\\AOC",
+  "source_root": "C:\\Users\\Bradh\\Documents\\Unreal Projects\\AOC\\Source\\AOC",
+  "deploy_folder": "C:\\Users\\Bradh\\Downloads\\AOC-Deploy",
+  "downloads_folder": "C:\\Users\\Bradh\\Downloads",
+  "backup_folder": "C:\\AoC-Tools\\backups",
+  "log_folder": "C:\\AoC-Tools\\logs",
+  "ue5_editor": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Binaries\\Win64\\UnrealEditor.exe",
+  "project_file": "C:\\Users\\Bradh\\Documents\\Unreal Projects\\AOC\\AOC.uproject",
+  "build_bat": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Build\\BatchFiles\\Build.bat",
+  "map_name": "/Game/AocWorld",
+  "github_owner": "rotstrucking1-prog",
+  "github_repo": "Rotstrucking-app1",
+  "github_branch": "aoc-source-v14",
+  "github_token": "",
+  "server_port": 8080,
+  "poll_interval": 5,
+  "auto_deploy_on_drop": true,
+  "auto_backup": true
+}

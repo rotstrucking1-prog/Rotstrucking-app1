@@ -1,7 +1,7 @@
 // Copyright Architect of Creation. All Rights Reserved.
 
 #include "AoCSpellCastingComponent.h"
-#include "WorldCollision.h"
+#include "Engine/EngineTypes.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayEffect.h"

@@ -1,6 +1,4 @@
-// Source/AOC/Spellcraft/AoCSpellVFXManager.h
-// Visual effects manager — creates runtime VFX from engine primitives and dynamic materials.
-
+// AoCSpellVFXManager.h - AAA Spell Visual Effects using Niagara + Dynamic Materials + Lights
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,16 +6,71 @@
 #include "AoCSpellData.h"
 #include "AoCSpellVFXManager.generated.h"
 
-class UStaticMeshComponent;
+class UNiagaraSystem;
+class UNiagaraComponent;
 class UPointLightComponent;
-class UMaterialInstanceDynamic;
 class UStaticMesh;
+class UMaterialInterface;
+class UMaterialInstanceDynamic;
 
-/**
- * Manages all spell visual effects.
- * Attach to any character that casts spells.
- * Creates VFX at runtime using engine basic shapes and dynamic emissive materials.
- */
+// Tracks a single VFX particle for animation
+USTRUCT()
+struct FSpellParticle
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	UStaticMeshComponent* Mesh = nullptr;
+
+	FVector Velocity = FVector::ZeroVector;
+	float LifetimeRemaining = 1.0f;
+	float MaxLifetime = 1.0f;
+	float InitialScale = 1.0f;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynMaterial = nullptr;
+};
+
+// Tracks a dynamic light for fade-out
+USTRUCT()
+struct FSpellLight
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	UPointLightComponent* Light = nullptr;
+
+	float LifetimeRemaining = 1.0f;
+	float MaxLifetime = 1.0f;
+	float InitialIntensity = 10000.0f;
+	bool bFlicker = false;
+};
+
+// Tracks a projectile in flight
+USTRUCT()
+struct FSpellProjectile
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	UStaticMeshComponent* Mesh = nullptr;
+
+	UPROPERTY()
+	UPointLightComponent* Light = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynMaterial = nullptr;
+
+	FVector StartLocation = FVector::ZeroVector;
+	FVector TargetLocation = FVector::ZeroVector;
+	float Speed = 2000.0f;
+	float Progress = 0.0f;
+	EAoCMagicSchool School = EAoCMagicSchool::Arcana;
+
+	// Trail spawning
+	float TrailTimer = 0.0f;
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class AOC_API UAoCSpellVFXManager : public UActorComponent
 {
@@ -25,58 +78,76 @@ class AOC_API UAoCSpellVFXManager : public UActorComponent
 
 public:
 	UAoCSpellVFXManager();
-
-	// ── Public VFX spawners ─────────────────────────────────────────────
-
-	/** Glow effect on the caster's hands during casting */
-	UFUNCTION(BlueprintCallable, Category = "AoC|VFX")
-	void SpawnCastEffect(EAoCMagicSchool School);
-
-	/** Attach glowing trail / aura to a projectile actor */
-	UFUNCTION(BlueprintCallable, Category = "AoC|VFX")
-	void SpawnProjectileVFX(EAoCMagicSchool School, AActor* ProjectileActor);
-
-	/** Explosion / impact at a world location */
-	UFUNCTION(BlueprintCallable, Category = "AoC|VFX")
-	void SpawnImpactEffect(EAoCMagicSchool School, FVector Location, FVector Normal);
-
-	/** Persistent AOE ring / dome at location */
-	UFUNCTION(BlueprintCallable, Category = "AoC|VFX")
-	void SpawnAOEEffect(EAoCMagicSchool School, FVector Location, float Radius, float Duration);
-
-	/** Beam between two world points */
-	UFUNCTION(BlueprintCallable, Category = "AoC|VFX")
-	void SpawnBeamEffect(EAoCMagicSchool School, FVector Start, FVector End);
-
-	/** Shield bubble around an actor */
-	UFUNCTION(BlueprintCallable, Category = "AoC|VFX")
-	void SpawnShieldEffect(EAoCMagicSchool School, AActor* TargetActor);
-
-	/** Create a dynamic material instance tinted to the given school */
-	UFUNCTION(BlueprintCallable, Category = "AoC|VFX")
-	UMaterialInstanceDynamic* CreateSchoolMaterial(EAoCMagicSchool School);
-
-protected:
 	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	// Main VFX entry points
+	UFUNCTION(BlueprintCallable)
+	void SpawnCastVFX(EAoCMagicSchool School, FVector Location, FRotator Rotation);
+
+	UFUNCTION(BlueprintCallable)
+	void SpawnProjectileVFX(EAoCMagicSchool School, FVector Start, FVector End, float Speed = 2000.0f);
+
+	UFUNCTION(BlueprintCallable)
+	void SpawnImpactVFX(EAoCMagicSchool School, FVector Location);
 
 private:
-	// ── Cached engine meshes ────────────────────────────────────────────
+	// Per-school visual config
+	struct FSchoolVFXConfig
+	{
+		FLinearColor Color;
+		float LightIntensity;
+		float LightRadius;
+		int32 ParticleCount;
+		float ParticleMinSize;
+		float ParticleMaxSize;
+		float ParticleSpeed;
+		float ParticleLifetime;
+		bool bLightFlicker;
+		FVector VelocityBias; // Directional bias (e.g. upward for fire)
+		FString MaterialPath;
+	};
+
+	TMap<EAoCMagicSchool, FSchoolVFXConfig> SchoolConfigs;
+	void InitSchoolConfigs();
+
+	// Loaded assets
 	UPROPERTY()
 	UStaticMesh* SphereMesh;
 
 	UPROPERTY()
-	UStaticMesh* CylinderMesh;
+	UStaticMesh* CubeMesh;
 
 	UPROPERTY()
-	UMaterial* BaseMaterial;
+	TMap<EAoCMagicSchool, UMaterialInterface*> SchoolMaterials;
 
-	/** Helper: spawn a glowing sphere actor at a location with auto-destroy */
-	AActor* SpawnGlowSphere(EAoCMagicSchool School, FVector Location, FVector Scale, float Lifetime);
+	UPROPERTY()
+	UNiagaraSystem* ExplosionNiagara;
 
-	/** Helper: spawn a point light with school colour */
-	void AttachPointLight(AActor* Target, EAoCMagicSchool School, float Intensity, float Radius);
+	UPROPERTY()
+	UNiagaraSystem* BurstNiagara;
 
-	/** Load engine assets on first use */
-	void EnsureAssetsLoaded();
-	bool bAssetsLoaded;
+	UPROPERTY()
+	UNiagaraSystem* FountainNiagara;
+
+	// Active VFX elements
+	UPROPERTY()
+	TArray<FSpellParticle> ActiveParticles;
+
+	UPROPERTY()
+	TArray<FSpellLight> ActiveLights;
+
+	UPROPERTY()
+	TArray<FSpellProjectile> ActiveProjectiles;
+
+	// Helper functions
+	void SpawnParticleBurst(EAoCMagicSchool School, FVector Location, int32 Count, float SpeedMult = 1.0f);
+	void SpawnDynamicLight(EAoCMagicSchool School, FVector Location, float IntensityMult = 1.0f, float Lifetime = 1.5f);
+	void SpawnNiagaraAccent(FVector Location, UNiagaraSystem* System);
+	UStaticMesh* GetMeshForSchool(EAoCMagicSchool School);
+	FSchoolVFXConfig GetConfig(EAoCMagicSchool School);
+
+	void UpdateParticles(float DeltaTime);
+	void UpdateLights(float DeltaTime);
+	void UpdateProjectiles(float DeltaTime);
 };

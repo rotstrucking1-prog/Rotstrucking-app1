@@ -60,7 +60,7 @@ void UAoCSpellCastingComponent::BeginPlay()
 
 // ─── Tick ───────────────────────────────────────────────────────────────────
 
-void UAoCSpellCastingComponent::TickComponent(float DeltaTime, ELevelComponentTickEvent TickType,
+void UAoCSpellCastingComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);

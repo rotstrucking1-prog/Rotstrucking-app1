@@ -64,8 +64,7 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	/** All loaded animations, categorised by action type */
-	UPROPERTY()
+	/** All loaded animations, categorised by action type (not UPROPERTY — nested containers) */
 	TMap<FString, TArray<UAnimSequence*>> AnimationMap;
 
 	/** Flat list of every loaded sequence */

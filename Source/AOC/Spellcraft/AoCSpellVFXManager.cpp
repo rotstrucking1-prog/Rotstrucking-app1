@@ -1,4 +1,6 @@
-// AoCSpellVFXManager.cpp - AAA Spell VFX with Niagara + Emissive Materials + Dynamic Lights
+// AoCSpellVFXManager.cpp - AAA Spell VFX with Niagara + Dynamic Materials + Lights
+// v30: Uses runtime Dynamic Material Instances from M_SpellGlow master material
+// No pre-created MI_Spell_XXX assets needed!
 #include "AoCSpellVFXManager.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -21,6 +23,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(1.0f, 0.25f, 0.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(4.0f, 1.0f, 0.0f, 1.0f);
 		C.LightIntensity = 15000.0f;
 		C.LightRadius = 600.0f;
 		C.ParticleCount = 25;
@@ -29,8 +32,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleSpeed = 300.0f;
 		C.ParticleLifetime = 1.2f;
 		C.bLightFlicker = true;
-		C.VelocityBias = FVector(0, 0, 250.0f); // Upward drift
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Fire");
+		C.VelocityBias = FVector(0, 0, 250.0f);
 		SchoolConfigs.Add(EAoCMagicSchool::Pyromancy, C);
 	}
 
@@ -38,6 +40,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.3f, 0.7f, 1.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(1.2f, 2.8f, 4.0f, 1.0f);
 		C.LightIntensity = 10000.0f;
 		C.LightRadius = 500.0f;
 		C.ParticleCount = 20;
@@ -46,8 +49,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleSpeed = 400.0f;
 		C.ParticleLifetime = 1.0f;
 		C.bLightFlicker = false;
-		C.VelocityBias = FVector(0, 0, -50.0f); // Slight downward (cold sinks)
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Ice");
+		C.VelocityBias = FVector(0, 0, -50.0f);
 		SchoolConfigs.Add(EAoCMagicSchool::Cryomancy, C);
 	}
 
@@ -55,6 +57,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.9f, 0.9f, 1.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(3.6f, 3.6f, 4.0f, 1.0f);
 		C.LightIntensity = 25000.0f;
 		C.LightRadius = 800.0f;
 		C.ParticleCount = 30;
@@ -64,7 +67,6 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleLifetime = 0.5f;
 		C.bLightFlicker = true;
 		C.VelocityBias = FVector::ZeroVector;
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Lightning");
 		SchoolConfigs.Add(EAoCMagicSchool::Stormcalling, C);
 	}
 
@@ -72,6 +74,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.6f, 0.2f, 1.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(2.4f, 0.8f, 4.0f, 1.0f);
 		C.LightIntensity = 12000.0f;
 		C.LightRadius = 500.0f;
 		C.ParticleCount = 22;
@@ -81,7 +84,6 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleLifetime = 1.5f;
 		C.bLightFlicker = false;
 		C.VelocityBias = FVector(0, 0, 100.0f);
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Arcane");
 		SchoolConfigs.Add(EAoCMagicSchool::Arcana, C);
 	}
 
@@ -89,6 +91,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.3f, 0.0f, 0.5f, 1.0f);
+		C.EmissiveColor = FLinearColor(1.2f, 0.0f, 2.0f, 1.0f);
 		C.LightIntensity = 5000.0f;
 		C.LightRadius = 400.0f;
 		C.ParticleCount = 18;
@@ -98,7 +101,6 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleLifetime = 2.0f;
 		C.bLightFlicker = true;
 		C.VelocityBias = FVector(0, 0, 80.0f);
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Shadow");
 		SchoolConfigs.Add(EAoCMagicSchool::Umbramancy, C);
 	}
 
@@ -106,6 +108,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.29f, 0.49f, 0.25f, 1.0f);
+		C.EmissiveColor = FLinearColor(1.16f, 1.96f, 1.0f, 1.0f);
 		C.LightIntensity = 7000.0f;
 		C.LightRadius = 500.0f;
 		C.ParticleCount = 22;
@@ -114,8 +117,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleSpeed = 180.0f;
 		C.ParticleLifetime = 2.0f;
 		C.bLightFlicker = true;
-		C.VelocityBias = FVector(0, 0, 120.0f); // Ghost wisps rise upward
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Necro");
+		C.VelocityBias = FVector(0, 0, 120.0f);
 		SchoolConfigs.Add(EAoCMagicSchool::Necromancy, C);
 	}
 
@@ -123,6 +125,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.1f, 0.8f, 0.2f, 1.0f);
+		C.EmissiveColor = FLinearColor(0.4f, 3.2f, 0.8f, 1.0f);
 		C.LightIntensity = 9000.0f;
 		C.LightRadius = 500.0f;
 		C.ParticleCount = 22;
@@ -132,7 +135,6 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleLifetime = 1.5f;
 		C.bLightFlicker = false;
 		C.VelocityBias = FVector(0, 0, 200.0f);
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Nature");
 		SchoolConfigs.Add(EAoCMagicSchool::Verdancy, C);
 	}
 
@@ -140,6 +142,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(1.0f, 0.9f, 0.5f, 1.0f);
+		C.EmissiveColor = FLinearColor(4.0f, 3.6f, 2.0f, 1.0f);
 		C.LightIntensity = 20000.0f;
 		C.LightRadius = 700.0f;
 		C.ParticleCount = 28;
@@ -149,7 +152,6 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleLifetime = 1.3f;
 		C.bLightFlicker = false;
 		C.VelocityBias = FVector(0, 0, 150.0f);
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Holy");
 		SchoolConfigs.Add(EAoCMagicSchool::Radiance, C);
 	}
 
@@ -157,6 +159,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.8f, 0.0f, 0.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(3.2f, 0.0f, 0.0f, 1.0f);
 		C.LightIntensity = 8000.0f;
 		C.LightRadius = 450.0f;
 		C.ParticleCount = 18;
@@ -165,8 +168,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleSpeed = 200.0f;
 		C.ParticleLifetime = 1.8f;
 		C.bLightFlicker = true;
-		C.VelocityBias = FVector(0, 0, -80.0f); // Blood drips down
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Blood");
+		C.VelocityBias = FVector(0, 0, -80.0f);
 		SchoolConfigs.Add(EAoCMagicSchool::Sangromancy, C);
 	}
 
@@ -174,6 +176,7 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 	{
 		FSchoolVFXConfig C;
 		C.Color = FLinearColor(0.5f, 0.2f, 0.8f, 1.0f);
+		C.EmissiveColor = FLinearColor(2.0f, 0.8f, 3.2f, 1.0f);
 		C.LightIntensity = 10000.0f;
 		C.LightRadius = 550.0f;
 		C.ParticleCount = 20;
@@ -183,7 +186,6 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.ParticleLifetime = 1.2f;
 		C.bLightFlicker = false;
 		C.VelocityBias = FVector(0, 0, 30.0f);
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Mind");
 		SchoolConfigs.Add(EAoCMagicSchool::Dominion, C);
 	}
 }
@@ -203,18 +205,37 @@ void UAoCSpellVFXManager::BeginPlay()
 	BurstNiagara = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Niagara/DefaultAssets/Templates/Systems/RadialBurst.RadialBurst"));
 	FountainNiagara = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Niagara/DefaultAssets/Templates/Systems/FountainLightweight.FountainLightweight"));
 
-	// Load all school material instances
-	for (auto& Pair : SchoolConfigs)
+	// Load the master material - M_SpellGlow
+	MasterSpellMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/AoC/VFX/Materials/M_SpellGlow"));
+	
+	if (!MasterSpellMaterial)
 	{
-		UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, *Pair.Value.MaterialPath);
-		if (Mat)
+		// Fallback: try loading default engine translucent material
+		MasterSpellMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineMaterials/DefaultDeferredDecalMaterial"));
+		UE_LOG(LogTemp, Warning, TEXT("[SpellVFX] M_SpellGlow NOT FOUND - using fallback material"));
+	}
+
+	// Create Dynamic Material Instances for each school from the master material
+	if (MasterSpellMaterial)
+	{
+		for (auto& Pair : SchoolConfigs)
 		{
-			SchoolMaterials.Add(Pair.Key, Mat);
+			UMaterialInstanceDynamic* DMI = UMaterialInstanceDynamic::Create(MasterSpellMaterial, this);
+			if (DMI)
+			{
+				// Set school-specific colors on the DMI
+				DMI->SetVectorParameterValue(TEXT("BaseColor"), Pair.Value.Color);
+				DMI->SetVectorParameterValue(TEXT("EmissiveColor"), Pair.Value.EmissiveColor);
+				DMI->SetVectorParameterValue(TEXT("SpellColor"), Pair.Value.Color);
+				DMI->SetScalarParameterValue(TEXT("Intensity"), 80.0f);
+				SchoolMaterials.Add(Pair.Key, DMI);
+			}
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[SpellVFX] Initialized - %d school configs, %d materials loaded, Niagara=%s"),
+	UE_LOG(LogTemp, Log, TEXT("[SpellVFX] Initialized - %d school configs, %d materials created at runtime, Master=%s, Niagara=%s"),
 		SchoolConfigs.Num(), SchoolMaterials.Num(),
+		MasterSpellMaterial ? TEXT("YES") : TEXT("NO"),
 		ExplosionNiagara ? TEXT("YES") : TEXT("NO"));
 }
 
@@ -236,6 +257,7 @@ UAoCSpellVFXManager::FSchoolVFXConfig UAoCSpellVFXManager::GetConfig(EAoCMagicSc
 	// Default fallback (arcane)
 	FSchoolVFXConfig Default;
 	Default.Color = FLinearColor(0.6f, 0.2f, 1.0f, 1.0f);
+	Default.EmissiveColor = FLinearColor(2.4f, 0.8f, 4.0f, 1.0f);
 	Default.LightIntensity = 10000.0f;
 	Default.LightRadius = 500.0f;
 	Default.ParticleCount = 20;
@@ -245,7 +267,6 @@ UAoCSpellVFXManager::FSchoolVFXConfig UAoCSpellVFXManager::GetConfig(EAoCMagicSc
 	Default.ParticleLifetime = 1.2f;
 	Default.bLightFlicker = false;
 	Default.VelocityBias = FVector(0, 0, 100.0f);
-	Default.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Arcane");
 	return Default;
 }
 
@@ -309,12 +330,21 @@ void UAoCSpellVFXManager::SpawnProjectileVFX(EAoCMagicSchool School, FVector Sta
 	Proj.Mesh->SetCastShadow(false);
 	Proj.Mesh->RegisterComponent();
 
-	// Create dynamic material for projectile
+	// Create dynamic material for projectile from school's base DMI
 	UMaterialInterface** MatPtr = SchoolMaterials.Find(School);
 	if (MatPtr && *MatPtr)
 	{
 		Proj.DynMaterial = UMaterialInstanceDynamic::Create(*MatPtr, Owner);
 		// Boost intensity for projectile (brighter than particles)
+		Proj.DynMaterial->SetScalarParameterValue(TEXT("Intensity"), Config.LightIntensity / 100.0f);
+		Proj.Mesh->SetMaterial(0, Proj.DynMaterial);
+	}
+	else if (MasterSpellMaterial)
+	{
+		// Fallback: create directly from master
+		Proj.DynMaterial = UMaterialInstanceDynamic::Create(MasterSpellMaterial, Owner);
+		Proj.DynMaterial->SetVectorParameterValue(TEXT("BaseColor"), Config.Color);
+		Proj.DynMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), Config.EmissiveColor);
 		Proj.DynMaterial->SetScalarParameterValue(TEXT("Intensity"), Config.LightIntensity / 100.0f);
 		Proj.Mesh->SetMaterial(0, Proj.DynMaterial);
 	}
@@ -412,6 +442,20 @@ void UAoCSpellVFXManager::SpawnParticleBurst(EAoCMagicSchool School, FVector Loc
 			float Variation = FMath::RandRange(0.8f, 1.2f);
 			FLinearColor ParticleColor = Config.Color * Variation;
 			Particle.DynMaterial->SetVectorParameterValue(TEXT("SpellColor"), ParticleColor);
+			Particle.DynMaterial->SetVectorParameterValue(TEXT("BaseColor"), ParticleColor);
+			FLinearColor ParticleEmissive = Config.EmissiveColor * Variation;
+			Particle.DynMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), ParticleEmissive);
+			Particle.Mesh->SetMaterial(0, Particle.DynMaterial);
+		}
+		else if (MasterSpellMaterial)
+		{
+			// Fallback: create directly from master material
+			Particle.DynMaterial = UMaterialInstanceDynamic::Create(MasterSpellMaterial, Owner);
+			float Variation = FMath::RandRange(0.8f, 1.2f);
+			FLinearColor ParticleColor = Config.Color * Variation;
+			Particle.DynMaterial->SetVectorParameterValue(TEXT("SpellColor"), ParticleColor);
+			Particle.DynMaterial->SetVectorParameterValue(TEXT("BaseColor"), ParticleColor);
+			Particle.DynMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), Config.EmissiveColor * Variation);
 			Particle.Mesh->SetMaterial(0, Particle.DynMaterial);
 		}
 
@@ -503,7 +547,7 @@ void UAoCSpellVFXManager::UpdateParticles(float DeltaTime)
 		if (P.DynMaterial)
 		{
 			float IntensityFade = LifeFraction * LifeFraction; // Quadratic fadeout
-			float BaseIntensity = 80.0f; // Will come from material instance
+			float BaseIntensity = 80.0f;
 			P.DynMaterial->SetScalarParameterValue(TEXT("Intensity"), BaseIntensity * IntensityFade);
 		}
 

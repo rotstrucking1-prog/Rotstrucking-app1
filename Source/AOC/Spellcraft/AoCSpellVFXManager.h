@@ -1,4 +1,5 @@
 // AoCSpellVFXManager.h - AAA Spell Visual Effects using Niagara + Dynamic Materials + Lights
+// v30: Runtime Dynamic Material Instances from M_SpellGlow - no pre-created MI assets needed
 #pragma once
 
 #include "CoreMinimal.h"
@@ -96,6 +97,7 @@ private:
 	struct FSchoolVFXConfig
 	{
 		FLinearColor Color;
+		FLinearColor EmissiveColor; // Separate emissive for HDR bloom
 		float LightIntensity;
 		float LightRadius;
 		int32 ParticleCount;
@@ -105,11 +107,14 @@ private:
 		float ParticleLifetime;
 		bool bLightFlicker;
 		FVector VelocityBias; // Directional bias (e.g. upward for fire)
-		FString MaterialPath;
 	};
 
 	TMap<EAoCMagicSchool, FSchoolVFXConfig> SchoolConfigs;
 	void InitSchoolConfigs();
+
+	// Master material - used to create all school DMIs at runtime
+	UPROPERTY()
+	UMaterialInterface* MasterSpellMaterial;
 
 	// Loaded assets
 	UPROPERTY()
@@ -118,6 +123,7 @@ private:
 	UPROPERTY()
 	UStaticMesh* CubeMesh;
 
+	// School materials - Dynamic Material Instances created at runtime
 	UPROPERTY()
 	TMap<EAoCMagicSchool, UMaterialInterface*> SchoolMaterials;
 

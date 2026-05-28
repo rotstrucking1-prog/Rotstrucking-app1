@@ -290,7 +290,7 @@ public:
 	virtual void OnSpeechOutput(const FString& Line) {}
 	virtual bool CanBetrayTarget(AActor* Target = nullptr) const { return false; }
 	virtual void OnDamageTaken(float Damage, AActor* DamageInstigator) {}
-	virtual void MoveToLocation(const FVector& Location, float AcceptanceRadius = 0.f) {}
+	virtual void MoveToLocation(const FVector& Location, float AcceptanceRadius = 0.f);
 	virtual void PlayEmote(const FString& EmoteName) {}
 	virtual void SetNPCDisplayName(const FString& Name) {}
 

@@ -21,6 +21,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/World.h"
+#include "AIController.h"
 
 
 // ---------------------------------------------------------------------------
@@ -896,5 +897,16 @@ void AoCHumanoidNPCV2::OnDematerialize()
     SetActorTickEnabled(false);
 }
 
+// ---------------------------------------------------------------------------
+// MoveToLocation — Delegate to AI Controller for proper pathfinding
+// ---------------------------------------------------------------------------
 
+void AoCHumanoidNPCV2::MoveToLocation(const FVector& Location, float AcceptanceRadius)
+{
+    AAIController* AIC = Cast<AAIController>(GetController());
+    if (AIC)
+    {
+        AIC->MoveToLocation(Location, AcceptanceRadius, true, true, true, true);
+    }
+}
 

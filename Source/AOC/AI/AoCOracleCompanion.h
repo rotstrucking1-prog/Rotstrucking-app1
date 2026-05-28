@@ -267,7 +267,7 @@ public:
 
 	/** Interval between smart commentary observations (seconds). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AoC|Oracle|Config")
-	float CommentaryInterval = 120.0f;
+	float CommentaryInterval = 45.0f;
 
 	/** How close the Oracle tries to stay to the player in Follow mode. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AoC|Oracle|Config",
@@ -448,6 +448,13 @@ private:
 	int32 RecentKillsWithNoDamage = 0;
 	float LastPathStuckTime = 0.0f;
 	bool  bRecentlyStuckOnPath = false;
+
+	// ----- Idle Speech (ambient chatter while following) --------------------
+	float IdleSpeechTimer = 0.0f;
+	float IdleSpeechInterval = 30.0f;  // Speak every ~30 seconds when idle
+
+	/** Speak a random ambient/idle line. */
+	void SpeakIdleLine();
 
 	// ----- Oracle Speech (wrapper that also logs) --------------------------
 

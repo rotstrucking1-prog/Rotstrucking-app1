@@ -626,6 +626,14 @@ void AAoCOracleCompanion::TickFollowMode(float DeltaSeconds)
 		MoveToLocation(TargetPos, FollowDistance * 0.8f);
 	}
 
+	// Idle speech — talk while following (not during combat/tests)
+	IdleSpeechTimer += DeltaSeconds;
+	if (IdleSpeechTimer >= IdleSpeechInterval)
+	{
+		IdleSpeechTimer = 0.0f;
+		SpeakIdleLine();
+	}
+
 	// If investigating something, check if we've arrived
 	if (bHasInvestigateTarget)
 	{
@@ -1792,6 +1800,9 @@ void AAoCOracleCompanion::EvaluateAndComment()
 	if (CommentOnUnreachableResources()) return;
 	if (CommentOnWorldPopulation()) return;
 	if (CommentOnLootQuality()) return;
+
+	// No issues found — say a random idle line instead
+	SpeakIdleLine();
 }
 
 bool AAoCOracleCompanion::CommentOnMissingMiningNodes()
@@ -1974,6 +1985,64 @@ bool AAoCOracleCompanion::CommentOnLootQuality()
 		}
 	}
 	return false;
+}
+
+
+// =============================================================================
+// IDLE SPEECH — Ambient chatter while following the player
+// =============================================================================
+
+void AAoCOracleCompanion::SpeakIdleLine()
+{
+	// Don't chatter during full test or combat
+	if (FullTestCurrentPhase != EFullTestPhase::NotRunning)
+	{
+		return;
+	}
+
+	if (UAoCNPCCombatBrain* LocalCombatBrain = FindComponentByClass<UAoCNPCCombatBrain>())
+	{
+		if (LocalCombatBrain->IsInCombat())
+		{
+			return;
+		}
+	}
+
+	static const TArray<FString> IdleLines = {
+		TEXT("Nice day for an adventure, don't you think?"),
+		TEXT("I wonder what's over that next hill..."),
+		TEXT("Did you know I can mine, fish, and craft? Just say the word."),
+		TEXT("This world has so much potential. I can feel it growing."),
+		TEXT("Stay sharp... you never know what's lurking around here."),
+		TEXT("I've been keeping an eye on my skill levels. Getting better every day."),
+		TEXT("If you need me to gather something, just tell me what you need."),
+		TEXT("My hunger's ticking down slowly. Should probably eat something soon."),
+		TEXT("I like following you around. Beats standing in one spot all day."),
+		TEXT("You know, for a world that's still being built, this place isn't half bad."),
+		TEXT("I keep running diagnostics in the background. I'll let you know if something breaks."),
+		TEXT("Have you tried checking out those rock formations? Could be ore deposits."),
+		TEXT("I could really go for some cooked fish right about now."),
+		TEXT("Sometimes I think about what it'd be like to have more NPCs to talk to."),
+		TEXT("My combat brain is itching for a fight. Let's find something to spar with."),
+		TEXT("I wonder if there are any crafting stations nearby..."),
+		TEXT("Keep moving, I'm right behind you!"),
+		TEXT("This terrain is interesting. Very... sandy."),
+		TEXT("I'm tracking my needs... hunger, energy, safety. All part of being alive."),
+		TEXT("Just so you know, I've got your back if anything attacks us."),
+		TEXT("The wind feels different here. Or it would, if I could feel wind."),
+		TEXT("I've memorized 170 different things to say, by the way."),
+		TEXT("Hey, look at us. An adventurer and their companion. Classic."),
+		TEXT("You ever wonder what the map looks like from above?"),
+		TEXT("My pathfinding just got an upgrade. I can actually follow you now!"),
+		TEXT("I was thinking... maybe we should find an anvil and craft something."),
+		TEXT("I bet there are dungeons out there somewhere. We should explore."),
+		TEXT("Another day, another adventure. I wouldn't have it any other way."),
+		TEXT("If you ever need a status report, just ask. I've always got the data."),
+		TEXT("I'm still in a T-pose, aren't I? Don't worry, my brain works fine.")
+	};
+
+	const int32 Idx = FMath::RandRange(0, IdleLines.Num() - 1);
+	OracleSay(IdleLines[Idx], EOracleLogCategory::Commentary, EChatBubblePriority::Normal);
 }
 
 // =============================================================================

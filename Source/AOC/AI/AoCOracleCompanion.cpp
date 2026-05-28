@@ -41,6 +41,7 @@
 #include "AoCNPCSpeech.h"
 #include "AoCNPCImperfection.h"
 #include "AoCNPCGoalPlanner.h"
+#include "UI/AoCRuntimeUI.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogOracle, Log, All);
 
@@ -259,8 +260,17 @@ void AAoCOracleCompanion::OracleSay(const FString& Message,
 	// ALWAYS show on screen via PrintString (fallback if bubble not visible)
 	if (GEngine)
 	{
-		const FString ScreenMsg = FString::Printf(TEXT("[Oracle] %s"), *Message);
 		GEngine->AddOnScreenDebugMessage(42, 12.0f, FColor::Cyan, FString::Printf(TEXT("Oracle: %s"), *Message));
+	}
+
+	// Push to the RuntimeUI chat panel (Local channel) so it persists in the chat log
+	for (TObjectIterator<UAoCRuntimeUI> It; It; ++It)
+	{
+		if (It->GetWorld() == GetWorld())
+		{
+			It->AddChatMessage(TEXT("Oracle"), Message, EChatChannel::Local);
+			break;
+		}
 	}
 
 	// Write to disk log

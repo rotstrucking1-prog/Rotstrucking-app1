@@ -16,6 +16,7 @@
 // =============================================================================
 
 #include "AoCOracleCompanion.h"
+#include "Engine/Engine.h"
 #include "AoCChatBubble.h"
 
 #include "Components/WidgetComponent.h"
@@ -253,6 +254,13 @@ void AAoCOracleCompanion::OracleSay(const FString& Message,
 	if (ChatBubbleWidget)
 	{
 		ChatBubbleWidget->ShowMessage(Message, BubblePriority);
+	}
+
+	// ALWAYS show on screen via PrintString (fallback if bubble not visible)
+	if (GEngine)
+	{
+		const FString ScreenMsg = FString::Printf(TEXT("[Oracle] %s"), *Message);
+		GEngine->AddOnScreenDebugMessage(-1, 6.0f, FColor::Cyan, ScreenMsg);
 	}
 
 	// Write to disk log

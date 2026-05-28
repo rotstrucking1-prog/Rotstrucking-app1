@@ -260,7 +260,7 @@ void AAoCOracleCompanion::OracleSay(const FString& Message,
 	if (GEngine)
 	{
 		const FString ScreenMsg = FString::Printf(TEXT("[Oracle] %s"), *Message);
-		GEngine->AddOnScreenDebugMessage(-1, 6.0f, FColor::Cyan, ScreenMsg);
+		GEngine->AddOnScreenDebugMessage(42, 12.0f, FColor::Cyan, FString::Printf(TEXT("Oracle: %s"), *Message));
 	}
 
 	// Write to disk log

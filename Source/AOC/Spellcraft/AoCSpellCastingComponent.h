@@ -1,6 +1,7 @@
 // Source/AOC/Spellcraft/AoCSpellCastingComponent.h
-// Spell casting component — manages the spell bar, cooldowns, and spell execution.
-// Standalone — no GAS plugin dependency.
+// Spell casting component — manages the spell bar, cooldowns, spell execution,
+// two-layer sound system, and screen effects.
+// v29 — Full sound + screen effects integration
 
 #pragma once
 
@@ -10,7 +11,10 @@
 #include "AoCSpellCastingComponent.generated.h"
 
 class UAoCSpellVFXManager;
+class UAoCSpellScreenEffects;
 class AAoCProjectile;
+class USoundBase;
+class UAudioComponent;
 
 /**
  * Spell bar slot — a spell assigned to a hotbar position.
@@ -45,6 +49,10 @@ struct FAoCSpellBarSlot
  * Holds a spell bar (up to 10 slots), handles cooldowns, cast times, and dispatches
  * execution to type-specific handlers.
  *
+ * v29: Two-layer sound system + screen effects integration.
+ * Layer 1: School cast sound (plays when casting begins)
+ * Layer 2: Spell effect sound (plays when spell fires, unique per-spell)
+ *
  * Damage is applied via UGameplayStatics::ApplyDamage — NO GAS required.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -57,37 +65,29 @@ public:
 
 	// ── Spell Bar ───────────────────────────────────────────────────────
 
-	/** The active spell bar (up to 10 slots) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpellBar")
 	TArray<FAoCSpellBarSlot> SpellBar;
 
-	/** Maximum number of spell bar slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpellBar")
 	int32 MaxSpellBarSlots;
 
 	// ── Casting state ───────────────────────────────────────────────────
 
-	/** Is the character currently casting? */
 	UPROPERTY(BlueprintReadOnly, Category = "Casting")
 	bool bIsCasting;
 
-	/** Current spell being cast (valid only while bIsCasting) */
 	UPROPERTY(BlueprintReadOnly, Category = "Casting")
 	FName CurrentCastSpellID;
 
-	/** Remaining cast time */
 	UPROPERTY(BlueprintReadOnly, Category = "Casting")
 	float CastTimeRemaining;
 
-	/** Current mana */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casting")
 	float CurrentMana;
 
-	/** Max mana */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casting")
 	float MaxMana;
 
-	/** Mana regeneration per second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casting")
 	float ManaRegenRate;
 
@@ -110,42 +110,47 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Targeting")
 	FVector TargetLocation;
 
-	// ── VFX reference ───────────────────────────────────────────────────
+	// ── VFX + Screen Effects ─────────────────────────────────────────────
 
 	UPROPERTY(BlueprintReadOnly, Category = "VFX")
 	UAoCSpellVFXManager* VFXManager;
 
+	UPROPERTY(BlueprintReadOnly, Category = "VFX")
+	UAoCSpellScreenEffects* ScreenEffects;
+
+	// ── Sound System ─────────────────────────────────────────────────────
+
+	/** School-specific cast sounds (Layer 1) — loaded at BeginPlay */
+	UPROPERTY()
+	TMap<EAoCMagicSchool, USoundBase*> SchoolCastSounds;
+
+	/** Currently playing cast sound */
+	UPROPERTY()
+	UAudioComponent* ActiveCastSound;
+
 	// ── Public interface ────────────────────────────────────────────────
 
-	/** Assign a spell to a slot */
 	UFUNCTION(BlueprintCallable, Category = "AoC|SpellBar")
 	void AssignSpellToSlot(int32 SlotIndex, FName SpellID);
 
-	/** Cast the spell in the given slot */
 	UFUNCTION(BlueprintCallable, Category = "AoC|SpellBar")
 	void CastSpellInSlot(int32 SlotIndex);
 
-	/** Execute a spell by ID — main entry point */
 	UFUNCTION(BlueprintCallable, Category = "AoC|Casting")
 	void ExecuteSpell(FName SpellID);
 
-	/** Cancel the current cast or channel */
 	UFUNCTION(BlueprintCallable, Category = "AoC|Casting")
 	void CancelCast();
 
-	/** Check if a spell can be cast right now */
 	UFUNCTION(BlueprintCallable, Category = "AoC|Casting")
 	bool CanCastSpell(FName SpellID) const;
 
-	/** Get cooldown fraction (0 = ready, 1 = just started cooldown) */
 	UFUNCTION(BlueprintCallable, Category = "AoC|SpellBar")
 	float GetCooldownFraction(int32 SlotIndex) const;
 
-	/** Set target actor for targeted spells */
 	UFUNCTION(BlueprintCallable, Category = "AoC|Targeting")
 	void SetTarget(AActor* NewTarget);
 
-	/** Set target location for ground-targeted spells */
 	UFUNCTION(BlueprintCallable, Category = "AoC|Targeting")
 	void SetTargetLocation(FVector NewLocation);
 
@@ -168,30 +173,33 @@ private:
 	void ExecuteHealSpell(const FAoCSpellInfo& Info);
 	void ExecuteSummonSpell(const FAoCSpellInfo& Info);
 
-	/** Apply damage to a target actor (wraps UGameplayStatics::ApplyDamage) */
+	/** Apply damage to a target actor */
 	void ApplySpellDamage(AActor* Target, float DamageAmount, const FAoCSpellInfo& Info);
 
-	/** Start cooldown for a spell in all matching slots */
 	void StartCooldown(FName SpellID, float CooldownDuration);
-
-	/** Tick cooldowns */
 	void UpdateCooldowns(float DeltaTime);
-
-	/** Tick mana regen */
 	void UpdateManaRegen(float DeltaTime);
-
-	/** Tick active cast */
 	void UpdateCasting(float DeltaTime);
-
-	/** Tick active channel */
 	void UpdateChanneling(float DeltaTime);
 
-	/** Pending spell to execute when cast completes */
+	// ── Sound helpers ───────────────────────────────────────────────────
+
+	/** Play the school's cast sound (Layer 1) */
+	void PlayCastSound(EAoCMagicSchool School);
+
+	/** Play the spell's unique effect sound (Layer 2) with tier-based pitch */
+	void PlaySpellEffectSound(const FAoCSpellInfo& Info);
+
+	/** Get pitch multiplier based on spell tier */
+	float GetTierPitchMultiplier(int32 SchoolLevel) const;
+
+	/** Load all school cast sounds from /Game/AoC/Sounds/ */
+	void LoadSchoolCastSounds();
+
+	/** Fire screen effects for the school */
+	void TriggerScreenEffects(EAoCMagicSchool School, int32 Tier);
+
 	FAoCSpellInfo PendingSpell;
-
-	/** Channel tick accumulator */
 	float ChannelTickAccumulator;
-
-	/** Cached spell info for active channel */
 	FAoCSpellInfo ActiveChannelSpell;
 };

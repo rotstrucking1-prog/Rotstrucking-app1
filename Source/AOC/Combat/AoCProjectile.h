@@ -1,5 +1,6 @@
 // Source/AOC/Combat/AoCProjectile.h
-// Base projectile actor for all spell projectiles.
+// v29 — AAA spell projectile with proper collision, per-school gravity,
+// emissive materials, dynamic point lights, and impact effects.
 
 #pragma once
 
@@ -12,11 +13,12 @@ class USphereComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
 class UPointLightComponent;
-class UAoCSpellVFXManager;
+class UNiagaraComponent;
 
 /**
  * Spell projectile — spawned by the spell casting component.
- * Flies toward target, deals damage on impact, auto-destroys after MaxLifetime.
+ * v29: AAA quality — proper collision, per-school gravity, emissive glow materials,
+ * dynamic lights, impact VFX with sound.
  */
 UCLASS()
 class AOC_API AAoCProjectile : public AActor
@@ -42,39 +44,43 @@ public:
 
 	// ── Spell data ──────────────────────────────────────────────────────
 
-	/** The full spell info this projectile was spawned from */
 	UPROPERTY(BlueprintReadOnly, Category = "Spell")
 	FAoCSpellInfo SpellInfo;
 
-	/** Cached damage value */
 	UPROPERTY(BlueprintReadOnly, Category = "Spell")
 	float Damage;
 
-	/** Who fired this projectile */
 	UPROPERTY(BlueprintReadOnly, Category = "Spell")
 	AActor* OwnerActor;
 
-	/** Which school — used for VFX colour */
 	UPROPERTY(BlueprintReadOnly, Category = "Spell")
 	EAoCMagicSchool School;
 
-	/** Auto-destroy timer */
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
 	float MaxLifetime;
 
 	// ── Interface ───────────────────────────────────────────────────────
 
-	/** Set up the projectile after spawning */
 	UFUNCTION(BlueprintCallable, Category = "AoC|Projectile")
 	void InitializeProjectile(const FAoCSpellInfo& InSpellInfo, AActor* Caster);
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 private:
-	/** Called when the sphere component overlaps another actor */
 	UFUNCTION()
 	void OnProjectileHit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
+
+	/** Get per-school gravity scale */
+	float GetSchoolGravityScale(EAoCMagicSchool InSchool) const;
+
+	/** Pulsing glow timer */
+	float GlowPulseTimer;
+
+	/** Dynamic material for pulsing glow */
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynamicMaterial;
 };

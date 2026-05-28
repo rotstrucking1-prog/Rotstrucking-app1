@@ -17,7 +17,7 @@ enum class EAoCMagicSchool : uint8
 	Pyromancy     UMETA(DisplayName = "Pyromancy"),
 	Cryomancy     UMETA(DisplayName = "Cryomancy"),
 	Stormcalling  UMETA(DisplayName = "Stormcalling"),
-	Tempest       UMETA(DisplayName = "Tempest"),
+	Necromancy    UMETA(DisplayName = "Necromancy"),
 	Verdancy      UMETA(DisplayName = "Verdancy"),
 	Umbramancy    UMETA(DisplayName = "Umbramancy"),
 	Radiance      UMETA(DisplayName = "Radiance"),

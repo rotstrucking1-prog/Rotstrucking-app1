@@ -102,21 +102,21 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		SchoolConfigs.Add(EAoCMagicSchool::Umbramancy, C);
 	}
 
-	// WIND/TEMPEST - Fast sweeping gusts
+	// NECROMANCY - Sickly green death wisps, ghostly particles rising
 	{
 		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.7f, 0.9f, 0.7f, 1.0f);
-		C.LightIntensity = 8000.0f;
-		C.LightRadius = 600.0f;
-		C.ParticleCount = 20;
-		C.ParticleMinSize = 4.0f;
-		C.ParticleMaxSize = 18.0f;
-		C.ParticleSpeed = 600.0f;
-		C.ParticleLifetime = 0.8f;
-		C.bLightFlicker = false;
-		C.VelocityBias = FVector(200.0f, 0, 50.0f);
-		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Wind");
-		SchoolConfigs.Add(EAoCMagicSchool::Tempest, C);
+		C.Color = FLinearColor(0.29f, 0.49f, 0.25f, 1.0f);
+		C.LightIntensity = 7000.0f;
+		C.LightRadius = 500.0f;
+		C.ParticleCount = 22;
+		C.ParticleMinSize = 5.0f;
+		C.ParticleMaxSize = 24.0f;
+		C.ParticleSpeed = 180.0f;
+		C.ParticleLifetime = 2.0f;
+		C.bLightFlicker = true;
+		C.VelocityBias = FVector(0, 0, 120.0f); // Ghost wisps rise upward
+		C.MaterialPath = TEXT("/Game/AoC/VFX/Materials/MI_Spell_Necro");
+		SchoolConfigs.Add(EAoCMagicSchool::Necromancy, C);
 	}
 
 	// NATURE - Leafy fountain, earthy green

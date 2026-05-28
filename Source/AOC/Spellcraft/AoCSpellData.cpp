@@ -75,10 +75,10 @@ FAoCSchoolVisuals UAoCSpellDatabase::GetSchoolVisuals(EAoCMagicSchool School)
         V.ProjectileMeshScale = FVector(0.31f);
         V.ImpactDecalSize = 110.f;
         break;
-    case EAoCMagicSchool::Tempest:
-        V.PrimaryColor   = FLinearColor(0.0000f, 0.8078f, 0.8196f, 1.f);
-        V.SecondaryColor = FLinearColor(0.7529f, 0.7529f, 0.7529f, 1.f);
-        V.GlowIntensity  = 3.0f;
+    case EAoCMagicSchool::Necromancy:
+        V.PrimaryColor   = FLinearColor(0.2900f, 0.4900f, 0.2500f, 1.f);
+        V.SecondaryColor = FLinearColor(0.1200f, 0.3500f, 0.1000f, 1.f);
+        V.GlowIntensity  = 4.0f;
         V.ParticleScale  = 1.20f;
         V.ProjectileMeshScale = FVector(0.33f);
         V.ImpactDecalSize = 120.f;
@@ -137,7 +137,7 @@ FString UAoCSpellDatabase::GetSchoolName(EAoCMagicSchool School)
     case EAoCMagicSchool::Pyromancy: return TEXT("Pyromancy");
     case EAoCMagicSchool::Cryomancy: return TEXT("Cryomancy");
     case EAoCMagicSchool::Stormcalling: return TEXT("Stormcalling");
-    case EAoCMagicSchool::Tempest: return TEXT("Tempest");
+    case EAoCMagicSchool::Necromancy: return TEXT("Necromancy");
     case EAoCMagicSchool::Verdancy: return TEXT("Verdancy");
     case EAoCMagicSchool::Umbramancy: return TEXT("Umbramancy");
     case EAoCMagicSchool::Radiance: return TEXT("Radiance");
@@ -618,116 +618,116 @@ void UAoCSpellDatabase::InitialiseSpells()
         800.0f, 0.0f, 6200.0f, 1,
         true, false, true));
 
-    // ── Tempest ─────────────────────────────────────────
+    // ── Necromancy ─────────────────────────────────────────
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_WindSlash"), TEXT("Wind Slash"),
-        TEXT("Sends a blade of compressed air slicing toward the target."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Projectile, 1,
+        TEXT("Spell_DeathCoil"), TEXT("Death Coil"),
+        TEXT("Hurls a bolt of necrotic energy that damages the living and heals undead minions."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Projectile, 1,
         20.0f, 10.0f, 0.5f, 2.0f, 3000.0f,
         0.0f, 0.0f, 3200.0f, 1,
         false, false, true));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_GaleShield"), TEXT("Gale Shield"),
-        TEXT("A swirling barrier of wind deflects incoming attacks."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Shield, 2,
-        0.0f, 17.9f, 0.38f, 3.1f, 3133.0f,
-        0.0f, 12.3f, 3400.0f, 1,
+        TEXT("Spell_NecroticStrike"), TEXT("Necrotic Strike"),
+        TEXT("Infuses the next melee strike with death energy, applying a healing absorption debuff."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Instant, 2,
+        11.4f, 17.9f, 0.0f, 3.1f, 3133.0f,
+        0.0f, 0.0f, 0.0f, 1,
+        false, false, true));
+    SpellTable.Add(MakeSpell(
+        TEXT("Spell_BoneArmor"), TEXT("Bone Armor"),
+        TEXT("Encases the caster in whirling bone fragments that absorb damage."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Shield, 3,
+        0.0f, 24.7f, 0.6f, 4.5f, 3267.0f,
+        0.0f, 18.0f, 3600.0f, 1,
         false, false, false));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_Cyclone"), TEXT("Cyclone"),
-        TEXT("Conjures a small cyclone that tosses enemies into the air."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::AOE, 3,
-        52.5f, 24.7f, 1.03f, 4.5f, 3267.0f,
-        280.0f, 0.0f, 3600.0f, 1,
-        true, false, true));
+        TEXT("Spell_SoulDrain"), TEXT("Soul Drain"),
+        TEXT("Channels a beam that siphons the target's life force, healing the caster."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Beam, 4,
+        19.7f, 31.1f, 0.0f, 6.1f, 3400.0f,
+        0.0f, 4.4f, 3800.0f, 1,
+        false, true, true));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_Tornado"), TEXT("Tornado"),
-        TEXT("Summons a raging tornado at the target location."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::AOE, 4,
-        65.8f, 31.1f, 1.14f, 6.1f, 3400.0f,
-        320.0f, 0.0f, 3800.0f, 1,
-        true, false, true));
-    SpellTable.Add(MakeSpell(
-        TEXT("Spell_AirWalk"), TEXT("Air Walk"),
-        TEXT("Grants the caster the ability to walk on air temporarily."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Buff, 5,
-        0.0f, 37.4f, 0.9f, 7.7f, 3533.0f,
-        0.0f, 27.0f, 4000.0f, 1,
+        TEXT("Spell_RaiseDead"), TEXT("Raise Dead"),
+        TEXT("Animates a nearby corpse to fight as a skeletal warrior for the caster."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Summon, 5,
+        0.0f, 37.4f, 1.5f, 7.7f, 3533.0f,
+        0.0f, 45.0f, 4000.0f, 1,
         false, false, false));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_VortexPull"), TEXT("Vortex Pull"),
-        TEXT("Creates a vacuum that pulls all nearby enemies to a point."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Instant, 6,
+        TEXT("Spell_DeathGrip"), TEXT("Death Grip"),
+        TEXT("A spectral hand reaches out and yanks the target toward the caster."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Instant, 6,
         27.2f, 43.5f, 0.0f, 9.5f, 3667.0f,
         0.0f, 0.0f, 0.0f, 1,
         false, false, true));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_WindBlast"), TEXT("Wind Blast"),
-        TEXT("A powerful gust that knocks targets backward."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Projectile, 7,
-        102.6f, 49.5f, 1.82f, 11.3f, 3800.0f,
-        0.0f, 0.0f, 4400.0f, 1,
+        TEXT("Spell_Plague"), TEXT("Plague"),
+        TEXT("Unleashes a creeping pestilence that spreads between nearby enemies."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::DOT, 7,
+        30.4f, 49.5f, 0.7f, 11.3f, 3800.0f,
+        0.0f, 8.0f, 4400.0f, 3,
         false, false, true));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_DustDevil"), TEXT("Dust Devil"),
-        TEXT("Conjures a dust devil that wanders and damages enemies."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Summon, 8,
+        TEXT("Spell_SummonGhoul"), TEXT("Summon Ghoul"),
+        TEXT("Summons a ravenous ghoul from the earth that attacks with vicious claws."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Summon, 8,
         68.5f, 55.3f, 2.43f, 38.7f, 3933.0f,
         0.0f, 36.0f, 4600.0f, 1,
         false, false, false));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_RazorWind"), TEXT("Razor Wind"),
-        TEXT("Channels cutting winds that shred everything in a cone."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Channeled, 9,
-        31.4f, 61.1f, 0.0f, 15.2f, 4067.0f,
-        0.0f, 6.7f, 4800.0f, 1,
+        TEXT("Spell_CorpseExplosion"), TEXT("Corpse Explosion"),
+        TEXT("Detonates a nearby corpse in a shower of gore and bone, dealing massive AOE damage."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::AOE, 9,
+        125.5f, 61.1f, 1.71f, 15.2f, 4067.0f,
+        520.0f, 0.0f, 4800.0f, 1,
+        true, false, true));
+    SpellTable.Add(MakeSpell(
+        TEXT("Spell_AntiMagicShell"), TEXT("Anti-Magic Shell"),
+        TEXT("Wraps the caster in a shell that absorbs incoming magical damage."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Shield, 10,
+        0.0f, 66.8f, 0.62f, 17.2f, 4200.0f,
+        0.0f, 19.3f, 5000.0f, 1,
+        false, false, false));
+    SpellTable.Add(MakeSpell(
+        TEXT("Spell_DeathAndDecay"), TEXT("Death and Decay"),
+        TEXT("Corrupts the ground in a large area, dealing sustained necrotic damage to all within."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::AOE, 11,
+        44.3f, 72.5f, 1.93f, 19.2f, 4333.0f,
+        600.0f, 12.0f, 5200.0f, 1,
+        true, false, true));
+    SpellTable.Add(MakeSpell(
+        TEXT("Spell_SoulHarvest"), TEXT("Soul Harvest"),
+        TEXT("Rapidly extracts souls from multiple nearby enemies, empowering the caster."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Channeled, 12,
+        47.5f, 78.1f, 0.0f, 21.3f, 4467.0f,
+        0.0f, 6.7f, 5400.0f, 1,
         false, true, true));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_Hurricane"), TEXT("Hurricane"),
-        TEXT("Summons a massive hurricane that engulfs the battlefield."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::AOE, 10,
-        136.6f, 66.8f, 1.82f, 17.2f, 4200.0f,
-        560.0f, 0.0f, 5000.0f, 1,
-        true, false, true));
+        TEXT("Spell_UnholyFrenzy"), TEXT("Unholy Frenzy"),
+        TEXT("Sacrifices health to enter a state of unholy frenzy, massively boosting attack speed and damage."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Self, 13,
+        168.9f, 83.6f, 2.16f, 23.4f, 0.0f,
+        0.0f, 0.0f, 5600.0f, 1,
+        false, false, false));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_AirCannon"), TEXT("Air Cannon"),
-        TEXT("A focused blast of compressed air with devastating force."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Projectile, 11,
-        147.5f, 72.5f, 2.38f, 19.2f, 4333.0f,
-        0.0f, 0.0f, 5200.0f, 1,
-        false, false, true));
+        TEXT("Spell_DarkTransformation"), TEXT("Dark Transformation"),
+        TEXT("Transforms an undead minion into a monstrous abomination with devastating power."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Instant, 14,
+        107.6f, 89.1f, 0.0f, 54.7f, 4733.0f,
+        0.0f, 54.0f, 5800.0f, 1,
+        false, false, false));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_StormFront"), TEXT("Storm Front"),
-        TEXT("Summons an advancing wall of wind that pushes and damages."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::AOE, 12,
-        158.3f, 78.1f, 2.05f, 21.3f, 4467.0f,
-        640.0f, 0.0f, 5400.0f, 1,
-        true, false, true));
+        TEXT("Spell_ArmyOfTheDead"), TEXT("Army of the Dead"),
+        TEXT("Raises an army of skeletal warriors from the ground to fight for the caster."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::Summon, 15,
+        0.0f, 94.6f, 3.0f, 27.8f, 4867.0f,
+        0.0f, 60.0f, 6000.0f, 5,
+        false, false, false));
     SpellTable.Add(MakeSpell(
-        TEXT("Spell_TempestFury"), TEXT("Tempest Fury"),
-        TEXT("Channels the full fury of the tempest in all directions."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Channeled, 13,
-        42.2f, 83.6f, 0.0f, 23.4f, 4600.0f,
-        0.0f, 8.6f, 5600.0f, 1,
-        false, true, true));
-    SpellTable.Add(MakeSpell(
-        TEXT("Spell_Typhoon"), TEXT("Typhoon"),
-        TEXT("A massive typhoon tears through the target area."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::AOE, 14,
-        179.4f, 89.1f, 2.27f, 25.6f, 4733.0f,
-        720.0f, 0.0f, 5800.0f, 1,
-        true, false, true));
-    SpellTable.Add(MakeSpell(
-        TEXT("Spell_WindReaper"), TEXT("Wind Reaper"),
-        TEXT("A scythe-shaped wind blade that cuts through all in its path."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::Projectile, 15,
-        189.7f, 94.6f, 2.88f, 27.8f, 4867.0f,
-        0.0f, 0.0f, 6000.0f, 1,
-        false, false, true));
-    SpellTable.Add(MakeSpell(
-        TEXT("Spell_OblivionGale"), TEXT("Oblivion Gale"),
-        TEXT("An apocalyptic gale that annihilates everything in its wake."),
-        EAoCMagicSchool::Tempest, EAoCSpellType::AOE, 16,
+        TEXT("Spell_Apocalypse"), TEXT("Apocalypse"),
+        TEXT("Unleashes a cataclysmic wave of death energy, devastating everything in a massive area and raising fallen enemies as temporary minions."),
+        EAoCMagicSchool::Necromancy, EAoCSpellType::AOE, 16,
         200.0f, 100.0f, 2.5f, 30.0f, 5000.0f,
         800.0f, 0.0f, 6200.0f, 1,
         true, false, true));

@@ -1,11 +1,16 @@
 // Source/AOC/Spellcraft/AoCSpellCastingComponent.cpp
-// Spell casting — full implementation with NO GAS dependency.
+// v29 — Spell casting with two-layer sound system + screen effects.
+// Layer 1: School cast sound (plays on cast begin)
+// Layer 2: Spell effect sound (plays on spell fire, pitch varies by tier)
 
 #include "AoCSpellCastingComponent.h"
 #include "AoCSpellVFXManager.h"
+#include "AoCSpellScreenEffects.h"
 #include "AoCSpellData.h"
 #include "../Combat/AoCProjectile.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
@@ -31,6 +36,8 @@ UAoCSpellCastingComponent::UAoCSpellCastingComponent()
 	CurrentTarget = nullptr;
 	TargetLocation = FVector::ZeroVector;
 	VFXManager = nullptr;
+	ScreenEffects = nullptr;
+	ActiveCastSound = nullptr;
 }
 
 // ─── BeginPlay ──────────────────────────────────────────────────────────────
@@ -39,23 +46,146 @@ void UAoCSpellCastingComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Initialise spell bar slots
 	SpellBar.SetNum(MaxSpellBarSlots);
 
-	// Find or create VFX manager on owner
 	AActor* Owner = GetOwner();
 	if (Owner)
 	{
+		// Find or create VFX manager
 		VFXManager = Owner->FindComponentByClass<UAoCSpellVFXManager>();
 		if (!VFXManager)
 		{
 			VFXManager = NewObject<UAoCSpellVFXManager>(Owner, TEXT("SpellVFXManager"));
-			if (VFXManager)
-			{
-				VFXManager->RegisterComponent();
-			}
+			if (VFXManager) VFXManager->RegisterComponent();
+		}
+
+		// Find or create Screen Effects
+		ScreenEffects = Owner->FindComponentByClass<UAoCSpellScreenEffects>();
+		if (!ScreenEffects)
+		{
+			ScreenEffects = NewObject<UAoCSpellScreenEffects>(Owner, TEXT("SpellScreenEffects"));
+			if (ScreenEffects) ScreenEffects->RegisterComponent();
 		}
 	}
+
+	// Load all school cast sounds
+	LoadSchoolCastSounds();
+}
+
+// ─── Sound Loading ──────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::LoadSchoolCastSounds()
+{
+	// School cast sounds live at /Game/AoC/Sounds/Cast/cast_{school}.cast_{school}
+	struct FSchoolSoundPath
+	{
+		EAoCMagicSchool School;
+		const TCHAR* Path;
+	};
+
+	static const FSchoolSoundPath Paths[] = {
+		{ EAoCMagicSchool::Arcana,       TEXT("/Game/AoC/Sounds/Cast/cast_arcana.cast_arcana") },
+		{ EAoCMagicSchool::Pyromancy,    TEXT("/Game/AoC/Sounds/Cast/cast_pyromancy.cast_pyromancy") },
+		{ EAoCMagicSchool::Cryomancy,    TEXT("/Game/AoC/Sounds/Cast/cast_cryomancy.cast_cryomancy") },
+		{ EAoCMagicSchool::Stormcalling, TEXT("/Game/AoC/Sounds/Cast/cast_stormcalling.cast_stormcalling") },
+		{ EAoCMagicSchool::Necromancy,   TEXT("/Game/AoC/Sounds/Cast/cast_necromancy.cast_necromancy") },
+		{ EAoCMagicSchool::Verdancy,     TEXT("/Game/AoC/Sounds/Cast/cast_verdancy.cast_verdancy") },
+		{ EAoCMagicSchool::Umbramancy,   TEXT("/Game/AoC/Sounds/Cast/cast_umbramancy.cast_umbramancy") },
+		{ EAoCMagicSchool::Radiance,     TEXT("/Game/AoC/Sounds/Cast/cast_radiance.cast_radiance") },
+		{ EAoCMagicSchool::Sangromancy,  TEXT("/Game/AoC/Sounds/Cast/cast_sangromancy.cast_sangromancy") },
+		{ EAoCMagicSchool::Dominion,     TEXT("/Game/AoC/Sounds/Cast/cast_dominion.cast_dominion") },
+	};
+
+	int32 LoadedCount = 0;
+	for (const auto& Entry : Paths)
+	{
+		USoundBase* Sound = LoadObject<USoundBase>(nullptr, Entry.Path);
+		if (Sound)
+		{
+			SchoolCastSounds.Add(Entry.School, Sound);
+			LoadedCount++;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SpellCasting] Loaded %d/%d school cast sounds"), LoadedCount, 10);
+}
+
+// ─── Sound Playback ─────────────────────────────────────────────────────────
+
+float UAoCSpellCastingComponent::GetTierPitchMultiplier(int32 SchoolLevel) const
+{
+	// Tier-based pitch variation:
+	// T1-3  → 1.15x (quick, snappy — apprentice)
+	// T4-6  → 1.0x  (normal)
+	// T7-9  → 0.9x  (heavier)
+	// T10-12 → 0.8x (deep, devastating)
+	// T13-16 → 0.7x (ultra-deep, ultimate tier)
+	if (SchoolLevel <= 3)  return 1.15f;
+	if (SchoolLevel <= 6)  return 1.0f;
+	if (SchoolLevel <= 9)  return 0.9f;
+	if (SchoolLevel <= 12) return 0.8f;
+	return 0.7f;
+}
+
+void UAoCSpellCastingComponent::PlayCastSound(EAoCMagicSchool School)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	USoundBase** SoundPtr = SchoolCastSounds.Find(School);
+	if (SoundPtr && *SoundPtr)
+	{
+		// Stop previous cast sound if any
+		if (ActiveCastSound && ActiveCastSound->IsPlaying())
+		{
+			ActiveCastSound->Stop();
+		}
+
+		ActiveCastSound = UGameplayStatics::SpawnSoundAttached(
+			*SoundPtr,
+			Owner->GetRootComponent(),
+			NAME_None,
+			FVector::ZeroVector,
+			EAttachLocation::KeepRelativeOffset,
+			false, 1.0f, 1.0f, 0.0f
+		);
+	}
+}
+
+void UAoCSpellCastingComponent::PlaySpellEffectSound(const FAoCSpellInfo& Info)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	// Effect sounds live at /Game/AoC/Sounds/Effects/{SpellID}.{SpellID}
+	FString SoundPath = FString::Printf(TEXT("/Game/AoC/Sounds/Effects/%s.%s"),
+		*Info.SpellID.ToString(), *Info.SpellID.ToString());
+
+	USoundBase* EffectSound = LoadObject<USoundBase>(nullptr, *SoundPath);
+	if (EffectSound)
+	{
+		float Pitch = GetTierPitchMultiplier(Info.SchoolLevel);
+
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			EffectSound,
+			Owner->GetActorLocation(),
+			1.0f,  // Volume
+			Pitch, // Tier-based pitch
+			0.0f   // Start time
+		);
+	}
+}
+
+// ─── Screen Effects ─────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::TriggerScreenEffects(EAoCMagicSchool School, int32 Tier)
+{
+	if (!ScreenEffects) return;
+
+	// Screen effects scale with tier
+	float Intensity = FMath::Clamp((float)Tier / 16.0f, 0.1f, 1.0f);
+	ScreenEffects->TriggerSpellEffect(School, Intensity);
 }
 
 // ─── Tick ───────────────────────────────────────────────────────────────────
@@ -106,10 +236,7 @@ float UAoCSpellCastingComponent::GetCooldownFraction(int32 SlotIndex) const
 void UAoCSpellCastingComponent::SetTarget(AActor* NewTarget)
 {
 	CurrentTarget = NewTarget;
-	if (NewTarget)
-	{
-		TargetLocation = NewTarget->GetActorLocation();
-	}
+	if (NewTarget) TargetLocation = NewTarget->GetActorLocation();
 }
 
 void UAoCSpellCastingComponent::SetTargetLocation(FVector NewLocation)
@@ -128,20 +255,12 @@ bool UAoCSpellCastingComponent::CanCastSpell(FName SpellID) const
 
 	if (CurrentMana < Info->ManaCost) return false;
 
-	// Check cooldown
 	for (const FAoCSpellBarSlot& Slot : SpellBar)
 	{
-		if (Slot.SpellID == SpellID && Slot.bOnCooldown)
-		{
-			return false;
-		}
+		if (Slot.SpellID == SpellID && Slot.bOnCooldown) return false;
 	}
 
-	// Check target requirement
-	if (Info->bRequiresTarget && !CurrentTarget)
-	{
-		return false;
-	}
+	if (Info->bRequiresTarget && !CurrentTarget) return false;
 
 	return true;
 }
@@ -167,6 +286,9 @@ void UAoCSpellCastingComponent::ExecuteSpell(FName SpellID)
 	// Start cooldown
 	StartCooldown(SpellID, Info.Cooldown);
 
+	// ★ LAYER 1: Play school cast sound immediately
+	PlayCastSound(Info.School);
+
 	// If spell has a cast time, begin casting; otherwise execute immediately
 	if (Info.CastTime > 0.f)
 	{
@@ -175,10 +297,16 @@ void UAoCSpellCastingComponent::ExecuteSpell(FName SpellID)
 		CastTimeRemaining = Info.CastTime;
 		PendingSpell = Info;
 
-		// Cast VFX
+		// Cast VFX (charging particles)
 		if (VFXManager)
 		{
-			VFXManager->SpawnCastEffect(Info.School);
+			AActor* Owner = GetOwner();
+			if (Owner)
+			{
+				VFXManager->SpawnCastVFX(Info.School,
+					Owner->GetActorLocation() + FVector(0.f, 0.f, 60.f),
+					Owner->GetActorRotation());
+			}
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("Casting %s (%.1fs)..."), *Info.DisplayName, Info.CastTime);
@@ -186,6 +314,12 @@ void UAoCSpellCastingComponent::ExecuteSpell(FName SpellID)
 	}
 
 	// Instant cast — dispatch immediately
+	// ★ LAYER 2: Play spell effect sound
+	PlaySpellEffectSound(Info);
+
+	// ★ Screen effects
+	TriggerScreenEffects(Info.School, Info.SchoolLevel);
+
 	switch (Info.Type)
 	{
 	case EAoCSpellType::Projectile: ExecuteProjectileSpell(Info); break;
@@ -216,6 +350,12 @@ void UAoCSpellCastingComponent::CancelCast()
 		bIsCasting = false;
 		CastTimeRemaining = 0.f;
 		CurrentCastSpellID = NAME_None;
+
+		// Stop cast sound
+		if (ActiveCastSound && ActiveCastSound->IsPlaying())
+		{
+			ActiveCastSound->FadeOut(0.2f, 0.0f);
+		}
 		UE_LOG(LogTemp, Log, TEXT("Cast cancelled."));
 	}
 
@@ -265,8 +405,13 @@ void UAoCSpellCastingComponent::UpdateCasting(float DeltaTime)
 		CastTimeRemaining = 0.f;
 		CurrentCastSpellID = NAME_None;
 
-		// Cast complete — dispatch the spell
 		UE_LOG(LogTemp, Log, TEXT("Cast complete: %s"), *PendingSpell.DisplayName);
+
+		// ★ LAYER 2: Play spell effect sound on cast completion
+		PlaySpellEffectSound(PendingSpell);
+
+		// ★ Screen effects
+		TriggerScreenEffects(PendingSpell.School, PendingSpell.SchoolLevel);
 
 		// Dispatch by type
 		switch (PendingSpell.Type)
@@ -281,7 +426,6 @@ void UAoCSpellCastingComponent::UpdateCasting(float DeltaTime)
 		case EAoCSpellType::Shield:     ExecuteShieldSpell(PendingSpell);    break;
 		case EAoCSpellType::Summon:     ExecuteSummonSpell(PendingSpell);    break;
 		case EAoCSpellType::Self:
-			// Self spells may heal or buff
 			if (PendingSpell.BaseDamage > 0.f)
 				ExecuteHealSpell(PendingSpell);
 			else
@@ -299,7 +443,6 @@ void UAoCSpellCastingComponent::UpdateChanneling(float DeltaTime)
 	ChannelTimeRemaining -= DeltaTime;
 	ChannelTickAccumulator += DeltaTime;
 
-	// Apply damage/heal every tick interval
 	if (ChannelTickAccumulator >= ChannelTickInterval)
 	{
 		ChannelTickAccumulator -= ChannelTickInterval;
@@ -308,15 +451,14 @@ void UAoCSpellCastingComponent::UpdateChanneling(float DeltaTime)
 		{
 			ApplySpellDamage(CurrentTarget, ActiveChannelSpell.BaseDamage, ActiveChannelSpell);
 
-			// Beam VFX refresh
 			if (VFXManager && ActiveChannelSpell.Type == EAoCSpellType::Beam)
 			{
 				AActor* Owner = GetOwner();
 				if (Owner)
 				{
-					VFXManager->SpawnBeamEffect(ActiveChannelSpell.School,
+					VFXManager->SpawnProjectileVFX(ActiveChannelSpell.School,
 						Owner->GetActorLocation() + FVector(0.f, 0.f, 60.f),
-						CurrentTarget->GetActorLocation());
+						CurrentTarget->GetActorLocation(), 0.f);
 				}
 			}
 		}
@@ -359,19 +501,10 @@ void UAoCSpellCastingComponent::ApplySpellDamage(AActor* Target, float DamageAmo
 	if (Owner)
 	{
 		APawn* Pawn = Cast<APawn>(Owner);
-		if (Pawn)
-		{
-			InstigatorController = Pawn->GetController();
-		}
+		if (Pawn) InstigatorController = Pawn->GetController();
 	}
 
-	UGameplayStatics::ApplyDamage(
-		Target,
-		DamageAmount,
-		InstigatorController,
-		Owner,
-		nullptr // default damage type
-	);
+	UGameplayStatics::ApplyDamage(Target, DamageAmount, InstigatorController, Owner, nullptr);
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] dealt %.1f damage to %s"),
 		*Info.DisplayName, DamageAmount, *Target->GetName());
@@ -388,7 +521,6 @@ void UAoCSpellCastingComponent::ExecuteProjectileSpell(const FAoCSpellInfo& Info
 	FVector SpawnLoc = Owner->GetActorLocation() + Owner->GetActorForwardVector() * 100.f + FVector(0.f, 0.f, 60.f);
 	FRotator SpawnRot = Owner->GetActorRotation();
 
-	// Aim at target if we have one
 	if (CurrentTarget)
 	{
 		FVector Dir = (CurrentTarget->GetActorLocation() - SpawnLoc).GetSafeNormal();
@@ -400,7 +532,6 @@ void UAoCSpellCastingComponent::ExecuteProjectileSpell(const FAoCSpellInfo& Info
 		FRotator ProjRot = SpawnRot;
 		if (Info.NumberOfProjectiles > 1)
 		{
-			// Spread multi-projectiles in a fan
 			float SpreadAngle = 10.f;
 			float TotalSpread = SpreadAngle * (Info.NumberOfProjectiles - 1);
 			float Offset = -TotalSpread * 0.5f + SpreadAngle * i;
@@ -419,10 +550,10 @@ void UAoCSpellCastingComponent::ExecuteProjectileSpell(const FAoCSpellInfo& Info
 		{
 			Projectile->InitializeProjectile(Info, Owner);
 
-			// VFX
 			if (VFXManager)
 			{
-				VFXManager->SpawnProjectileVFX(Info.School, Projectile);
+				FVector TargetLoc = CurrentTarget ? CurrentTarget->GetActorLocation() : (SpawnLoc + ProjRot.Vector() * Info.Range);
+				VFXManager->SpawnProjectileVFX(Info.School, SpawnLoc, TargetLoc, Info.ProjectileSpeed);
 			}
 		}
 	}
@@ -439,22 +570,13 @@ void UAoCSpellCastingComponent::ExecuteAOESpell(const FAoCSpellInfo& Info)
 	if (!World || !Owner) return;
 
 	FVector Center = TargetLocation;
-	if (CurrentTarget)
-	{
-		Center = CurrentTarget->GetActorLocation();
-	}
+	if (CurrentTarget) Center = CurrentTarget->GetActorLocation();
 
-	// Find all actors in radius and apply damage
 	TArray<FHitResult> HitResults;
 	FCollisionShape Shape = FCollisionShape::MakeSphere(Info.Radius);
 	bool bHit = World->SweepMultiByChannel(
-		HitResults,
-		Center,
-		Center + FVector(0.f, 0.f, 1.f),
-		FQuat::Identity,
-		ECC_Pawn,
-		Shape
-	);
+		HitResults, Center, Center + FVector(0.f, 0.f, 1.f),
+		FQuat::Identity, ECC_Pawn, Shape);
 
 	if (bHit)
 	{
@@ -470,14 +592,10 @@ void UAoCSpellCastingComponent::ExecuteAOESpell(const FAoCSpellInfo& Info)
 		}
 	}
 
-	// VFX
 	if (VFXManager)
 	{
-		VFXManager->SpawnAOEEffect(Info.School, Center, Info.Radius, Info.Duration > 0.f ? Info.Duration : 3.f);
+		VFXManager->SpawnImpactVFX(Info.School, Center);
 	}
-
-	// Sound
-	UGameplayStatics::PlaySoundAtLocation(World, nullptr, Center, 1.f, 1.f);
 
 	UE_LOG(LogTemp, Log, TEXT("AOE %s at (%.0f, %.0f, %.0f) radius %.0f"),
 		*Info.DisplayName, Center.X, Center.Y, Center.Z, Info.Radius);
@@ -490,13 +608,8 @@ void UAoCSpellCastingComponent::ExecuteInstantSpell(const FAoCSpellInfo& Info)
 	if (CurrentTarget)
 	{
 		ApplySpellDamage(CurrentTarget, Info.BaseDamage, Info);
-
-		if (VFXManager)
-		{
-			VFXManager->SpawnImpactEffect(Info.School, CurrentTarget->GetActorLocation(), FVector::UpVector);
-		}
+		if (VFXManager) VFXManager->SpawnImpactVFX(Info.School, CurrentTarget->GetActorLocation());
 	}
-
 	UE_LOG(LogTemp, Log, TEXT("Instant spell: %s"), *Info.DisplayName);
 }
 
@@ -507,21 +620,12 @@ void UAoCSpellCastingComponent::ExecuteBuffSpell(const FAoCSpellInfo& Info)
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
 
-	// Buff target is self or current target
 	AActor* BuffTarget = Info.bRequiresTarget ? CurrentTarget : Owner;
 	if (!BuffTarget) BuffTarget = Owner;
 
-	// VFX
-	if (VFXManager)
-	{
-		VFXManager->SpawnShieldEffect(Info.School, BuffTarget);
-	}
+	if (VFXManager) VFXManager->SpawnImpactVFX(Info.School, BuffTarget->GetActorLocation());
 
 	UE_LOG(LogTemp, Log, TEXT("Buff applied: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
-
-	// NOTE: Actual stat modifications would be applied here via a buff system.
-	// For now we log and show VFX. Game-specific buff logic should be added
-	// to a dedicated buff manager component.
 }
 
 // ─── DOT ────────────────────────────────────────────────────────────────────
@@ -530,18 +634,13 @@ void UAoCSpellCastingComponent::ExecuteDOTSpell(const FAoCSpellInfo& Info)
 {
 	if (!CurrentTarget) return;
 
-	// DOT is implemented as a short channel on the target
-	// Each tick applies Info.BaseDamage
 	bIsChanneling = true;
 	ChannelTimeRemaining = Info.Duration;
-	ChannelTickInterval = 2.0f; // tick every 2 seconds
+	ChannelTickInterval = 2.0f;
 	ChannelTickAccumulator = 0.f;
 	ActiveChannelSpell = Info;
 
-	if (VFXManager)
-	{
-		VFXManager->SpawnImpactEffect(Info.School, CurrentTarget->GetActorLocation(), FVector::UpVector);
-	}
+	if (VFXManager) VFXManager->SpawnImpactVFX(Info.School, CurrentTarget->GetActorLocation());
 
 	UE_LOG(LogTemp, Log, TEXT("DOT applied: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
 }
@@ -556,9 +655,12 @@ void UAoCSpellCastingComponent::ExecuteChanneledSpell(const FAoCSpellInfo& Info)
 	ChannelTickAccumulator = 0.f;
 	ActiveChannelSpell = Info;
 
-	if (VFXManager)
+	AActor* Owner = GetOwner();
+	if (VFXManager && Owner)
 	{
-		VFXManager->SpawnCastEffect(Info.School);
+		VFXManager->SpawnCastVFX(Info.School,
+			Owner->GetActorLocation() + FVector(0.f, 0.f, 60.f),
+			Owner->GetActorRotation());
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Channeling: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
@@ -569,7 +671,6 @@ void UAoCSpellCastingComponent::ExecuteChanneledSpell(const FAoCSpellInfo& Info)
 void UAoCSpellCastingComponent::ExecuteBeamSpell(const FAoCSpellInfo& Info)
 {
 	if (!CurrentTarget) return;
-
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
 
@@ -579,12 +680,11 @@ void UAoCSpellCastingComponent::ExecuteBeamSpell(const FAoCSpellInfo& Info)
 	ChannelTickAccumulator = 0.f;
 	ActiveChannelSpell = Info;
 
-	// Initial beam VFX
 	if (VFXManager)
 	{
-		VFXManager->SpawnBeamEffect(Info.School,
+		VFXManager->SpawnProjectileVFX(Info.School,
 			Owner->GetActorLocation() + FVector(0.f, 0.f, 60.f),
-			CurrentTarget->GetActorLocation());
+			CurrentTarget->GetActorLocation(), 0.f);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Beam: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
@@ -600,16 +700,9 @@ void UAoCSpellCastingComponent::ExecuteShieldSpell(const FAoCSpellInfo& Info)
 	AActor* ShieldTarget = Info.bRequiresTarget ? CurrentTarget : Owner;
 	if (!ShieldTarget) ShieldTarget = Owner;
 
-	if (VFXManager)
-	{
-		VFXManager->SpawnShieldEffect(Info.School, ShieldTarget);
-	}
+	if (VFXManager) VFXManager->SpawnImpactVFX(Info.School, ShieldTarget->GetActorLocation());
 
 	UE_LOG(LogTemp, Log, TEXT("Shield: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
-
-	// NOTE: Actual damage absorption logic would be implemented in a shield
-	// subsystem. The VFX is shown here; gameplay shield HP tracking is
-	// game-specific and should be wired into the character's health component.
 }
 
 // ─── Heal ───────────────────────────────────────────────────────────────────
@@ -620,15 +713,10 @@ void UAoCSpellCastingComponent::ExecuteHealSpell(const FAoCSpellInfo& Info)
 	if (!HealTarget) HealTarget = GetOwner();
 	if (!HealTarget) return;
 
-	// Apply negative damage (healing) — games often override TakeDamage for this.
-	// Here we log the heal. A real implementation would call a health component.
 	UE_LOG(LogTemp, Log, TEXT("Healed %s for %.1f HP with %s"),
 		*HealTarget->GetName(), Info.BaseDamage, *Info.DisplayName);
 
-	if (VFXManager)
-	{
-		VFXManager->SpawnImpactEffect(Info.School, HealTarget->GetActorLocation(), FVector::UpVector);
-	}
+	if (VFXManager) VFXManager->SpawnImpactVFX(Info.School, HealTarget->GetActorLocation());
 }
 
 // ─── Summon ─────────────────────────────────────────────────────────────────
@@ -639,19 +727,13 @@ void UAoCSpellCastingComponent::ExecuteSummonSpell(const FAoCSpellInfo& Info)
 	UWorld* World = GetWorld();
 	if (!Owner || !World) return;
 
-	// Spawn location in front of caster
 	FVector SpawnLoc = Owner->GetActorLocation() + Owner->GetActorForwardVector() * 200.f;
 
-	// Spawn a generic actor placeholder — the summon's actual class should be
-	// looked up from a summon registry. For now we spawn VFX at the location.
 	if (VFXManager)
 	{
-		VFXManager->SpawnAOEEffect(Info.School, SpawnLoc, 150.f, Info.Duration);
+		VFXManager->SpawnImpactVFX(Info.School, SpawnLoc);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Summoned: %s for %.1f seconds at (%.0f, %.0f, %.0f)"),
 		*Info.DisplayName, Info.Duration, SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
-
-	// NOTE: Real summon implementation would spawn a specific AI-controlled pawn
-	// based on the spell ID and set its lifetime to Info.Duration.
 }

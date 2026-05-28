@@ -41,7 +41,7 @@
 #include "AoCNPCSpeech.h"
 #include "AoCNPCImperfection.h"
 #include "AoCNPCGoalPlanner.h"
-#include "UI/AoCRuntimeUI.h"
+#include "Blueprint/UserWidget.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogOracle, Log, All);
 
@@ -263,14 +263,22 @@ void AAoCOracleCompanion::OracleSay(const FString& Message,
 		GEngine->AddOnScreenDebugMessage(42, 12.0f, FColor::Cyan, FString::Printf(TEXT("Oracle: %s"), *Message));
 	}
 
-	// Push to the RuntimeUI chat panel (Local channel) so it persists in the chat log
-	for (TObjectIterator<UAoCRuntimeUI> It; It; ++It)
+	// Push to the HUD chat panel (Local channel) so it persists in the scrollable chat log
+	// Use reflection to avoid cross-folder include issues
+	for (TObjectIterator<UUserWidget> It; It; ++It)
 	{
-		if (It->GetWorld() == GetWorld())
-		{
-			It->AddChatMessage(TEXT("Oracle"), Message, EChatChannel::Local);
-			break;
-		}
+		if (It->GetWorld() != GetWorld()) continue;
+		UFunction* ChatFunc = It->GetClass()->FindFunctionByName(TEXT("AddChatMessage"));
+		if (!ChatFunc) continue;
+
+		// AoCRuntimeUI::AddChatMessage(FString Sender, FString Msg, EChatChannel Channel)
+		// EChatChannel::Local = 0
+		struct { FString Sender; FString Msg; uint8 Channel; } Params;
+		Params.Sender = TEXT("Oracle");
+		Params.Msg = Message;
+		Params.Channel = 0; // EChatChannel::Local
+		It->ProcessEvent(ChatFunc, &Params);
+		break;
 	}
 
 	// Write to disk log

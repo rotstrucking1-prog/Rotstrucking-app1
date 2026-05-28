@@ -153,8 +153,16 @@ void AAoCProjectile::OnProjectileHit(UPrimitiveComponent* OverlappedComp, AActor
 	}
 
 	// Spawn impact VFX (small flash at hit point)
-	FVector ImpactLoc = SweepResult.ImpactPoint.IsZero() ? GetActorLocation() : FVector(SweepResult.ImpactPoint);
-	FVector ImpactNormal = SweepResult.ImpactNormal.IsZero() ? -GetActorForwardVector() : FVector(SweepResult.ImpactNormal);
+	FVector ImpactLoc = GetActorLocation();
+	if (!SweepResult.ImpactPoint.IsZero())
+	{
+		ImpactLoc = FVector(SweepResult.ImpactPoint.X, SweepResult.ImpactPoint.Y, SweepResult.ImpactPoint.Z);
+	}
+	FVector ImpactNormal = -GetActorForwardVector();
+	if (!SweepResult.ImpactNormal.IsZero())
+	{
+		ImpactNormal = FVector(SweepResult.ImpactNormal.X, SweepResult.ImpactNormal.Y, SweepResult.ImpactNormal.Z);
+	}
 
 	// Impact flash — spawn a quick glow sphere
 	FAoCSchoolVisuals Vis = UAoCSpellDatabase::GetSchoolVisuals(School);

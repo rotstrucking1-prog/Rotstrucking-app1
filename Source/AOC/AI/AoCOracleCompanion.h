@@ -31,10 +31,14 @@
 #include "CoreMinimal.h"
 #include "AoCHumanoidNPCV2.h"
 #include "AoCChatBubble.h"
+#include "../Spellcraft/AoCSpellData.h"
 #include "AoCOracleCompanion.generated.h"
 
 class UAoCChatBubble;
 class UWidgetComponent;
+class AAoCStaffWeapon;
+class UAoCSpellCastingComponent;
+class UAoCAnimationManager;
 
 // ---------------------------------------------------------------------------
 // EOracleMode — What the Oracle is currently doing
@@ -231,6 +235,14 @@ public:
 	/** Force an immediate hourly report. */
 	UFUNCTION(BlueprintCallable, Category = "AoC|Oracle")
 	void ForceHourlyReport();
+
+	/** Cast a spell from the Oracle's spell bar */
+	UFUNCTION(BlueprintCallable, Category = "AoC|Oracle|Combat")
+	void OracleCastSpell(int32 SlotIndex);
+
+	/** AI auto-selects and casts the best available spell */
+	UFUNCTION(BlueprintCallable, Category = "AoC|Oracle|Combat")
+	void OracleCastBestSpell();
 
 	// ----- Player Interaction Callbacks ------------------------------------
 
@@ -448,6 +460,19 @@ private:
 	int32 RecentKillsWithNoDamage = 0;
 	float LastPathStuckTime = 0.0f;
 	bool  bRecentlyStuckOnPath = false;
+
+	// ----- Spell System Integration ----------------------------------------
+	UPROPERTY()
+	AAoCStaffWeapon* StaffWeapon = nullptr;
+
+	UPROPERTY()
+	UAoCSpellCastingComponent* SpellCasting = nullptr;
+
+	UPROPERTY()
+	UAoCAnimationManager* AnimManager = nullptr;
+
+	void SetupStaffWeapon();
+	void SetupSpellSystem();
 
 	// ----- Idle Speech (ambient chatter while following) --------------------
 	float IdleSpeechTimer = 0.0f;

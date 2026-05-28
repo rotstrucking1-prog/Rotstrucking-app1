@@ -42,6 +42,10 @@
 #include "AoCNPCImperfection.h"
 #include "AoCNPCGoalPlanner.h"
 #include "Blueprint/UserWidget.h"
+#include "../Spellcraft/AoCSpellCastingComponent.h"
+#include "../Spellcraft/AoCStaffWeapon.h"
+#include "../Spellcraft/AoCSpellData.h"
+#include "../AnimLab/AoCAnimationManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogOracle, Log, All);
 
@@ -128,6 +132,10 @@ void AAoCOracleCompanion::BeginPlay()
 	           FString::Printf(TEXT("Mode: %s | Following: %s"),
 	                           *UEnum::GetValueAsString(CurrentMode),
 	                           OwnerPlayer ? *OwnerPlayer->GetName() : TEXT("nobody")));
+
+	// Set up the spell system (staff weapon, spell bar, animation manager)
+	SetupSpellSystem();
+	SetupStaffWeapon();
 
 	UE_LOG(LogOracle, Log, TEXT("=== Oracle Companion ready ==="));
 }
@@ -2070,6 +2078,183 @@ void AAoCOracleCompanion::SpeakIdleLine()
 	const int32 Idx = FMath::RandRange(0, IdleLines.Num() - 1);
 	OracleSay(IdleLines[Idx], EOracleLogCategory::Commentary, EChatBubblePriority::Normal);
 }
+
+// =============================================================================
+// SetupStaffWeapon — Spawn and attach the procedural staff to Oracle's hand
+// =============================================================================
+
+void AAoCOracleCompanion::SetupStaffWeapon()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	StaffWeapon = World->SpawnActor<AAoCStaffWeapon>(
+		AAoCStaffWeapon::StaticClass(),
+		GetActorLocation(),
+		GetActorRotation(),
+		Params);
+
+	if (StaffWeapon)
+	{
+		// Attach to right hand socket
+		StaffWeapon->AttachToCharacter(this, TEXT("hand_r"));
+		StaffWeapon->SetActiveSchool(EAoCMagicSchool::Arcana);
+
+		UE_LOG(LogOracle, Log, TEXT("Staff weapon spawned and attached to Oracle's hand"));
+		OracleSay(TEXT("My staff is ready. Time to channel some magic."),
+		          EOracleLogCategory::Status, EChatBubblePriority::Normal);
+	}
+	else
+	{
+		UE_LOG(LogOracle, Warning, TEXT("Failed to spawn staff weapon for Oracle"));
+	}
+}
+
+// =============================================================================
+// SetupSpellSystem — Initialize spell casting with a curated spell bar
+// =============================================================================
+
+void AAoCOracleCompanion::SetupSpellSystem()
+{
+	// Find or create the spell casting component
+	SpellCasting = FindComponentByClass<UAoCSpellCastingComponent>();
+	if (!SpellCasting)
+	{
+		SpellCasting = NewObject<UAoCSpellCastingComponent>(this, TEXT("SpellCasting"));
+		if (SpellCasting)
+		{
+			SpellCasting->RegisterComponent();
+		}
+	}
+
+	if (!SpellCasting) return;
+
+	// Oracle has generous mana as a powerful companion
+	SpellCasting->MaxMana = 500.f;
+	SpellCasting->CurrentMana = 500.f;
+	SpellCasting->ManaRegenRate = 10.f;
+
+	// Load one representative spell from each of the 10 schools into the spell bar
+	// Slot 0: Arcana — Arcane Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(0, TEXT("Spell_ArcaneBolt"));
+	// Slot 1: Pyromancy — Fireball (projectile)
+	SpellCasting->AssignSpellToSlot(1, TEXT("Spell_Fireball"));
+	// Slot 2: Cryomancy — Frost Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(2, TEXT("Spell_FrostBolt"));
+	// Slot 3: Stormcalling — Lightning Bolt (beam)
+	SpellCasting->AssignSpellToSlot(3, TEXT("Spell_LightningBolt"));
+	// Slot 4: Tempest — Gust (instant)
+	SpellCasting->AssignSpellToSlot(4, TEXT("Spell_Gust"));
+	// Slot 5: Verdancy — Regrowth (heal/buff)
+	SpellCasting->AssignSpellToSlot(5, TEXT("Spell_Regrowth"));
+	// Slot 6: Umbramancy — Shadow Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(6, TEXT("Spell_ShadowBolt"));
+	// Slot 7: Radiance — Holy Smite (instant)
+	SpellCasting->AssignSpellToSlot(7, TEXT("Spell_HolySmite"));
+	// Slot 8: Sangromancy — Blood Drain (channeled)
+	SpellCasting->AssignSpellToSlot(8, TEXT("Spell_BloodDrain"));
+	// Slot 9: Dominion — Mind Spike (instant)
+	SpellCasting->AssignSpellToSlot(9, TEXT("Spell_MindSpike"));
+
+	UE_LOG(LogOracle, Log, TEXT("Oracle spell bar loaded: 10 spells across 10 schools"));
+
+	// Find or create the animation manager
+	AnimManager = FindComponentByClass<UAoCAnimationManager>();
+	if (!AnimManager)
+	{
+		AnimManager = NewObject<UAoCAnimationManager>(this, TEXT("AnimManager"));
+		if (AnimManager)
+		{
+			AnimManager->RegisterComponent();
+		}
+	}
+
+	if (AnimManager)
+	{
+		UE_LOG(LogOracle, Log, TEXT("Animation Manager loaded: %d animations available"),
+		       AnimManager->GetAnimationCount());
+	}
+}
+
+// =============================================================================
+// OracleCastSpell — Cast a spell from the Oracle's spell bar
+// =============================================================================
+
+void AAoCOracleCompanion::OracleCastSpell(int32 SlotIndex)
+{
+	if (!SpellCasting) return;
+
+	// Play cast animation via animation manager
+	if (AnimManager)
+	{
+		USkeletalMeshComponent* SKMesh = GetMesh();
+		if (SKMesh)
+		{
+			AnimManager->PlayAnimation(SKMesh, TEXT("Cast"));
+		}
+	}
+
+	// Set staff to casting mode with the appropriate school
+	if (StaffWeapon && SpellCasting->SpellBar.IsValidIndex(SlotIndex))
+	{
+		FName SpellID = SpellCasting->SpellBar[SlotIndex].SpellID;
+		FAoCSpellInfo* Info = UAoCSpellDatabase::FindSpell(SpellID);
+		if (Info)
+		{
+			StaffWeapon->SetActiveSchool(Info->School);
+			StaffWeapon->SetCasting(true);
+
+			// Announce the spell
+			OracleSay(FString::Printf(TEXT("Casting %s!"), *Info->DisplayName),
+			          EOracleLogCategory::Combat, EChatBubblePriority::Normal);
+		}
+	}
+
+	// Execute the spell
+	SpellCasting->CastSpellInSlot(SlotIndex);
+}
+
+// =============================================================================
+// OracleCastBestSpell — AI picks the best spell for the current situation
+// =============================================================================
+
+void AAoCOracleCompanion::OracleCastBestSpell()
+{
+	if (!SpellCasting) return;
+
+	// Set target to whatever the combat brain is targeting
+	if (UAoCNPCCombatBrain* LocalCombatBrain = FindComponentByClass<UAoCNPCCombatBrain>())
+	{
+		AActor* CombatTarget = LocalCombatBrain->GetCurrentTarget();
+		if (CombatTarget)
+		{
+			SpellCasting->SetTarget(CombatTarget);
+		}
+	}
+
+	// Find the best available spell (not on cooldown, have mana)
+	for (int32 i = 0; i < SpellCasting->SpellBar.Num(); ++i)
+	{
+		const FAoCSpellBarSlot& Slot = SpellCasting->SpellBar[i];
+		if (!Slot.SpellID.IsNone() && !Slot.bOnCooldown)
+		{
+			if (SpellCasting->CanCastSpell(Slot.SpellID))
+			{
+				OracleCastSpell(i);
+				return;
+			}
+		}
+	}
+
+	// No spells available — say so
+	OracleSay(TEXT("All my spells are on cooldown..."),
+	          EOracleLogCategory::Combat, EChatBubblePriority::Normal);
+}
+
 
 // =============================================================================
 // END — AoCOracleCompanion.cpp

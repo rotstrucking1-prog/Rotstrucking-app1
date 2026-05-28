@@ -1,47 +1,53 @@
-// Copyright Architect of Creation. All Rights Reserved.
+// Source/AOC/Spellcraft/AoCSpellCastingComponent.h
+// Spell casting component — manages the spell bar, cooldowns, and spell execution.
+// Standalone — no GAS plugin dependency.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Engine/DataTable.h"
+#include "AoCSpellData.h"
 #include "AoCSpellCastingComponent.generated.h"
 
+class UAoCSpellVFXManager;
 class AAoCProjectile;
-class UAoCAbilitySystemComponent;
 
 /**
- * FAoCSpellSlot
- * Represents one slot on the player's spell bar.
+ * Spell bar slot — a spell assigned to a hotbar position.
  */
 USTRUCT(BlueprintType)
-struct FAoCSpellSlot
+struct FAoCSpellBarSlot
 {
 	GENERATED_BODY()
 
-	/** Row name in the spells DataTable. Empty = unoccupied slot. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AoC|Spell")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpellBar")
 	FName SpellID;
 
-	/** Cached icon texture path (loaded from DataTable). */
-	UPROPERTY(BlueprintReadOnly, Category = "AoC|Spell")
-	TSoftObjectPtr<UTexture2D> Icon;
+	UPROPERTY(BlueprintReadOnly, Category = "SpellBar")
+	float CooldownRemaining;
 
-	FAoCSpellSlot()
-		: SpellID(NAME_None)
-	{}
+	UPROPERTY(BlueprintReadOnly, Category = "SpellBar")
+	float CooldownTotal;
+
+	UPROPERTY(BlueprintReadOnly, Category = "SpellBar")
+	bool bOnCooldown;
+
+	FAoCSpellBarSlot()
+		: CooldownRemaining(0.f)
+		, CooldownTotal(0.f)
+		, bOnCooldown(false)
+	{
+	}
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpellCast, int32, SlotIndex, FName, SpellID);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpellFailed, int32, SlotIndex, const FString&, Reason);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCastProgress, float, ElapsedTime, float, TotalCastTime);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCastInterrupted);
-
 /**
- * UAoCSpellCastingComponent
- * Manages the player's spell bar, cooldowns, cast times, and spell execution.
+ * Manages spell casting for any character.
+ * Holds a spell bar (up to 10 slots), handles cooldowns, cast times, and dispatches
+ * execution to type-specific handlers.
+ *
+ * Damage is applied via UGameplayStatics::ApplyDamage — NO GAS required.
  */
-UCLASS(ClassGroup = (AoC), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class AOC_API UAoCSpellCastingComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -49,113 +55,143 @@ class AOC_API UAoCSpellCastingComponent : public UActorComponent
 public:
 	UAoCSpellCastingComponent();
 
-	// ── Configuration ──
+	// ── Spell Bar ───────────────────────────────────────────────────────
 
-	/** Maximum number of spell slots on the bar. */
-	static constexpr int32 MaxSpellSlots = 10;
+	/** The active spell bar (up to 10 slots) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpellBar")
+	TArray<FAoCSpellBarSlot> SpellBar;
 
-	/** Global cooldown duration in seconds. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AoC|Spellcast|Config")
-	float GlobalCooldownDuration;
+	/** Maximum number of spell bar slots */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SpellBar")
+	int32 MaxSpellBarSlots;
 
-	/** DataTable containing spell data rows (FAoCSpellDataRow). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AoC|Spellcast|Config")
-	TObjectPtr<UDataTable> SpellDataTable;
+	// ── Casting state ───────────────────────────────────────────────────
 
-	// ── Spell Bar Management ──
+	/** Is the character currently casting? */
+	UPROPERTY(BlueprintReadOnly, Category = "Casting")
+	bool bIsCasting;
 
-	/** Current spell slots. */
-	UPROPERTY(BlueprintReadOnly, Category = "AoC|Spellcast")
-	TArray<FAoCSpellSlot> SpellSlots;
+	/** Current spell being cast (valid only while bIsCasting) */
+	UPROPERTY(BlueprintReadOnly, Category = "Casting")
+	FName CurrentCastSpellID;
 
-	/** Equip a spell into a specific slot. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	bool EquipSpell(int32 SlotIndex, FName SpellID);
+	/** Remaining cast time */
+	UPROPERTY(BlueprintReadOnly, Category = "Casting")
+	float CastTimeRemaining;
 
-	/** Remove a spell from a specific slot. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	void UnequipSpell(int32 SlotIndex);
+	/** Current mana */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casting")
+	float CurrentMana;
 
-	/** Swap the contents of two spell slots. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	void SwapSlots(int32 SlotA, int32 SlotB);
+	/** Max mana */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casting")
+	float MaxMana;
 
-	// ── Casting ──
+	/** Mana regeneration per second */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casting")
+	float ManaRegenRate;
 
-	/** Attempt to cast the spell in the given slot. Checks mana, cooldown, cast time. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	void CastSpell(int32 SlotIndex);
+	// ── Channeling state ────────────────────────────────────────────────
 
-	/** Interrupt the current cast, if any. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	void InterruptCast();
+	UPROPERTY(BlueprintReadOnly, Category = "Casting")
+	bool bIsChanneling;
 
-	/** Returns true if the player is currently casting. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	bool IsCasting() const { return bIsCasting; }
+	UPROPERTY(BlueprintReadOnly, Category = "Casting")
+	float ChannelTimeRemaining;
 
-	/** Get remaining cooldown for a spell by ID. Returns 0 if off cooldown. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	float GetCooldownRemaining(FName SpellID) const;
+	UPROPERTY(BlueprintReadOnly, Category = "Casting")
+	float ChannelTickInterval;
 
-	/** Returns true if the global cooldown is active. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	bool IsGlobalCooldownActive() const { return GlobalCooldownRemaining > 0.0f; }
+	// ── Current target ──────────────────────────────────────────────────
 
-	// ── Delegates ──
+	UPROPERTY(BlueprintReadWrite, Category = "Targeting")
+	AActor* CurrentTarget;
 
-	UPROPERTY(BlueprintAssignable, Category = "AoC|Spellcast")
-	FOnSpellCast OnSpellCast;
+	UPROPERTY(BlueprintReadWrite, Category = "Targeting")
+	FVector TargetLocation;
 
-	UPROPERTY(BlueprintAssignable, Category = "AoC|Spellcast")
-	FOnSpellFailed OnSpellFailed;
+	// ── VFX reference ───────────────────────────────────────────────────
 
-	UPROPERTY(BlueprintAssignable, Category = "AoC|Spellcast")
-	FOnCastProgress OnCastProgress;
+	UPROPERTY(BlueprintReadOnly, Category = "VFX")
+	UAoCSpellVFXManager* VFXManager;
 
-	UPROPERTY(BlueprintAssignable, Category = "AoC|Spellcast")
-	FOnCastInterrupted OnCastInterrupted;
+	// ── Public interface ────────────────────────────────────────────────
 
-	// ── Helpers ──
+	/** Assign a spell to a slot */
+	UFUNCTION(BlueprintCallable, Category = "AoC|SpellBar")
+	void AssignSpellToSlot(int32 SlotIndex, FName SpellID);
 
-	/** Spawn a projectile at the character's muzzle location heading toward the target. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	AAoCProjectile* SpawnProjectile(TSubclassOf<AAoCProjectile> ProjectileClass, FVector SpawnLocation, FRotator SpawnRotation);
+	/** Cast the spell in the given slot */
+	UFUNCTION(BlueprintCallable, Category = "AoC|SpellBar")
+	void CastSpellInSlot(int32 SlotIndex);
 
-	/** Apply an area-of-effect at the given location with a radius. */
-	UFUNCTION(BlueprintCallable, Category = "AoC|Spellcast")
-	void ApplyAOE(FVector Origin, float Radius, TSubclassOf<UGameplayEffect> EffectClass);
+	/** Execute a spell by ID — main entry point */
+	UFUNCTION(BlueprintCallable, Category = "AoC|Casting")
+	void ExecuteSpell(FName SpellID);
+
+	/** Cancel the current cast or channel */
+	UFUNCTION(BlueprintCallable, Category = "AoC|Casting")
+	void CancelCast();
+
+	/** Check if a spell can be cast right now */
+	UFUNCTION(BlueprintCallable, Category = "AoC|Casting")
+	bool CanCastSpell(FName SpellID) const;
+
+	/** Get cooldown fraction (0 = ready, 1 = just started cooldown) */
+	UFUNCTION(BlueprintCallable, Category = "AoC|SpellBar")
+	float GetCooldownFraction(int32 SlotIndex) const;
+
+	/** Set target actor for targeted spells */
+	UFUNCTION(BlueprintCallable, Category = "AoC|Targeting")
+	void SetTarget(AActor* NewTarget);
+
+	/** Set target location for ground-targeted spells */
+	UFUNCTION(BlueprintCallable, Category = "AoC|Targeting")
+	void SetTargetLocation(FVector NewLocation);
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void TickComponent(float DeltaTime, ELevelComponentTickEvent TickType,
+		FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	// ── Cooldown Tracking ──
+	// ── Type-specific execution ─────────────────────────────────────────
 
-	/** Per-spell cooldown remaining in seconds. */
-	TMap<FName, float> CooldownMap;
+	void ExecuteProjectileSpell(const FAoCSpellInfo& Info);
+	void ExecuteAOESpell(const FAoCSpellInfo& Info);
+	void ExecuteInstantSpell(const FAoCSpellInfo& Info);
+	void ExecuteBuffSpell(const FAoCSpellInfo& Info);
+	void ExecuteBeamSpell(const FAoCSpellInfo& Info);
+	void ExecuteShieldSpell(const FAoCSpellInfo& Info);
+	void ExecuteChanneledSpell(const FAoCSpellInfo& Info);
+	void ExecuteDOTSpell(const FAoCSpellInfo& Info);
+	void ExecuteHealSpell(const FAoCSpellInfo& Info);
+	void ExecuteSummonSpell(const FAoCSpellInfo& Info);
 
-	/** Global cooldown remaining. */
-	float GlobalCooldownRemaining;
+	/** Apply damage to a target actor (wraps UGameplayStatics::ApplyDamage) */
+	void ApplySpellDamage(AActor* Target, float DamageAmount, const FAoCSpellInfo& Info);
 
-	// ── Casting State ──
+	/** Start cooldown for a spell in all matching slots */
+	void StartCooldown(FName SpellID, float CooldownDuration);
 
-	bool bIsCasting;
-	int32 CurrentCastSlot;
-	FName CurrentCastSpellID;
-	float CastTimeElapsed;
-	float CastTimeTotal;
+	/** Tick cooldowns */
+	void UpdateCooldowns(float DeltaTime);
 
-	/** Finish a cast that has completed its cast time. */
-	void FinishCast();
+	/** Tick mana regen */
+	void UpdateManaRegen(float DeltaTime);
 
-	/** Execute the actual spell effect (projectile, AOE, instant, etc.). */
-	void ExecuteSpell(FName SpellID);
+	/** Tick active cast */
+	void UpdateCasting(float DeltaTime);
 
-	/** Start the global cooldown. */
-	void StartGlobalCooldown();
+	/** Tick active channel */
+	void UpdateChanneling(float DeltaTime);
 
-	/** Tick down all cooldowns. */
-	void TickCooldowns(float DeltaTime);
+	/** Pending spell to execute when cast completes */
+	FAoCSpellInfo PendingSpell;
+
+	/** Channel tick accumulator */
+	float ChannelTickAccumulator;
+
+	/** Cached spell info for active channel */
+	FAoCSpellInfo ActiveChannelSpell;
 };

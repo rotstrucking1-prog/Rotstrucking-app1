@@ -1,369 +1,657 @@
-// Copyright Architect of Creation. All Rights Reserved.
+// Source/AOC/Spellcraft/AoCSpellCastingComponent.cpp
+// Spell casting — full implementation with NO GAS dependency.
 
 #include "AoCSpellCastingComponent.h"
-#include "Engine/OverlapResult.h"
-#include "AbilitySystemComponent.h"
-#include "AbilitySystemInterface.h"
-#include "GameplayEffect.h"
-#include "Engine/World.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "AoCSpellVFXManager.h"
+#include "AoCSpellData.h"
 #include "../Combat/AoCProjectile.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
+
+// ─── Constructor ────────────────────────────────────────────────────────────
 
 UAoCSpellCastingComponent::UAoCSpellCastingComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 
-	GlobalCooldownDuration = 0.5f;
-	GlobalCooldownRemaining = 0.0f;
+	MaxSpellBarSlots = 10;
 	bIsCasting = false;
-	CurrentCastSlot = -1;
-	CastTimeElapsed = 0.0f;
-	CastTimeTotal = 0.0f;
+	bIsChanneling = false;
+	CastTimeRemaining = 0.f;
+	ChannelTimeRemaining = 0.f;
+	ChannelTickInterval = 0.5f;
+	ChannelTickAccumulator = 0.f;
 
-	// Initialize spell slots
-	SpellSlots.SetNum(MaxSpellSlots);
+	CurrentMana = 100.f;
+	MaxMana = 100.f;
+	ManaRegenRate = 5.f;
+
+	CurrentTarget = nullptr;
+	TargetLocation = FVector::ZeroVector;
+	VFXManager = nullptr;
 }
+
+// ─── BeginPlay ──────────────────────────────────────────────────────────────
 
 void UAoCSpellCastingComponent::BeginPlay()
 {
 	Super::BeginPlay();
-}
 
-void UAoCSpellCastingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	// Initialise spell bar slots
+	SpellBar.SetNum(MaxSpellBarSlots);
 
-	// Tick cooldowns
-	TickCooldowns(DeltaTime);
-
-	// Tick cast progress
-	if (bIsCasting)
+	// Find or create VFX manager on owner
+	AActor* Owner = GetOwner();
+	if (Owner)
 	{
-		CastTimeElapsed += DeltaTime;
-		OnCastProgress.Broadcast(CastTimeElapsed, CastTimeTotal);
-
-		if (CastTimeElapsed >= CastTimeTotal)
+		VFXManager = Owner->FindComponentByClass<UAoCSpellVFXManager>();
+		if (!VFXManager)
 		{
-			FinishCast();
+			VFXManager = NewObject<UAoCSpellVFXManager>(Owner, TEXT("SpellVFXManager"));
+			if (VFXManager)
+			{
+				VFXManager->RegisterComponent();
+			}
 		}
 	}
 }
 
-bool UAoCSpellCastingComponent::EquipSpell(int32 SlotIndex, FName SpellID)
+// ─── Tick ───────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::TickComponent(float DeltaTime, ELevelComponentTickEvent TickType,
+	FActorComponentTickFunction* ThisTickFunction)
 {
-	if (SlotIndex < 0 || SlotIndex >= MaxSpellSlots)
-	{
-		return false;
-	}
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (SpellID.IsNone())
-	{
-		return false;
-	}
+	UpdateCooldowns(DeltaTime);
+	UpdateManaRegen(DeltaTime);
+	UpdateCasting(DeltaTime);
+	UpdateChanneling(DeltaTime);
+}
 
-	// Validate spell exists in DataTable
-	if (SpellDataTable)
+// ─── Spell bar management ───────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::AssignSpellToSlot(int32 SlotIndex, FName SpellID)
+{
+	if (SlotIndex >= 0 && SlotIndex < SpellBar.Num())
 	{
-		FTableRowBase* RowBase = SpellDataTable->FindRow<FTableRowBase>(SpellID, TEXT("EquipSpell"));
-		if (!RowBase)
+		SpellBar[SlotIndex].SpellID = SpellID;
+		SpellBar[SlotIndex].CooldownRemaining = 0.f;
+		SpellBar[SlotIndex].bOnCooldown = false;
+	}
+}
+
+void UAoCSpellCastingComponent::CastSpellInSlot(int32 SlotIndex)
+{
+	if (SlotIndex < 0 || SlotIndex >= SpellBar.Num()) return;
+
+	const FAoCSpellBarSlot& Slot = SpellBar[SlotIndex];
+	if (Slot.SpellID.IsNone() || Slot.bOnCooldown) return;
+
+	ExecuteSpell(Slot.SpellID);
+}
+
+float UAoCSpellCastingComponent::GetCooldownFraction(int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= SpellBar.Num()) return 0.f;
+	const FAoCSpellBarSlot& Slot = SpellBar[SlotIndex];
+	if (!Slot.bOnCooldown || Slot.CooldownTotal <= 0.f) return 0.f;
+	return FMath::Clamp(Slot.CooldownRemaining / Slot.CooldownTotal, 0.f, 1.f);
+}
+
+// ─── Targeting ──────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::SetTarget(AActor* NewTarget)
+{
+	CurrentTarget = NewTarget;
+	if (NewTarget)
+	{
+		TargetLocation = NewTarget->GetActorLocation();
+	}
+}
+
+void UAoCSpellCastingComponent::SetTargetLocation(FVector NewLocation)
+{
+	TargetLocation = NewLocation;
+}
+
+// ─── Can cast check ─────────────────────────────────────────────────────────
+
+bool UAoCSpellCastingComponent::CanCastSpell(FName SpellID) const
+{
+	if (bIsCasting || bIsChanneling) return false;
+
+	FAoCSpellInfo* Info = UAoCSpellDatabase::FindSpell(SpellID);
+	if (!Info) return false;
+
+	if (CurrentMana < Info->ManaCost) return false;
+
+	// Check cooldown
+	for (const FAoCSpellBarSlot& Slot : SpellBar)
+	{
+		if (Slot.SpellID == SpellID && Slot.bOnCooldown)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("AoCSpellCasting: Spell ID '%s' not found in DataTable."), *SpellID.ToString());
 			return false;
 		}
 	}
 
-	SpellSlots[SlotIndex].SpellID = SpellID;
+	// Check target requirement
+	if (Info->bRequiresTarget && !CurrentTarget)
+	{
+		return false;
+	}
+
 	return true;
 }
 
-void UAoCSpellCastingComponent::UnequipSpell(int32 SlotIndex)
-{
-	if (SlotIndex < 0 || SlotIndex >= MaxSpellSlots)
-	{
-		return;
-	}
-
-	SpellSlots[SlotIndex].SpellID = NAME_None;
-	SpellSlots[SlotIndex].Icon = nullptr;
-}
-
-void UAoCSpellCastingComponent::SwapSlots(int32 SlotA, int32 SlotB)
-{
-	if (SlotA < 0 || SlotA >= MaxSpellSlots || SlotB < 0 || SlotB >= MaxSpellSlots)
-	{
-		return;
-	}
-
-	FAoCSpellSlot Temp = SpellSlots[SlotA];
-	SpellSlots[SlotA] = SpellSlots[SlotB];
-	SpellSlots[SlotB] = Temp;
-}
-
-void UAoCSpellCastingComponent::CastSpell(int32 SlotIndex)
-{
-	if (SlotIndex < 0 || SlotIndex >= MaxSpellSlots)
-	{
-		OnSpellFailed.Broadcast(SlotIndex, TEXT("Invalid slot index."));
-		return;
-	}
-
-	const FName& SpellID = SpellSlots[SlotIndex].SpellID;
-	if (SpellID.IsNone())
-	{
-		OnSpellFailed.Broadcast(SlotIndex, TEXT("No spell equipped in this slot."));
-		return;
-	}
-
-	// Check global cooldown
-	if (GlobalCooldownRemaining > 0.0f)
-	{
-		OnSpellFailed.Broadcast(SlotIndex, TEXT("Global cooldown active."));
-		return;
-	}
-
-	// Check per-spell cooldown
-	if (const float* Remaining = CooldownMap.Find(SpellID))
-	{
-		if (*Remaining > 0.0f)
-		{
-			OnSpellFailed.Broadcast(SlotIndex, FString::Printf(TEXT("Spell on cooldown (%.1fs remaining)."), *Remaining));
-			return;
-		}
-	}
-
-	// Already casting?
-	if (bIsCasting)
-	{
-		OnSpellFailed.Broadcast(SlotIndex, TEXT("Already casting a spell."));
-		return;
-	}
-
-	// Look up spell data from DataTable for mana cost and cast time
-	float ManaCost = 0.0f;
-	float CastTime = 0.0f;
-	float Cooldown = 1.0f;
-
-	if (SpellDataTable)
-	{
-		// We access the row generically; in production the struct would be FAoCSpellDataRow
-		// For now we read known column names via the struct.
-		FTableRowBase* RowBase = SpellDataTable->FindRow<FTableRowBase>(SpellID, TEXT("CastSpell"));
-		if (RowBase)
-		{
-			// Spell data fields would be accessed through the concrete struct type:
-			// FAoCSpellDataRow* SpellData = static_cast<FAoCSpellDataRow*>(RowBase);
-			// ManaCost = SpellData->ManaCost;
-			// CastTime = SpellData->CastTime;
-			// Cooldown = SpellData->Cooldown;
-		}
-	}
-
-	// Check mana
-	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
-	if (ASI)
-	{
-		UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
-		if (ASC)
-		{
-			bool bFound = false;
-			float CurrentMana = ASC->GetGameplayAttributeValue(
-				FGameplayAttribute(FindFieldChecked<FProperty>(
-					ASC->GetOwner()->GetClass(), FName(TEXT("Mana"))
-				)), bFound);
-
-			// Simplified mana check using attribute set directly
-		}
-	}
-
-	// Begin cast
-	if (CastTime <= 0.0f)
-	{
-		// Instant cast
-		ExecuteSpell(SpellID);
-		CooldownMap.Add(SpellID, Cooldown);
-		StartGlobalCooldown();
-		OnSpellCast.Broadcast(SlotIndex, SpellID);
-	}
-	else
-	{
-		// Channeled / cast time spell
-		bIsCasting = true;
-		CurrentCastSlot = SlotIndex;
-		CurrentCastSpellID = SpellID;
-		CastTimeElapsed = 0.0f;
-		CastTimeTotal = CastTime;
-	}
-}
-
-void UAoCSpellCastingComponent::InterruptCast()
-{
-	if (!bIsCasting)
-	{
-		return;
-	}
-
-	bIsCasting = false;
-	CurrentCastSlot = -1;
-	CurrentCastSpellID = NAME_None;
-	CastTimeElapsed = 0.0f;
-	CastTimeTotal = 0.0f;
-
-	OnCastInterrupted.Broadcast();
-}
-
-float UAoCSpellCastingComponent::GetCooldownRemaining(FName SpellID) const
-{
-	if (const float* Remaining = CooldownMap.Find(SpellID))
-	{
-		return FMath::Max(0.0f, *Remaining);
-	}
-	return 0.0f;
-}
-
-void UAoCSpellCastingComponent::FinishCast()
-{
-	if (!bIsCasting)
-	{
-		return;
-	}
-
-	FName SpellID = CurrentCastSpellID;
-	int32 SlotIndex = CurrentCastSlot;
-
-	bIsCasting = false;
-	CurrentCastSlot = -1;
-	CurrentCastSpellID = NAME_None;
-	CastTimeElapsed = 0.0f;
-	CastTimeTotal = 0.0f;
-
-	ExecuteSpell(SpellID);
-
-	// Set cooldown (would come from DataTable)
-	float Cooldown = 1.0f;
-	CooldownMap.Add(SpellID, Cooldown);
-	StartGlobalCooldown();
-
-	OnSpellCast.Broadcast(SlotIndex, SpellID);
-}
+// ─── Main execute entry point ───────────────────────────────────────────────
 
 void UAoCSpellCastingComponent::ExecuteSpell(FName SpellID)
 {
-	// In a full implementation, this reads the spell type from the DataTable
-	// and dispatches to the appropriate handler (projectile, AOE, instant, buff, etc.)
-	UE_LOG(LogTemp, Log, TEXT("AoCSpellCasting: Executing spell '%s'."), *SpellID.ToString());
-}
-
-AAoCProjectile* UAoCSpellCastingComponent::SpawnProjectile(TSubclassOf<AAoCProjectile> ProjectileClass, FVector SpawnLocation, FRotator SpawnRotation)
-{
-	if (!ProjectileClass || !GetWorld())
+	if (!CanCastSpell(SpellID))
 	{
-		return nullptr;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetOwner();
-	SpawnParams.Instigator = Cast<APawn>(GetOwner());
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AAoCProjectile* Projectile = GetWorld()->SpawnActor<AAoCProjectile>(
-		ProjectileClass,
-		SpawnLocation,
-		SpawnRotation,
-		SpawnParams
-	);
-
-	return Projectile;
-}
-
-void UAoCSpellCastingComponent::ApplyAOE(FVector Origin, float Radius, TSubclassOf<UGameplayEffect> EffectClass)
-{
-	if (!EffectClass || !GetWorld())
-	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot cast spell: %s"), *SpellID.ToString());
 		return;
 	}
 
-	TArray<FOverlapResult> Overlaps;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(GetOwner());
+	FAoCSpellInfo* InfoPtr = UAoCSpellDatabase::FindSpell(SpellID);
+	if (!InfoPtr) return;
 
-	GetWorld()->OverlapMultiByChannel(
-		Overlaps,
-		Origin,
-		FQuat::Identity,
-		ECC_Pawn,
-		FCollisionShape::MakeSphere(Radius),
-		Params
-	);
+	FAoCSpellInfo Info = *InfoPtr;
 
-	for (const FOverlapResult& Overlap : Overlaps)
+	// Deduct mana
+	CurrentMana = FMath::Max(0.f, CurrentMana - Info.ManaCost);
+
+	// Start cooldown
+	StartCooldown(SpellID, Info.Cooldown);
+
+	// If spell has a cast time, begin casting; otherwise execute immediately
+	if (Info.CastTime > 0.f)
 	{
-		AActor* HitActor = Overlap.GetActor();
-		if (!HitActor)
+		bIsCasting = true;
+		CurrentCastSpellID = SpellID;
+		CastTimeRemaining = Info.CastTime;
+		PendingSpell = Info;
+
+		// Cast VFX
+		if (VFXManager)
 		{
-			continue;
+			VFXManager->SpawnCastEffect(Info.School);
 		}
 
-		IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(HitActor);
-		if (!TargetASI)
-		{
-			continue;
-		}
+		UE_LOG(LogTemp, Log, TEXT("Casting %s (%.1fs)..."), *Info.DisplayName, Info.CastTime);
+		return;
+	}
 
-		UAbilitySystemComponent* TargetASC = TargetASI->GetAbilitySystemComponent();
-		if (!TargetASC)
-		{
-			continue;
-		}
+	// Instant cast — dispatch immediately
+	switch (Info.Type)
+	{
+	case EAoCSpellType::Projectile: ExecuteProjectileSpell(Info); break;
+	case EAoCSpellType::AOE:        ExecuteAOESpell(Info);       break;
+	case EAoCSpellType::Instant:    ExecuteInstantSpell(Info);   break;
+	case EAoCSpellType::Buff:       ExecuteBuffSpell(Info);      break;
+	case EAoCSpellType::DOT:        ExecuteDOTSpell(Info);       break;
+	case EAoCSpellType::Channeled:  ExecuteChanneledSpell(Info); break;
+	case EAoCSpellType::Beam:       ExecuteBeamSpell(Info);      break;
+	case EAoCSpellType::Shield:     ExecuteShieldSpell(Info);    break;
+	case EAoCSpellType::Summon:     ExecuteSummonSpell(Info);    break;
+	case EAoCSpellType::Self:
+		if (Info.BaseDamage > 0.f)
+			ExecuteHealSpell(Info);
+		else
+			ExecuteBuffSpell(Info);
+		break;
+	default: break;
+	}
+}
 
-		// Apply the gameplay effect to each target in the AOE
-		IAbilitySystemInterface* OwnerASI = Cast<IAbilitySystemInterface>(GetOwner());
-		if (OwnerASI)
+// ─── Cancel cast ────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::CancelCast()
+{
+	if (bIsCasting)
+	{
+		bIsCasting = false;
+		CastTimeRemaining = 0.f;
+		CurrentCastSpellID = NAME_None;
+		UE_LOG(LogTemp, Log, TEXT("Cast cancelled."));
+	}
+
+	if (bIsChanneling)
+	{
+		bIsChanneling = false;
+		ChannelTimeRemaining = 0.f;
+		ChannelTickAccumulator = 0.f;
+		UE_LOG(LogTemp, Log, TEXT("Channel cancelled."));
+	}
+}
+
+// ─── Update loops ───────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::UpdateCooldowns(float DeltaTime)
+{
+	for (FAoCSpellBarSlot& Slot : SpellBar)
+	{
+		if (Slot.bOnCooldown)
 		{
-			UAbilitySystemComponent* OwnerASC = OwnerASI->GetAbilitySystemComponent();
-			if (OwnerASC)
+			Slot.CooldownRemaining -= DeltaTime;
+			if (Slot.CooldownRemaining <= 0.f)
 			{
-				FGameplayEffectContextHandle Context = OwnerASC->MakeEffectContext();
-				Context.AddSourceObject(GetOwner());
+				Slot.CooldownRemaining = 0.f;
+				Slot.bOnCooldown = false;
+			}
+		}
+	}
+}
 
-				FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EffectClass, 1.0f, Context);
-				if (SpecHandle.IsValid())
+void UAoCSpellCastingComponent::UpdateManaRegen(float DeltaTime)
+{
+	if (CurrentMana < MaxMana)
+	{
+		CurrentMana = FMath::Min(MaxMana, CurrentMana + ManaRegenRate * DeltaTime);
+	}
+}
+
+void UAoCSpellCastingComponent::UpdateCasting(float DeltaTime)
+{
+	if (!bIsCasting) return;
+
+	CastTimeRemaining -= DeltaTime;
+	if (CastTimeRemaining <= 0.f)
+	{
+		bIsCasting = false;
+		CastTimeRemaining = 0.f;
+		CurrentCastSpellID = NAME_None;
+
+		// Cast complete — dispatch the spell
+		UE_LOG(LogTemp, Log, TEXT("Cast complete: %s"), *PendingSpell.DisplayName);
+
+		// Dispatch by type
+		switch (PendingSpell.Type)
+		{
+		case EAoCSpellType::Projectile: ExecuteProjectileSpell(PendingSpell); break;
+		case EAoCSpellType::AOE:        ExecuteAOESpell(PendingSpell);       break;
+		case EAoCSpellType::Instant:    ExecuteInstantSpell(PendingSpell);   break;
+		case EAoCSpellType::Buff:       ExecuteBuffSpell(PendingSpell);      break;
+		case EAoCSpellType::DOT:        ExecuteDOTSpell(PendingSpell);       break;
+		case EAoCSpellType::Channeled:  ExecuteChanneledSpell(PendingSpell); break;
+		case EAoCSpellType::Beam:       ExecuteBeamSpell(PendingSpell);      break;
+		case EAoCSpellType::Shield:     ExecuteShieldSpell(PendingSpell);    break;
+		case EAoCSpellType::Summon:     ExecuteSummonSpell(PendingSpell);    break;
+		case EAoCSpellType::Self:
+			// Self spells may heal or buff
+			if (PendingSpell.BaseDamage > 0.f)
+				ExecuteHealSpell(PendingSpell);
+			else
+				ExecuteBuffSpell(PendingSpell);
+			break;
+		default: break;
+		}
+	}
+}
+
+void UAoCSpellCastingComponent::UpdateChanneling(float DeltaTime)
+{
+	if (!bIsChanneling) return;
+
+	ChannelTimeRemaining -= DeltaTime;
+	ChannelTickAccumulator += DeltaTime;
+
+	// Apply damage/heal every tick interval
+	if (ChannelTickAccumulator >= ChannelTickInterval)
+	{
+		ChannelTickAccumulator -= ChannelTickInterval;
+
+		if (CurrentTarget)
+		{
+			ApplySpellDamage(CurrentTarget, ActiveChannelSpell.BaseDamage, ActiveChannelSpell);
+
+			// Beam VFX refresh
+			if (VFXManager && ActiveChannelSpell.Type == EAoCSpellType::Beam)
+			{
+				AActor* Owner = GetOwner();
+				if (Owner)
 				{
-					OwnerASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+					VFXManager->SpawnBeamEffect(ActiveChannelSpell.School,
+						Owner->GetActorLocation() + FVector(0.f, 0.f, 60.f),
+						CurrentTarget->GetActorLocation());
 				}
 			}
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("AoCSpellCasting: Applied AOE at %s, radius %.0f, hit %d actors."),
-		*Origin.ToString(), Radius, Overlaps.Num());
-}
-
-void UAoCSpellCastingComponent::StartGlobalCooldown()
-{
-	GlobalCooldownRemaining = GlobalCooldownDuration;
-}
-
-void UAoCSpellCastingComponent::TickCooldowns(float DeltaTime)
-{
-	// Tick global cooldown
-	if (GlobalCooldownRemaining > 0.0f)
+	if (ChannelTimeRemaining <= 0.f)
 	{
-		GlobalCooldownRemaining = FMath::Max(0.0f, GlobalCooldownRemaining - DeltaTime);
+		bIsChanneling = false;
+		ChannelTimeRemaining = 0.f;
+		ChannelTickAccumulator = 0.f;
+		UE_LOG(LogTemp, Log, TEXT("Channel complete: %s"), *ActiveChannelSpell.DisplayName);
 	}
+}
 
-	// Tick per-spell cooldowns
-	TArray<FName> ExpiredKeys;
-	for (auto& Pair : CooldownMap)
+// ─── Cooldown ───────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::StartCooldown(FName SpellID, float CooldownDuration)
+{
+	for (FAoCSpellBarSlot& Slot : SpellBar)
 	{
-		Pair.Value -= DeltaTime;
-		if (Pair.Value <= 0.0f)
+		if (Slot.SpellID == SpellID)
 		{
-			ExpiredKeys.Add(Pair.Key);
+			Slot.CooldownTotal = CooldownDuration;
+			Slot.CooldownRemaining = CooldownDuration;
+			Slot.bOnCooldown = true;
+		}
+	}
+}
+
+// ─── Damage helper ──────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ApplySpellDamage(AActor* Target, float DamageAmount,
+                                                  const FAoCSpellInfo& Info)
+{
+	if (!Target || DamageAmount <= 0.f) return;
+
+	AActor* Owner = GetOwner();
+	AController* InstigatorController = nullptr;
+
+	if (Owner)
+	{
+		APawn* Pawn = Cast<APawn>(Owner);
+		if (Pawn)
+		{
+			InstigatorController = Pawn->GetController();
 		}
 	}
 
-	for (const FName& Key : ExpiredKeys)
+	UGameplayStatics::ApplyDamage(
+		Target,
+		DamageAmount,
+		InstigatorController,
+		Owner,
+		nullptr // default damage type
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] dealt %.1f damage to %s"),
+		*Info.DisplayName, DamageAmount, *Target->GetName());
+}
+
+// ─── Projectile ─────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteProjectileSpell(const FAoCSpellInfo& Info)
+{
+	AActor* Owner = GetOwner();
+	UWorld* World = GetWorld();
+	if (!Owner || !World) return;
+
+	FVector SpawnLoc = Owner->GetActorLocation() + Owner->GetActorForwardVector() * 100.f + FVector(0.f, 0.f, 60.f);
+	FRotator SpawnRot = Owner->GetActorRotation();
+
+	// Aim at target if we have one
+	if (CurrentTarget)
 	{
-		CooldownMap.Remove(Key);
+		FVector Dir = (CurrentTarget->GetActorLocation() - SpawnLoc).GetSafeNormal();
+		SpawnRot = Dir.Rotation();
 	}
+
+	for (int32 i = 0; i < Info.NumberOfProjectiles; ++i)
+	{
+		FRotator ProjRot = SpawnRot;
+		if (Info.NumberOfProjectiles > 1)
+		{
+			// Spread multi-projectiles in a fan
+			float SpreadAngle = 10.f;
+			float TotalSpread = SpreadAngle * (Info.NumberOfProjectiles - 1);
+			float Offset = -TotalSpread * 0.5f + SpreadAngle * i;
+			ProjRot.Yaw += Offset;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = Owner;
+		SpawnParams.Instigator = Cast<APawn>(Owner);
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AAoCProjectile* Projectile = World->SpawnActor<AAoCProjectile>(
+			AAoCProjectile::StaticClass(), SpawnLoc, ProjRot, SpawnParams);
+
+		if (Projectile)
+		{
+			Projectile->InitializeProjectile(Info, Owner);
+
+			// VFX
+			if (VFXManager)
+			{
+				VFXManager->SpawnProjectileVFX(Info.School, Projectile);
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Fired %d projectile(s): %s"), Info.NumberOfProjectiles, *Info.DisplayName);
+}
+
+// ─── AOE ────────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteAOESpell(const FAoCSpellInfo& Info)
+{
+	UWorld* World = GetWorld();
+	AActor* Owner = GetOwner();
+	if (!World || !Owner) return;
+
+	FVector Center = TargetLocation;
+	if (CurrentTarget)
+	{
+		Center = CurrentTarget->GetActorLocation();
+	}
+
+	// Find all actors in radius and apply damage
+	TArray<FHitResult> HitResults;
+	FCollisionShape Shape = FCollisionShape::MakeSphere(Info.Radius);
+	bool bHit = World->SweepMultiByChannel(
+		HitResults,
+		Center,
+		Center + FVector(0.f, 0.f, 1.f),
+		FQuat::Identity,
+		ECC_Pawn,
+		Shape
+	);
+
+	if (bHit)
+	{
+		TSet<AActor*> AlreadyHit;
+		for (const FHitResult& Hit : HitResults)
+		{
+			AActor* HitActor = Hit.GetActor();
+			if (HitActor && HitActor != Owner && !AlreadyHit.Contains(HitActor))
+			{
+				AlreadyHit.Add(HitActor);
+				ApplySpellDamage(HitActor, Info.BaseDamage, Info);
+			}
+		}
+	}
+
+	// VFX
+	if (VFXManager)
+	{
+		VFXManager->SpawnAOEEffect(Info.School, Center, Info.Radius, Info.Duration > 0.f ? Info.Duration : 3.f);
+	}
+
+	// Sound
+	UGameplayStatics::PlaySoundAtLocation(World, nullptr, Center, 1.f, 1.f);
+
+	UE_LOG(LogTemp, Log, TEXT("AOE %s at (%.0f, %.0f, %.0f) radius %.0f"),
+		*Info.DisplayName, Center.X, Center.Y, Center.Z, Info.Radius);
+}
+
+// ─── Instant ────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteInstantSpell(const FAoCSpellInfo& Info)
+{
+	if (CurrentTarget)
+	{
+		ApplySpellDamage(CurrentTarget, Info.BaseDamage, Info);
+
+		if (VFXManager)
+		{
+			VFXManager->SpawnImpactEffect(Info.School, CurrentTarget->GetActorLocation(), FVector::UpVector);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Instant spell: %s"), *Info.DisplayName);
+}
+
+// ─── Buff ───────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteBuffSpell(const FAoCSpellInfo& Info)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	// Buff target is self or current target
+	AActor* BuffTarget = Info.bRequiresTarget ? CurrentTarget : Owner;
+	if (!BuffTarget) BuffTarget = Owner;
+
+	// VFX
+	if (VFXManager)
+	{
+		VFXManager->SpawnShieldEffect(Info.School, BuffTarget);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Buff applied: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
+
+	// NOTE: Actual stat modifications would be applied here via a buff system.
+	// For now we log and show VFX. Game-specific buff logic should be added
+	// to a dedicated buff manager component.
+}
+
+// ─── DOT ────────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteDOTSpell(const FAoCSpellInfo& Info)
+{
+	if (!CurrentTarget) return;
+
+	// DOT is implemented as a short channel on the target
+	// Each tick applies Info.BaseDamage
+	bIsChanneling = true;
+	ChannelTimeRemaining = Info.Duration;
+	ChannelTickInterval = 2.0f; // tick every 2 seconds
+	ChannelTickAccumulator = 0.f;
+	ActiveChannelSpell = Info;
+
+	if (VFXManager)
+	{
+		VFXManager->SpawnImpactEffect(Info.School, CurrentTarget->GetActorLocation(), FVector::UpVector);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("DOT applied: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
+}
+
+// ─── Channeled ──────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteChanneledSpell(const FAoCSpellInfo& Info)
+{
+	bIsChanneling = true;
+	ChannelTimeRemaining = Info.Duration;
+	ChannelTickInterval = 0.5f;
+	ChannelTickAccumulator = 0.f;
+	ActiveChannelSpell = Info;
+
+	if (VFXManager)
+	{
+		VFXManager->SpawnCastEffect(Info.School);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Channeling: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
+}
+
+// ─── Beam ───────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteBeamSpell(const FAoCSpellInfo& Info)
+{
+	if (!CurrentTarget) return;
+
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	bIsChanneling = true;
+	ChannelTimeRemaining = Info.Duration;
+	ChannelTickInterval = 0.3f;
+	ChannelTickAccumulator = 0.f;
+	ActiveChannelSpell = Info;
+
+	// Initial beam VFX
+	if (VFXManager)
+	{
+		VFXManager->SpawnBeamEffect(Info.School,
+			Owner->GetActorLocation() + FVector(0.f, 0.f, 60.f),
+			CurrentTarget->GetActorLocation());
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Beam: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
+}
+
+// ─── Shield ─────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteShieldSpell(const FAoCSpellInfo& Info)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	AActor* ShieldTarget = Info.bRequiresTarget ? CurrentTarget : Owner;
+	if (!ShieldTarget) ShieldTarget = Owner;
+
+	if (VFXManager)
+	{
+		VFXManager->SpawnShieldEffect(Info.School, ShieldTarget);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Shield: %s for %.1f seconds"), *Info.DisplayName, Info.Duration);
+
+	// NOTE: Actual damage absorption logic would be implemented in a shield
+	// subsystem. The VFX is shown here; gameplay shield HP tracking is
+	// game-specific and should be wired into the character's health component.
+}
+
+// ─── Heal ───────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteHealSpell(const FAoCSpellInfo& Info)
+{
+	AActor* HealTarget = Info.bRequiresTarget ? CurrentTarget : GetOwner();
+	if (!HealTarget) HealTarget = GetOwner();
+	if (!HealTarget) return;
+
+	// Apply negative damage (healing) — games often override TakeDamage for this.
+	// Here we log the heal. A real implementation would call a health component.
+	UE_LOG(LogTemp, Log, TEXT("Healed %s for %.1f HP with %s"),
+		*HealTarget->GetName(), Info.BaseDamage, *Info.DisplayName);
+
+	if (VFXManager)
+	{
+		VFXManager->SpawnImpactEffect(Info.School, HealTarget->GetActorLocation(), FVector::UpVector);
+	}
+}
+
+// ─── Summon ─────────────────────────────────────────────────────────────────
+
+void UAoCSpellCastingComponent::ExecuteSummonSpell(const FAoCSpellInfo& Info)
+{
+	AActor* Owner = GetOwner();
+	UWorld* World = GetWorld();
+	if (!Owner || !World) return;
+
+	// Spawn location in front of caster
+	FVector SpawnLoc = Owner->GetActorLocation() + Owner->GetActorForwardVector() * 200.f;
+
+	// Spawn a generic actor placeholder — the summon's actual class should be
+	// looked up from a summon registry. For now we spawn VFX at the location.
+	if (VFXManager)
+	{
+		VFXManager->SpawnAOEEffect(Info.School, SpawnLoc, 150.f, Info.Duration);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Summoned: %s for %.1f seconds at (%.0f, %.0f, %.0f)"),
+		*Info.DisplayName, Info.Duration, SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
+
+	// NOTE: Real summon implementation would spawn a specific AI-controlled pawn
+	// based on the spell ID and set its lifetime to Info.Duration.
 }

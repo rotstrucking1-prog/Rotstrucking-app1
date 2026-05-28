@@ -1,1 +1,900 @@
-{"path": "C:\\Users\\Bradh\\Documents\\Unreal Projects\\AOC\\Source\\AOC\\AI\\AoCHumanoidNPCV2.cpp", "content": "// AoCHumanoidNPCV2.cpp\n// Master humanoid NPC character \u2014 wires all systems together\n// Full implementation with LOD-aware ticking, initialization, death, respawn, save/load\n\n#include \"AoCHumanoidNPCV2.h\"\n#include \"AoCNPCRelationship.h\"\n#include \"AoCAILODManager.h\"\n#include \"AoCNPCNeedSystem.h\"\n#include \"AoCNPCMemory.h\"\n#include \"AoCNPCInventory.h\"\n#include \"AoCNPCGoalPlanner.h\"\n#include \"AoCNPCPersonality.h\"\n#include \"AoCNPCBrainV2.h\"\n#include \"AoCNPCSkillSystem.h\"\n#include \"AoCNPCCombatBrain.h\"\n#include \"AoCNPCLootBrain.h\"\n#include \"AoCNPCSocialBrain.h\"\n#include \"AoCNPCLifeBrain.h\"\n#include \"AoCNPCTaskGovernor.h\"\n#include \"AoCNPCSpeech.h\"\n#include \"Components/CapsuleComponent.h\"\n#include \"GameFramework/CharacterMovementComponent.h\"\n#include \"Engine/World.h\"\n\n\n// ---------------------------------------------------------------------------\n// Name tables for random name generation\n// ---------------------------------------------------------------------------\nnamespace\n{\n\tconst TArray<FString> FirstNames = {\n\t\tTEXT(\"Aldric\"), TEXT(\"Brynn\"), TEXT(\"Cassian\"), TEXT(\"Dara\"), TEXT(\"Elowen\"),\n\t\tTEXT(\"Fynn\"), TEXT(\"Greta\"), TEXT(\"Haldor\"), TEXT(\"Isara\"), TEXT(\"Joren\"),\n\t\tTEXT(\"Kael\"), TEXT(\"Lyra\"), TEXT(\"Marek\"), TEXT(\"Nessa\"), TEXT(\"Orin\"),\n\t\tTEXT(\"Petra\"), TEXT(\"Quinn\"), TEXT(\"Riven\"), TEXT(\"Seren\"), TEXT(\"Thane\"),\n\t\tTEXT(\"Uma\"), TEXT(\"Voren\"), TEXT(\"Wren\"), TEXT(\"Xara\"), TEXT(\"Yorick\"),\n\t\tTEXT(\"Zara\"), TEXT(\"Agna\"), TEXT(\"Bjorn\"), TEXT(\"Cerise\"), TEXT(\"Dagny\"),\n\t\tTEXT(\"Erwin\"), TEXT(\"Freya\"), TEXT(\"Gareth\"), TEXT(\"Helga\"), TEXT(\"Ivar\"),\n\t\tTEXT(\"Jorun\"), TEXT(\"Kirsa\"), TEXT(\"Leif\"), TEXT(\"Maren\"), TEXT(\"Njord\"),\n\t\tTEXT(\"Olga\"), TEXT(\"Pax\"), TEXT(\"Ragna\"), TEXT(\"Sigrid\"), TEXT(\"Torben\"),\n\t\tTEXT(\"Ulf\"), TEXT(\"Viggo\"), TEXT(\"Wynne\"), TEXT(\"Ylva\"), TEXT(\"Zephyr\")\n\t};\n\n\tconst TArray<FString> LastNames = {\n\t\tTEXT(\"Ironforge\"), TEXT(\"Stormwind\"), TEXT(\"Blackthorn\"), TEXT(\"Ashborne\"), TEXT(\"Wolfsbane\"),\n\t\tTEXT(\"Greymane\"), TEXT(\"Sunward\"), TEXT(\"Darkhollow\"), TEXT(\"Stoneheart\"), TEXT(\"Brightmoor\"),\n\t\tTEXT(\"Redmane\"), TEXT(\"Frostpeak\"), TEXT(\"Shadowmend\"), TEXT(\"Copperfield\"), TEXT(\"Thornwall\"),\n\t\tTEXT(\"Deepwell\"), TEXT(\"Hawkridge\"), TEXT(\"Silverbrook\"), TEXT(\"Dunmore\"), TEXT(\"Fernwick\"),\n\t\tTEXT(\"Goldvein\"), TEXT(\"Hearthstone\"), TEXT(\"Ironwood\"), TEXT(\"Ravencrest\"), TEXT(\"Winterborn\"),\n\t\tTEXT(\"Firebrand\"), TEXT(\"Duskwarden\"), TEXT(\"Clearwater\"), TEXT(\"Mossglen\"), TEXT(\"Nighthollow\"),\n\t\tTEXT(\"Oakshield\"), TEXT(\"Pinecrest\"), TEXT(\"Quarrydale\"), TEXT(\"Rimecroft\"), TEXT(\"Swiftblade\"),\n\t\tTEXT(\"Tallowmere\"), TEXT(\"Underhill\"), TEXT(\"Valewood\"), TEXT(\"Windrift\"), TEXT(\"Yewstone\")\n\t};\n}\n\n// ---------------------------------------------------------------------------\n// Constructor\n// ---------------------------------------------------------------------------\n\nAoCHumanoidNPCV2::AoCHumanoidNPCV2()\n{\n\tPrimaryActorTick.bCanEverTick = true;\n\tPrimaryActorTick.TickInterval = 0.0f; // Tick every frame (LOD will throttle)\n\n\t// Create existing components\n\tNeedSystem = CreateDefaultSubobject<UAoCNPCNeedSystem>(TEXT(\"NeedSystem\"));\n\tMemory = CreateDefaultSubobject<UAoCNPCMemory>(TEXT(\"Memory\"));\n\tInventory = CreateDefaultSubobject<UAoCNPCInventory>(TEXT(\"Inventory\"));\n\tGoalPlanner = CreateDefaultSubobject<UAoCNPCGoalPlanner>(TEXT(\"GoalPlanner\"));\n\tPersonality = CreateDefaultSubobject<UAoCNPCPersonality>(TEXT(\"Personality\"));\n\tBrain = CreateDefaultSubobject<UAoCNPCBrainV2>(TEXT(\"Brain\"));\n\n\t// Create new components\n\tSkills = CreateDefaultSubobject<UAoCNPCSkillSystem>(TEXT(\"Skills\"));\n\tCombatBrain = CreateDefaultSubobject<UAoCNPCCombatBrain>(TEXT(\"CombatBrain\"));\n\tLootBrain = CreateDefaultSubobject<UAoCNPCLootBrain>(TEXT(\"LootBrain\"));\n\tSocialBrain = CreateDefaultSubobject<UAoCNPCSocialBrain>(TEXT(\"SocialBrain\"));\n\tLifeBrain = CreateDefaultSubobject<UAoCNPCLifeBrain>(TEXT(\"LifeBrain\"));\n\n\t// v18 FIX: Create the 3 missing components that Oracle and all NPCs need\n\tTaskGovernor = CreateDefaultSubobject<UAoCNPCTaskGovernor>(TEXT(\"TaskGovernor\"));\n\tSpeech = CreateDefaultSubobject<UAoCNPCSpeech>(TEXT(\"Speech\"));\n\tRelationships = CreateDefaultSubobject<UAoCNPCRelationship>(TEXT(\"Relationships\"));\n\n\t// Sensible character movement defaults\n\tUCharacterMovementComponent* MoveComp = GetCharacterMovement();\n\tif (MoveComp)\n\t{\n\t\tMoveComp->MaxWalkSpeed = 450.f;\n\t\tMoveComp->MaxWalkSpeedCrouched = 200.f;\n\t\tMoveComp->bOrientRotationToMovement = true;\n\t\tMoveComp->RotationRate = FRotator(0.f, 480.f, 0.f);\n\t\tMoveComp->JumpZVelocity = 420.f;\n\t\tMoveComp->AirControl = 0.2f;\n\t}\n\n\t// Default property values\n\tbIsAggressive = false;\n\tbCanLoot = true;\n\tbCanCraft = true;\n\tbCanTrade = true;\n\tbIsEssential = false;\n\tbIsDead = false;\n\tbIsInitialized = false;\n\tRespawnDelay = 300.f; // 5 minutes\n\tCorpseLingerTime = 600.f; // 10 minutes\n\tCachedLODTier = EAILODTier::Full;\n\tArchetypePreset = EPersonalityArchetype::Villager;\n}\n\n// ---------------------------------------------------------------------------\n// BeginPlay / EndPlay\n// ---------------------------------------------------------------------------\n\nvoid AoCHumanoidNPCV2::BeginPlay()\n{\n\tSuper::BeginPlay();\n\n\tif (!bIsInitialized)\n\t{\n\t\tInitializeNPC();\n\t}\n\n\t// Register with LOD manager\n\tUWorld* World = GetWorld();\n\tif (World)\n\t{\n\t\tUAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();\n\t\tif (LODMgr)\n\t\t{\n\t\t\tLODMgr->RegisterNPC(this);\n\t\t}\n\t}\n\n\tUE_LOG(LogAoCNPC, Log, TEXT(\"NPC %s (Archetype: %d) initialized and registered.\"),\n\t\t*NPCName, static_cast<int32>(ArchetypePreset));\n}\n\nvoid AoCHumanoidNPCV2::EndPlay(const EEndPlayReason::Type EndPlayReason)\n{\n\t// Unregister from LOD manager\n\tUWorld* World = GetWorld();\n\tif (World)\n\t{\n\t\tUAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();\n\t\tif (LODMgr)\n\t\t{\n\t\t\tLODMgr->UnregisterNPC(this);\n\t\t}\n\t}\n\n\tSuper::EndPlay(EndPlayReason);\n}\n\n// ---------------------------------------------------------------------------\n// Initialization\n// ---------------------------------------------------------------------------\n\nvoid AoCHumanoidNPCV2::InitializeNPC()\n{\n\tbIsInitialized = true;\n\n\t// Generate unique ID\n\tUniqueID = FGuid::NewGuid();\n\n\t// Generate name if not set\n\tif (NPCName.IsEmpty())\n\t{\n\t\tGenerateName();\n\t}\n\n\t// Set home location if not set\n\tif (HomeLocation.IsZero())\n\t{\n\t\tHomeLocation = GetActorLocation();\n\t}\n\n\t// Initialize personality from archetype\n\t// Personality->SetArchetype(ArchetypePreset); // Existing system\n\n\t// Initialize skills from archetype (with randomization)\n\tif (Skills)\n\t{\n\t\tSkills->InitializeFromArchetype(ArchetypePreset);\n\t}\n\n\t// Initialize combat brain\n\tif (CombatBrain)\n\t{\n\t\tCombatBrain->BuildAbilityPool();\n\t\tCombatBrain->BuildRotation();\n\t}\n\n\t// Set up starting equipment\n\tif (SpawnEquipment.Num() > 0)\n\t{\n\t\tfor (const FNPCItemData& Item : SpawnEquipment)\n\t\t{\n\t\t\t// Inventory->AddToBag(Item);\n\t\t\t// if (Item.Slot != EEquipSlot::None) Inventory->EquipItem(Item);\n\t\t}\n\t}\n\telse\n\t{\n\t\t// Generate starting equipment based on archetype and skill levels\n\t\tGenerateStartingEquipment();\n\t}\n\n\t// Set aggression based on archetype\n\tswitch (ArchetypePreset)\n\t{\n\tcase EPersonalityArchetype::Bandit:\n\t\tbIsAggressive = true;\n\t\tbreak;\n\tcase EPersonalityArchetype::Guard:\n\t\tbIsAggressive = false; // Guards only attack hostiles/criminals\n\t\tbreak;\n\tdefault:\n\t\tbIsAggressive = false;\n\t\tbreak;\n\t}\n\n\tUE_LOG(LogAoCNPC, Log, TEXT(\"NPC Initialized: %s | Archetype: %d | Home: %s | Aggressive: %s\"),\n\t\t*NPCName, static_cast<int32>(ArchetypePreset),\n\t\t*HomeLocation.ToString(), bIsAggressive ? TEXT(\"YES\") : TEXT(\"NO\"));\n}\n\nvoid AoCHumanoidNPCV2::GenerateName()\n{\n\tFRandomStream NameRand;\n\tNameRand.Initialize(GetTypeHash(GetUniqueID()));\n\n\tif (FirstNames.Num() > 0 && LastNames.Num() > 0)\n\t{\n\t\tFString First = FirstNames[NameRand.RandRange(0, FirstNames.Num() - 1)];\n\t\tFString Last = LastNames[NameRand.RandRange(0, LastNames.Num() - 1)];\n\t\tNPCName = FString::Printf(TEXT(\"%s %s\"), *First, *Last);\n\t}\n\telse\n\t{\n\t\tNPCName = FString::Printf(TEXT(\"NPC_%s\"), *GetUniqueID().ToString());\n\t}\n}\n\nvoid AoCHumanoidNPCV2::GenerateStartingEquipment()\n{\n\tif (!Skills) return;\n\n\t// Generate equipment quality based on skill levels\n\t// Higher skill = better starting gear\n\n\tswitch (ArchetypePreset)\n\t{\n\tcase EPersonalityArchetype::Guard:\n\t{\n\t\tfloat SwordSkill = Skills->GetSkillLevel(ESkillID::Sword);\n\t\tfloat ShieldSkill = Skills->GetSkillLevel(ESkillID::Shield);\n\n\t\t// Sword quality based on skill\n\t\tFNPCItemData Sword;\n\t\tSword.Name = SwordSkill > 40.f ? TEXT(\"IronSword\") : TEXT(\"BronzeSword\");\n\t\tSword.Slot = EEquipSlot::MainHand;\n\t\tSword.BaseDamage = 10.f + SwordSkill * 0.5f;\n\t\tSword.Weight = 3.f;\n\t\tSword.RequiredSkill = TEXT(\"Sword\");\n\t\tSword.RequiredLevel = 1.f;\n\t\tSpawnEquipment.Add(Sword);\n\n\t\tif (ShieldSkill > 15.f)\n\t\t{\n\t\t\tFNPCItemData Shield;\n\t\t\tShield.Name = TEXT(\"WoodShield\");\n\t\t\tShield.Slot = EEquipSlot::OffHand;\n\t\t\tShield.BaseArmor = 5.f + ShieldSkill * 0.3f;\n\t\t\tShield.Weight = 5.f;\n\t\t\tSpawnEquipment.Add(Shield);\n\t\t}\n\n\t\t// Armor\n\t\tFNPCItemData Chest;\n\t\tChest.Name = SwordSkill > 40.f ? TEXT(\"ChainmailChest\") : TEXT(\"LeatherChest\");\n\t\tChest.Slot = EEquipSlot::Chest;\n\t\tChest.BaseArmor = SwordSkill > 40.f ? 25.f : 12.f;\n\t\tChest.Weight = SwordSkill > 40.f ? 15.f : 6.f;\n\t\tSpawnEquipment.Add(Chest);\n\t\tbreak;\n\t}\n\tcase EPersonalityArchetype::Bandit:\n\t{\n\t\tESkillID BestWeapon = Skills->GetBestWeaponSkill();\n\t\tfloat WeaponSkill = Skills->GetSkillLevel(BestWeapon);\n\n\t\tFNPCItemData Weapon;\n\t\tWeapon.Name = FName(*FString::Printf(TEXT(\"Crude_%s\"), *UAoCNPCSkillSystem::GetSkillName(BestWeapon).ToString()));\n\t\tWeapon.Slot = EEquipSlot::MainHand;\n\t\tWeapon.BaseDamage = 8.f + WeaponSkill * 0.4f;\n\t\tWeapon.Weight = 3.f;\n\t\tSpawnEquipment.Add(Weapon);\n\n\t\tFNPCItemData Leather;\n\t\tLeather.Name = TEXT(\"TatteredLeather\");\n\t\tLeather.Slot = EEquipSlot::Chest;\n\t\tLeather.BaseArmor = 8.f;\n\t\tLeather.Weight = 4.f;\n\t\tSpawnEquipment.Add(Leather);\n\t\tbreak;\n\t}\n\tcase EPersonalityArchetype::Mage:\n\t{\n\t\tFNPCItemData Staff;\n\t\tStaff.Name = TEXT(\"ApprenticeStaff\");\n\t\tStaff.Slot = EEquipSlot::MainHand;\n\t\tStaff.BaseDamage = 5.f;\n\t\tStaff.BonusINT = 5.f;\n\t\tStaff.BonusWIS = 3.f;\n\t\tStaff.Weight = 2.f;\n\t\tSpawnEquipment.Add(Staff);\n\n\t\tFNPCItemData Robe;\n\t\tRobe.Name = TEXT(\"MageRobe\");\n\t\tRobe.Slot = EEquipSlot::Chest;\n\t\tRobe.BaseArmor = 5.f;\n\t\tRobe.BonusINT = 3.f;\n\t\tRobe.Weight = 2.f;\n\t\tSpawnEquipment.Add(Robe);\n\t\tbreak;\n\t}\n\tcase EPersonalityArchetype::Hunter:\n\t{\n\t\tfloat BowSkill = Skills->GetSkillLevel(ESkillID::Bow);\n\n\t\tFNPCItemData Bow;\n\t\tBow.Name = BowSkill > 45.f ? TEXT(\"CompositeBow\") : TEXT(\"ShortBow\");\n\t\tBow.Slot = EEquipSlot::MainHand;\n\t\tBow.BaseDamage = 8.f + BowSkill * 0.5f;\n\t\tBow.Weight = 2.f;\n\t\tSpawnEquipment.Add(Bow);\n\n\t\tFNPCItemData Dagger;\n\t\tDagger.Name = TEXT(\"HuntingKnife\");\n\t\tDagger.Slot = EEquipSlot::OffHand;\n\t\tDagger.BaseDamage = 6.f;\n\t\tDagger.Weight = 1.f;\n\t\tSpawnEquipment.Add(Dagger);\n\n\t\tFNPCItemData Leather;\n\t\tLeather.Name = TEXT(\"HunterLeather\");\n\t\tLeather.Slot = EEquipSlot::Chest;\n\t\tLeather.BaseArmor = 10.f;\n\t\tLeather.BonusDEX = 2.f;\n\t\tLeather.Weight = 5.f;\n\t\tSpawnEquipment.Add(Leather);\n\t\tbreak;\n\t}\n\tcase EPersonalityArchetype::Merchant:\n\t{\n\t\tFNPCItemData Dagger;\n\t\tDagger.Name = TEXT(\"MerchantDagger\");\n\t\tDagger.Slot = EEquipSlot::MainHand;\n\t\tDagger.BaseDamage = 5.f;\n\t\tDagger.Weight = 1.f;\n\t\tSpawnEquipment.Add(Dagger);\n\n\t\tFNPCItemData FineClothes;\n\t\tFineClothes.Name = TEXT(\"FineClothes\");\n\t\tFineClothes.Slot = EEquipSlot::Chest;\n\t\tFineClothes.BaseArmor = 3.f;\n\t\tFineClothes.Weight = 1.f;\n\t\tSpawnEquipment.Add(FineClothes);\n\t\tbreak;\n\t}\n\tcase EPersonalityArchetype::Hermit:\n\t{\n\t\tFNPCItemData Staff;\n\t\tStaff.Name = TEXT(\"WalkingStick\");\n\t\tStaff.Slot = EEquipSlot::MainHand;\n\t\tStaff.BaseDamage = 4.f;\n\t\tStaff.Weight = 2.f;\n\t\tSpawnEquipment.Add(Staff);\n\n\t\tFNPCItemData Tunic;\n\t\tTunic.Name = TEXT(\"WornTunic\");\n\t\tTunic.Slot = EEquipSlot::Chest;\n\t\tTunic.BaseArmor = 4.f;\n\t\tTunic.Weight = 1.f;\n\t\tSpawnEquipment.Add(Tunic);\n\t\tbreak;\n\t}\n\tdefault: // Villager\n\t{\n\t\tFNPCItemData Tool;\n\t\tTool.Name = TEXT(\"Pickaxe\");\n\t\tTool.Slot = EEquipSlot::MainHand;\n\t\tTool.BaseDamage = 3.f;\n\t\tTool.Weight = 3.f;\n\t\tSpawnEquipment.Add(Tool);\n\n\t\tFNPCItemData Clothes;\n\t\tClothes.Name = TEXT(\"VillagerClothes\");\n\t\tClothes.Slot = EEquipSlot::Chest;\n\t\tClothes.BaseArmor = 2.f;\n\t\tClothes.Weight = 1.f;\n\t\tSpawnEquipment.Add(Clothes);\n\t\tbreak;\n\t}\n\t}\n\n\t// Add some consumables for everyone\n\tFNPCItemData Bread;\n\tBread.Name = TEXT(\"Bread\");\n\tBread.bIsConsumable = true;\n\tBread.Weight = 0.2f;\n\tBread.Value = 2.f;\n\tSpawnEquipment.Add(Bread);\n\tSpawnEquipment.Add(Bread);\n\tSpawnEquipment.Add(Bread);\n\n\tFNPCItemData HealthPotion;\n\tHealthPotion.Name = TEXT(\"MinorHealthPotion\");\n\tHealthPotion.bIsConsumable = true;\n\tHealthPotion.Weight = 0.3f;\n\tHealthPotion.Value = 15.f;\n\tSpawnEquipment.Add(HealthPotion);\n\n\tUE_LOG(LogAoCNPC, Log, TEXT(\"NPC %s: generated %d starting items for archetype %d\"),\n\t\t*NPCName, SpawnEquipment.Num(), static_cast<int32>(ArchetypePreset));\n}\n\n// ---------------------------------------------------------------------------\n// Master Tick\n// ---------------------------------------------------------------------------\n\nvoid AoCHumanoidNPCV2::Tick(float DeltaTime)\n{\n\tSuper::Tick(DeltaTime);\n\n\tif (bIsDead) return;\n\n\tMasterTick(DeltaTime);\n}\n\nvoid AoCHumanoidNPCV2::MasterTick(float DeltaTime)\n{\n\t// 1. Get LOD tier\n\tUWorld* World = GetWorld();\n\tif (World)\n\t{\n\t\tUAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();\n\t\tif (LODMgr)\n\t\t{\n\t\t\tCachedLODTier = LODMgr->GetLODTier(this);\n\t\t}\n\t}\n\n\t// 2. Tick based on LOD tier\n\tswitch (CachedLODTier)\n\t{\n\tcase EAILODTier::Hibernated:\n\t\t// Do almost nothing \u2014 major decisions only (every 30s handled by LOD manager stagger)\n\t\tTickHibernated(DeltaTime);\n\t\tbreak;\n\n\tcase EAILODTier::Background:\n\t\t// Data-only simulation (no mesh, no animation)\n\t\tTickBackground(DeltaTime);\n\t\tbreak;\n\n\tcase EAILODTier::Reduced:\n\t\t// Full mesh + animation, reduced perception and pathfinding\n\t\tTickReduced(DeltaTime);\n\t\tbreak;\n\n\tcase EAILODTier::Full:\n\t\t// Full simulation \u2014 everything runs\n\t\tTickFull(DeltaTime);\n\t\tbreak;\n\t}\n}\n\nvoid AoCHumanoidNPCV2::TickHibernated(float DeltaTime)\n{\n\t// Almost nothing \u2014 just keep time-based counters moving\n\tif (Skills)\n\t{\n\t\tSkills->TickPassiveGains(DeltaTime * 0.1f); // Very slow passive gains\n\t}\n}\n\nvoid AoCHumanoidNPCV2::TickBackground(float DeltaTime)\n{\n\t// Life simulation and passive skill gains \u2014 NO world queries\n\n\tif (LifeBrain)\n\t{\n\t\tLifeBrain->LifeTick(DeltaTime);\n\t}\n\n\tif (Skills)\n\t{\n\t\tSkills->TickPassiveGains(DeltaTime);\n\t}\n\n\tif (NeedSystem)\n\t{\n\t\t// NeedSystem->Tick(DeltaTime); // Needs still decay\n\t}\n}\n\nvoid AoCHumanoidNPCV2::TickReduced(float DeltaTime)\n{\n\t// Background + perception (at reduced rate) + needs + social\n\n\tTickBackground(DeltaTime);\n\n\tif (Brain)\n\t{\n\t\t// Brain->TickPerception(DeltaTime); // At reduced frequency\n\t}\n\n\tif (SocialBrain)\n\t{\n\t\tSocialBrain->SocializeTick(DeltaTime);\n\t}\n}\n\nvoid AoCHumanoidNPCV2::TickFull(float DeltaTime)\n{\n\t// Everything runs at full fidelity\n\n\t// Needs\n\tif (NeedSystem)\n\t{\n\t\t// NeedSystem->Tick(DeltaTime);\n\t}\n\n\t// Brain perception and decision\n\tif (Brain)\n\t{\n\t\t// Brain->Tick(DeltaTime);\n\t}\n\n\t// Combat (if in combat)\n\tif (CombatBrain && CombatBrain->IsInCombat())\n\t{\n\t\tCombatBrain->CombatTick(DeltaTime);\n\t}\n\n\t// Life brain (daily routine, goals)\n\tif (LifeBrain && !(CombatBrain && CombatBrain->IsInCombat()))\n\t{\n\t\tLifeBrain->LifeTick(DeltaTime);\n\t}\n\n\t// Social\n\tif (SocialBrain)\n\t{\n\t\tSocialBrain->SocializeTick(DeltaTime);\n\t}\n\n\t// Looting\n\tif (LootBrain && LootBrain->IsLooting())\n\t{\n\t\tLootBrain->LootTick(DeltaTime);\n\t}\n\n\t// Passive skill gains\n\tif (Skills)\n\t{\n\t\tSkills->TickPassiveGains(DeltaTime);\n\t}\n}\n\n// ---------------------------------------------------------------------------\n// Combat Integration\n// ---------------------------------------------------------------------------\n\nvoid AoCHumanoidNPCV2::TakeDamageFromSource(float Damage, AActor* DamageInstigator)\n{\n\tif (bIsDead) return;\n\n\t// Route to combat brain\n\tif (CombatBrain)\n\t{\n\t\tCombatBrain->OnDamageTaken(Damage, DamageInstigator);\n\n\t\t// Enter combat if not already\n\t\tif (!CombatBrain->IsInCombat() && DamageInstigator)\n\t\t{\n\t\t\tCombatBrain->EnterCombat(DamageInstigator);\n\t\t}\n\t}\n\n\t// Memory: remember attacker\n\tif (Memory)\n\t{\n\t\t// Memory->Remember(TEXT(\"Attacker\"), GetActorLocation(), Damage, DamageInstigator);\n\t}\n\n\t// Social: record being attacked\n\tif (SocialBrain && DamageInstigator)\n\t{\n\t\tAoCHumanoidNPCV2* AttackerNPC = Cast<AoCHumanoidNPCV2>(DamageInstigator);\n\t\tif (AttackerNPC)\n\t\t{\n\t\t\tSocialBrain->RecordInteraction(\n\t\t\t\tAttackerNPC->GetUniqueID(),\n\t\t\t\tAttackerNPC->GetDisplayName(),\n\t\t\t\tESocialInteraction::AttackedMe,\n\t\t\t\tDamage / 50.f // Magnitude scales with damage\n\t\t\t);\n\n\t\t\t// Alert nearby allies\n\t\t\tSocialBrain->SpreadReputation(\n\t\t\t\tAttackerNPC->GetUniqueID(),\n\t\t\t\tAttackerNPC->GetDisplayName(),\n\t\t\t\t30.f, // Hostility increase\n\t\t\t\t5000.f // 50m radius\n\t\t\t);\n\t\t}\n\t}\n}\n\n// ---------------------------------------------------------------------------\n// Death & Respawn\n// ---------------------------------------------------------------------------\n\nvoid AoCHumanoidNPCV2::OnDeath(AActor* Killer)\n{\n\tif (bIsDead) return;\n\tbIsDead = true;\n\n\tUE_LOG(LogAoCNPC, Warning, TEXT(\"NPC %s has been killed by %s!\"),\n\t\t*NPCName, Killer ? *Killer->GetName() : TEXT(\"Unknown\"));\n\n\t// Exit combat\n\tif (CombatBrain)\n\t{\n\t\tCombatBrain->ExitCombat();\n\t}\n\n\t// Drop loot as corpse\n\tDropLoot();\n\n\t// Notify social network\n\tif (SocialBrain)\n\t{\n\t\t// Notify allies that we died\n\t\tTArray<FGuid> Allies = SocialBrain->GetAllies();\n\t\tfor (const FGuid& AllyID : Allies)\n\t\t{\n\t\t\t// Find ally NPC and record \"KilledMyAlly\"\n\t\t\tif (Killer)\n\t\t\t{\n\t\t\t\tAoCHumanoidNPCV2* KillerNPC = Cast<AoCHumanoidNPCV2>(Killer);\n\t\t\t\tif (KillerNPC)\n\t\t\t\t{\n\t\t\t\t\t// This would need to look up the ally by ID and record the interaction\n\t\t\t\t\tSocialBrain->SpreadReputation(\n\t\t\t\t\t\tKillerNPC->GetUniqueID(),\n\t\t\t\t\t\tKillerNPC->GetDisplayName(),\n\t\t\t\t\t\t80.f, // Very high hostility\n\t\t\t\t\t\t8000.f // Large radius \u2014 word spreads\n\t\t\t\t\t);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\n\t// Disable collision, movement\n\tGetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);\n\tGetCharacterMovement()->DisableMovement();\n\n\t// Schedule respawn if not essential (essential NPCs always respawn)\n\tif (bIsEssential || RespawnDelay > 0.f)\n\t{\n\t\tFTimerHandle RespawnTimerHandle;\n\t\tGetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &AoCHumanoidNPCV2::OnRespawn, RespawnDelay, false);\n\t}\n}\n\nvoid AoCHumanoidNPCV2::DropLoot()\n{\n\t// In production: create a lootable corpse actor with our inventory\n\t// For now, log what would be dropped\n\tUE_LOG(LogAoCNPC, Log, TEXT(\"NPC %s dropped loot corpse at %s\"),\n\t\t*NPCName, *GetActorLocation().ToString());\n\n\t// Schedule corpse cleanup\n\tFTimerHandle CorpseTimer;\n\tGetWorldTimerManager().SetTimer(CorpseTimer, [this]()\n\t{\n\t\t// Destroy corpse after linger time\n\t\t// In production: destroy the corpse actor, not this character\n\t}, CorpseLingerTime, false);\n}\n\nvoid AoCHumanoidNPCV2::OnRespawn()\n{\n\tUE_LOG(LogAoCNPC, Log, TEXT(\"NPC %s respawning!\"), *NPCName);\n\n\tbIsDead = false;\n\n\t// Reset position to home\n\tSetActorLocation(HomeLocation);\n\n\t// Re-enable collision, movement\n\tGetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);\n\tGetCharacterMovement()->SetMovementMode(MOVE_Walking);\n\n\t// Reset HP\n\tif (CombatBrain)\n\t{\n\t\tCombatBrain->CurrentHP = CombatBrain->MaxHP;\n\t\tCombatBrain->CurrentMana = CombatBrain->MaxMana;\n\t\tCombatBrain->CurrentStamina = CombatBrain->MaxStamina;\n\t}\n\n\t// SKILLS PERSIST \u2014 they keep progression from last life\n\t// Only regenerate equipment\n\tSpawnEquipment.Reset();\n\tGenerateStartingEquipment();\n\n\t// Reset needs\n\t// NeedSystem->ResetAll();\n\n\t// Reset combat brain\n\tif (CombatBrain)\n\t{\n\t\tCombatBrain->BuildAbilityPool();\n\t\tCombatBrain->BuildRotation();\n\t}\n\n\t// Memory: remember who killed us and adapt\n\t// if (Memory) Memory->Remember(TEXT(\"Died\"), HomeLocation, 100.f, LastKiller);\n\n\t// Re-register with LOD manager\n\tUWorld* World = GetWorld();\n\tif (World)\n\t{\n\t\tUAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();\n\t\tif (LODMgr)\n\t\t{\n\t\t\tLODMgr->RegisterNPC(this);\n\t\t}\n\t}\n}\n\n// ---------------------------------------------------------------------------\n// Getters\n// ---------------------------------------------------------------------------\n\nFString AoCHumanoidNPCV2::GetDisplayName() const\n{\n\treturn NPCName;\n}\n\nint32 AoCHumanoidNPCV2::GetNPCLevel() const\n{\n\tif (!Skills) return 1;\n\n\t// Level is based on total skill points (sum of all skill levels)\n\tfloat TotalSkill = 0.f;\n\tfor (uint8 i = 0; i < static_cast<uint8>(ESkillID::MAX); ++i)\n\t{\n\t\tTotalSkill += Skills->GetSkillLevel(static_cast<ESkillID>(i));\n\t}\n\n\t// Rough level: 1 per 50 total skill points, max 100\n\treturn FMath::Clamp(FMath::FloorToInt(TotalSkill / 50.f) + 1, 1, 100);\n}\n\nfloat AoCHumanoidNPCV2::GetCombatPower() const\n{\n\tif (!Skills) return 1.f;\n\treturn Skills->GetCombatPower();\n}\n\nFGuid AoCHumanoidNPCV2::GetUniqueID() const\n{\n\treturn UniqueID;\n}\n\n// ---------------------------------------------------------------------------\n// State Serialization\n// ---------------------------------------------------------------------------\n\nFString AoCHumanoidNPCV2::SaveState() const\n{\n\t// Serialize full NPC state for server saves\n\t// In production: use a proper serialization format (JSON, FArchive, etc.)\n\n\tFString State;\n\tState += FString::Printf(TEXT(\"Name=%s\\n\"), *NPCName);\n\tState += FString::Printf(TEXT(\"ID=%s\\n\"), *UniqueID.ToString());\n\tState += FString::Printf(TEXT(\"Archetype=%d\\n\"), static_cast<int32>(ArchetypePreset));\n\tState += FString::Printf(TEXT(\"Faction=%s\\n\"), *FactionID.ToString());\n\tState += FString::Printf(TEXT(\"Position=%s\\n\"), *GetActorLocation().ToString());\n\tState += FString::Printf(TEXT(\"Home=%s\\n\"), *HomeLocation.ToString());\n\tState += FString::Printf(TEXT(\"Dead=%d\\n\"), bIsDead ? 1 : 0);\n\tState += FString::Printf(TEXT(\"Aggressive=%d\\n\"), bIsAggressive ? 1 : 0);\n\tState += FString::Printf(TEXT(\"Level=%d\\n\"), GetNPCLevel());\n\n\t// Skill system serialization\n\tif (Skills)\n\t{\n\t\tState += FString::Printf(TEXT(\"Skills=%d\\n\"), Skills->GetTopSkills(100).Num());\n\t}\n\n\t// Combat brain state\n\tif (CombatBrain)\n\t{\n\t\tState += FString::Printf(TEXT(\"HP=%.1f/%.1f\\n\"), CombatBrain->CurrentHP, CombatBrain->MaxHP);\n\t\tState += FString::Printf(TEXT(\"Mana=%.1f/%.1f\\n\"), CombatBrain->CurrentMana, CombatBrain->MaxMana);\n\t}\n\n\treturn State;\n}\n\nvoid AoCHumanoidNPCV2::LoadState(const FString& StateData)\n{\n\t// Parse state data and restore NPC\n\t// In production: proper deserialization\n\n\tTArray<FString> Lines;\n\tStateData.ParseIntoArray(Lines, TEXT(\"\\n\"));\n\n\tfor (const FString& Line : Lines)\n\t{\n\t\tFString Key, Value;\n\t\tif (Line.Split(TEXT(\"=\"), &Key, &Value))\n\t\t{\n\t\t\tif (Key == TEXT(\"Name\"))\n\t\t\t{\n\t\t\t\tNPCName = Value;\n\t\t\t}\n\t\t\telse if (Key == TEXT(\"ID\"))\n\t\t\t{\n\t\t\t\tFGuid::Parse(Value, UniqueID);\n\t\t\t}\n\t\t\telse if (Key == TEXT(\"Archetype\"))\n\t\t\t{\n\t\t\t\tArchetypePreset = static_cast<EPersonalityArchetype>(FCString::Atoi(*Value));\n\t\t\t}\n\t\t\telse if (Key == TEXT(\"Faction\"))\n\t\t\t{\n\t\t\t\tFactionID = FName(*Value);\n\t\t\t}\n\t\t\telse if (Key == TEXT(\"Dead\"))\n\t\t\t{\n\t\t\t\tbIsDead = FCString::Atoi(*Value) != 0;\n\t\t\t}\n\t\t\telse if (Key == TEXT(\"Aggressive\"))\n\t\t\t{\n\t\t\t\tbIsAggressive = FCString::Atoi(*Value) != 0;\n\t\t\t}\n\t\t}\n\t}\n\n\t// Deserialize skills\n\tif (Skills)\n\t{\n\t\t// TODO: Skills->DeserializeState needs FSkillSystemState, not FString;\n\t}\n\n\tbIsInitialized = true;\n\tUE_LOG(LogAoCNPC, Log, TEXT(\"NPC %s state loaded.\"), *NPCName);\n}\n\n// ==================== LOD Materialization ====================\n\nvoid AoCHumanoidNPCV2::OnMaterialize()\n{\n    bIsMaterialized = true;\n    \n    // Re-enable mesh and collision\n    if (USkeletalMeshComponent* MeshComp = GetMesh())\n    {\n        MeshComp->SetVisibility(true);\n        MeshComp->SetComponentTickEnabled(true);\n    }\n    SetActorEnableCollision(true);\n    SetActorTickEnabled(true);\n}\n\nvoid AoCHumanoidNPCV2::OnDematerialize()\n{\n    bIsMaterialized = false;\n    \n    // Disable mesh rendering and collision for performance\n    if (USkeletalMeshComponent* MeshComp = GetMesh())\n    {\n        MeshComp->SetVisibility(false);\n        MeshComp->SetComponentTickEnabled(false);\n    }\n    SetActorEnableCollision(false);\n    SetActorTickEnabled(false);\n}\n\n\n\n"}
+// AoCHumanoidNPCV2.cpp
+// Master humanoid NPC character — wires all systems together
+// Full implementation with LOD-aware ticking, initialization, death, respawn, save/load
+
+#include "AoCHumanoidNPCV2.h"
+#include "AoCNPCRelationship.h"
+#include "AoCAILODManager.h"
+#include "AoCNPCNeedSystem.h"
+#include "AoCNPCMemory.h"
+#include "AoCNPCInventory.h"
+#include "AoCNPCGoalPlanner.h"
+#include "AoCNPCPersonality.h"
+#include "AoCNPCBrainV2.h"
+#include "AoCNPCSkillSystem.h"
+#include "AoCNPCCombatBrain.h"
+#include "AoCNPCLootBrain.h"
+#include "AoCNPCSocialBrain.h"
+#include "AoCNPCLifeBrain.h"
+#include "AoCNPCTaskGovernor.h"
+#include "AoCNPCSpeech.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/World.h"
+
+
+// ---------------------------------------------------------------------------
+// Name tables for random name generation
+// ---------------------------------------------------------------------------
+namespace
+{
+	const TArray<FString> FirstNames = {
+		TEXT("Aldric"), TEXT("Brynn"), TEXT("Cassian"), TEXT("Dara"), TEXT("Elowen"),
+		TEXT("Fynn"), TEXT("Greta"), TEXT("Haldor"), TEXT("Isara"), TEXT("Joren"),
+		TEXT("Kael"), TEXT("Lyra"), TEXT("Marek"), TEXT("Nessa"), TEXT("Orin"),
+		TEXT("Petra"), TEXT("Quinn"), TEXT("Riven"), TEXT("Seren"), TEXT("Thane"),
+		TEXT("Uma"), TEXT("Voren"), TEXT("Wren"), TEXT("Xara"), TEXT("Yorick"),
+		TEXT("Zara"), TEXT("Agna"), TEXT("Bjorn"), TEXT("Cerise"), TEXT("Dagny"),
+		TEXT("Erwin"), TEXT("Freya"), TEXT("Gareth"), TEXT("Helga"), TEXT("Ivar"),
+		TEXT("Jorun"), TEXT("Kirsa"), TEXT("Leif"), TEXT("Maren"), TEXT("Njord"),
+		TEXT("Olga"), TEXT("Pax"), TEXT("Ragna"), TEXT("Sigrid"), TEXT("Torben"),
+		TEXT("Ulf"), TEXT("Viggo"), TEXT("Wynne"), TEXT("Ylva"), TEXT("Zephyr")
+	};
+
+	const TArray<FString> LastNames = {
+		TEXT("Ironforge"), TEXT("Stormwind"), TEXT("Blackthorn"), TEXT("Ashborne"), TEXT("Wolfsbane"),
+		TEXT("Greymane"), TEXT("Sunward"), TEXT("Darkhollow"), TEXT("Stoneheart"), TEXT("Brightmoor"),
+		TEXT("Redmane"), TEXT("Frostpeak"), TEXT("Shadowmend"), TEXT("Copperfield"), TEXT("Thornwall"),
+		TEXT("Deepwell"), TEXT("Hawkridge"), TEXT("Silverbrook"), TEXT("Dunmore"), TEXT("Fernwick"),
+		TEXT("Goldvein"), TEXT("Hearthstone"), TEXT("Ironwood"), TEXT("Ravencrest"), TEXT("Winterborn"),
+		TEXT("Firebrand"), TEXT("Duskwarden"), TEXT("Clearwater"), TEXT("Mossglen"), TEXT("Nighthollow"),
+		TEXT("Oakshield"), TEXT("Pinecrest"), TEXT("Quarrydale"), TEXT("Rimecroft"), TEXT("Swiftblade"),
+		TEXT("Tallowmere"), TEXT("Underhill"), TEXT("Valewood"), TEXT("Windrift"), TEXT("Yewstone")
+	};
+}
+
+// ---------------------------------------------------------------------------
+// Constructor
+// ---------------------------------------------------------------------------
+
+AoCHumanoidNPCV2::AoCHumanoidNPCV2()
+{
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.0f; // Tick every frame (LOD will throttle)
+
+	// Create existing components
+	NeedSystem = CreateDefaultSubobject<UAoCNPCNeedSystem>(TEXT("NeedSystem"));
+	Memory = CreateDefaultSubobject<UAoCNPCMemory>(TEXT("Memory"));
+	Inventory = CreateDefaultSubobject<UAoCNPCInventory>(TEXT("Inventory"));
+	GoalPlanner = CreateDefaultSubobject<UAoCNPCGoalPlanner>(TEXT("GoalPlanner"));
+	Personality = CreateDefaultSubobject<UAoCNPCPersonality>(TEXT("Personality"));
+	Brain = CreateDefaultSubobject<UAoCNPCBrainV2>(TEXT("Brain"));
+
+	// Create new components
+	Skills = CreateDefaultSubobject<UAoCNPCSkillSystem>(TEXT("Skills"));
+	CombatBrain = CreateDefaultSubobject<UAoCNPCCombatBrain>(TEXT("CombatBrain"));
+	LootBrain = CreateDefaultSubobject<UAoCNPCLootBrain>(TEXT("LootBrain"));
+	SocialBrain = CreateDefaultSubobject<UAoCNPCSocialBrain>(TEXT("SocialBrain"));
+	LifeBrain = CreateDefaultSubobject<UAoCNPCLifeBrain>(TEXT("LifeBrain"));
+
+	// v18 FIX: Create the 3 missing components that Oracle and all NPCs need
+	TaskGovernor = CreateDefaultSubobject<UAoCNPCTaskGovernor>(TEXT("TaskGovernor"));
+	Speech = CreateDefaultSubobject<UAoCNPCSpeech>(TEXT("Speech"));
+	Relationships = CreateDefaultSubobject<UAoCNPCRelationship>(TEXT("Relationships"));
+
+	// Sensible character movement defaults
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (MoveComp)
+	{
+		MoveComp->MaxWalkSpeed = 450.f;
+		MoveComp->MaxWalkSpeedCrouched = 200.f;
+		MoveComp->bOrientRotationToMovement = true;
+		MoveComp->RotationRate = FRotator(0.f, 480.f, 0.f);
+		MoveComp->JumpZVelocity = 420.f;
+		MoveComp->AirControl = 0.2f;
+	}
+
+	// Default property values
+	bIsAggressive = false;
+	bCanLoot = true;
+	bCanCraft = true;
+	bCanTrade = true;
+	bIsEssential = false;
+	bIsDead = false;
+	bIsInitialized = false;
+	RespawnDelay = 300.f; // 5 minutes
+	CorpseLingerTime = 600.f; // 10 minutes
+	CachedLODTier = EAILODTier::Full;
+	ArchetypePreset = EPersonalityArchetype::Villager;
+}
+
+// ---------------------------------------------------------------------------
+// BeginPlay / EndPlay
+// ---------------------------------------------------------------------------
+
+void AoCHumanoidNPCV2::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!bIsInitialized)
+	{
+		InitializeNPC();
+	}
+
+	// Register with LOD manager
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		UAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();
+		if (LODMgr)
+		{
+			LODMgr->RegisterNPC(this);
+		}
+	}
+
+	UE_LOG(LogAoCNPC, Log, TEXT("NPC %s (Archetype: %d) initialized and registered."),
+		*NPCName, static_cast<int32>(ArchetypePreset));
+}
+
+void AoCHumanoidNPCV2::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Unregister from LOD manager
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		UAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();
+		if (LODMgr)
+		{
+			LODMgr->UnregisterNPC(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+// ---------------------------------------------------------------------------
+// Initialization
+// ---------------------------------------------------------------------------
+
+void AoCHumanoidNPCV2::InitializeNPC()
+{
+	bIsInitialized = true;
+
+	// Generate unique ID
+	UniqueID = FGuid::NewGuid();
+
+	// Generate name if not set
+	if (NPCName.IsEmpty())
+	{
+		GenerateName();
+	}
+
+	// Set home location if not set
+	if (HomeLocation.IsZero())
+	{
+		HomeLocation = GetActorLocation();
+	}
+
+	// Initialize personality from archetype
+	// Personality->SetArchetype(ArchetypePreset); // Existing system
+
+	// Initialize skills from archetype (with randomization)
+	if (Skills)
+	{
+		Skills->InitializeFromArchetype(ArchetypePreset);
+	}
+
+	// Initialize combat brain
+	if (CombatBrain)
+	{
+		CombatBrain->BuildAbilityPool();
+		CombatBrain->BuildRotation();
+	}
+
+	// Set up starting equipment
+	if (SpawnEquipment.Num() > 0)
+	{
+		for (const FNPCItemData& Item : SpawnEquipment)
+		{
+			// Inventory->AddToBag(Item);
+			// if (Item.Slot != EEquipSlot::None) Inventory->EquipItem(Item);
+		}
+	}
+	else
+	{
+		// Generate starting equipment based on archetype and skill levels
+		GenerateStartingEquipment();
+	}
+
+	// Set aggression based on archetype
+	switch (ArchetypePreset)
+	{
+	case EPersonalityArchetype::Bandit:
+		bIsAggressive = true;
+		break;
+	case EPersonalityArchetype::Guard:
+		bIsAggressive = false; // Guards only attack hostiles/criminals
+		break;
+	default:
+		bIsAggressive = false;
+		break;
+	}
+
+	UE_LOG(LogAoCNPC, Log, TEXT("NPC Initialized: %s | Archetype: %d | Home: %s | Aggressive: %s"),
+		*NPCName, static_cast<int32>(ArchetypePreset),
+		*HomeLocation.ToString(), bIsAggressive ? TEXT("YES") : TEXT("NO"));
+}
+
+void AoCHumanoidNPCV2::GenerateName()
+{
+	FRandomStream NameRand;
+	NameRand.Initialize(GetTypeHash(GetUniqueID()));
+
+	if (FirstNames.Num() > 0 && LastNames.Num() > 0)
+	{
+		FString First = FirstNames[NameRand.RandRange(0, FirstNames.Num() - 1)];
+		FString Last = LastNames[NameRand.RandRange(0, LastNames.Num() - 1)];
+		NPCName = FString::Printf(TEXT("%s %s"), *First, *Last);
+	}
+	else
+	{
+		NPCName = FString::Printf(TEXT("NPC_%s"), *GetUniqueID().ToString());
+	}
+}
+
+void AoCHumanoidNPCV2::GenerateStartingEquipment()
+{
+	if (!Skills) return;
+
+	// Generate equipment quality based on skill levels
+	// Higher skill = better starting gear
+
+	switch (ArchetypePreset)
+	{
+	case EPersonalityArchetype::Guard:
+	{
+		float SwordSkill = Skills->GetSkillLevel(ESkillID::Sword);
+		float ShieldSkill = Skills->GetSkillLevel(ESkillID::Shield);
+
+		// Sword quality based on skill
+		FNPCItemData Sword;
+		Sword.Name = SwordSkill > 40.f ? TEXT("IronSword") : TEXT("BronzeSword");
+		Sword.Slot = EEquipSlot::MainHand;
+		Sword.BaseDamage = 10.f + SwordSkill * 0.5f;
+		Sword.Weight = 3.f;
+		Sword.RequiredSkill = TEXT("Sword");
+		Sword.RequiredLevel = 1.f;
+		SpawnEquipment.Add(Sword);
+
+		if (ShieldSkill > 15.f)
+		{
+			FNPCItemData Shield;
+			Shield.Name = TEXT("WoodShield");
+			Shield.Slot = EEquipSlot::OffHand;
+			Shield.BaseArmor = 5.f + ShieldSkill * 0.3f;
+			Shield.Weight = 5.f;
+			SpawnEquipment.Add(Shield);
+		}
+
+		// Armor
+		FNPCItemData Chest;
+		Chest.Name = SwordSkill > 40.f ? TEXT("ChainmailChest") : TEXT("LeatherChest");
+		Chest.Slot = EEquipSlot::Chest;
+		Chest.BaseArmor = SwordSkill > 40.f ? 25.f : 12.f;
+		Chest.Weight = SwordSkill > 40.f ? 15.f : 6.f;
+		SpawnEquipment.Add(Chest);
+		break;
+	}
+	case EPersonalityArchetype::Bandit:
+	{
+		ESkillID BestWeapon = Skills->GetBestWeaponSkill();
+		float WeaponSkill = Skills->GetSkillLevel(BestWeapon);
+
+		FNPCItemData Weapon;
+		Weapon.Name = FName(*FString::Printf(TEXT("Crude_%s"), *UAoCNPCSkillSystem::GetSkillName(BestWeapon).ToString()));
+		Weapon.Slot = EEquipSlot::MainHand;
+		Weapon.BaseDamage = 8.f + WeaponSkill * 0.4f;
+		Weapon.Weight = 3.f;
+		SpawnEquipment.Add(Weapon);
+
+		FNPCItemData Leather;
+		Leather.Name = TEXT("TatteredLeather");
+		Leather.Slot = EEquipSlot::Chest;
+		Leather.BaseArmor = 8.f;
+		Leather.Weight = 4.f;
+		SpawnEquipment.Add(Leather);
+		break;
+	}
+	case EPersonalityArchetype::Mage:
+	{
+		FNPCItemData Staff;
+		Staff.Name = TEXT("ApprenticeStaff");
+		Staff.Slot = EEquipSlot::MainHand;
+		Staff.BaseDamage = 5.f;
+		Staff.BonusINT = 5.f;
+		Staff.BonusWIS = 3.f;
+		Staff.Weight = 2.f;
+		SpawnEquipment.Add(Staff);
+
+		FNPCItemData Robe;
+		Robe.Name = TEXT("MageRobe");
+		Robe.Slot = EEquipSlot::Chest;
+		Robe.BaseArmor = 5.f;
+		Robe.BonusINT = 3.f;
+		Robe.Weight = 2.f;
+		SpawnEquipment.Add(Robe);
+		break;
+	}
+	case EPersonalityArchetype::Hunter:
+	{
+		float BowSkill = Skills->GetSkillLevel(ESkillID::Bow);
+
+		FNPCItemData Bow;
+		Bow.Name = BowSkill > 45.f ? TEXT("CompositeBow") : TEXT("ShortBow");
+		Bow.Slot = EEquipSlot::MainHand;
+		Bow.BaseDamage = 8.f + BowSkill * 0.5f;
+		Bow.Weight = 2.f;
+		SpawnEquipment.Add(Bow);
+
+		FNPCItemData Dagger;
+		Dagger.Name = TEXT("HuntingKnife");
+		Dagger.Slot = EEquipSlot::OffHand;
+		Dagger.BaseDamage = 6.f;
+		Dagger.Weight = 1.f;
+		SpawnEquipment.Add(Dagger);
+
+		FNPCItemData Leather;
+		Leather.Name = TEXT("HunterLeather");
+		Leather.Slot = EEquipSlot::Chest;
+		Leather.BaseArmor = 10.f;
+		Leather.BonusDEX = 2.f;
+		Leather.Weight = 5.f;
+		SpawnEquipment.Add(Leather);
+		break;
+	}
+	case EPersonalityArchetype::Merchant:
+	{
+		FNPCItemData Dagger;
+		Dagger.Name = TEXT("MerchantDagger");
+		Dagger.Slot = EEquipSlot::MainHand;
+		Dagger.BaseDamage = 5.f;
+		Dagger.Weight = 1.f;
+		SpawnEquipment.Add(Dagger);
+
+		FNPCItemData FineClothes;
+		FineClothes.Name = TEXT("FineClothes");
+		FineClothes.Slot = EEquipSlot::Chest;
+		FineClothes.BaseArmor = 3.f;
+		FineClothes.Weight = 1.f;
+		SpawnEquipment.Add(FineClothes);
+		break;
+	}
+	case EPersonalityArchetype::Hermit:
+	{
+		FNPCItemData Staff;
+		Staff.Name = TEXT("WalkingStick");
+		Staff.Slot = EEquipSlot::MainHand;
+		Staff.BaseDamage = 4.f;
+		Staff.Weight = 2.f;
+		SpawnEquipment.Add(Staff);
+
+		FNPCItemData Tunic;
+		Tunic.Name = TEXT("WornTunic");
+		Tunic.Slot = EEquipSlot::Chest;
+		Tunic.BaseArmor = 4.f;
+		Tunic.Weight = 1.f;
+		SpawnEquipment.Add(Tunic);
+		break;
+	}
+	default: // Villager
+	{
+		FNPCItemData Tool;
+		Tool.Name = TEXT("Pickaxe");
+		Tool.Slot = EEquipSlot::MainHand;
+		Tool.BaseDamage = 3.f;
+		Tool.Weight = 3.f;
+		SpawnEquipment.Add(Tool);
+
+		FNPCItemData Clothes;
+		Clothes.Name = TEXT("VillagerClothes");
+		Clothes.Slot = EEquipSlot::Chest;
+		Clothes.BaseArmor = 2.f;
+		Clothes.Weight = 1.f;
+		SpawnEquipment.Add(Clothes);
+		break;
+	}
+	}
+
+	// Add some consumables for everyone
+	FNPCItemData Bread;
+	Bread.Name = TEXT("Bread");
+	Bread.bIsConsumable = true;
+	Bread.Weight = 0.2f;
+	Bread.Value = 2.f;
+	SpawnEquipment.Add(Bread);
+	SpawnEquipment.Add(Bread);
+	SpawnEquipment.Add(Bread);
+
+	FNPCItemData HealthPotion;
+	HealthPotion.Name = TEXT("MinorHealthPotion");
+	HealthPotion.bIsConsumable = true;
+	HealthPotion.Weight = 0.3f;
+	HealthPotion.Value = 15.f;
+	SpawnEquipment.Add(HealthPotion);
+
+	UE_LOG(LogAoCNPC, Log, TEXT("NPC %s: generated %d starting items for archetype %d"),
+		*NPCName, SpawnEquipment.Num(), static_cast<int32>(ArchetypePreset));
+}
+
+// ---------------------------------------------------------------------------
+// Master Tick
+// ---------------------------------------------------------------------------
+
+void AoCHumanoidNPCV2::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bIsDead) return;
+
+	MasterTick(DeltaTime);
+}
+
+void AoCHumanoidNPCV2::MasterTick(float DeltaTime)
+{
+	// 1. Get LOD tier
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		UAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();
+		if (LODMgr)
+		{
+			CachedLODTier = LODMgr->GetLODTier(this);
+		}
+	}
+
+	// 2. Tick based on LOD tier
+	switch (CachedLODTier)
+	{
+	case EAILODTier::Hibernated:
+		// Do almost nothing — major decisions only (every 30s handled by LOD manager stagger)
+		TickHibernated(DeltaTime);
+		break;
+
+	case EAILODTier::Background:
+		// Data-only simulation (no mesh, no animation)
+		TickBackground(DeltaTime);
+		break;
+
+	case EAILODTier::Reduced:
+		// Full mesh + animation, reduced perception and pathfinding
+		TickReduced(DeltaTime);
+		break;
+
+	case EAILODTier::Full:
+		// Full simulation — everything runs
+		TickFull(DeltaTime);
+		break;
+	}
+}
+
+void AoCHumanoidNPCV2::TickHibernated(float DeltaTime)
+{
+	// Almost nothing — just keep time-based counters moving
+	if (Skills)
+	{
+		Skills->TickPassiveGains(DeltaTime * 0.1f); // Very slow passive gains
+	}
+}
+
+void AoCHumanoidNPCV2::TickBackground(float DeltaTime)
+{
+	// Life simulation and passive skill gains — NO world queries
+
+	if (LifeBrain)
+	{
+		LifeBrain->LifeTick(DeltaTime);
+	}
+
+	if (Skills)
+	{
+		Skills->TickPassiveGains(DeltaTime);
+	}
+
+	if (NeedSystem)
+	{
+		// NeedSystem->Tick(DeltaTime); // Needs still decay
+	}
+}
+
+void AoCHumanoidNPCV2::TickReduced(float DeltaTime)
+{
+	// Background + perception (at reduced rate) + needs + social
+
+	TickBackground(DeltaTime);
+
+	if (Brain)
+	{
+		// Brain->TickPerception(DeltaTime); // At reduced frequency
+	}
+
+	if (SocialBrain)
+	{
+		SocialBrain->SocializeTick(DeltaTime);
+	}
+}
+
+void AoCHumanoidNPCV2::TickFull(float DeltaTime)
+{
+	// Everything runs at full fidelity
+
+	// Needs
+	if (NeedSystem)
+	{
+		// NeedSystem->Tick(DeltaTime);
+	}
+
+	// Brain perception and decision
+	if (Brain)
+	{
+		// Brain->Tick(DeltaTime);
+	}
+
+	// Combat (if in combat)
+	if (CombatBrain && CombatBrain->IsInCombat())
+	{
+		CombatBrain->CombatTick(DeltaTime);
+	}
+
+	// Life brain (daily routine, goals)
+	if (LifeBrain && !(CombatBrain && CombatBrain->IsInCombat()))
+	{
+		LifeBrain->LifeTick(DeltaTime);
+	}
+
+	// Social
+	if (SocialBrain)
+	{
+		SocialBrain->SocializeTick(DeltaTime);
+	}
+
+	// Looting
+	if (LootBrain && LootBrain->IsLooting())
+	{
+		LootBrain->LootTick(DeltaTime);
+	}
+
+	// Passive skill gains
+	if (Skills)
+	{
+		Skills->TickPassiveGains(DeltaTime);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Combat Integration
+// ---------------------------------------------------------------------------
+
+void AoCHumanoidNPCV2::TakeDamageFromSource(float Damage, AActor* DamageInstigator)
+{
+	if (bIsDead) return;
+
+	// Route to combat brain
+	if (CombatBrain)
+	{
+		CombatBrain->OnDamageTaken(Damage, DamageInstigator);
+
+		// Enter combat if not already
+		if (!CombatBrain->IsInCombat() && DamageInstigator)
+		{
+			CombatBrain->EnterCombat(DamageInstigator);
+		}
+	}
+
+	// Memory: remember attacker
+	if (Memory)
+	{
+		// Memory->Remember(TEXT("Attacker"), GetActorLocation(), Damage, DamageInstigator);
+	}
+
+	// Social: record being attacked
+	if (SocialBrain && DamageInstigator)
+	{
+		AoCHumanoidNPCV2* AttackerNPC = Cast<AoCHumanoidNPCV2>(DamageInstigator);
+		if (AttackerNPC)
+		{
+			SocialBrain->RecordInteraction(
+				AttackerNPC->GetUniqueID(),
+				AttackerNPC->GetDisplayName(),
+				ESocialInteraction::AttackedMe,
+				Damage / 50.f // Magnitude scales with damage
+			);
+
+			// Alert nearby allies
+			SocialBrain->SpreadReputation(
+				AttackerNPC->GetUniqueID(),
+				AttackerNPC->GetDisplayName(),
+				30.f, // Hostility increase
+				5000.f // 50m radius
+			);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Death & Respawn
+// ---------------------------------------------------------------------------
+
+void AoCHumanoidNPCV2::OnDeath(AActor* Killer)
+{
+	if (bIsDead) return;
+	bIsDead = true;
+
+	UE_LOG(LogAoCNPC, Warning, TEXT("NPC %s has been killed by %s!"),
+		*NPCName, Killer ? *Killer->GetName() : TEXT("Unknown"));
+
+	// Exit combat
+	if (CombatBrain)
+	{
+		CombatBrain->ExitCombat();
+	}
+
+	// Drop loot as corpse
+	DropLoot();
+
+	// Notify social network
+	if (SocialBrain)
+	{
+		// Notify allies that we died
+		TArray<FGuid> Allies = SocialBrain->GetAllies();
+		for (const FGuid& AllyID : Allies)
+		{
+			// Find ally NPC and record "KilledMyAlly"
+			if (Killer)
+			{
+				AoCHumanoidNPCV2* KillerNPC = Cast<AoCHumanoidNPCV2>(Killer);
+				if (KillerNPC)
+				{
+					// This would need to look up the ally by ID and record the interaction
+					SocialBrain->SpreadReputation(
+						KillerNPC->GetUniqueID(),
+						KillerNPC->GetDisplayName(),
+						80.f, // Very high hostility
+						8000.f // Large radius — word spreads
+					);
+				}
+			}
+		}
+	}
+
+	// Disable collision, movement
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCharacterMovement()->DisableMovement();
+
+	// Schedule respawn if not essential (essential NPCs always respawn)
+	if (bIsEssential || RespawnDelay > 0.f)
+	{
+		FTimerHandle RespawnTimerHandle;
+		GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &AoCHumanoidNPCV2::OnRespawn, RespawnDelay, false);
+	}
+}
+
+void AoCHumanoidNPCV2::DropLoot()
+{
+	// In production: create a lootable corpse actor with our inventory
+	// For now, log what would be dropped
+	UE_LOG(LogAoCNPC, Log, TEXT("NPC %s dropped loot corpse at %s"),
+		*NPCName, *GetActorLocation().ToString());
+
+	// Schedule corpse cleanup
+	FTimerHandle CorpseTimer;
+	GetWorldTimerManager().SetTimer(CorpseTimer, [this]()
+	{
+		// Destroy corpse after linger time
+		// In production: destroy the corpse actor, not this character
+	}, CorpseLingerTime, false);
+}
+
+void AoCHumanoidNPCV2::OnRespawn()
+{
+	UE_LOG(LogAoCNPC, Log, TEXT("NPC %s respawning!"), *NPCName);
+
+	bIsDead = false;
+
+	// Reset position to home
+	SetActorLocation(HomeLocation);
+
+	// Re-enable collision, movement
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	// Reset HP
+	if (CombatBrain)
+	{
+		CombatBrain->CurrentHP = CombatBrain->MaxHP;
+		CombatBrain->CurrentMana = CombatBrain->MaxMana;
+		CombatBrain->CurrentStamina = CombatBrain->MaxStamina;
+	}
+
+	// SKILLS PERSIST — they keep progression from last life
+	// Only regenerate equipment
+	SpawnEquipment.Reset();
+	GenerateStartingEquipment();
+
+	// Reset needs
+	// NeedSystem->ResetAll();
+
+	// Reset combat brain
+	if (CombatBrain)
+	{
+		CombatBrain->BuildAbilityPool();
+		CombatBrain->BuildRotation();
+	}
+
+	// Memory: remember who killed us and adapt
+	// if (Memory) Memory->Remember(TEXT("Died"), HomeLocation, 100.f, LastKiller);
+
+	// Re-register with LOD manager
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		UAoCAILODManager* LODMgr = World->GetSubsystem<UAoCAILODManager>();
+		if (LODMgr)
+		{
+			LODMgr->RegisterNPC(this);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Getters
+// ---------------------------------------------------------------------------
+
+FString AoCHumanoidNPCV2::GetDisplayName() const
+{
+	return NPCName;
+}
+
+int32 AoCHumanoidNPCV2::GetNPCLevel() const
+{
+	if (!Skills) return 1;
+
+	// Level is based on total skill points (sum of all skill levels)
+	float TotalSkill = 0.f;
+	for (uint8 i = 0; i < static_cast<uint8>(ESkillID::MAX); ++i)
+	{
+		TotalSkill += Skills->GetSkillLevel(static_cast<ESkillID>(i));
+	}
+
+	// Rough level: 1 per 50 total skill points, max 100
+	return FMath::Clamp(FMath::FloorToInt(TotalSkill / 50.f) + 1, 1, 100);
+}
+
+float AoCHumanoidNPCV2::GetCombatPower() const
+{
+	if (!Skills) return 1.f;
+	return Skills->GetCombatPower();
+}
+
+FGuid AoCHumanoidNPCV2::GetUniqueID() const
+{
+	return UniqueID;
+}
+
+// ---------------------------------------------------------------------------
+// State Serialization
+// ---------------------------------------------------------------------------
+
+FString AoCHumanoidNPCV2::SaveState() const
+{
+	// Serialize full NPC state for server saves
+	// In production: use a proper serialization format (JSON, FArchive, etc.)
+
+	FString State;
+	State += FString::Printf(TEXT("Name=%s\n"), *NPCName);
+	State += FString::Printf(TEXT("ID=%s\n"), *UniqueID.ToString());
+	State += FString::Printf(TEXT("Archetype=%d\n"), static_cast<int32>(ArchetypePreset));
+	State += FString::Printf(TEXT("Faction=%s\n"), *FactionID.ToString());
+	State += FString::Printf(TEXT("Position=%s\n"), *GetActorLocation().ToString());
+	State += FString::Printf(TEXT("Home=%s\n"), *HomeLocation.ToString());
+	State += FString::Printf(TEXT("Dead=%d\n"), bIsDead ? 1 : 0);
+	State += FString::Printf(TEXT("Aggressive=%d\n"), bIsAggressive ? 1 : 0);
+	State += FString::Printf(TEXT("Level=%d\n"), GetNPCLevel());
+
+	// Skill system serialization
+	if (Skills)
+	{
+		State += FString::Printf(TEXT("Skills=%d\n"), Skills->GetTopSkills(100).Num());
+	}
+
+	// Combat brain state
+	if (CombatBrain)
+	{
+		State += FString::Printf(TEXT("HP=%.1f/%.1f\n"), CombatBrain->CurrentHP, CombatBrain->MaxHP);
+		State += FString::Printf(TEXT("Mana=%.1f/%.1f\n"), CombatBrain->CurrentMana, CombatBrain->MaxMana);
+	}
+
+	return State;
+}
+
+void AoCHumanoidNPCV2::LoadState(const FString& StateData)
+{
+	// Parse state data and restore NPC
+	// In production: proper deserialization
+
+	TArray<FString> Lines;
+	StateData.ParseIntoArray(Lines, TEXT("\n"));
+
+	for (const FString& Line : Lines)
+	{
+		FString Key, Value;
+		if (Line.Split(TEXT("="), &Key, &Value))
+		{
+			if (Key == TEXT("Name"))
+			{
+				NPCName = Value;
+			}
+			else if (Key == TEXT("ID"))
+			{
+				FGuid::Parse(Value, UniqueID);
+			}
+			else if (Key == TEXT("Archetype"))
+			{
+				ArchetypePreset = static_cast<EPersonalityArchetype>(FCString::Atoi(*Value));
+			}
+			else if (Key == TEXT("Faction"))
+			{
+				FactionID = FName(*Value);
+			}
+			else if (Key == TEXT("Dead"))
+			{
+				bIsDead = FCString::Atoi(*Value) != 0;
+			}
+			else if (Key == TEXT("Aggressive"))
+			{
+				bIsAggressive = FCString::Atoi(*Value) != 0;
+			}
+		}
+	}
+
+	// Deserialize skills
+	if (Skills)
+	{
+		// TODO: Skills->DeserializeState needs FSkillSystemState, not FString;
+	}
+
+	bIsInitialized = true;
+	UE_LOG(LogAoCNPC, Log, TEXT("NPC %s state loaded."), *NPCName);
+}
+
+// ==================== LOD Materialization ====================
+
+void AoCHumanoidNPCV2::OnMaterialize()
+{
+    bIsMaterialized = true;
+    
+    // Re-enable mesh and collision
+    if (USkeletalMeshComponent* MeshComp = GetMesh())
+    {
+        MeshComp->SetVisibility(true);
+        MeshComp->SetComponentTickEnabled(true);
+    }
+    SetActorEnableCollision(true);
+    SetActorTickEnabled(true);
+}
+
+void AoCHumanoidNPCV2::OnDematerialize()
+{
+    bIsMaterialized = false;
+    
+    // Disable mesh rendering and collision for performance
+    if (USkeletalMeshComponent* MeshComp = GetMesh())
+    {
+        MeshComp->SetVisibility(false);
+        MeshComp->SetComponentTickEnabled(false);
+    }
+    SetActorEnableCollision(false);
+    SetActorTickEnabled(false);
+}
+
+
+

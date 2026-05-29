@@ -366,36 +366,36 @@ float AAoCFurnaceActor::GetReductionTemperature(EVoxelMaterial Material)
 	switch (Material)
 	{
 		// T1 — Bloomery (≤1200°C without bellows)
-		case EVoxelMaterial::Lead:       return 800.f;
-		case EVoxelMaterial::Zinc:       return 950.f;
-		case EVoxelMaterial::Copper:     return 1100.f;
-		case EVoxelMaterial::Tin:        return 1100.f;
+		case EVoxelMaterial::OreLead:       return 800.f;
+		case EVoxelMaterial::OreZinc:       return 950.f;
+		case EVoxelMaterial::OreCopper:     return 1100.f;
+		case EVoxelMaterial::OreTin:        return 1100.f;
 
 		// T2 — Bloomery with Bellows (≤1500°C)
-		case EVoxelMaterial::Silver:     return 1000.f;
-		case EVoxelMaterial::Gold:       return 1100.f;
-		case EVoxelMaterial::Iron:       return 1200.f;
-		case EVoxelMaterial::Manganese:  return 1400.f;
+		case EVoxelMaterial::OreSilver:     return 1000.f;
+		case EVoxelMaterial::OreGold:       return 1100.f;
+		case EVoxelMaterial::OreIron:       return 1200.f;
+		case EVoxelMaterial::OreManganese:  return 1400.f;
 
 		// T3 — Blast Furnace (≤2000°C)
-		case EVoxelMaterial::Cobalt:     return 1400.f;
-		case EVoxelMaterial::Nickel:     return 1450.f;
-		case EVoxelMaterial::Vanadium:   return 1750.f;
-		case EVoxelMaterial::Chromium:   return 1850.f;
+		case EVoxelMaterial::OreCobalt:     return 1400.f;
+		case EVoxelMaterial::OreNickel:     return 1450.f;
+		case EVoxelMaterial::OreVanadium:   return 1750.f;
+		case EVoxelMaterial::OreChromium:   return 1850.f;
 
 		// T4 — Crucible Furnace (≤2500°C)
-		case EVoxelMaterial::Palladium:  return 1600.f;
-		case EVoxelMaterial::Titanium:   return 1800.f;
-		case EVoxelMaterial::Platinum:   return 1800.f;
-		case EVoxelMaterial::Rhodium:    return 2000.f;
-		case EVoxelMaterial::Iridium:    return 2400.f;
+		case EVoxelMaterial::OrePalladium:  return 1600.f;
+		case EVoxelMaterial::OreTitanium:   return 1800.f;
+		case EVoxelMaterial::OrePlatinum:   return 1800.f;
+		case EVoxelMaterial::OreRhodium:    return 2000.f;
+		case EVoxelMaterial::OreIridium:    return 2400.f;
 
 		// T5 — Arcane Forge (≤3500°C, requires magic)
-		case EVoxelMaterial::Niobium:    return 2400.f;
-		case EVoxelMaterial::Molybdenum: return 2500.f;
-		case EVoxelMaterial::Tantalum:   return 2900.f;
-		case EVoxelMaterial::Osmium:     return 3000.f;
-		case EVoxelMaterial::Tungsten:   return 3300.f;
+		case EVoxelMaterial::OreNiobium:    return 2400.f;
+		case EVoxelMaterial::OreMolybdenum: return 2500.f;
+		case EVoxelMaterial::OreTantalum:   return 2900.f;
+		case EVoxelMaterial::OreOsmium:     return 3000.f;
+		case EVoxelMaterial::OreTungsten:   return 3300.f;
 
 		default:
 			UE_LOG(LogTemp, Warning, TEXT("Furnace: Unknown ore material for reduction temperature."));

@@ -34,6 +34,17 @@ const FItemDefinition* UAoCItemDatabase::GetItem(FName ItemID) const
 	return Items.Find(ItemID);
 }
 
+bool UAoCItemDatabase::GetItemCopy(FName ItemID, FItemDefinition& OutItem) const
+{
+	const FItemDefinition* Found = Items.Find(ItemID);
+	if (Found)
+	{
+		OutItem = *Found;
+		return true;
+	}
+	return false;
+}
+
 TArray<FItemDefinition> UAoCItemDatabase::GetItemsByCategory(EAoCItemCategory Cat) const
 {
 	TArray<FItemDefinition> Result;

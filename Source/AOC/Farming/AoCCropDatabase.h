@@ -101,9 +101,12 @@ public:
 
 	// ── Queries ─────────────────────────────────────────────────────────────
 
-	/** Get crop data by CropID. Returns nullptr if not found. */
-	UFUNCTION(BlueprintCallable, Category = "CropDatabase")
+	/** Get crop data by CropID. Returns nullptr if not found. (C++ only — use GetCropCopy for BP) */
 	const FCropGrowthData* GetCrop(FName CropID) const;
+
+	/** Blueprint-friendly version — copies the crop data. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "CropDatabase")
+	bool GetCropCopy(FName CropID, FCropGrowthData& OutCrop) const;
 
 	/** Return all crops that can be unlocked at a given Farming skill level. */
 	UFUNCTION(BlueprintCallable, Category = "CropDatabase")

@@ -10,6 +10,18 @@
 
 // ─── Helper Structs ──────────────────────────────────────────────────────────
 
+/** Wrapper for TArray<uint8> so it can be used as a TMap value (UHT limitation). */
+USTRUCT(BlueprintType)
+struct AOC_API FChunkVoxelData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save|Voxel")
+	TArray<uint8> DensityData;
+
+	FChunkVoxelData() = default;
+};
+
 USTRUCT(BlueprintType)
 struct AOC_API FVeinSaveData
 {
@@ -135,7 +147,7 @@ public:
 
 	/** Voxel density modifications keyed by chunk coordinate. Only stores chunks the player has changed. */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save|Voxel")
-	TMap<FIntVector, TArray<uint8>> ModifiedChunks;
+	TMap<FIntVector, FChunkVoxelData> ModifiedChunks;
 
 	/** Ore veins that have been partially or fully depleted. */
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save|Mining")

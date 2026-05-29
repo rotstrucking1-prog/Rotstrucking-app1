@@ -29,6 +29,17 @@ const FCropGrowthData* UAoCCropDatabase::GetCrop(FName CropID) const
 	return Crops.Find(CropID);
 }
 
+bool UAoCCropDatabase::GetCropCopy(FName CropID, FCropGrowthData& OutCrop) const
+{
+	const FCropGrowthData* Found = Crops.Find(CropID);
+	if (Found)
+	{
+		OutCrop = *Found;
+		return true;
+	}
+	return false;
+}
+
 TArray<FCropGrowthData> UAoCCropDatabase::GetCropsForSkillLevel(int32 Skill) const
 {
 	TArray<FCropGrowthData> Result;

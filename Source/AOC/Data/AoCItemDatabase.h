@@ -124,9 +124,12 @@ public:
 
 	// ── Queries ─────────────────────────────────────────────────────────────
 
-	/** Retrieve an item definition by ID.  Returns nullptr if not found. */
-	UFUNCTION(BlueprintCallable, Category = "ItemDatabase")
+	/** Retrieve an item definition by ID.  Returns nullptr if not found. (C++ only — use GetItemCopy for BP) */
 	const FItemDefinition* GetItem(FName ItemID) const;
+
+	/** Blueprint-friendly version — copies the item definition. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "ItemDatabase")
+	bool GetItemCopy(FName ItemID, FItemDefinition& OutItem) const;
 
 	/** Return all items in a given category. */
 	UFUNCTION(BlueprintCallable, Category = "ItemDatabase")

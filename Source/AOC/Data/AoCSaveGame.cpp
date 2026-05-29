@@ -139,7 +139,7 @@ int64 UAoCSaveGame::GetSaveSize() const
 	for (const auto& Pair : ModifiedChunks)
 	{
 		TotalBytes += sizeof(FIntVector); // key
-		TotalBytes += Pair.Value.Num();   // density data
+		TotalBytes += Pair.Value.DensityData.Num();   // density data
 		TotalBytes += 16;                 // TArray overhead
 	}
 

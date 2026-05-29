@@ -13,7 +13,7 @@
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 UENUM(BlueprintType)
-enum class EItemCategory : uint8
+enum class EAoCItemCategory : uint8
 {
 	RawOre			UMETA(DisplayName = "Raw Ore"),
 	Lump			UMETA(DisplayName = "Lump"),
@@ -64,7 +64,7 @@ struct AOC_API FItemDefinition : public FTableRowBase
 
 	/** Primary category for sorting and filtering. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	EItemCategory Category = EItemCategory::Misc;
+	EAoCItemCategory Category = EAoCItemCategory::Misc;
 
 	/** Rarity tier — affects name color and drop weight. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
@@ -98,7 +98,7 @@ struct AOC_API FItemDefinition : public FTableRowBase
 		: ItemID(NAME_None)
 		, DisplayName(TEXT(""))
 		, Description(TEXT(""))
-		, Category(EItemCategory::Misc)
+		, Category(EAoCItemCategory::Misc)
 		, Rarity(EItemRarity::Common)
 		, MaxStackSize(1)
 		, Weight(1.0f)
@@ -130,7 +130,7 @@ public:
 
 	/** Return all items in a given category. */
 	UFUNCTION(BlueprintCallable, Category = "ItemDatabase")
-	TArray<FItemDefinition> GetItemsByCategory(EItemCategory Cat) const;
+	TArray<FItemDefinition> GetItemsByCategory(EAoCItemCategory Cat) const;
 
 	/** Return all items of a given progression tier (1-6). */
 	UFUNCTION(BlueprintCallable, Category = "ItemDatabase")

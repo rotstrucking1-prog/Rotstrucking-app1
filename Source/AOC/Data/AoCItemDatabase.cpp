@@ -34,7 +34,7 @@ const FItemDefinition* UAoCItemDatabase::GetItem(FName ItemID) const
 	return Items.Find(ItemID);
 }
 
-TArray<FItemDefinition> UAoCItemDatabase::GetItemsByCategory(EItemCategory Cat) const
+TArray<FItemDefinition> UAoCItemDatabase::GetItemsByCategory(EAoCItemCategory Cat) const
 {
 	TArray<FItemDefinition> Result;
 	for (const auto& Pair : Items)
@@ -100,7 +100,7 @@ void UAoCItemDatabase::RegisterMetal(const FString& MetalName, uint8 InTier, EIt
 		D.ItemID      = FName(*(MetalName + TEXT("_RawOre")));
 		D.DisplayName = MetalName + TEXT(" Raw Ore");
 		D.Description = FString::Printf(TEXT("Unprocessed %s ore, freshly mined."), *MetalName);
-		D.Category    = EItemCategory::RawOre;
+		D.Category    = EAoCItemCategory::RawOre;
 		D.Rarity      = InRarity;
 		D.IconPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Icons/Ore/%s_RawOre_Icon"), *MetalName));
 		D.MeshPath    = FSoftObjectPath(TEXT("/Game/Items/Meshes/Ore/SM_RawOre_Generic"));
@@ -117,7 +117,7 @@ void UAoCItemDatabase::RegisterMetal(const FString& MetalName, uint8 InTier, EIt
 		D.ItemID      = FName(*(MetalName + TEXT("_Lump")));
 		D.DisplayName = MetalName + TEXT(" Lump");
 		D.Description = FString::Printf(TEXT("A small refined lump of %s."), *MetalName);
-		D.Category    = EItemCategory::Lump;
+		D.Category    = EAoCItemCategory::Lump;
 		D.Rarity      = InRarity;
 		D.IconPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Icons/Lump/%s_Lump_Icon"), *MetalName));
 		D.MeshPath    = FSoftObjectPath(TEXT("/Game/Items/Meshes/Lump/SM_Lump_Generic"));
@@ -134,7 +134,7 @@ void UAoCItemDatabase::RegisterMetal(const FString& MetalName, uint8 InTier, EIt
 		D.ItemID      = FName(*(MetalName + TEXT("_Bar")));
 		D.DisplayName = MetalName + TEXT(" Bar");
 		D.Description = FString::Printf(TEXT("A rectangular bar of refined %s. Equivalent to 4 ore."), *MetalName);
-		D.Category    = EItemCategory::Bar;
+		D.Category    = EAoCItemCategory::Bar;
 		D.Rarity      = InRarity;
 		D.IconPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Icons/Bar/%s_Bar_Icon"), *MetalName));
 		D.MeshPath    = FSoftObjectPath(TEXT("/Game/Items/Meshes/Bar/SM_Bar_Generic"));
@@ -151,7 +151,7 @@ void UAoCItemDatabase::RegisterMetal(const FString& MetalName, uint8 InTier, EIt
 		D.ItemID      = FName(*(MetalName + TEXT("_Ingot")));
 		D.DisplayName = MetalName + TEXT(" Ingot");
 		D.Description = FString::Printf(TEXT("A large ingot of %s. Equivalent to 20 ore."), *MetalName);
-		D.Category    = EItemCategory::Ingot;
+		D.Category    = EAoCItemCategory::Ingot;
 		D.Rarity      = InRarity;
 		D.IconPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Icons/Ingot/%s_Ingot_Icon"), *MetalName));
 		D.MeshPath    = FSoftObjectPath(TEXT("/Game/Items/Meshes/Ingot/SM_Ingot_Generic"));
@@ -169,7 +169,7 @@ void UAoCItemDatabase::RegisterSoil(const FString& SoilName, const FString& Desc
 	D.ItemID      = FName(*SoilName);
 	D.DisplayName = SoilName;
 	D.Description = Desc;
-	D.Category    = EItemCategory::Soil;
+	D.Category    = EAoCItemCategory::Soil;
 	D.Rarity      = EItemRarity::Common;
 	D.IconPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Icons/Soil/%s_Icon"), *SoilName));
 	D.MeshPath    = FSoftObjectPath(TEXT("/Game/Items/Meshes/Soil/SM_SoilPile_Generic"));
@@ -186,7 +186,7 @@ void UAoCItemDatabase::RegisterCrop(const FString& CropName, const FString& Desc
 	D.ItemID      = FName(*CropName);
 	D.DisplayName = CropName;
 	D.Description = Desc;
-	D.Category    = EItemCategory::Crop;
+	D.Category    = EAoCItemCategory::Crop;
 	D.Rarity      = InRarity;
 	D.IconPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Icons/Crops/%s_Icon"), *CropName));
 	D.MeshPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Meshes/Crops/SM_%s"), *CropName));
@@ -203,7 +203,7 @@ void UAoCItemDatabase::RegisterSeed(const FString& CropName, const FString& Desc
 	D.ItemID      = FName(*(CropName + TEXT("_Seeds")));
 	D.DisplayName = CropName + TEXT(" Seeds");
 	D.Description = Desc;
-	D.Category    = EItemCategory::Seed;
+	D.Category    = EAoCItemCategory::Seed;
 	D.Rarity      = InRarity;
 	D.IconPath    = FSoftObjectPath(FString::Printf(TEXT("/Game/Items/Icons/Seeds/%s_Seeds_Icon"), *CropName));
 	D.MeshPath    = FSoftObjectPath(TEXT("/Game/Items/Meshes/Seeds/SM_SeedBag_Generic"));

@@ -1,7 +1,7 @@
 // AOC.Build.cs — Architect of Creation
 // Full module dependency list for all game systems:
 //   Core, AI, UI, Niagara VFX, ProceduralMesh (voxel terrain),
-//   Enhanced Input, Landscape (surface height queries).
+//   Enhanced Input, Landscape, GameplayAbilities, Water, JSON.
 
 using UnrealBuildTool;
 
@@ -29,6 +29,10 @@ public class AOC : ModuleRules
             "NavigationSystem",
             "GameplayTasks",
 
+            // Gameplay Ability System
+            "GameplayAbilities",
+            "GameplayTags",
+
             // VFX
             "Niagara",
 
@@ -39,7 +43,17 @@ public class AOC : ModuleRules
             "EnhancedInput",
 
             // Landscape (surface height queries for world generation)
-            "Landscape"
+            "Landscape",
+
+            // Water (existing dependency)
+            "Water",
+
+            // Asset management
+            "AssetRegistry",
+
+            // JSON (AnimLab + NPC AI)
+            "Json",
+            "JsonUtilities"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });

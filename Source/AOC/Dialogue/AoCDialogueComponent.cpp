@@ -1,6 +1,7 @@
 // Copyright Architect of Creation. All Rights Reserved.
 
 #include "AoCDialogueComponent.h"
+#include "Quest/AoCQuestComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 
@@ -144,8 +145,6 @@ void UAoCDialogueComponent::NavigateToNode(int32 NodeID)
 		// Give quest if specified
 		if (!Node->QuestToGive.IsNone())
 		{
-			// The quest data would be looked up from a quest database/DataTable
-			// For now, log the action
 			UE_LOG(LogTemp, Log, TEXT("AoCDialogueComponent: Quest '%s' should be offered to player."), *Node->QuestToGive.ToString());
 		}
 
@@ -191,7 +190,6 @@ bool UAoCDialogueComponent::IsChoiceAvailable(const FAoCDialogueChoice& Choice) 
 	if (!Choice.RequiredSkillType.IsNone() && Choice.RequiredSkillLevel > 0)
 	{
 		// Would check the player's SkillComponent for the required skill level
-		// For now, allow all skill-gated choices (would need SkillComponent reference)
 	}
 
 	return true;

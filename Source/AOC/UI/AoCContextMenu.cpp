@@ -157,22 +157,34 @@ FContextMenuOption UAoCContextMenuManager::MakeOption(
 	return Opt;
 }
 
-FContextMenuOption UAoCContextMenuManager::MakeSubmenu(
+TArray<FContextMenuOption> UAoCContextMenuManager::MakeSubmenu(
 	FName InID,
 	const FString& InText,
 	const TArray<FContextMenuOption>& SubItems,
 	const FString& InIconPath)
 {
-	FContextMenuOption Opt;
-	Opt.OptionID = InID;
-	Opt.DisplayText = InText;
-	Opt.bEnabled = true;
-	Opt.SubMenuOptions = SubItems;
+	TArray<FContextMenuOption> Result;
+
+	// Parent option
+	FContextMenuOption Parent;
+	Parent.OptionID = InID;
+	Parent.DisplayText = InText;
+	Parent.bEnabled = true;
+	Parent.ParentOptionID = NAME_None;
 	if (!InIconPath.IsEmpty())
 	{
-		Opt.IconPath = FSoftObjectPath(InIconPath);
+		Parent.IconPath = FSoftObjectPath(InIconPath);
 	}
-	return Opt;
+	Result.Add(Parent);
+
+	// Tag children with parent ID
+	for (FContextMenuOption Child : SubItems)
+	{
+		Child.ParentOptionID = InID;
+		Result.Add(Child);
+	}
+
+	return Result;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -270,7 +282,7 @@ TArray<FContextMenuOption> UAoCContextMenuManager::BuildShovelOnGroundOptions(AA
 	SowSubItems.Add(MakeOption(FName(TEXT("Sow_Sunflower")), TEXT("Sunflower"), true, true, 90.0f));
 	SowSubItems.Add(MakeOption(FName(TEXT("Sow_Rice")),      TEXT("Rice"),      true, true, 90.0f));
 
-	Options.Add(MakeSubmenu(
+	Options.Append(MakeSubmenu(
 		FName(TEXT("Sow")),
 		TEXT("Sow"),
 		SowSubItems,
@@ -368,7 +380,7 @@ TArray<FContextMenuOption> UAoCContextMenuManager::BuildPickaxeOnRockOptions(AAc
 		true, true, 60.0f,
 		TEXT("/Game/UI/Icons/Actions/IC_SupportColumn")));
 
-	Options.Add(MakeSubmenu(
+	Options.Append(MakeSubmenu(
 		FName(TEXT("Reinforce")),
 		TEXT("Reinforce"),
 		ReinforceSubItems,
@@ -427,7 +439,7 @@ TArray<FContextMenuOption> UAoCContextMenuManager::BuildFurnaceOptions(AActor* T
 		TEXT("Ingot (20 ore)"),
 		true, true, 60.0f));
 
-	Options.Add(MakeSubmenu(
+	Options.Append(MakeSubmenu(
 		FName(TEXT("SelectOutput")),
 		TEXT("Select Output"),
 		OutputSubItems,

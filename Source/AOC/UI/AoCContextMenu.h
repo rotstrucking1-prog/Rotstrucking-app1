@@ -54,9 +54,13 @@ struct AOC_API FContextMenuOption
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ContextMenu", meta = (EditCondition = "bRequiresSkillCheck"))
 	float RequiredSkill = 0.0f;
 
-	/** Nested sub-menu options (empty = leaf node). */
+	/** Parent option ID for building sub-menu hierarchies.  NAME_None = root level. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ContextMenu")
-	TArray<FContextMenuOption> SubMenuOptions;
+	FName ParentOptionID = NAME_None;
+
+	/** Sort order within the same parent group. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ContextMenu")
+	int32 SortOrder = 0;
 
 	FContextMenuOption()
 		: OptionID(NAME_None)
@@ -64,6 +68,8 @@ struct AOC_API FContextMenuOption
 		, bEnabled(true)
 		, bRequiresSkillCheck(false)
 		, RequiredSkill(0.0f)
+		, ParentOptionID(NAME_None)
+		, SortOrder(0)
 	{}
 };
 
@@ -169,8 +175,8 @@ private:
 		float Skill = 0.0f,
 		const FString& InIconPath = TEXT(""));
 
-	/** Helper — create an option with a submenu. */
-	static FContextMenuOption MakeSubmenu(
+	/** Helper — create a parent option and tag sub-items with ParentOptionID. Returns flattened array (parent + children). */
+	static TArray<FContextMenuOption> MakeSubmenu(
 		FName InID,
 		const FString& InText,
 		const TArray<FContextMenuOption>& SubItems,

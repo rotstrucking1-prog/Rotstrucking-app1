@@ -1,9 +1,7 @@
-// AoCSpellVFXManager.cpp - AAA Spell VFX with Niagara + Dynamic Materials + Lights
-// v30: Uses runtime Dynamic Material Instances from M_SpellGlow master material
-// No pre-created MI_Spell_XXX assets needed!
+// AoCSpellVFXManager.cpp - v31: Directional Combat VFX
+// Cast = energy gathers at hand | Projectile = flies FORWARD at target | Impact = explodes at target
+// Each school has unique visual pattern. No more fountains/fireworks.
 #include "AoCSpellVFXManager.h"
-#include "NiagaraFunctionLibrary.h"
-#include "NiagaraComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -14,459 +12,535 @@
 UAoCSpellVFXManager::UAoCSpellVFXManager()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.TickInterval = 0.016f; // ~60fps update
-}
-
-void UAoCSpellVFXManager::InitSchoolConfigs()
-{
-	// FIRE - Roaring flames, embers, upward draft
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(1.0f, 0.25f, 0.0f, 1.0f);
-		C.EmissiveColor = FLinearColor(4.0f, 1.0f, 0.0f, 1.0f);
-		C.LightIntensity = 15000.0f;
-		C.LightRadius = 600.0f;
-		C.ParticleCount = 25;
-		C.ParticleMinSize = 8.0f;
-		C.ParticleMaxSize = 30.0f;
-		C.ParticleSpeed = 300.0f;
-		C.ParticleLifetime = 1.2f;
-		C.bLightFlicker = true;
-		C.VelocityBias = FVector(0, 0, 250.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Pyromancy, C);
-	}
-
-	// ICE - Crystalline shards, cold mist
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.3f, 0.7f, 1.0f, 1.0f);
-		C.EmissiveColor = FLinearColor(1.2f, 2.8f, 4.0f, 1.0f);
-		C.LightIntensity = 10000.0f;
-		C.LightRadius = 500.0f;
-		C.ParticleCount = 20;
-		C.ParticleMinSize = 5.0f;
-		C.ParticleMaxSize = 20.0f;
-		C.ParticleSpeed = 400.0f;
-		C.ParticleLifetime = 1.0f;
-		C.bLightFlicker = false;
-		C.VelocityBias = FVector(0, 0, -50.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Cryomancy, C);
-	}
-
-	// LIGHTNING - Electric arcs, bright flash, scatter
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.9f, 0.9f, 1.0f, 1.0f);
-		C.EmissiveColor = FLinearColor(3.6f, 3.6f, 4.0f, 1.0f);
-		C.LightIntensity = 25000.0f;
-		C.LightRadius = 800.0f;
-		C.ParticleCount = 30;
-		C.ParticleMinSize = 3.0f;
-		C.ParticleMaxSize = 15.0f;
-		C.ParticleSpeed = 800.0f;
-		C.ParticleLifetime = 0.5f;
-		C.bLightFlicker = true;
-		C.VelocityBias = FVector::ZeroVector;
-		SchoolConfigs.Add(EAoCMagicSchool::Stormcalling, C);
-	}
-
-	// ARCANE - Mystical swirls, steady purple glow
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.6f, 0.2f, 1.0f, 1.0f);
-		C.EmissiveColor = FLinearColor(2.4f, 0.8f, 4.0f, 1.0f);
-		C.LightIntensity = 12000.0f;
-		C.LightRadius = 500.0f;
-		C.ParticleCount = 22;
-		C.ParticleMinSize = 6.0f;
-		C.ParticleMaxSize = 22.0f;
-		C.ParticleSpeed = 200.0f;
-		C.ParticleLifetime = 1.5f;
-		C.bLightFlicker = false;
-		C.VelocityBias = FVector(0, 0, 100.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Arcana, C);
-	}
-
-	// SHADOW - Dark wisps, dim pulsing
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.3f, 0.0f, 0.5f, 1.0f);
-		C.EmissiveColor = FLinearColor(1.2f, 0.0f, 2.0f, 1.0f);
-		C.LightIntensity = 5000.0f;
-		C.LightRadius = 400.0f;
-		C.ParticleCount = 18;
-		C.ParticleMinSize = 8.0f;
-		C.ParticleMaxSize = 28.0f;
-		C.ParticleSpeed = 150.0f;
-		C.ParticleLifetime = 2.0f;
-		C.bLightFlicker = true;
-		C.VelocityBias = FVector(0, 0, 80.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Umbramancy, C);
-	}
-
-	// NECROMANCY - Sickly green death wisps, ghostly particles rising
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.29f, 0.49f, 0.25f, 1.0f);
-		C.EmissiveColor = FLinearColor(1.16f, 1.96f, 1.0f, 1.0f);
-		C.LightIntensity = 7000.0f;
-		C.LightRadius = 500.0f;
-		C.ParticleCount = 22;
-		C.ParticleMinSize = 5.0f;
-		C.ParticleMaxSize = 24.0f;
-		C.ParticleSpeed = 180.0f;
-		C.ParticleLifetime = 2.0f;
-		C.bLightFlicker = true;
-		C.VelocityBias = FVector(0, 0, 120.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Necromancy, C);
-	}
-
-	// NATURE - Leafy fountain, earthy green
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.1f, 0.8f, 0.2f, 1.0f);
-		C.EmissiveColor = FLinearColor(0.4f, 3.2f, 0.8f, 1.0f);
-		C.LightIntensity = 9000.0f;
-		C.LightRadius = 500.0f;
-		C.ParticleCount = 22;
-		C.ParticleMinSize = 5.0f;
-		C.ParticleMaxSize = 20.0f;
-		C.ParticleSpeed = 250.0f;
-		C.ParticleLifetime = 1.5f;
-		C.bLightFlicker = false;
-		C.VelocityBias = FVector(0, 0, 200.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Verdancy, C);
-	}
-
-	// HOLY - Golden radiance, bright divine rays
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(1.0f, 0.9f, 0.5f, 1.0f);
-		C.EmissiveColor = FLinearColor(4.0f, 3.6f, 2.0f, 1.0f);
-		C.LightIntensity = 20000.0f;
-		C.LightRadius = 700.0f;
-		C.ParticleCount = 28;
-		C.ParticleMinSize = 6.0f;
-		C.ParticleMaxSize = 25.0f;
-		C.ParticleSpeed = 350.0f;
-		C.ParticleLifetime = 1.3f;
-		C.bLightFlicker = false;
-		C.VelocityBias = FVector(0, 0, 150.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Radiance, C);
-	}
-
-	// BLOOD - Crimson droplets, ominous red
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.8f, 0.0f, 0.0f, 1.0f);
-		C.EmissiveColor = FLinearColor(3.2f, 0.0f, 0.0f, 1.0f);
-		C.LightIntensity = 8000.0f;
-		C.LightRadius = 450.0f;
-		C.ParticleCount = 18;
-		C.ParticleMinSize = 4.0f;
-		C.ParticleMaxSize = 16.0f;
-		C.ParticleSpeed = 200.0f;
-		C.ParticleLifetime = 1.8f;
-		C.bLightFlicker = true;
-		C.VelocityBias = FVector(0, 0, -80.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Sangromancy, C);
-	}
-
-	// MIND - Psychic waves, indigo pulse
-	{
-		FSchoolVFXConfig C;
-		C.Color = FLinearColor(0.5f, 0.2f, 0.8f, 1.0f);
-		C.EmissiveColor = FLinearColor(2.0f, 0.8f, 3.2f, 1.0f);
-		C.LightIntensity = 10000.0f;
-		C.LightRadius = 550.0f;
-		C.ParticleCount = 20;
-		C.ParticleMinSize = 5.0f;
-		C.ParticleMaxSize = 22.0f;
-		C.ParticleSpeed = 250.0f;
-		C.ParticleLifetime = 1.2f;
-		C.bLightFlicker = false;
-		C.VelocityBias = FVector(0, 0, 30.0f);
-		SchoolConfigs.Add(EAoCMagicSchool::Dominion, C);
-	}
+	PrimaryComponentTick.TickInterval = 0.016f; // ~60fps
 }
 
 void UAoCSpellVFXManager::BeginPlay()
 {
 	Super::BeginPlay();
-
 	InitSchoolConfigs();
 
-	// Load mesh assets
+	// Load master material - try both known paths
+	MasterSpellMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/AoC/VFX/M_SpellGlow.M_SpellGlow"));
+	if (!MasterSpellMaterial)
+	{
+		MasterSpellMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/AoC/VFX/Materials/M_SpellGlow.M_SpellGlow"));
+	}
+	if (!MasterSpellMaterial)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[VFX] M_SpellGlow not found at either path!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[VFX] M_SpellGlow loaded successfully"));
+	}
+
+	// Load meshes
 	SphereMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 
-	// Load Niagara templates
-	ExplosionNiagara = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Niagara/DefaultAssets/Templates/Systems/SimpleExplosion.SimpleExplosion"));
-	BurstNiagara = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Niagara/DefaultAssets/Templates/Systems/RadialBurst.RadialBurst"));
-	FountainNiagara = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Niagara/DefaultAssets/Templates/Systems/FountainLightweight.FountainLightweight"));
-
-	// Load the master material - M_SpellGlow
-	MasterSpellMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/AoC/VFX/Materials/M_SpellGlow"));
-	
-	if (!MasterSpellMaterial)
-	{
-		// Fallback: try loading default engine translucent material
-		MasterSpellMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineMaterials/DefaultDeferredDecalMaterial"));
-		UE_LOG(LogTemp, Warning, TEXT("[SpellVFX] M_SpellGlow NOT FOUND - using fallback material"));
-	}
-
-	// Create Dynamic Material Instances for each school from the master material
-	if (MasterSpellMaterial)
-	{
-		for (auto& Pair : SchoolConfigs)
-		{
-			UMaterialInstanceDynamic* DMI = UMaterialInstanceDynamic::Create(MasterSpellMaterial, this);
-			if (DMI)
-			{
-				// Set school-specific colors on the DMI
-				DMI->SetVectorParameterValue(TEXT("BaseColor"), Pair.Value.Color);
-				DMI->SetVectorParameterValue(TEXT("EmissiveColor"), Pair.Value.EmissiveColor);
-				DMI->SetVectorParameterValue(TEXT("SpellColor"), Pair.Value.Color);
-				DMI->SetScalarParameterValue(TEXT("Intensity"), 80.0f);
-				SchoolMaterials.Add(Pair.Key, DMI);
-			}
-		}
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[SpellVFX] Initialized - %d school configs, %d materials created at runtime, Master=%s, Niagara=%s"),
-		SchoolConfigs.Num(), SchoolMaterials.Num(),
-		MasterSpellMaterial ? TEXT("YES") : TEXT("NO"),
-		ExplosionNiagara ? TEXT("YES") : TEXT("NO"));
+	UE_LOG(LogTemp, Log, TEXT("[VFX] v31 VFXManager initialized - directional combat VFX ready"));
 }
 
-void UAoCSpellVFXManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UAoCSpellVFXManager::InitSchoolConfigs()
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	UpdateParticles(DeltaTime);
-	UpdateLights(DeltaTime);
-	UpdateProjectiles(DeltaTime);
-}
-
-UAoCSpellVFXManager::FSchoolVFXConfig UAoCSpellVFXManager::GetConfig(EAoCMagicSchool School)
-{
-	if (FSchoolVFXConfig* Found = SchoolConfigs.Find(School))
+	// PYROMANCY - Fiery orange, intense heat glow
 	{
-		return *Found;
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(1.0f, 0.3f, 0.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(5.0f, 1.5f, 0.0f, 1.0f);
+		C.LightIntensity = 15000.0f;
+		C.LightRadius = 600.0f;
+		C.CastParticleCount = 12;
+		C.CastParticleSize = 6.0f;
+		C.CastGatherRadius = 80.0f;
+		C.CastGatherSpeed = 200.0f;
+		C.CastDuration = 0.6f;
+		C.ProjectileSize = 20.0f;
+		C.ProjectileSpeed = 2500.0f;
+		C.TrailParticleCount = 3;
+		C.TrailParticleSize = 8.0f;
+		C.TrailSpread = 20.0f;
+		C.ImpactParticleCount = 20;
+		C.ImpactParticleSize = 12.0f;
+		C.ImpactSpread = 400.0f;
+		C.ImpactSpeed = 500.0f;
+		C.ImpactLifetime = 1.0f;
+		C.bLightFlicker = true;
+		SchoolConfigs.Add(EAoCMagicSchool::Pyromancy, C);
 	}
-	// Default fallback (arcane)
-	FSchoolVFXConfig Default;
-	Default.Color = FLinearColor(0.6f, 0.2f, 1.0f, 1.0f);
-	Default.EmissiveColor = FLinearColor(2.4f, 0.8f, 4.0f, 1.0f);
-	Default.LightIntensity = 10000.0f;
-	Default.LightRadius = 500.0f;
-	Default.ParticleCount = 20;
-	Default.ParticleMinSize = 6.0f;
-	Default.ParticleMaxSize = 22.0f;
-	Default.ParticleSpeed = 250.0f;
-	Default.ParticleLifetime = 1.2f;
-	Default.bLightFlicker = false;
-	Default.VelocityBias = FVector(0, 0, 100.0f);
-	return Default;
-}
 
-UStaticMesh* UAoCSpellVFXManager::GetMeshForSchool(EAoCMagicSchool School)
-{
-	// Ice uses cubes for crystalline look, everything else uses spheres
-	if (School == EAoCMagicSchool::Cryomancy)
+	// CRYOMANCY - Cold blue crystals
 	{
-		return CubeMesh ? CubeMesh : SphereMesh;
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.3f, 0.7f, 1.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(1.0f, 3.0f, 5.0f, 1.0f);
+		C.LightIntensity = 10000.0f;
+		C.LightRadius = 500.0f;
+		C.CastParticleCount = 10;
+		C.CastParticleSize = 5.0f;
+		C.CastGatherRadius = 60.0f;
+		C.CastGatherSpeed = 180.0f;
+		C.CastDuration = 0.5f;
+		C.ProjectileSize = 18.0f;
+		C.ProjectileSpeed = 2800.0f;
+		C.TrailParticleCount = 2;
+		C.TrailParticleSize = 5.0f;
+		C.TrailSpread = 10.0f;
+		C.ImpactParticleCount = 18;
+		C.ImpactParticleSize = 8.0f;
+		C.ImpactSpread = 350.0f;
+		C.ImpactSpeed = 400.0f;
+		C.ImpactLifetime = 1.2f;
+		C.bLightFlicker = false;
+		SchoolConfigs.Add(EAoCMagicSchool::Cryomancy, C);
 	}
-	return SphereMesh;
+
+	// STORMCALLING - Bright white-blue lightning
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.8f, 0.9f, 1.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(4.0f, 4.5f, 5.0f, 1.0f);
+		C.LightIntensity = 30000.0f;
+		C.LightRadius = 900.0f;
+		C.CastParticleCount = 8;
+		C.CastParticleSize = 4.0f;
+		C.CastGatherRadius = 50.0f;
+		C.CastGatherSpeed = 400.0f;
+		C.CastDuration = 0.3f;
+		C.ProjectileSize = 12.0f;
+		C.ProjectileSpeed = 4000.0f;
+		C.TrailParticleCount = 4;
+		C.TrailParticleSize = 3.0f;
+		C.TrailSpread = 30.0f;
+		C.ImpactParticleCount = 25;
+		C.ImpactParticleSize = 5.0f;
+		C.ImpactSpread = 500.0f;
+		C.ImpactSpeed = 800.0f;
+		C.ImpactLifetime = 0.4f;
+		C.bLightFlicker = true;
+		SchoolConfigs.Add(EAoCMagicSchool::Stormcalling, C);
+	}
+
+	// ARCANA - Purple mystical energy
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.6f, 0.2f, 1.0f, 1.0f);
+		C.EmissiveColor = FLinearColor(3.0f, 1.0f, 5.0f, 1.0f);
+		C.LightIntensity = 12000.0f;
+		C.LightRadius = 500.0f;
+		C.CastParticleCount = 14;
+		C.CastParticleSize = 5.0f;
+		C.CastGatherRadius = 70.0f;
+		C.CastGatherSpeed = 160.0f;
+		C.CastDuration = 0.7f;
+		C.ProjectileSize = 16.0f;
+		C.ProjectileSpeed = 2200.0f;
+		C.TrailParticleCount = 3;
+		C.TrailParticleSize = 6.0f;
+		C.TrailSpread = 15.0f;
+		C.ImpactParticleCount = 18;
+		C.ImpactParticleSize = 10.0f;
+		C.ImpactSpread = 350.0f;
+		C.ImpactSpeed = 350.0f;
+		C.ImpactLifetime = 1.5f;
+		C.bLightFlicker = false;
+		SchoolConfigs.Add(EAoCMagicSchool::Arcana, C);
+	}
+
+	// UMBRAMANCY - Dark shadow wisps
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.3f, 0.0f, 0.5f, 1.0f);
+		C.EmissiveColor = FLinearColor(1.5f, 0.0f, 2.5f, 1.0f);
+		C.LightIntensity = 5000.0f;
+		C.LightRadius = 400.0f;
+		C.CastParticleCount = 10;
+		C.CastParticleSize = 8.0f;
+		C.CastGatherRadius = 90.0f;
+		C.CastGatherSpeed = 120.0f;
+		C.CastDuration = 0.8f;
+		C.ProjectileSize = 22.0f;
+		C.ProjectileSpeed = 1800.0f;
+		C.TrailParticleCount = 3;
+		C.TrailParticleSize = 10.0f;
+		C.TrailSpread = 25.0f;
+		C.ImpactParticleCount = 15;
+		C.ImpactParticleSize = 14.0f;
+		C.ImpactSpread = 300.0f;
+		C.ImpactSpeed = 200.0f;
+		C.ImpactLifetime = 2.0f;
+		C.bLightFlicker = true;
+		SchoolConfigs.Add(EAoCMagicSchool::Umbramancy, C);
+	}
+
+	// NECROMANCY - Sickly green death energy
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.2f, 0.6f, 0.1f, 1.0f);
+		C.EmissiveColor = FLinearColor(0.8f, 3.0f, 0.4f, 1.0f);
+		C.LightIntensity = 7000.0f;
+		C.LightRadius = 500.0f;
+		C.CastParticleCount = 10;
+		C.CastParticleSize = 7.0f;
+		C.CastGatherRadius = 85.0f;
+		C.CastGatherSpeed = 140.0f;
+		C.CastDuration = 0.7f;
+		C.ProjectileSize = 18.0f;
+		C.ProjectileSpeed = 2000.0f;
+		C.TrailParticleCount = 3;
+		C.TrailParticleSize = 8.0f;
+		C.TrailSpread = 20.0f;
+		C.ImpactParticleCount = 18;
+		C.ImpactParticleSize = 12.0f;
+		C.ImpactSpread = 350.0f;
+		C.ImpactSpeed = 300.0f;
+		C.ImpactLifetime = 1.8f;
+		C.bLightFlicker = true;
+		SchoolConfigs.Add(EAoCMagicSchool::Necromancy, C);
+	}
+
+	// VERDANCY - Earthy green nature energy
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.1f, 0.8f, 0.2f, 1.0f);
+		C.EmissiveColor = FLinearColor(0.4f, 4.0f, 0.8f, 1.0f);
+		C.LightIntensity = 9000.0f;
+		C.LightRadius = 500.0f;
+		C.CastParticleCount = 10;
+		C.CastParticleSize = 6.0f;
+		C.CastGatherRadius = 75.0f;
+		C.CastGatherSpeed = 150.0f;
+		C.CastDuration = 0.6f;
+		C.ProjectileSize = 16.0f;
+		C.ProjectileSpeed = 2200.0f;
+		C.TrailParticleCount = 2;
+		C.TrailParticleSize = 7.0f;
+		C.TrailSpread = 18.0f;
+		C.ImpactParticleCount = 16;
+		C.ImpactParticleSize = 10.0f;
+		C.ImpactSpread = 350.0f;
+		C.ImpactSpeed = 350.0f;
+		C.ImpactLifetime = 1.5f;
+		C.bLightFlicker = false;
+		SchoolConfigs.Add(EAoCMagicSchool::Verdancy, C);
+	}
+
+	// RADIANCE - Golden holy light
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(1.0f, 0.85f, 0.4f, 1.0f);
+		C.EmissiveColor = FLinearColor(5.0f, 4.25f, 2.0f, 1.0f);
+		C.LightIntensity = 20000.0f;
+		C.LightRadius = 700.0f;
+		C.CastParticleCount = 16;
+		C.CastParticleSize = 5.0f;
+		C.CastGatherRadius = 70.0f;
+		C.CastGatherSpeed = 200.0f;
+		C.CastDuration = 0.5f;
+		C.ProjectileSize = 15.0f;
+		C.ProjectileSpeed = 2600.0f;
+		C.TrailParticleCount = 3;
+		C.TrailParticleSize = 5.0f;
+		C.TrailSpread = 12.0f;
+		C.ImpactParticleCount = 22;
+		C.ImpactParticleSize = 8.0f;
+		C.ImpactSpread = 400.0f;
+		C.ImpactSpeed = 450.0f;
+		C.ImpactLifetime = 1.0f;
+		C.bLightFlicker = false;
+		SchoolConfigs.Add(EAoCMagicSchool::Radiance, C);
+	}
+
+	// SANGROMANCY - Deep crimson blood magic
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.8f, 0.0f, 0.1f, 1.0f);
+		C.EmissiveColor = FLinearColor(4.0f, 0.0f, 0.5f, 1.0f);
+		C.LightIntensity = 8000.0f;
+		C.LightRadius = 450.0f;
+		C.CastParticleCount = 10;
+		C.CastParticleSize = 6.0f;
+		C.CastGatherRadius = 65.0f;
+		C.CastGatherSpeed = 180.0f;
+		C.CastDuration = 0.6f;
+		C.ProjectileSize = 16.0f;
+		C.ProjectileSpeed = 2200.0f;
+		C.TrailParticleCount = 3;
+		C.TrailParticleSize = 7.0f;
+		C.TrailSpread = 15.0f;
+		C.ImpactParticleCount = 16;
+		C.ImpactParticleSize = 10.0f;
+		C.ImpactSpread = 300.0f;
+		C.ImpactSpeed = 350.0f;
+		C.ImpactLifetime = 1.3f;
+		C.bLightFlicker = true;
+		SchoolConfigs.Add(EAoCMagicSchool::Sangromancy, C);
+	}
+
+	// DOMINION - Psychic cyan pulse
+	{
+		FSchoolVFXConfig C;
+		C.Color = FLinearColor(0.0f, 0.8f, 0.9f, 1.0f);
+		C.EmissiveColor = FLinearColor(0.0f, 4.0f, 4.5f, 1.0f);
+		C.LightIntensity = 10000.0f;
+		C.LightRadius = 600.0f;
+		C.CastParticleCount = 8;
+		C.CastParticleSize = 5.0f;
+		C.CastGatherRadius = 100.0f;
+		C.CastGatherSpeed = 250.0f;
+		C.CastDuration = 0.4f;
+		C.ProjectileSize = 14.0f;
+		C.ProjectileSpeed = 3000.0f;
+		C.TrailParticleCount = 2;
+		C.TrailParticleSize = 4.0f;
+		C.TrailSpread = 8.0f;
+		C.ImpactParticleCount = 20;
+		C.ImpactParticleSize = 6.0f;
+		C.ImpactSpread = 450.0f;
+		C.ImpactSpeed = 600.0f;
+		C.ImpactLifetime = 0.6f;
+		C.bLightFlicker = false;
+		SchoolConfigs.Add(EAoCMagicSchool::Dominion, C);
+	}
 }
 
-// ============================================================
-// MAIN VFX SPAWN FUNCTIONS
-// ============================================================
+// ================================================================
+// MAIN ENTRY POINTS
+// ================================================================
 
 void UAoCSpellVFXManager::SpawnCastVFX(EAoCMagicSchool School, FVector Location, FRotator Rotation)
 {
 	FSchoolVFXConfig Config = GetConfig(School);
 
-	// 1. Spawn particle burst at cast origin
-	SpawnParticleBurst(School, Location, Config.ParticleCount, 1.0f);
+	// Cast VFX = energy gathering at the hand
+	// Particles start spread out around Location and swirl INWARD
+	FVector Forward = Rotation.Vector();
 
-	// 2. Spawn dynamic point light
-	SpawnDynamicLight(School, Location, 1.0f, Config.ParticleLifetime + 0.5f);
-
-	// 3. Spawn Niagara accent effect (adds visual complexity)
-	if (ExplosionNiagara)
+	for (int32 i = 0; i < Config.CastParticleCount; i++)
 	{
-		SpawnNiagaraAccent(Location, ExplosionNiagara);
+		// Random point on a sphere around the cast location
+		float Theta = FMath::RandRange(0.0f, 2.0f * PI);
+		float Phi = FMath::RandRange(0.0f, PI);
+		FVector Offset(
+			FMath::Sin(Phi) * FMath::Cos(Theta),
+			FMath::Sin(Phi) * FMath::Sin(Theta),
+			FMath::Cos(Phi)
+		);
+		FVector StartPos = Location + Offset * Config.CastGatherRadius;
+
+		// Velocity points TOWARD the hand (inward gathering)
+		FVector ToCenter = (Location - StartPos).GetSafeNormal();
+		FVector Vel = ToCenter * Config.CastGatherSpeed;
+
+		float Size = Config.CastParticleSize * FMath::RandRange(0.5f, 1.5f);
+		SpawnSingleParticle(StartPos, Vel, Size, Config.CastDuration, School);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[SpellVFX] Cast VFX spawned for school %d at %s - %d particles"),
-		(int32)School, *Location.ToString(), Config.ParticleCount);
+	// Bright flash at cast point
+	SpawnDynamicLight(School, Location, 1.5f, Config.CastDuration);
+
+	UE_LOG(LogTemp, Log, TEXT("[VFX] Cast VFX: %d particles gathering at hand"), Config.CastParticleCount);
 }
 
 void UAoCSpellVFXManager::SpawnProjectileVFX(EAoCMagicSchool School, FVector Start, FVector End, float Speed)
 {
-	AActor* Owner = GetOwner();
-	if (!Owner || !SphereMesh) return;
-
 	FSchoolVFXConfig Config = GetConfig(School);
 
-	// Create projectile mesh
+	if (!SphereMesh)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[VFX] No sphere mesh for projectile!"));
+		return;
+	}
+
 	FSpellProjectile Proj;
 	Proj.StartLocation = Start;
 	Proj.TargetLocation = End;
-	Proj.Speed = Speed;
+	Proj.Direction = (End - Start).GetSafeNormal();
+	Proj.Speed = (Speed > 0) ? Speed : Config.ProjectileSpeed;
+	Proj.MaxDistance = FVector::Dist(Start, End);
 	Proj.Progress = 0.0f;
 	Proj.School = School;
+	Proj.ProjectileScale = Config.ProjectileSize / 100.0f; // Sphere is 100cm default
+	Proj.TrailInterval = 0.04f;
 	Proj.TrailTimer = 0.0f;
 
-	// Main projectile sphere - larger than particles
-	Proj.Mesh = NewObject<UStaticMeshComponent>(Owner);
-	Proj.Mesh->SetStaticMesh(SphereMesh);
-	Proj.Mesh->SetWorldLocation(Start);
-	float ProjScale = Config.ParticleMaxSize * 1.5f / 100.0f;
-	Proj.Mesh->SetWorldScale3D(FVector(ProjScale));
-	Proj.Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Proj.Mesh->SetCastShadow(false);
-	Proj.Mesh->RegisterComponent();
+	// Create projectile mesh
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
 
-	// Create dynamic material for projectile from school's base DMI
-	UMaterialInterface** MatPtr = SchoolMaterials.Find(School);
-	if (MatPtr && *MatPtr)
+	UStaticMeshComponent* MeshComp = NewObject<UStaticMeshComponent>(Owner);
+	MeshComp->SetStaticMesh(SphereMesh);
+	MeshComp->SetWorldLocation(Start);
+	MeshComp->SetWorldScale3D(FVector(Proj.ProjectileScale));
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComp->SetCastShadow(false);
+	MeshComp->RegisterComponent();
+	MeshComp->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
+
+	// Apply school-colored material
+	UMaterialInstanceDynamic* DMI = GetOrCreateDMI(School);
+	if (DMI)
 	{
-		Proj.DynMaterial = UMaterialInstanceDynamic::Create(*MatPtr, Owner);
-		// Boost intensity for projectile (brighter than particles)
-		Proj.DynMaterial->SetScalarParameterValue(TEXT("Intensity"), Config.LightIntensity / 100.0f);
-		Proj.Mesh->SetMaterial(0, Proj.DynMaterial);
-	}
-	else if (MasterSpellMaterial)
-	{
-		// Fallback: create directly from master
-		Proj.DynMaterial = UMaterialInstanceDynamic::Create(MasterSpellMaterial, Owner);
-		Proj.DynMaterial->SetVectorParameterValue(TEXT("BaseColor"), Config.Color);
-		Proj.DynMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), Config.EmissiveColor);
-		Proj.DynMaterial->SetScalarParameterValue(TEXT("Intensity"), Config.LightIntensity / 100.0f);
-		Proj.Mesh->SetMaterial(0, Proj.DynMaterial);
+		UMaterialInstanceDynamic* ProjDMI = UMaterialInstanceDynamic::Create(MasterSpellMaterial, Owner);
+		ProjDMI->SetVectorParameterValue(TEXT("EmissiveColor"), Config.EmissiveColor);
+		ProjDMI->SetScalarParameterValue(TEXT("EmissiveStrength"), 15.0f); // Extra bright projectile
+		ProjDMI->SetScalarParameterValue(TEXT("Opacity"), 1.0f);
+		MeshComp->SetMaterial(0, ProjDMI);
+		Proj.DynMaterial = ProjDMI;
 	}
 
-	// Projectile point light
-	Proj.Light = NewObject<UPointLightComponent>(Owner);
-	Proj.Light->SetWorldLocation(Start);
-	Proj.Light->SetLightColor(Config.Color);
-	Proj.Light->SetIntensity(Config.LightIntensity * 0.5f);
-	Proj.Light->SetAttenuationRadius(Config.LightRadius * 0.6f);
-	Proj.Light->SetCastShadows(false);
-	Proj.Light->RegisterComponent();
+	Proj.Mesh = MeshComp;
+
+	// Projectile light - travels with the bolt
+	UPointLightComponent* LightComp = NewObject<UPointLightComponent>(Owner);
+	LightComp->SetIntensity(Config.LightIntensity * 2.0f);
+	LightComp->SetLightColor(Config.Color);
+	LightComp->SetAttenuationRadius(Config.LightRadius);
+	LightComp->SetCastShadows(false);
+	LightComp->SetWorldLocation(Start);
+	LightComp->RegisterComponent();
+	LightComp->AttachToComponent(MeshComp, FAttachmentTransformRules::KeepWorldTransform);
+	Proj.Light = LightComp;
 
 	ActiveProjectiles.Add(Proj);
 
-	// Spawn initial muzzle flash
-	SpawnParticleBurst(School, Start, Config.ParticleCount / 3, 0.5f);
-	SpawnDynamicLight(School, Start, 0.5f, 0.5f);
+	UE_LOG(LogTemp, Log, TEXT("[VFX] Projectile launched: %s → target at %.0f units, speed %.0f"),
+		*UEnum::GetValueAsString(School), Proj.MaxDistance, Proj.Speed);
 }
 
 void UAoCSpellVFXManager::SpawnImpactVFX(EAoCMagicSchool School, FVector Location)
 {
 	FSchoolVFXConfig Config = GetConfig(School);
 
-	// Bigger burst at impact
-	SpawnParticleBurst(School, Location, (int32)(Config.ParticleCount * 1.5f), 1.5f);
-
-	// Brighter light at impact
-	SpawnDynamicLight(School, Location, 2.0f, Config.ParticleLifetime + 1.0f);
-
-	// Niagara explosion at impact
-	if (ExplosionNiagara)
+	// Impact = particles scatter OUTWARD from impact point in a HORIZONTAL ring
+	// Not up, not down — outward from the hit point like a shockwave
+	for (int32 i = 0; i < Config.ImpactParticleCount; i++)
 	{
-		SpawnNiagaraAccent(Location, ExplosionNiagara);
+		// Random direction mostly horizontal (slight vertical variance)
+		float Angle = FMath::RandRange(0.0f, 2.0f * PI);
+		float ZVar = FMath::RandRange(-0.2f, 0.3f); // Slight upward bias for explosion feel
+		FVector Dir(FMath::Cos(Angle), FMath::Sin(Angle), ZVar);
+		Dir.Normalize();
+
+		FVector Vel = Dir * Config.ImpactSpeed * FMath::RandRange(0.5f, 1.5f);
+		float Size = Config.ImpactParticleSize * FMath::RandRange(0.4f, 1.2f);
+
+		// Impact particles get some gravity so they arc and fall
+		SpawnSingleParticle(Location, Vel, Size, Config.ImpactLifetime, School, 200.0f, 0.5f);
 	}
-	if (BurstNiagara)
+
+	// Big impact flash
+	SpawnDynamicLight(School, Location, 2.5f, 0.8f);
+
+	// Secondary ring of smaller particles for shockwave feel
+	int32 RingCount = Config.ImpactParticleCount / 2;
+	for (int32 i = 0; i < RingCount; i++)
 	{
-		SpawnNiagaraAccent(Location, BurstNiagara);
+		float Angle = (float)i / (float)RingCount * 2.0f * PI;
+		FVector Dir(FMath::Cos(Angle), FMath::Sin(Angle), 0.0f);
+		FVector Vel = Dir * Config.ImpactSpeed * 2.0f;
+		float Size = Config.ImpactParticleSize * 0.3f;
+
+		SpawnSingleParticle(Location, Vel, Size, Config.ImpactLifetime * 0.5f, School, 0.0f, 1.0f);
 	}
 
-	// Second wave of particles (delayed feel)
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, School, Location]()
-	{
-		SpawnParticleBurst(School, Location, 10, 0.8f);
-	}, 0.15f, false);
+	UE_LOG(LogTemp, Log, TEXT("[VFX] Impact VFX: %d particles + %d ring at location"), Config.ImpactParticleCount, RingCount);
 }
 
-// ============================================================
-// PARTICLE BURST SYSTEM
-// ============================================================
+// ================================================================
+// CORE HELPERS
+// ================================================================
 
-void UAoCSpellVFXManager::SpawnParticleBurst(EAoCMagicSchool School, FVector Location, int32 Count, float SpeedMult)
+UMaterialInstanceDynamic* UAoCSpellVFXManager::GetOrCreateDMI(EAoCMagicSchool School)
 {
-	AActor* Owner = GetOwner();
-	if (!Owner || !SphereMesh) return;
+	if (UMaterialInstanceDynamic** Found = SchoolDMIs.Find(School))
+	{
+		return *Found;
+	}
+
+	if (!MasterSpellMaterial)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[VFX] Cannot create DMI - no master material!"));
+		return nullptr;
+	}
 
 	FSchoolVFXConfig Config = GetConfig(School);
-	UStaticMesh* Mesh = GetMeshForSchool(School);
-	UMaterialInterface** MatPtr = SchoolMaterials.Find(School);
-
-	for (int32 i = 0; i < Count; i++)
+	UMaterialInstanceDynamic* DMI = UMaterialInstanceDynamic::Create(MasterSpellMaterial, GetOwner());
+	if (DMI)
 	{
-		FSpellParticle Particle;
-
-		// Create mesh component
-		Particle.Mesh = NewObject<UStaticMeshComponent>(Owner);
-		Particle.Mesh->SetStaticMesh(Mesh);
-		Particle.Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Particle.Mesh->SetCastShadow(false);
-
-		// Random scale within range
-		float Scale = FMath::RandRange(Config.ParticleMinSize, Config.ParticleMaxSize) / 100.0f;
-		Particle.InitialScale = Scale;
-		Particle.Mesh->SetWorldScale3D(FVector(Scale));
-
-		// Random offset from center
-		FVector Offset = FMath::VRand() * FMath::RandRange(0.0f, 30.0f);
-		Particle.Mesh->SetWorldLocation(Location + Offset);
-
-		// Random velocity - outward burst + school bias
-		FVector RandDir = FMath::VRand();
-		float Speed = Config.ParticleSpeed * SpeedMult * FMath::RandRange(0.5f, 1.5f);
-		Particle.Velocity = RandDir * Speed + Config.VelocityBias;
-
-		// Lifetime with some variance
-		Particle.MaxLifetime = Config.ParticleLifetime * FMath::RandRange(0.6f, 1.4f);
-		Particle.LifetimeRemaining = Particle.MaxLifetime;
-
-		// Apply material with dynamic instance for per-particle variation
-		if (MatPtr && *MatPtr)
-		{
-			Particle.DynMaterial = UMaterialInstanceDynamic::Create(*MatPtr, Owner);
-			// Slight color variation per particle
-			float Variation = FMath::RandRange(0.8f, 1.2f);
-			FLinearColor ParticleColor = Config.Color * Variation;
-			Particle.DynMaterial->SetVectorParameterValue(TEXT("SpellColor"), ParticleColor);
-			Particle.DynMaterial->SetVectorParameterValue(TEXT("BaseColor"), ParticleColor);
-			FLinearColor ParticleEmissive = Config.EmissiveColor * Variation;
-			Particle.DynMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), ParticleEmissive);
-			Particle.Mesh->SetMaterial(0, Particle.DynMaterial);
-		}
-		else if (MasterSpellMaterial)
-		{
-			// Fallback: create directly from master material
-			Particle.DynMaterial = UMaterialInstanceDynamic::Create(MasterSpellMaterial, Owner);
-			float Variation = FMath::RandRange(0.8f, 1.2f);
-			FLinearColor ParticleColor = Config.Color * Variation;
-			Particle.DynMaterial->SetVectorParameterValue(TEXT("SpellColor"), ParticleColor);
-			Particle.DynMaterial->SetVectorParameterValue(TEXT("BaseColor"), ParticleColor);
-			Particle.DynMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), Config.EmissiveColor * Variation);
-			Particle.Mesh->SetMaterial(0, Particle.DynMaterial);
-		}
-
-		Particle.Mesh->RegisterComponent();
-		ActiveParticles.Add(Particle);
+		DMI->SetVectorParameterValue(TEXT("EmissiveColor"), Config.EmissiveColor);
+		DMI->SetScalarParameterValue(TEXT("EmissiveStrength"), 10.0f);
+		DMI->SetScalarParameterValue(TEXT("Opacity"), 0.9f);
+		SchoolDMIs.Add(School, DMI);
+		UE_LOG(LogTemp, Log, TEXT("[VFX] Created DMI for %s: Color(%.1f, %.1f, %.1f)"),
+			*UEnum::GetValueAsString(School), Config.EmissiveColor.R, Config.EmissiveColor.G, Config.EmissiveColor.B);
 	}
+	return DMI;
 }
 
-// ============================================================
-// DYNAMIC LIGHT SYSTEM
-// ============================================================
+FSpellParticle& UAoCSpellVFXManager::SpawnSingleParticle(FVector Location, FVector Velocity, float Size, float Lifetime, EAoCMagicSchool School, float Gravity, float Drag)
+{
+	AActor* Owner = GetOwner();
+
+	FSpellParticle P;
+	P.Velocity = Velocity;
+	P.LifetimeRemaining = Lifetime;
+	P.MaxLifetime = Lifetime;
+	P.InitialScale = Size / 100.0f; // Sphere is 100cm
+	P.GravityScale = Gravity;
+	P.DragCoeff = Drag;
+
+	if (Owner && SphereMesh)
+	{
+		UStaticMeshComponent* MeshComp = NewObject<UStaticMeshComponent>(Owner);
+		MeshComp->SetStaticMesh(SphereMesh);
+		MeshComp->SetWorldLocation(Location);
+		MeshComp->SetWorldScale3D(FVector(P.InitialScale));
+		MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		MeshComp->SetCastShadow(false);
+		MeshComp->RegisterComponent();
+		MeshComp->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
+
+		// Apply school-colored material
+		if (MasterSpellMaterial)
+		{
+			UMaterialInstanceDynamic* DMI = UMaterialInstanceDynamic::Create(MasterSpellMaterial, Owner);
+			FSchoolVFXConfig Config = GetConfig(School);
+			DMI->SetVectorParameterValue(TEXT("EmissiveColor"), Config.EmissiveColor);
+			DMI->SetScalarParameterValue(TEXT("EmissiveStrength"), 10.0f);
+			DMI->SetScalarParameterValue(TEXT("Opacity"), 0.9f);
+			MeshComp->SetMaterial(0, DMI);
+			P.DynMaterial = DMI;
+		}
+
+		P.Mesh = MeshComp;
+	}
+
+	int32 Idx = ActiveParticles.Add(P);
+	return ActiveParticles[Idx];
+}
+
+void UAoCSpellVFXManager::SpawnTrailParticle(EAoCMagicSchool School, FVector Location, FVector ProjectileDir)
+{
+	FSchoolVFXConfig Config = GetConfig(School);
+
+	for (int32 i = 0; i < Config.TrailParticleCount; i++)
+	{
+		// Trail goes slightly backward + random spread perpendicular to direction
+		FVector Right = FVector::CrossProduct(ProjectileDir, FVector::UpVector).GetSafeNormal();
+		FVector Up = FVector::CrossProduct(Right, ProjectileDir).GetSafeNormal();
+
+		FVector Spread = Right * FMath::RandRange(-Config.TrailSpread, Config.TrailSpread)
+			+ Up * FMath::RandRange(-Config.TrailSpread, Config.TrailSpread);
+
+		// Trail velocity = slight backward drift + spread
+		FVector Vel = -ProjectileDir * 50.0f + Spread * 3.0f;
+
+		float Size = Config.TrailParticleSize * FMath::RandRange(0.3f, 1.0f);
+		SpawnSingleParticle(Location + Spread, Vel, Size, 0.4f, School, 0.0f, 2.0f);
+	}
+}
 
 void UAoCSpellVFXManager::SpawnDynamicLight(EAoCMagicSchool School, FVector Location, float IntensityMult, float Lifetime)
 {
@@ -475,54 +549,77 @@ void UAoCSpellVFXManager::SpawnDynamicLight(EAoCMagicSchool School, FVector Loca
 
 	FSchoolVFXConfig Config = GetConfig(School);
 
-	FSpellLight SpellLight;
-	SpellLight.Light = NewObject<UPointLightComponent>(Owner);
-	SpellLight.Light->SetWorldLocation(Location);
-	SpellLight.Light->SetLightColor(Config.Color);
-	SpellLight.Light->SetIntensity(Config.LightIntensity * IntensityMult);
-	SpellLight.Light->SetAttenuationRadius(Config.LightRadius);
-	SpellLight.Light->SetCastShadows(false);
-	SpellLight.Light->RegisterComponent();
+	UPointLightComponent* LightComp = NewObject<UPointLightComponent>(Owner);
+	LightComp->SetIntensity(Config.LightIntensity * IntensityMult);
+	LightComp->SetLightColor(Config.Color);
+	LightComp->SetAttenuationRadius(Config.LightRadius);
+	LightComp->SetCastShadows(false);
+	LightComp->SetWorldLocation(Location);
+	LightComp->RegisterComponent();
+	LightComp->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 
-	SpellLight.InitialIntensity = Config.LightIntensity * IntensityMult;
-	SpellLight.MaxLifetime = Lifetime;
-	SpellLight.LifetimeRemaining = Lifetime;
-	SpellLight.bFlicker = Config.bLightFlicker;
-
-	ActiveLights.Add(SpellLight);
+	FSpellLight SL;
+	SL.Light = LightComp;
+	SL.LifetimeRemaining = Lifetime;
+	SL.MaxLifetime = Lifetime;
+	SL.InitialIntensity = Config.LightIntensity * IntensityMult;
+	SL.bFlicker = Config.bLightFlicker;
+	ActiveLights.Add(SL);
 }
 
-// ============================================================
-// NIAGARA ACCENT EFFECTS
-// ============================================================
-
-void UAoCSpellVFXManager::SpawnNiagaraAccent(FVector Location, UNiagaraSystem* System)
+UAoCSpellVFXManager::FSchoolVFXConfig UAoCSpellVFXManager::GetConfig(EAoCMagicSchool School)
 {
-	if (!System || !GetWorld()) return;
-
-	UNiagaraComponent* NComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		GetWorld(), System, Location, FRotator::ZeroRotator,
-		FVector(1.0f), true, true, ENCPoolMethod::None);
-
-	if (NComp)
+	if (FSchoolVFXConfig* Found = SchoolConfigs.Find(School))
 	{
-		NComp->SetAutoDestroy(true);
+		return *Found;
 	}
+
+	// Default fallback (bright white)
+	FSchoolVFXConfig Default;
+	Default.Color = FLinearColor(1, 1, 1, 1);
+	Default.EmissiveColor = FLinearColor(4, 4, 4, 1);
+	Default.LightIntensity = 10000.0f;
+	Default.LightRadius = 500.0f;
+	Default.CastParticleCount = 10;
+	Default.CastParticleSize = 6.0f;
+	Default.CastGatherRadius = 70.0f;
+	Default.CastGatherSpeed = 180.0f;
+	Default.CastDuration = 0.6f;
+	Default.ProjectileSize = 16.0f;
+	Default.ProjectileSpeed = 2000.0f;
+	Default.TrailParticleCount = 2;
+	Default.TrailParticleSize = 6.0f;
+	Default.TrailSpread = 15.0f;
+	Default.ImpactParticleCount = 16;
+	Default.ImpactParticleSize = 10.0f;
+	Default.ImpactSpread = 350.0f;
+	Default.ImpactSpeed = 400.0f;
+	Default.ImpactLifetime = 1.0f;
+	Default.bLightFlicker = false;
+	return Default;
 }
 
-// ============================================================
-// UPDATE / ANIMATION LOOPS
-// ============================================================
+// ================================================================
+// TICK UPDATES
+// ================================================================
+
+void UAoCSpellVFXManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	UpdateParticles(DeltaTime);
+	UpdateLights(DeltaTime);
+	UpdateProjectiles(DeltaTime);
+}
 
 void UAoCSpellVFXManager::UpdateParticles(float DeltaTime)
 {
 	for (int32 i = ActiveParticles.Num() - 1; i >= 0; i--)
 	{
 		FSpellParticle& P = ActiveParticles[i];
+		P.LifetimeRemaining -= DeltaTime;
 
-		if (!P.Mesh || P.LifetimeRemaining <= 0.0f)
+		if (P.LifetimeRemaining <= 0.0f)
 		{
-			// Cleanup
 			if (P.Mesh)
 			{
 				P.Mesh->DestroyComponent();
@@ -531,27 +628,34 @@ void UAoCSpellVFXManager::UpdateParticles(float DeltaTime)
 			continue;
 		}
 
-		// Move particle
-		FVector NewLoc = P.Mesh->GetComponentLocation() + P.Velocity * DeltaTime;
-		P.Mesh->SetWorldLocation(NewLoc);
-
-		// Apply drag (particles slow down)
-		P.Velocity *= FMath::Max(0.0f, 1.0f - DeltaTime * 2.0f);
-
-		// Scale down as lifetime expires
-		float LifeFraction = P.LifetimeRemaining / P.MaxLifetime;
-		float CurrentScale = P.InitialScale * LifeFraction;
-		P.Mesh->SetWorldScale3D(FVector(FMath::Max(0.01f, CurrentScale)));
-
-		// Fade emissive intensity based on lifetime
-		if (P.DynMaterial)
+		// Apply gravity
+		if (P.GravityScale > 0.0f)
 		{
-			float IntensityFade = LifeFraction * LifeFraction; // Quadratic fadeout
-			float BaseIntensity = 80.0f;
-			P.DynMaterial->SetScalarParameterValue(TEXT("Intensity"), BaseIntensity * IntensityFade);
+			P.Velocity.Z -= P.GravityScale * DeltaTime;
 		}
 
-		P.LifetimeRemaining -= DeltaTime;
+		// Apply drag (slows particles over time)
+		if (P.DragCoeff > 0.0f)
+		{
+			P.Velocity *= FMath::Max(0.0f, 1.0f - P.DragCoeff * DeltaTime);
+		}
+
+		// Move
+		if (P.Mesh)
+		{
+			FVector NewLoc = P.Mesh->GetComponentLocation() + P.Velocity * DeltaTime;
+			P.Mesh->SetWorldLocation(NewLoc);
+
+			// Fade out: scale down and reduce opacity
+			float Alpha = P.LifetimeRemaining / P.MaxLifetime;
+			float Scale = P.InitialScale * FMath::Max(Alpha, 0.1f);
+			P.Mesh->SetWorldScale3D(FVector(Scale));
+
+			if (P.DynMaterial)
+			{
+				P.DynMaterial->SetScalarParameterValue(TEXT("Opacity"), Alpha * 0.9f);
+			}
+		}
 	}
 }
 
@@ -560,8 +664,9 @@ void UAoCSpellVFXManager::UpdateLights(float DeltaTime)
 	for (int32 i = ActiveLights.Num() - 1; i >= 0; i--)
 	{
 		FSpellLight& L = ActiveLights[i];
+		L.LifetimeRemaining -= DeltaTime;
 
-		if (!L.Light || L.LifetimeRemaining <= 0.0f)
+		if (L.LifetimeRemaining <= 0.0f)
 		{
 			if (L.Light)
 			{
@@ -571,20 +676,19 @@ void UAoCSpellVFXManager::UpdateLights(float DeltaTime)
 			continue;
 		}
 
-		float LifeFraction = L.LifetimeRemaining / L.MaxLifetime;
-
-		// Smooth intensity fadeout
-		float Intensity = L.InitialIntensity * LifeFraction * LifeFraction;
-
-		// Flicker effect for fire/lightning/blood
-		if (L.bFlicker)
+		if (L.Light)
 		{
-			float Flicker = FMath::RandRange(0.6f, 1.0f);
-			Intensity *= Flicker;
-		}
+			float Alpha = L.LifetimeRemaining / L.MaxLifetime;
+			float Intensity = L.InitialIntensity * Alpha;
 
-		L.Light->SetIntensity(FMath::Max(0.0f, Intensity));
-		L.LifetimeRemaining -= DeltaTime;
+			// Flicker effect for fire/lightning
+			if (L.bFlicker)
+			{
+				Intensity *= FMath::RandRange(0.7f, 1.3f);
+			}
+
+			L.Light->SetIntensity(Intensity);
+		}
 	}
 }
 
@@ -592,60 +696,48 @@ void UAoCSpellVFXManager::UpdateProjectiles(float DeltaTime)
 {
 	for (int32 i = ActiveProjectiles.Num() - 1; i >= 0; i--)
 	{
-		FSpellProjectile& Proj = ActiveProjectiles[i];
+		FSpellProjectile& P = ActiveProjectiles[i];
 
-		if (!Proj.Mesh)
+		// Move projectile FORWARD
+		float DistThisFrame = P.Speed * DeltaTime;
+		P.Progress += DistThisFrame;
+
+		if (P.Mesh)
 		{
-			if (Proj.Light) Proj.Light->DestroyComponent();
+			FVector NewLoc = P.StartLocation + P.Direction * P.Progress;
+			P.Mesh->SetWorldLocation(NewLoc);
+
+			if (P.Light)
+			{
+				P.Light->SetWorldLocation(NewLoc);
+			}
+
+			// Spawn trail particles behind the projectile
+			P.TrailTimer += DeltaTime;
+			if (P.TrailTimer >= P.TrailInterval)
+			{
+				P.TrailTimer = 0.0f;
+				SpawnTrailParticle(P.School, NewLoc, P.Direction);
+			}
+		}
+
+		// Hit target?
+		if (P.Progress >= P.MaxDistance)
+		{
+			// Spawn impact at target
+			SpawnImpactVFX(P.School, P.TargetLocation);
+
+			// Cleanup projectile
+			if (P.Mesh) P.Mesh->DestroyComponent();
+			if (P.Light) P.Light->DestroyComponent();
 			ActiveProjectiles.RemoveAt(i);
-			continue;
 		}
-
-		// Move projectile toward target
-		FVector Direction = (Proj.TargetLocation - Proj.StartLocation);
-		float TotalDist = Direction.Size();
-		if (TotalDist < 1.0f)
+		// Safety: destroy after 10 seconds max
+		else if (P.Progress > 50000.0f)
 		{
-			// Already at target
-			SpawnImpactVFX(Proj.School, Proj.TargetLocation);
-			Proj.Mesh->DestroyComponent();
-			if (Proj.Light) Proj.Light->DestroyComponent();
+			if (P.Mesh) P.Mesh->DestroyComponent();
+			if (P.Light) P.Light->DestroyComponent();
 			ActiveProjectiles.RemoveAt(i);
-			continue;
-		}
-
-		Direction.Normalize();
-		Proj.Progress += Proj.Speed * DeltaTime;
-
-		if (Proj.Progress >= TotalDist)
-		{
-			// Reached target - spawn impact
-			SpawnImpactVFX(Proj.School, Proj.TargetLocation);
-			Proj.Mesh->DestroyComponent();
-			if (Proj.Light) Proj.Light->DestroyComponent();
-			ActiveProjectiles.RemoveAt(i);
-			continue;
-		}
-
-		FVector NewPos = Proj.StartLocation + Direction * Proj.Progress;
-		Proj.Mesh->SetWorldLocation(NewPos);
-		if (Proj.Light) Proj.Light->SetWorldLocation(NewPos);
-
-		// Spawn trail particles every 0.05 seconds
-		Proj.TrailTimer += DeltaTime;
-		if (Proj.TrailTimer >= 0.05f)
-		{
-			Proj.TrailTimer = 0.0f;
-			// Small trail burst behind projectile
-			FVector TrailPos = NewPos - Direction * 20.0f;
-			SpawnParticleBurst(Proj.School, TrailPos, 3, 0.3f);
-		}
-
-		// Pulsing glow on projectile
-		if (Proj.DynMaterial)
-		{
-			float Pulse = 80.0f + FMath::Sin(GetWorld()->GetTimeSeconds() * 8.0f) * 30.0f;
-			Proj.DynMaterial->SetScalarParameterValue(TEXT("Intensity"), Pulse);
 		}
 	}
 }

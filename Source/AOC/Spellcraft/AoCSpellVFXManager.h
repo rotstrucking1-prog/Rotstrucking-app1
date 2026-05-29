@@ -1,5 +1,6 @@
-// AoCSpellVFXManager.h - AAA Spell Visual Effects using Niagara + Dynamic Materials + Lights
-// v30: Runtime Dynamic Material Instances from M_SpellGlow - no pre-created MI assets needed
+// AoCSpellVFXManager.h - v31: Directional combat VFX
+// Spells charge at hand → fly FORWARD at target → explode on impact
+// Each school has unique visual identity
 #pragma once
 
 #include "CoreMinimal.h"
@@ -27,6 +28,8 @@ struct FSpellParticle
 	float LifetimeRemaining = 1.0f;
 	float MaxLifetime = 1.0f;
 	float InitialScale = 1.0f;
+	float GravityScale = 0.0f;
+	float DragCoeff = 0.0f;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* DynMaterial = nullptr;
@@ -64,12 +67,16 @@ struct FSpellProjectile
 
 	FVector StartLocation = FVector::ZeroVector;
 	FVector TargetLocation = FVector::ZeroVector;
+	FVector Direction = FVector::ForwardVector;
 	float Speed = 2000.0f;
 	float Progress = 0.0f;
+	float MaxDistance = 0.0f;
 	EAoCMagicSchool School = EAoCMagicSchool::Arcana;
+	float ProjectileScale = 1.0f;
 
 	// Trail spawning
 	float TrailTimer = 0.0f;
+	float TrailInterval = 0.05f;
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -97,44 +104,51 @@ private:
 	struct FSchoolVFXConfig
 	{
 		FLinearColor Color;
-		FLinearColor EmissiveColor; // Separate emissive for HDR bloom
+		FLinearColor EmissiveColor;
 		float LightIntensity;
 		float LightRadius;
-		int32 ParticleCount;
-		float ParticleMinSize;
-		float ParticleMaxSize;
-		float ParticleSpeed;
-		float ParticleLifetime;
+
+		// Cast (hand charge) config
+		int32 CastParticleCount;
+		float CastParticleSize;
+		float CastGatherRadius;   // How far particles start from hand
+		float CastGatherSpeed;    // How fast they swirl inward
+		float CastDuration;
+
+		// Projectile config
+		float ProjectileSize;
+		float ProjectileSpeed;
+		int32 TrailParticleCount;
+		float TrailParticleSize;
+		float TrailSpread;        // How wide the trail spreads
+
+		// Impact config
+		int32 ImpactParticleCount;
+		float ImpactParticleSize;
+		float ImpactSpread;
+		float ImpactSpeed;
+		float ImpactLifetime;
+
 		bool bLightFlicker;
-		FVector VelocityBias; // Directional bias (e.g. upward for fire)
 	};
 
 	TMap<EAoCMagicSchool, FSchoolVFXConfig> SchoolConfigs;
 	void InitSchoolConfigs();
 
-	// Master material - used to create all school DMIs at runtime
+	// Master material for DMIs
 	UPROPERTY()
 	UMaterialInterface* MasterSpellMaterial;
 
-	// Loaded assets
+	// Loaded meshes
 	UPROPERTY()
 	UStaticMesh* SphereMesh;
 
 	UPROPERTY()
 	UStaticMesh* CubeMesh;
 
-	// School materials - Dynamic Material Instances created at runtime
+	// School DMIs created at runtime
 	UPROPERTY()
-	TMap<EAoCMagicSchool, UMaterialInterface*> SchoolMaterials;
-
-	UPROPERTY()
-	UNiagaraSystem* ExplosionNiagara;
-
-	UPROPERTY()
-	UNiagaraSystem* BurstNiagara;
-
-	UPROPERTY()
-	UNiagaraSystem* FountainNiagara;
+	TMap<EAoCMagicSchool, UMaterialInstanceDynamic*> SchoolDMIs;
 
 	// Active VFX elements
 	UPROPERTY()
@@ -146,11 +160,29 @@ private:
 	UPROPERTY()
 	TArray<FSpellProjectile> ActiveProjectiles;
 
-	// Helper functions
-	void SpawnParticleBurst(EAoCMagicSchool School, FVector Location, int32 Count, float SpeedMult = 1.0f);
+	// Per-school cast patterns
+	void SpawnCast_Fire(FVector Location, FRotator Rotation);
+	void SpawnCast_Ice(FVector Location, FRotator Rotation);
+	void SpawnCast_Lightning(FVector Location, FRotator Rotation);
+	void SpawnCast_Arcane(FVector Location, FRotator Rotation);
+	void SpawnCast_Shadow(FVector Location, FRotator Rotation);
+	void SpawnCast_Necro(FVector Location, FRotator Rotation);
+	void SpawnCast_Nature(FVector Location, FRotator Rotation);
+	void SpawnCast_Holy(FVector Location, FRotator Rotation);
+	void SpawnCast_Blood(FVector Location, FRotator Rotation);
+	void SpawnCast_Mind(FVector Location, FRotator Rotation);
+
+	// Per-school impact patterns
+	void SpawnImpact_Fire(FVector Location);
+	void SpawnImpact_Ice(FVector Location);
+	void SpawnImpact_Lightning(FVector Location);
+	void SpawnImpact_Default(EAoCMagicSchool School, FVector Location);
+
+	// Core helpers
+	UMaterialInstanceDynamic* GetOrCreateDMI(EAoCMagicSchool School);
+	FSpellParticle& SpawnSingleParticle(FVector Location, FVector Velocity, float Size, float Lifetime, EAoCMagicSchool School, float Gravity = 0.0f, float Drag = 0.0f);
+	void SpawnTrailParticle(EAoCMagicSchool School, FVector Location, FVector ProjectileDir);
 	void SpawnDynamicLight(EAoCMagicSchool School, FVector Location, float IntensityMult = 1.0f, float Lifetime = 1.5f);
-	void SpawnNiagaraAccent(FVector Location, UNiagaraSystem* System);
-	UStaticMesh* GetMeshForSchool(EAoCMagicSchool School);
 	FSchoolVFXConfig GetConfig(EAoCMagicSchool School);
 
 	void UpdateParticles(float DeltaTime);

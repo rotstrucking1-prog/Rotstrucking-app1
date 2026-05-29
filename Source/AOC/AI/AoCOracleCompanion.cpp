@@ -137,6 +137,11 @@ void AAoCOracleCompanion::BeginPlay()
 	SetupSpellSystem();
 	SetupStaffWeapon();
 
+	// Start the idle animation loop so Oracle doesn't T-pose
+	// Slight delay to ensure AnimManager has finished loading
+	FTimerHandle IdleStartHandle;
+	GetWorldTimerManager().SetTimer(IdleStartHandle, this, &AAoCOracleCompanion::PlayIdleLoop, 1.0f, false);
+
 	UE_LOG(LogOracle, Log, TEXT("=== Oracle Companion ready ==="));
 }
 
@@ -2139,26 +2144,27 @@ void AAoCOracleCompanion::SetupSpellSystem()
 	SpellCasting->ManaRegenRate = 10.f;
 
 	// Load one representative spell from each of the 10 schools into the spell bar
+	// Uses VERIFIED spell IDs from AoCSpellData.cpp — case-sensitive exact match
 	// Slot 0: Arcana — Arcane Bolt (projectile)
 	SpellCasting->AssignSpellToSlot(0, TEXT("Spell_ArcaneBolt"));
 	// Slot 1: Pyromancy — Fireball (projectile)
 	SpellCasting->AssignSpellToSlot(1, TEXT("Spell_Fireball"));
-	// Slot 2: Cryomancy — Frost Bolt (projectile)
-	SpellCasting->AssignSpellToSlot(2, TEXT("Spell_FrostBolt"));
+	// Slot 2: Cryomancy — Frostbolt (projectile)
+	SpellCasting->AssignSpellToSlot(2, TEXT("Spell_Frostbolt"));
 	// Slot 3: Stormcalling — Lightning Bolt (beam)
 	SpellCasting->AssignSpellToSlot(3, TEXT("Spell_LightningBolt"));
-	// Slot 4: Tempest — Gust (instant)
-	SpellCasting->AssignSpellToSlot(4, TEXT("Spell_Gust"));
-	// Slot 5: Verdancy — Regrowth (heal/buff)
-	SpellCasting->AssignSpellToSlot(5, TEXT("Spell_Regrowth"));
+	// Slot 4: Necromancy — Death Coil (projectile) — REPLACES removed Tempest
+	SpellCasting->AssignSpellToSlot(4, TEXT("Spell_DeathCoil"));
+	// Slot 5: Verdancy — Vine Whip (nature attack)
+	SpellCasting->AssignSpellToSlot(5, TEXT("Spell_VineWhip"));
 	// Slot 6: Umbramancy — Shadow Bolt (projectile)
 	SpellCasting->AssignSpellToSlot(6, TEXT("Spell_ShadowBolt"));
-	// Slot 7: Radiance — Holy Smite (instant)
-	SpellCasting->AssignSpellToSlot(7, TEXT("Spell_HolySmite"));
-	// Slot 8: Sangromancy — Blood Drain (channeled)
-	SpellCasting->AssignSpellToSlot(8, TEXT("Spell_BloodDrain"));
-	// Slot 9: Dominion — Mind Spike (instant)
-	SpellCasting->AssignSpellToSlot(9, TEXT("Spell_MindSpike"));
+	// Slot 7: Radiance — Holy Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(7, TEXT("Spell_HolyBolt"));
+	// Slot 8: Sangromancy — Blood Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(8, TEXT("Spell_BloodBolt"));
+	// Slot 9: Dominion — Dominate Mind (control)
+	SpellCasting->AssignSpellToSlot(9, TEXT("Spell_DominateMind"));
 
 	UE_LOG(LogOracle, Log, TEXT("Oracle spell bar loaded: 10 spells across 10 schools"));
 
@@ -2188,13 +2194,25 @@ void AAoCOracleCompanion::OracleCastSpell(int32 SlotIndex)
 {
 	if (!SpellCasting) return;
 
-	// Play cast animation via animation manager
-	if (AnimManager)
+	// Play cast animation directly on mesh (bypasses empty AnimBP)
+	USkeletalMeshComponent* SKMesh = GetMesh();
+	if (SKMesh && AnimManager)
 	{
-		USkeletalMeshComponent* SKMesh = GetMesh();
-		if (SKMesh)
+		UAnimSequence* CastAnim = AnimManager->GetAnimationForAction(TEXT("Cast"));
+		if (CastAnim)
 		{
-			AnimManager->PlayAnimation(SKMesh, TEXT("Cast"));
+			SKMesh->PlayAnimation(CastAnim, false); // one-shot
+
+			// Return to idle loop after cast animation finishes
+			float CastDuration = CastAnim->GetPlayLength();
+			GetWorldTimerManager().ClearTimer(CastAnimTimerHandle);
+			GetWorldTimerManager().SetTimer(
+				CastAnimTimerHandle,
+				this,
+				&AAoCOracleCompanion::ReturnToIdleAfterCast,
+				CastDuration + 0.1f, // small buffer
+				false
+			);
 		}
 	}
 
@@ -2255,6 +2273,56 @@ void AAoCOracleCompanion::OracleCastBestSpell()
 	          EOracleLogCategory::Combat, EChatBubblePriority::Normal);
 }
 
+
+// =============================================================================
+// Animation — Idle Loop & Cast Return
+// =============================================================================
+
+void AAoCOracleCompanion::PlayIdleLoop()
+{
+	USkeletalMeshComponent* SKMesh = GetMesh();
+	if (!SKMesh) return;
+
+	if (AnimManager)
+	{
+		UAnimSequence* IdleAnim = AnimManager->GetAnimationForAction(TEXT("Idle"));
+		if (IdleAnim)
+		{
+			// Play directly on mesh in loop mode — bypasses empty AnimBP
+			SKMesh->PlayAnimation(IdleAnim, true); // true = looping
+			UE_LOG(LogOracle, Log, TEXT("Oracle idle animation started: %s (looping)"), *IdleAnim->GetName());
+			return;
+		}
+	}
+
+	// Fallback: try to load a standing idle animation directly
+	UAnimSequence* FallbackIdle = LoadObject<UAnimSequence>(nullptr,
+		TEXT("/Game/AoC/Animations/Movement/Standing_Idle/Standing_Idle.Standing_Idle"));
+
+	if (!FallbackIdle)
+	{
+		// Try alternate naming
+		FallbackIdle = LoadObject<UAnimSequence>(nullptr,
+			TEXT("/Game/AoC/Animations/Movement/Idle/Standing_Idle.Standing_Idle"));
+	}
+
+	if (FallbackIdle)
+	{
+		SKMesh->PlayAnimation(FallbackIdle, true);
+		UE_LOG(LogOracle, Log, TEXT("Oracle idle animation started (fallback): %s"), *FallbackIdle->GetName());
+	}
+	else
+	{
+		UE_LOG(LogOracle, Warning, TEXT("No idle animation found for Oracle — will T-pose"));
+	}
+}
+
+void AAoCOracleCompanion::ReturnToIdleAfterCast()
+{
+	// Resume idle loop after a one-shot cast animation
+	PlayIdleLoop();
+	UE_LOG(LogOracle, Verbose, TEXT("Oracle returned to idle after spell cast"));
+}
 
 // =============================================================================
 // END — AoCOracleCompanion.cpp

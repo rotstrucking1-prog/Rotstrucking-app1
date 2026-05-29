@@ -178,6 +178,9 @@ private:
 	void SpawnImpact_Lightning(FVector Location);
 	void SpawnImpact_Default(EAoCMagicSchool School, FVector Location);
 
+	// Runtime material creation (when M_SpellGlow asset not found)
+	void CreateRuntimeSpellMaterial();
+
 	// Core helpers
 	UMaterialInstanceDynamic* GetOrCreateDMI(EAoCMagicSchool School);
 	FSpellParticle& SpawnSingleParticle(FVector Location, FVector Velocity, float Size, float Lifetime, EAoCMagicSchool School, float Gravity = 0.0f, float Drag = 0.0f);

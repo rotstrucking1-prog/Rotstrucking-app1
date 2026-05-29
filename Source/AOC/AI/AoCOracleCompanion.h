@@ -474,6 +474,15 @@ private:
 	void SetupStaffWeapon();
 	void SetupSpellSystem();
 
+	// ----- Animation State --------------------------------------------------
+	FTimerHandle CastAnimTimerHandle;
+
+	/** Start playing idle animation on loop */
+	void PlayIdleLoop();
+
+	/** Return to idle after cast animation finishes */
+	void ReturnToIdleAfterCast();
+
 	// ----- Idle Speech (ambient chatter while following) --------------------
 	float IdleSpeechTimer = 0.0f;
 	float IdleSpeechInterval = 30.0f;  // Speak every ~30 seconds when idle

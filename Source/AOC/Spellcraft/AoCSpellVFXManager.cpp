@@ -9,6 +9,14 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/KismetMathLibrary.h"
 
+// Runtime material creation includes
+#if WITH_EDITOR
+#include "Materials/Material.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
+#include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionMultiply.h"
+#endif
+
 UAoCSpellVFXManager::UAoCSpellVFXManager()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -20,7 +28,7 @@ void UAoCSpellVFXManager::BeginPlay()
 	Super::BeginPlay();
 	InitSchoolConfigs();
 
-	// Load master material - try both known paths
+	// Load master material - try known paths first
 	MasterSpellMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/AoC/VFX/M_SpellGlow.M_SpellGlow"));
 	if (!MasterSpellMaterial)
 	{
@@ -28,11 +36,16 @@ void UAoCSpellVFXManager::BeginPlay()
 	}
 	if (!MasterSpellMaterial)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[VFX] M_SpellGlow not found at either path!"));
+		UE_LOG(LogTemp, Warning, TEXT("[VFX] M_SpellGlow not found as asset — creating runtime material"));
+		CreateRuntimeSpellMaterial();
+	}
+	if (MasterSpellMaterial)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[VFX] Spell material ready: %s"), *MasterSpellMaterial->GetName());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("[VFX] M_SpellGlow loaded successfully"));
+		UE_LOG(LogTemp, Error, TEXT("[VFX] CRITICAL: No spell material available — VFX will be white!"));
 	}
 
 	// Load meshes
@@ -303,6 +316,64 @@ void UAoCSpellVFXManager::InitSchoolConfigs()
 		C.bLightFlicker = false;
 		SchoolConfigs.Add(EAoCMagicSchool::Dominion, C);
 	}
+}
+
+// ================================================================
+// RUNTIME MATERIAL CREATION
+// ================================================================
+
+void UAoCSpellVFXManager::CreateRuntimeSpellMaterial()
+{
+#if WITH_EDITOR
+	// Create a proper Additive + Unlit material entirely from code
+	// This ensures spell particles are brightly colored even without M_SpellGlow asset
+	UMaterial* Mat = NewObject<UMaterial>(GetTransientPackage(), TEXT("M_SpellGlow_Runtime"));
+	Mat->BlendMode = BLEND_Additive;
+	Mat->SetShadingModel(MSM_Unlit);
+	Mat->TwoSided = true;
+
+	// Create EmissiveColor vector parameter (will be overridden per-school via DMI)
+	UMaterialExpressionVectorParameter* EmissiveParam = NewObject<UMaterialExpressionVectorParameter>(Mat);
+	EmissiveParam->ParameterName = FName(TEXT("EmissiveColor"));
+	EmissiveParam->DefaultValue = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+	// Create EmissiveStrength scalar parameter (brightness multiplier)
+	UMaterialExpressionScalarParameter* StrengthParam = NewObject<UMaterialExpressionScalarParameter>(Mat);
+	StrengthParam->ParameterName = FName(TEXT("EmissiveStrength"));
+	StrengthParam->DefaultValue = 10.0f;
+
+	// Create Multiply node: EmissiveColor * EmissiveStrength
+	UMaterialExpressionMultiply* MultiplyNode = NewObject<UMaterialExpressionMultiply>(Mat);
+
+	// Create Opacity scalar parameter
+	UMaterialExpressionScalarParameter* OpacityParam = NewObject<UMaterialExpressionScalarParameter>(Mat);
+	OpacityParam->ParameterName = FName(TEXT("Opacity"));
+	OpacityParam->DefaultValue = 0.9f;
+
+	// Add all expressions to the material
+	Mat->GetExpressionCollection().AddExpression(EmissiveParam);
+	Mat->GetExpressionCollection().AddExpression(StrengthParam);
+	Mat->GetExpressionCollection().AddExpression(MultiplyNode);
+	Mat->GetExpressionCollection().AddExpression(OpacityParam);
+
+	// Wire the graph: EmissiveColor * EmissiveStrength → Emissive output
+	MultiplyNode->A.Connect(0, EmissiveParam);
+	MultiplyNode->B.Connect(0, StrengthParam);
+
+	// Connect to material outputs
+	Mat->GetEditorOnlyData()->EmissiveColor.Connect(0, MultiplyNode);
+	Mat->GetEditorOnlyData()->Opacity.Connect(0, OpacityParam);
+
+	// Trigger shader compilation
+	Mat->PreEditChange(nullptr);
+	Mat->PostEditChange();
+
+	MasterSpellMaterial = Mat;
+
+	UE_LOG(LogTemp, Log, TEXT("[VFX] Runtime M_SpellGlow created: Additive + Unlit + EmissiveColor/Strength/Opacity parameters"));
+#else
+	UE_LOG(LogTemp, Error, TEXT("[VFX] Cannot create runtime material outside editor — need M_SpellGlow asset!"));
+#endif
 }
 
 // ================================================================

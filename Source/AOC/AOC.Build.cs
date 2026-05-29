@@ -4,12 +4,22 @@
 //   Enhanced Input, Landscape, GameplayAbilities, Water, JSON.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class AOC : ModuleRules
 {
     public AOC(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        // Auto-add all subdirectories to include paths so cross-directory
+        // includes like #include "AoCVoxelTypes.h" resolve correctly.
+        PublicIncludePaths.Add(ModuleDirectory);
+        string[] SubDirs = Directory.GetDirectories(ModuleDirectory, "*", SearchOption.AllDirectories);
+        foreach (string Dir in SubDirs)
+        {
+            PublicIncludePaths.Add(Dir);
+        }
 
         PublicDependencyModuleNames.AddRange(new string[]
         {

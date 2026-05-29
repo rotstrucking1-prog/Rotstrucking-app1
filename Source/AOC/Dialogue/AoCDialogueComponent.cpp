@@ -1,7 +1,7 @@
 // Copyright Architect of Creation. All Rights Reserved.
 
 #include "AoCDialogueComponent.h"
-#include "Quest/AoCQuestComponent.h"
+#include "../Quest/AoCQuestComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 

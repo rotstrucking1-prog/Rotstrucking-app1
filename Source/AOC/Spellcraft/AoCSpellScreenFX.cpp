@@ -104,8 +104,8 @@ void UAoCSpellScreenFX::InitSchoolConfigs()
 		SchoolFXConfigs.Add(EAoCMagicSchool::Stormcalling, C);
 	}
 
-	// ========== TEMPEST - Wind/Earth ==========
-	// HEAVY screen shake, sustained rumble, earthquake feel
+	// ========== NECROMANCY - Death/Undead ==========
+	// Heavy screen shake, sickly green flash, decay feel
 	{
 		FSpellScreenFXConfig C;
 		C.ShakeIntensity = 5.0f; // MASSIVE
@@ -125,7 +125,7 @@ void UAoCSpellScreenFX::InitSchoolConfigs()
 		C.RumbleDuration = 1.5f;
 		C.bScreenDistortion = true;
 		C.DistortionStrength = 0.04f;
-		SchoolFXConfigs.Add(EAoCMagicSchool::Tempest, C);
+		SchoolFXConfigs.Add(EAoCMagicSchool::Necromancy, C);
 	}
 
 	// ========== VERDANCY - Nature ==========

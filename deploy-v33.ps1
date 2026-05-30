@@ -41,6 +41,18 @@ if (Test-Path $dupeHUD_cpp) {
     Remove-Item $dupeHUD_cpp -Force
     Write-Host '  Deleted duplicate UI\AoCHUDWidget.cpp'
 }
+# Clean duplicate ChatBubble (correct location is AI\, not NPC\)
+$dupeCB = "$sourceDir\NPC\AoCChatBubble.cpp"
+if (Test-Path $dupeCB) {
+    Remove-Item $dupeCB -Force
+    Write-Host '  Deleted duplicate NPC\AoCChatBubble.cpp'
+}
+# Clean entire NPC dir if empty
+$npcDir = "$sourceDir\NPC"
+if ((Test-Path $npcDir) -and @(Get-ChildItem $npcDir -Force).Count -eq 0) {
+    Remove-Item $npcDir -Force
+    Write-Host '  Removed empty NPC directory'
+}
 
 Write-Host '[3/5] Syncing source files...'
 $repoSource = "$repoDir\Source\AOC"

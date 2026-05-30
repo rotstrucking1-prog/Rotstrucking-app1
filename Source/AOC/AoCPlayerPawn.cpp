@@ -8,7 +8,7 @@
 #include "Smelting/AoCSmeltingComponent.h"
 #include "Terraforming/AoCTerraformingComponent.h"
 #include "Gathering/AoCGatheringComponent.h"
-#include "Gathering/AoCHerbalismComponent.h"
+#include "Herbalism/AoCHerbalismComponent.h"
 #include "Inventory/AoCInventoryComponent.h"
 #include "Skills/AoCSkillComponent.h"
 

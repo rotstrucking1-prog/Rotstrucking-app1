@@ -17,6 +17,8 @@ class UAoCSmeltingComponent;
 class UAoCTerraformingComponent;
 class UAoCGatheringComponent;
 class UAoCHerbalismComponent;
+class UAoCInventoryComponent;
+class UAoCSkillComponent;
 class UAoCContextMenuManager;
 
 /**
@@ -46,4 +48,38 @@ public:
 	/** Follow camera attached to the boom. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* FollowCamera;
+
+	// ── Gameplay Components ─────────────────────────────────────────────────
+
+	/** Mining: dig ore from voxel world, extract resources. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCMiningComponent* MiningComponent;
+
+	/** Prospecting: detect nearby ore veins underground. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCProspectingComponent* ProspectingComponent;
+
+	/** Smelting: operate furnaces, smelt ore into ingots. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCSmeltingComponent* SmeltingComponent;
+
+	/** Terraforming: raise, lower, flatten, slope terrain with shovel. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCTerraformingComponent* TerraformingComponent;
+
+	/** Gathering: collect resources from world nodes. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCGatheringComponent* GatheringComponent;
+
+	/** Herbalism: identify and gather wild herbs. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCHerbalismComponent* HerbalismComponent;
+
+	/** Inventory: carry items, manage equipment. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCInventoryComponent* InventoryComponent;
+
+	/** Skills: track skill levels, XP, and progression. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UAoCSkillComponent* SkillComponent;
 };

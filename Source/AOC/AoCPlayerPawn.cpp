@@ -3,6 +3,14 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Mining/AoCMiningComponent.h"
+#include "Mining/AoCProspectingComponent.h"
+#include "Smelting/AoCSmeltingComponent.h"
+#include "Terraforming/AoCTerraformingComponent.h"
+#include "Gathering/AoCGatheringComponent.h"
+#include "Gathering/AoCHerbalismComponent.h"
+#include "Inventory/AoCInventoryComponent.h"
+#include "Skills/AoCSkillComponent.h"
 
 AAoCPlayerPawn::AAoCPlayerPawn()
 {
@@ -26,6 +34,24 @@ AAoCPlayerPawn::AAoCPlayerPawn()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 600.0f;
 	GetCharacterMovement()->AirControl = 0.2f;
+
+	// ── Gameplay Components ─────────────────────────────────────────────────
+
+	MiningComponent = CreateDefaultSubobject<UAoCMiningComponent>(TEXT("MiningComponent"));
+
+	ProspectingComponent = CreateDefaultSubobject<UAoCProspectingComponent>(TEXT("ProspectingComponent"));
+
+	SmeltingComponent = CreateDefaultSubobject<UAoCSmeltingComponent>(TEXT("SmeltingComponent"));
+
+	TerraformingComponent = CreateDefaultSubobject<UAoCTerraformingComponent>(TEXT("TerraformingComponent"));
+
+	GatheringComponent = CreateDefaultSubobject<UAoCGatheringComponent>(TEXT("GatheringComponent"));
+
+	HerbalismComponent = CreateDefaultSubobject<UAoCHerbalismComponent>(TEXT("HerbalismComponent"));
+
+	InventoryComponent = CreateDefaultSubobject<UAoCInventoryComponent>(TEXT("InventoryComponent"));
+
+	SkillComponent = CreateDefaultSubobject<UAoCSkillComponent>(TEXT("SkillComponent"));
 }
 
 void AAoCPlayerPawn::BeginPlay()

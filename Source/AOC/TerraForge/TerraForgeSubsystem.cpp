@@ -86,7 +86,7 @@ void UTerraForgeSubsystem::InitializePool()
 
 	// Create the pool actor to hold all ProceduralMeshComponents
 	FActorSpawnParameters SpawnParams;
-	SpawnParams.Name = TEXT("TerraForge_MeshPool");
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	MeshPoolActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
 	if (MeshPoolActor)

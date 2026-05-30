@@ -5,12 +5,27 @@
 #include "AoCVoxelWorld.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Components/StaticMeshComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 // ─── Constructor & BeginPlay ─────────────────────────────────────────────────
 
 AAoCOreVein::AAoCOreVein()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	// Create visual rock mesh as root component
+	VeinMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VeinMesh"));
+	RootComponent = VeinMesh;
+	VeinMesh->SetMobility(EComponentMobility::Movable);
+
+	// Try to load a default rock mesh
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> RockMeshFinder(
+		TEXT("/Game/RuralAustralia/Rocks/Rock_M_03.Rock_M_03"));
+	if (RockMeshFinder.Succeeded())
+	{
+		VeinMesh->SetStaticMesh(RockMeshFinder.Object);
+	}
 
 	VeinCenter = FVector::ZeroVector;
 	VeinRadius = 200.f;

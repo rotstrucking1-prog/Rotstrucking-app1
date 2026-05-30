@@ -1,7 +1,6 @@
 // AoCOreVein.h
 // Architect of Creation - Ore Vein Actor
-// Represents an ore vein in the world with metadata for extraction, quality, and generation.
-// Not a visible mesh — metadata actor that tracks vein state and provides ore extraction logic.
+// Represents an ore vein in the world with visual rock mesh and metadata for extraction.
 
 #pragma once
 
@@ -11,6 +10,7 @@
 #include "AoCOreVein.generated.h"
 
 class AAoCVoxelWorld;
+class UStaticMeshComponent;
 
 // ─── Structs ─────────────────────────────────────────────────────────────────
 
@@ -93,6 +93,12 @@ public:
 
 	virtual void BeginPlay() override;
 
+	// ── Components ──────────────────────────────────────────────────────────
+
+	/** Visual rock mesh representing the ore vein in the world. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "OreVein|Components")
+	UStaticMeshComponent* VeinMesh;
+
 	// ── Properties ──────────────────────────────────────────────────────────
 
 	/** Center position of the vein in world space. */
@@ -139,97 +145,38 @@ public:
 
 	// ── Functions ───────────────────────────────────────────────────────────
 
-	/**
-	 * Initialize this vein with the given parameters.
-	 * Sets up all vein properties and calculates tier.
-	 * @param Mat Material type of the ore
-	 * @param Center World-space center of the vein
-	 * @param Radius Vein radius in centimeters
-	 * @param InQuality Ore quality (0-100)
-	 * @param OreAmount Total ore units in the vein
-	 */
 	UFUNCTION(BlueprintCallable, Category = "OreVein")
 	void InitializeVein(EVoxelMaterial Mat, FVector Center, float Radius, uint8 InQuality, int32 OreAmount);
 
-	/**
-	 * Extract ore from this vein.
-	 * Output quality = (VeinQuality + SkillBonus + ToolQuality) / 3.
-	 * Decrements RemainingOre.
-	 * @param SkillLevel Mining skill of the extractor (0-100)
-	 * @param ToolQuality Quality of the mining tool (0-100)
-	 * @return Extraction result with amount and quality
-	 */
 	UFUNCTION(BlueprintCallable, Category = "OreVein")
 	FOreExtractResult ExtractOre(float SkillLevel, float ToolQuality);
 
-	/**
-	 * Check if this vein has been fully depleted.
-	 * @return True if no ore remains
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein")
 	bool IsDepleted() const;
 
-	/**
-	 * Get the percentage of ore remaining in this vein.
-	 * @return Percentage (0.0 to 1.0)
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein")
 	float GetRemainingPercentage() const;
 
-	/**
-	 * Get the display color for this ore type (based on real-world ore appearance).
-	 * @return Linear color representing the ore's visual appearance
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein")
 	FLinearColor GetOreColor() const;
 
 	// ── Static Helpers ──────────────────────────────────────────────────────
 
-	/**
-	 * Get the display name for a given ore material.
-	 * @param Mat The voxel material enum value
-	 * @return Human-readable ore name (e.g. "Copper Ore (Malachite)")
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein|Static")
 	static FString GetOreName(EVoxelMaterial Mat);
 
-	/**
-	 * Get the tier (1-6) for a given ore material.
-	 * @param Mat The voxel material enum value
-	 * @return Tier number (1-6), or 0 if not an ore
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein|Static")
 	static int32 GetOreTier(EVoxelMaterial Mat);
 
-	/**
-	 * Get the ore reduction (smelting) temperature in degrees Celsius.
-	 * @param Mat The voxel material enum value
-	 * @return Temperature in °C required to smelt/reduce this ore
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein|Static")
 	static int32 GetOreReductionTemp(EVoxelMaterial Mat);
 
-	/**
-	 * Get the ore color for a given material type.
-	 * @param Mat The voxel material enum value
-	 * @return Linear color representing the ore
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein|Static")
 	static FLinearColor GetOreColorForMaterial(EVoxelMaterial Mat);
 
-	/**
-	 * Get generation parameters for a given tier.
-	 * @param InTier Tier number (1-6)
-	 * @return Generation parameters struct
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein|Static")
 	static FOreGenParams GetGenParamsForTier(int32 InTier);
 
-	/**
-	 * Get all ore materials that belong to a given tier.
-	 * @param InTier Tier number (1-6)
-	 * @return Array of EVoxelMaterial values in that tier
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "OreVein|Static")
 	static TArray<EVoxelMaterial> GetMaterialsForTier(int32 InTier);
 };

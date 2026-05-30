@@ -22,8 +22,10 @@ AAoCPlayerPawn::AAoCPlayerPawn()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f;
+	CameraBoom->TargetArmLength = 450.0f;
 	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->SocketOffset = FVector(0.0f, 50.0f, 80.0f);
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom);
@@ -64,6 +66,18 @@ void AAoCPlayerPawn::BeginPlay()
 		PC->bShowMouseCursor = false;
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
+	}
+
+	// Set up idle animation on the skeletal mesh
+	USkeletalMeshComponent* SkelMesh = GetMesh();
+	if (SkelMesh)
+	{
+		UAnimSequence* IdleAnim = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/AoC/Characters/PeasantMan/SK_PeasantMan_Anim.SK_PeasantMan_Anim"));
+		if (IdleAnim)
+		{
+			SkelMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			SkelMesh->PlayAnimation(IdleAnim, true);
+		}
 	}
 }
 

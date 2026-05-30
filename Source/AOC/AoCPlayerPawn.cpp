@@ -464,10 +464,24 @@ void AAoCPlayerPawn::ProcessInteractionInput(APlayerController* PC)
 		return;
 	}
 
-	// Sub-menu mode: number keys select actions
+	// Sub-menu mode: number keys select actions, or toggle key to exit
 	if (CurrentMode == EInteractionMode::TerraformMenu ||
 		CurrentMode == EInteractionMode::MiningMenu)
 	{
+		// Allow pressing the SAME mode key again to toggle OFF (T exits terraform, M exits mining)
+		if (CurrentMode == EInteractionMode::TerraformMenu &&
+			PC->WasInputKeyJustPressed(KeyBindings.FindRef(FName("Terraform"))))
+		{
+			HandleCancel();
+			return;
+		}
+		if (CurrentMode == EInteractionMode::MiningMenu &&
+			PC->WasInputKeyJustPressed(KeyBindings.FindRef(FName("MiningMenu"))))
+		{
+			HandleCancel();
+			return;
+		}
+
 		for (int32 i = 1; i <= 6; ++i)
 		{
 			FName SlotName = FName(*FString::Printf(TEXT("Slot%d"), i));

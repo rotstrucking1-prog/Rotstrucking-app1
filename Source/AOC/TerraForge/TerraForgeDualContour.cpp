@@ -65,8 +65,12 @@ FVector FTerraForgeDualContour::FQEFData::Solve(const FVector& CellMin, const FV
 
 	if (FMath::Abs(Det) < 1e-10f)
 	{
-		// Singular — fall back to mass point
-		return FMath::Clamp(AvgPoint,  CellMin, CellMax);
+		// Singular — fall back to mass point (clamp per-component)
+		FVector Clamped;
+		Clamped.X = FMath::Clamp(AvgPoint.X, CellMin.X, CellMax.X);
+		Clamped.Y = FMath::Clamp(AvgPoint.Y, CellMin.Y, CellMax.Y);
+		Clamped.Z = FMath::Clamp(AvgPoint.Z, CellMin.Z, CellMax.Z);
+		return Clamped;
 	}
 
 	const float InvDet = 1.0f / Det;

@@ -115,7 +115,7 @@ void UAoCObserveModeOverlay::BuildGrid()
 	GridBg->SetBrushColor(GetGridBgColor());
 
 	UVerticalBoxSlot* GridBgSlot = MainVBox->AddChildToVerticalBox(GridBg);
-	GridBgSlot->SetSize(FSlateChildSize(1.0f)); // Fill
+	GridBgSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill)); // Fill
 
 	// ── Grid panel ──────────────────────────────────────────────────────────
 	UUniformGridPanel* Grid = WidgetTree->ConstructWidget<UUniformGridPanel>(
@@ -205,7 +205,7 @@ void UAoCObserveModeOverlay::BuildGrid()
 	DirtText->SetFont(DirtFont);
 	DirtText->SetColorAndOpacity(FSlateColor(FLinearColor(0.7f, 0.65f, 0.55f, 1.0f)));
 	UHorizontalBoxSlot* DirtSlot = InfoHBox->AddChildToHorizontalBox(DirtText);
-	DirtSlot->SetSize(FSlateChildSize(1.0f));
+	DirtSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 
 	// Tool text
 	UTextBlock* ToolText = WidgetTree->ConstructWidget<UTextBlock>(
@@ -216,7 +216,7 @@ void UAoCObserveModeOverlay::BuildGrid()
 	ToolText->SetFont(ToolFont);
 	ToolText->SetColorAndOpacity(FSlateColor(FLinearColor(0.7f, 0.65f, 0.55f, 1.0f)));
 	UHorizontalBoxSlot* ToolSlot = InfoHBox->AddChildToHorizontalBox(ToolText);
-	ToolSlot->SetSize(FSlateChildSize(1.0f));
+	ToolSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 
 	// Skill level
 	UTextBlock* SkillText = WidgetTree->ConstructWidget<UTextBlock>(
@@ -276,7 +276,7 @@ void UAoCObserveModeOverlay::UpdateTile(int32 GridX, int32 GridY, const FObserve
 		ElevText->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), ElevM)));
 
 		// Color based on slope
-		const FLinearColor TileColor = GetTileColor(TileData.SlopeAngle);
+		const FLinearColor TileColor = GetTileColor(TileData.HeightDelta);
 		const bool bIsCenter = (GridX == GRID_SIZE / 2 && GridY == GRID_SIZE / 2);
 		ElevText->SetColorAndOpacity(FSlateColor(bIsCenter ? GetCenterColor() : TileColor));
 	}
@@ -302,7 +302,6 @@ void UAoCObserveModeOverlay::UpdateTile(int32 GridX, int32 GridY, const FObserve
 	}
 
 	// Tile background color: subtle coloring by material
-	float BgIntensity = 0.08f;
 	FLinearColor BgColor;
 	switch (TileData.SurfaceMaterial)
 	{

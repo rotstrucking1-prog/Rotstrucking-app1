@@ -276,7 +276,7 @@ UWidget* UAoCTerraformContextMenu::CreateActionRow(
 	NameText->SetColorAndOpacity(FSlateColor(bEnabled ? GetActionColor() : GetDisabledColor()));
 
 	UHorizontalBoxSlot* NameSlot = HBox->AddChildToHorizontalBox(NameText);
-	NameSlot->SetSize(FSlateChildSize(1.0f)); // Fill remaining space
+	NameSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill)); // Fill remaining space
 
 	// Tool requirement icon (if different from current)
 	if (!bEnabled)

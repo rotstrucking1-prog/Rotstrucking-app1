@@ -13,6 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Landscape.h"
 #include "LandscapeProxy.h"
+#include "LandscapeComponent.h"
 #include "Components/ActorComponent.h"
 #include "NavigationSystem.h"
 #include "Async/Async.h"
@@ -203,12 +204,25 @@ bool UTerraForgeSubsystem::HasChunk(const FTerraChunkKey& Key) const
 
 EGeoMaterial UTerraForgeSubsystem::LowerTerrain(const FVector& WorldPos, float Amount)
 {
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain at (%.1f, %.1f, %.1f) amount=%.2f"),
+		WorldPos.X, WorldPos.Y, WorldPos.Z, Amount);
+
 	FTerraForgeChunk* Chunk = GetOrCreateChunk(WorldPos);
-	if (!Chunk) return EGeoMaterial::Air;
+	if (!Chunk)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: LowerTerrain — failed to get/create chunk!"));
+		return EGeoMaterial::Air;
+	}
 
 	FIntVector Local = Chunk->WorldToLocal(WorldPos);
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — local coords (%d,%d,%d), chunk key (%d,%d,%d)"),
+		Local.X, Local.Y, Local.Z, Chunk->GetKey().X, Chunk->GetKey().Y, Chunk->GetKey().Z);
+
 	if (!FTerraForgeChunk::IsInBounds(Local.X, Local.Y, Local.Z))
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: LowerTerrain — local coords out of bounds!"));
 		return EGeoMaterial::Air;
+	}
 
 	Chunk->Lock();
 
@@ -230,12 +244,14 @@ EGeoMaterial UTerraForgeSubsystem::LowerTerrain(const FVector& WorldPos, float A
 	if (!bFoundSolid)
 	{
 		Chunk->Unlock();
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — no solid voxel found in column!"));
 		return EGeoMaterial::Air;
 	}
 
 	// Get the material before we remove it
 	FGeoVoxel& Voxel = Chunk->GetVoxelMutable(Local.X, Local.Y, TargetZ);
 	const EGeoMaterial DugMaterial = Voxel.GetMaterial();
+	const float OldDensity = Voxel.Density;
 
 	// Modify the density to create the surface transition
 	const float DigVoxels = Amount / TF_VOXEL_SIZE;
@@ -247,11 +263,17 @@ EGeoMaterial UTerraForgeSubsystem::LowerTerrain(const FVector& WorldPos, float A
 		Voxel.MakeAir();
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — voxel (%d,%d,%d) density %.3f -> %.3f, material=%d, made air=%s"),
+		Local.X, Local.Y, TargetZ, OldDensity, Voxel.Density,
+		(int32)DugMaterial, Voxel.GetMaterial() == EGeoMaterial::Air ? TEXT("YES") : TEXT("NO"));
+
 	Chunk->MarkDirty();
 	Chunk->Unlock();
 
 	// Add to dirty queue
 	DirtyChunkQueue.AddUnique(Chunk->GetKey());
+
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — chunk marked dirty, queue size=%d"), DirtyChunkQueue.Num());
 
 	return DugMaterial;
 }
@@ -1068,6 +1090,11 @@ void UTerraForgeSubsystem::UpdateStreaming(const FVector& PlayerPos)
 
 void UTerraForgeSubsystem::ProcessDirtyChunks(int32 MaxPerFrame)
 {
+	if (DirtyChunkQueue.Num() > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — %d chunks in queue"), DirtyChunkQueue.Num());
+	}
+
 	int32 Processed = 0;
 	while (DirtyChunkQueue.Num() > 0 && Processed < MaxPerFrame)
 	{
@@ -1075,9 +1102,21 @@ void UTerraForgeSubsystem::ProcessDirtyChunks(int32 MaxPerFrame)
 		DirtyChunkQueue.RemoveAt(0);
 
 		FTerraForgeChunk* Chunk = GetChunk(Key);
-		if (!Chunk || !Chunk->IsDirty()) continue;
-		if (Chunk->IsMeshGenerating()) continue;
+		if (!Chunk || !Chunk->IsDirty())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — skipping chunk (%d,%d,%d): null=%s dirty=%s"),
+				Key.X, Key.Y, Key.Z, Chunk ? TEXT("no") : TEXT("YES"), Chunk && Chunk->IsDirty() ? TEXT("yes") : TEXT("NO"));
+			continue;
+		}
+		if (Chunk->IsMeshGenerating())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — chunk (%d,%d,%d) already generating mesh, skipping"),
+				Key.X, Key.Y, Key.Z);
+			continue;
+		}
 
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — regenerating mesh for chunk (%d,%d,%d)"),
+			Key.X, Key.Y, Key.Z);
 		RegenerateMesh(Key);
 		Processed++;
 	}
@@ -1099,6 +1138,10 @@ void UTerraForgeSubsystem::RegenerateMesh(const FTerraChunkKey& Key)
 	// Generate mesh (currently synchronous — TODO: move to async task)
 	FTerraChunkMeshData MeshData;
 	FTerraForgeDualContour::GenerateMesh(*Snapshot, LOD, MeshData);
+
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — chunk (%d,%d,%d): valid=%s verts=%d tris=%d"),
+		Key.X, Key.Y, Key.Z, MeshData.bValid ? TEXT("YES") : TEXT("NO"),
+		MeshData.Vertices.Num(), MeshData.Triangles.Num() / 3);
 
 	// Apply mesh to ProceduralMeshComponent
 	if (MeshData.bValid && MeshData.Vertices.Num() > 0)
@@ -1122,6 +1165,9 @@ void UTerraForgeSubsystem::RegenerateMesh(const FTerraChunkKey& Key)
 
 		if (MeshComp)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — generating mesh for chunk (%d,%d,%d): %d verts, %d tris"),
+				Key.X, Key.Y, Key.Z, MeshData.Vertices.Num(), MeshData.Triangles.Num() / 3);
+
 			// Convert tangent vectors to FProcMeshTangent
 			TArray<FProcMeshTangent> ProcTangents;
 			ProcTangents.SetNum(MeshData.Vertices.Num());
@@ -1147,8 +1193,25 @@ void UTerraForgeSubsystem::RegenerateMesh(const FTerraChunkKey& Key)
 				true /* collision */);
 
 			MeshComp->SetVisibility(true);
+			MeshComp->SetHiddenInGame(false);
+			MeshComp->SetCastShadow(true);
 			Chunk->SetHasRenderedMesh(true);
+
+			// Hide the landscape at this chunk's location so our mesh is visible
+			HideLandscapeForChunk(Key);
+
+			UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — mesh applied successfully, landscape hidden"));
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — no MeshComp available (pool actor=%s)"),
+				MeshPoolActor ? TEXT("exists") : TEXT("NULL"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — no valid mesh generated (valid=%s verts=%d)"),
+			MeshData.bValid ? TEXT("YES") : TEXT("NO"), MeshData.Vertices.Num());
 	}
 
 	Chunk->SetMeshGenerating(false);
@@ -1519,4 +1582,67 @@ FTerraForgeChunk* UTerraForgeSubsystem::GetChunkAt(const FIntVector& ChunkCoord)
 		return Found->Get();
 	}
 	return nullptr;
+}
+
+// ============================================================================
+// LANDSCAPE HIDING
+// ============================================================================
+
+void UTerraForgeSubsystem::HideLandscapeForChunk(const FTerraChunkKey& Key)
+{
+	if (!CachedLandscape)
+	{
+		CachedLandscape = FindLandscape();
+	}
+	if (!CachedLandscape)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk — no landscape found!"));
+		return;
+	}
+
+	// Get chunk world bounds (2D, XY plane)
+	const FVector ChunkOrigin = Key.ToWorldPos(); // in cm
+	const float ChunkSizeCm = TF_CHUNK_WORLD_SIZE * 100.0f;
+	const FVector ChunkEnd = ChunkOrigin + FVector(ChunkSizeCm, ChunkSizeCm, ChunkSizeCm);
+
+	// Get landscape transform
+	const FVector LandscapePos = CachedLandscape->GetActorLocation();
+	const FVector LandscapeScale = CachedLandscape->GetActorScale3D();
+
+	// Iterate through landscape components and hide those overlapping with this chunk
+	TArray<ULandscapeComponent*> Comps;
+	CachedLandscape->GetComponents<ULandscapeComponent>(Comps);
+
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk — checking %d landscape components, chunk origin=(%.0f,%.0f)"),
+		Comps.Num(), ChunkOrigin.X, ChunkOrigin.Y);
+
+	for (ULandscapeComponent* LC : Comps)
+	{
+		if (!LC || HiddenLandscapeComponents.Contains(LC))
+		{
+			continue;
+		}
+
+		// Get component's world bounds
+		FBoxSphereBounds CompBounds = LC->CalcBounds(CachedLandscape->GetActorTransform());
+		FBox CompBox = CompBounds.GetBox();
+
+		// Check 2D overlap (XY plane)
+		bool bOverlaps =
+			CompBox.Max.X >= ChunkOrigin.X && CompBox.Min.X <= ChunkEnd.X &&
+			CompBox.Max.Y >= ChunkOrigin.Y && CompBox.Min.Y <= ChunkEnd.Y;
+
+		if (bOverlaps)
+		{
+			LC->SetVisibility(false, true);
+			LC->SetHiddenInGame(true);
+			HiddenLandscapeComponents.Add(LC);
+
+			UE_LOG(LogTemp, Warning,
+				TEXT("TerraForge: Hidden landscape component '%s' at bounds (%.0f,%.0f)-(%.0f,%.0f)"),
+				*LC->GetName(),
+				CompBox.Min.X, CompBox.Min.Y,
+				CompBox.Max.X, CompBox.Max.Y);
+		}
+	}
 }

@@ -12,6 +12,7 @@
 #include "TerraForgeSubsystem.generated.h"
 
 class ALandscapeProxy;
+class ULandscapeComponent;
 class UProceduralMeshComponent;
 class UTerraForgeGeology;
 class UTerraForgeStructural;
@@ -227,6 +228,12 @@ private:
 
 	/** Calculate structural stress at a position. */
 	float CalculateStress(const FTerraForgeChunk& Chunk, int32 X, int32 Y, int32 Z) const;
+
+	/** Hide landscape component(s) overlapping a modified chunk. */
+	void HideLandscapeForChunk(const FTerraChunkKey& Key);
+
+	/** Set of landscape components we have already hidden. */
+	TSet<ULandscapeComponent*> HiddenLandscapeComponents;
 
 	/** Set voxel material at a world position. */
 	void SetVoxelMaterial(const FVector& WorldPos, EGeoMaterial Material);

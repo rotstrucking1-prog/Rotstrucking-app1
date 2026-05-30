@@ -33,6 +33,7 @@
 #include "Herbalism/AoCHerbalismComponent.h"
 #include "Inventory/AoCInventoryComponent.h"
 #include "Skills/AoCSkillComponent.h"
+#include "TerraForge/TerraForgeComponent.h"
 #include "UI/Widgets/AoCHUDWidget.h"
 #include "Blueprint/UserWidget.h"
 
@@ -82,6 +83,7 @@ AAoCPlayerPawn::AAoCPlayerPawn()
 	HerbalismComponent    = CreateDefaultSubobject<UAoCHerbalismComponent>(TEXT("HerbalismComponent"));
 	InventoryComponent    = CreateDefaultSubobject<UAoCInventoryComponent>(TEXT("InventoryComponent"));
 	SkillComponent        = CreateDefaultSubobject<UAoCSkillComponent>(TEXT("SkillComponent"));
+	TerraForgeComp        = CreateDefaultSubobject<UTerraForgeComponent>(TEXT("TerraForgeComp"));
 
 	// ── Default state ───────────────────────────────────────────────────────
 	InteractionRange    = 800.0f;
@@ -759,6 +761,12 @@ void AAoCPlayerPawn::HandleObserveGround()
 {
 	PlayActionAnimation(AnimObserveGround, 3.0f);
 
+	// ── TerraForge observe mode (shows 11x11 grid overlay) ──
+	if (TerraForgeComp)
+	{
+		TerraForgeComp->ExecuteAction(ETerraAction::Observe);
+	}
+
 	FString Info = TEXT("=== GROUND OBSERVATION ===\n");
 	Info += FString::Printf(TEXT("Location: (%.0f, %.0f, %.0f)\n"),
 		TargetLocation.X, TargetLocation.Y, TargetLocation.Z);
@@ -787,12 +795,14 @@ void AAoCPlayerPawn::HandleTerraformMenu()
 	if (CurrentMode == EInteractionMode::TerraformMenu)
 	{
 		CurrentMode = EInteractionMode::Default;
+		if (TerraForgeComp) TerraForgeComp->CloseContextMenu();
 		ShowNotification(TEXT("Terraform mode OFF"), FColor(180, 180, 180), 1.0f);
 	}
 	else
 	{
 		CurrentMode = EInteractionMode::TerraformMenu;
-		ShowNotification(TEXT("TERRAFORM MODE - select action with number keys"), FColor::Yellow);
+		if (TerraForgeComp) TerraForgeComp->OpenContextMenu();
+		ShowNotification(TEXT("TERRAFORM MODE\n[1] Lower  [2] Raise  [3] Flatten\n[4] Slope  [5] Tunnel  [6] Support"), FColor::Yellow, 5.0f);
 	}
 }
 
@@ -801,12 +811,14 @@ void AAoCPlayerPawn::HandleMiningMenu()
 	if (CurrentMode == EInteractionMode::MiningMenu)
 	{
 		CurrentMode = EInteractionMode::Default;
+		if (TerraForgeComp) TerraForgeComp->CloseContextMenu();
 		ShowNotification(TEXT("Mining mode OFF"), FColor(180, 180, 180), 1.0f);
 	}
 	else
 	{
 		CurrentMode = EInteractionMode::MiningMenu;
-		ShowNotification(TEXT("MINING MODE - select tunnel direction"), FColor::Orange);
+		if (TerraForgeComp) TerraForgeComp->OpenContextMenu();
+		ShowNotification(TEXT("MINING MODE\n[1] Tunnel Fwd  [2] Tunnel Down  [3] Tunnel Up\n[4] Place Support"), FColor::Orange, 5.0f);
 	}
 }
 
@@ -817,6 +829,15 @@ void AAoCPlayerPawn::HandleProspect()
 
 	PlayActionAnimation(AnimProspecting, 3.0f);
 
+	// ── TerraForge prospecting (deep geological scan) ──
+	if (TerraForgeComp)
+	{
+		TerraForgeComp->ExecuteAction(ETerraAction::Prospect);
+		ShowNotification(TEXT("Prospecting... scanning geological layers..."), FColor::Yellow, 4.0f);
+		return;
+	}
+
+	// ── Fallback: old prospecting component ──
 	if (ProspectingComponent)
 	{
 		ProspectingComponent->StartProspect(GetActorLocation());
@@ -852,6 +873,7 @@ void AAoCPlayerPawn::HandleCancel()
 	if (CurrentMode != EInteractionMode::Default)
 	{
 		CurrentMode = EInteractionMode::Default;
+		if (TerraForgeComp) TerraForgeComp->CloseContextMenu();
 		ShowNotification(TEXT("Cancelled"), FColor(180, 180, 180), 1.0f);
 	}
 
@@ -882,6 +904,43 @@ void AAoCPlayerPawn::HandleActionSlot(int32 Slot)
 void AAoCPlayerPawn::ExecuteTerraformAction(int32 ActionIndex)
 {
 	if (ActionCooldown > 0.0f) return;
+
+	// ── Route through TerraForge (unified engine) ──
+	if (TerraForgeComp)
+	{
+		// Map action slot to ETerraAction
+		ETerraAction TFAction;
+		FString ActionName;
+		switch (ActionIndex)
+		{
+		case 1: TFAction = ETerraAction::LowerGround;  ActionName = TEXT("Lower Ground");  break;
+		case 2: TFAction = ETerraAction::RaiseGround;   ActionName = TEXT("Raise Ground");   break;
+		case 3: TFAction = ETerraAction::Flatten;        ActionName = TEXT("Flatten");        break;
+		case 4: TFAction = ETerraAction::FlattenSlope;   ActionName = TEXT("Flatten Slope");  break;
+		case 5: TFAction = ETerraAction::DigTunnel;      ActionName = TEXT("Dig Tunnel");     break;
+		case 6: TFAction = ETerraAction::PlaceSupport;   ActionName = TEXT("Place Support");  break;
+		default:
+			ShowNotification(TEXT("Invalid terraform action"), FColor::Red);
+			return;
+		}
+
+		// Play digging animation for all terraform actions
+		PlayActionAnimation(AnimDigging);
+
+		const bool bSuccess = TerraForgeComp->ExecuteAction(TFAction);
+		if (bSuccess)
+		{
+			ShowNotification(FString::Printf(TEXT("Terraforming: %s"), *ActionName), FColor::Green);
+		}
+		else
+		{
+			ShowNotification(FString::Printf(TEXT("Cannot %s here"), *ActionName), FColor::Red);
+		}
+		ActionCooldown = 1.0f;
+		return;
+	}
+
+	// ── Fallback: old terraforming component ──
 	ActionCooldown = 1.0f;
 
 	ETerraformAction TAction;
@@ -898,7 +957,6 @@ void AAoCPlayerPawn::ExecuteTerraformAction(int32 ActionIndex)
 		return;
 	}
 
-	// Play digging animation for all terraform actions
 	PlayActionAnimation(AnimDigging);
 
 	if (TerraformingComponent)
@@ -923,6 +981,7 @@ void AAoCPlayerPawn::ExecuteMiningAction(int32 ActionIndex)
 	case 1: ActionName = TEXT("Tunnel Forward"); break;
 	case 2: ActionName = TEXT("Tunnel Down");    break;
 	case 3: ActionName = TEXT("Tunnel Up");      break;
+	case 4: ActionName = TEXT("Place Support");  break;
 	default:
 		ShowNotification(TEXT("Invalid mining action"), FColor::Red);
 		return;
@@ -931,11 +990,33 @@ void AAoCPlayerPawn::ExecuteMiningAction(int32 ActionIndex)
 	// Play mining swing animation for all tunnel actions
 	PlayActionAnimation(AnimMiningSwing);
 
+	// ── Route through TerraForge (unified engine) ──
+	if (TerraForgeComp)
+	{
+		bool bSuccess = false;
+		if (ActionIndex == 4)
+		{
+			bSuccess = TerraForgeComp->ExecuteAction(ETerraAction::PlaceSupport);
+		}
+		else
+		{
+			bSuccess = TerraForgeComp->ExecuteAction(ETerraAction::DigTunnel);
+		}
+
+		if (bSuccess)
+		{
+			ShowNotification(FString::Printf(TEXT("Mining: %s"), *ActionName), FColor::Green);
+		}
+		else
+		{
+			ShowNotification(FString::Printf(TEXT("Cannot %s here"), *ActionName), FColor::Red);
+		}
+		return;
+	}
+
+	// ── Fallback: old mining component ──
 	if (MiningComponent)
 	{
-		// Get the direction based on camera forward
-		const FVector Dir = FollowCamera ? FollowCamera->GetForwardVector() : GetActorForwardVector();
-
 		if (ActionIndex == 1) MiningComponent->TunnelForward();
 		else if (ActionIndex == 2) MiningComponent->TunnelDown();
 		else if (ActionIndex == 3) MiningComponent->TunnelUp();

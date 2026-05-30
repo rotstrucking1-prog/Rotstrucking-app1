@@ -27,6 +27,7 @@ class UAoCHerbalismComponent;
 class UAoCInventoryComponent;
 class UAoCSkillComponent;
 class UAoCHUDWidget;
+class UTerraForgeComponent;
 
 /** What the player's crosshair is currently pointing at. */
 UENUM(BlueprintType)
@@ -103,6 +104,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	UAoCSkillComponent* SkillComponent;
+
+	/** TerraForge — unified terraforming + underground voxel engine component. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
+	UTerraForgeComponent* TerraForgeComp;
 
 	// ── HUD Widget reference ────────────────────────────────────────────────
 

@@ -831,27 +831,18 @@ void AAoCPlayerPawn::HandleProspect()
 void AAoCPlayerPawn::HandleInventoryToggle()
 {
 	bShowingInventory = !bShowingInventory;
-	if (bShowingInventory && InventoryComponent)
+	if (GameHUD)
 	{
-		FString Msg = TEXT("=== INVENTORY ===\n");
-		ShowNotification(Msg, FColor::White, 5.0f);
-	}
-	else
-	{
-		ShowNotification(TEXT("Inventory closed"), FColor(180, 180, 180), 1.0f);
+		GameHUD->ToggleInventory();
 	}
 }
 
 void AAoCPlayerPawn::HandleSkillsToggle()
 {
 	bShowingSkills = !bShowingSkills;
-	if (bShowingSkills && SkillComponent)
+	if (GameHUD)
 	{
-		ShowNotification(TEXT("=== SKILLS ==="), FColor::Cyan, 5.0f);
-	}
-	else
-	{
-		ShowNotification(TEXT("Skills closed"), FColor(180, 180, 180), 1.0f);
+		GameHUD->ToggleSkills();
 	}
 }
 
@@ -1147,101 +1138,22 @@ void AAoCPlayerPawn::UpdateLookAtTooltip()
 
 void AAoCPlayerPawn::DisplayHUD()
 {
-	if (!GEngine) return;
-
-	// ── Line 1: Target info (what you're looking at) ────────────────────────
-	if (CurrentTarget != EInteractionTarget::Nothing)
-	{
-		FColor TargetColor = FColor::White;
-		switch (CurrentTarget)
-		{
-		case EInteractionTarget::OreVein:      TargetColor = FColor(255, 200, 50);  break;
-		case EInteractionTarget::Furnace:      TargetColor = FColor(255, 120, 30);  break;
-		case EInteractionTarget::HerbBush:     TargetColor = FColor(80, 220, 80);   break;
-		case EInteractionTarget::ResourceNode: TargetColor = FColor(100, 200, 255); break;
-		case EInteractionTarget::Ground:       TargetColor = FColor(180, 160, 120); break;
-		case EInteractionTarget::NPC:          TargetColor = FColor(200, 200, 255); break;
-		case EInteractionTarget::Creature:     TargetColor = FColor(255, 100, 100); break;
-		default: break;
-		}
-		GEngine->AddOnScreenDebugMessage(1, 0.0f, TargetColor,
-			FString::Printf(TEXT(">> %s"), *TargetDisplayName));
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor(60, 60, 60), TEXT(""));
-	}
-
-	// ── Line 2: Available actions (context-sensitive) ───────────────────────
-	const FString EKey = KeyBindings.FindRef(FName("Interact")).GetDisplayName().ToString();
-	const FString GKey = KeyBindings.FindRef(FName("ObserveGround")).GetDisplayName().ToString();
-	const FString TKey = KeyBindings.FindRef(FName("Terraform")).GetDisplayName().ToString();
-	const FString MKey = KeyBindings.FindRef(FName("MiningMenu")).GetDisplayName().ToString();
-	const FString RKey = KeyBindings.FindRef(FName("Prospect")).GetDisplayName().ToString();
-	const FString IKey = KeyBindings.FindRef(FName("Inventory")).GetDisplayName().ToString();
-
-	FString Actions;
-	if (bPlayingActionAnim)
-	{
-		Actions = TEXT("... working ...");
-	}
-	else
-	{
-		switch (CurrentTarget)
-		{
-		case EInteractionTarget::OreVein:
-			Actions = FString::Printf(TEXT("[%s] Mine  [%s] Prospect  [%s] Terraform  [%s] Tunnel"),
-				*EKey, *RKey, *TKey, *MKey);
-			break;
-		case EInteractionTarget::Furnace:
-			Actions = FString::Printf(TEXT("[%s] Open Furnace"), *EKey);
-			break;
-		case EInteractionTarget::HerbBush:
-			Actions = FString::Printf(TEXT("[%s] Gather Herb  [%s] Observe"), *EKey, *GKey);
-			break;
-		case EInteractionTarget::ResourceNode:
-			Actions = FString::Printf(TEXT("[%s] Gather Resource"), *EKey);
-			break;
-		case EInteractionTarget::Ground:
-			Actions = FString::Printf(TEXT("[%s] Observe  [%s] Terraform  [%s] Prospect  [%s] Tunnel"),
-				*GKey, *TKey, *RKey, *MKey);
-			break;
-		default:
-			Actions = FString::Printf(TEXT("[%s] Prospect  [%s] Terraform  [%s] Tunnel  [%s] Inventory"),
-				*RKey, *TKey, *MKey, *IKey);
-			break;
-		}
-	}
-	GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor(180, 180, 180), Actions);
-
-	// ── Line 3: Mode-specific sub-menu ──────────────────────────────────────
-	if (CurrentMode == EInteractionMode::TerraformMenu)
-	{
-		GEngine->AddOnScreenDebugMessage(3, 0.0f, FColor::Yellow,
-			TEXT("TERRAFORM:  [1] Raise  [2] Lower  [3] Flatten  [4] Slope Up  [5] Slope Down  [Esc] Cancel"));
-	}
-	else if (CurrentMode == EInteractionMode::MiningMenu)
-	{
-		GEngine->AddOnScreenDebugMessage(3, 0.0f, FColor::Orange,
-			TEXT("MINING:  [1] Tunnel Forward  [2] Tunnel Down  [3] Tunnel Up  [Esc] Cancel"));
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(3, 0.0f, FColor(10, 10, 10), TEXT(""));
-	}
-
-	// ── Line 4: Notification (timed) ────────────────────────────────────────
-	if (NotificationTimer > 0.0f)
-	{
-		GEngine->AddOnScreenDebugMessage(4, 0.0f, NotificationColor, NotificationText);
-	}
+	// Handled by UAoCHUDWidget — NativeTick pulls all state from pawn automatically.
+	// Old AddOnScreenDebugMessage system removed.
 }
 
 void AAoCPlayerPawn::ShowNotification(const FString& Message, FColor Color, float Duration)
 {
+	UE_LOG(LogTemp, Log, TEXT("AoC: %s"), *Message);
+
+	// Route to proper HUD widget
+	if (GameHUD)
+	{
+		GameHUD->ShowNotification(Message, FLinearColor(Color));
+	}
+
+	// Keep old tracking as fallback
 	NotificationText  = Message;
 	NotificationColor = Color;
 	NotificationTimer = Duration;
-
-	UE_LOG(LogTemp, Log, TEXT("AoC: %s"), *Message);
 }

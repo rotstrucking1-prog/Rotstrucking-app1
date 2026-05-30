@@ -41,7 +41,7 @@ void UTerraForgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	OreGenSystem = NewObject<UTerraForgeOreGen>(this);
 	if (OreGenSystem)
 	{
-		OreGenSystem->Initialize(this);
+		OreGenSystem->Initialize(this, FMath::Rand());
 	}
 
 	SaveSystem = NewObject<UTerraForgeSaveLoad>(this);

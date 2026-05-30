@@ -36,6 +36,10 @@ class AOC_API UTerraForgeSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
+	friend class UTerraForgeStructural;
+	friend class UTerraForgeSaveLoad;
+	friend class UTerraForgeOreGen;
+
 public:
 	// ── Lifecycle ───────────────────────────────────────────────────────────
 

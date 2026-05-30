@@ -11,7 +11,7 @@
 #include "TerraForgeSaveLoad.generated.h"
 
 class UTerraForgeSubsystem;
-struct FTerraForgeChunk;
+class FTerraForgeChunk;
 
 /**
  * Save file header for version tracking.

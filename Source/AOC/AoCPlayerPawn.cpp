@@ -50,10 +50,14 @@ AAoCPlayerPawn::AAoCPlayerPawn()
 	// ── Camera Boom ─────────────────────────────────────────────────────────
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength       = 450.0f;
+	CameraBoom->TargetArmLength       = 600.0f;
 	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->bDoCollisionTest       = true;
-	CameraBoom->SocketOffset           = FVector(0.0f, 50.0f, 80.0f);
+	CameraBoom->bDoCollisionTest       = false;
+	CameraBoom->SocketOffset           = FVector(0.0f, 60.0f, 0.0f);
+	CameraBoom->TargetOffset           = FVector(0.0f, 0.0f, 100.0f);
+	CameraBoom->bInheritPitch          = true;
+	CameraBoom->bInheritYaw            = true;
+	CameraBoom->bInheritRoll           = false;
 
 	// ── Follow Camera ───────────────────────────────────────────────────────
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -436,8 +440,16 @@ void AAoCPlayerPawn::ProcessCamera(APlayerController* PC)
 {
 	float MouseX, MouseY;
 	PC->GetInputMouseDelta(MouseX, MouseY);
-	AddControllerYawInput(MouseX);
-	AddControllerPitchInput(MouseY * -1.0f);
+	AddControllerYawInput(MouseX * 2.0f);
+
+	// Clamp pitch so camera stays between -60° (looking down) and +20° (slightly up)
+	FRotator CtrlRot = PC->GetControlRotation();
+	float NewPitch = CtrlRot.Pitch + (MouseY * -2.0f);
+	// Normalize pitch to -180..180 range for clamping
+	if (NewPitch > 180.0f) NewPitch -= 360.0f;
+	NewPitch = FMath::Clamp(NewPitch, -60.0f, 20.0f);
+	CtrlRot.Pitch = NewPitch;
+	PC->SetControlRotation(CtrlRot);
 }
 
 void AAoCPlayerPawn::ProcessInteractionInput(APlayerController* PC)

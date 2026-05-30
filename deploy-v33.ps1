@@ -41,18 +41,22 @@ if (Test-Path $dupeHUD_cpp) {
     Remove-Item $dupeHUD_cpp -Force
     Write-Host '  Deleted duplicate UI\AoCHUDWidget.cpp'
 }
-# Clean duplicate ChatBubble (correct location is AI\, not NPC\)
-$dupeCB = "$sourceDir\NPC\AoCChatBubble.cpp"
-if (Test-Path $dupeCB) {
-    Remove-Item $dupeCB -Force
-    Write-Host '  Deleted duplicate NPC\AoCChatBubble.cpp'
+# Clean duplicate ChatBubble from BOTH project AND repo clone (correct location is AI\, not NPC\)
+$dupeCB_proj = "$sourceDir\NPC\AoCChatBubble.cpp"
+$dupeCB_repo = "$repoDir\Source\AOC\NPC\AoCChatBubble.cpp"
+if (Test-Path $dupeCB_proj) {
+    Remove-Item $dupeCB_proj -Force
+    Write-Host '  Deleted duplicate NPC\AoCChatBubble.cpp (project)'
 }
-# Clean entire NPC dir if empty
-$npcDir = "$sourceDir\NPC"
-if ((Test-Path $npcDir) -and @(Get-ChildItem $npcDir -Force).Count -eq 0) {
-    Remove-Item $npcDir -Force
-    Write-Host '  Removed empty NPC directory'
+if (Test-Path $dupeCB_repo) {
+    Remove-Item $dupeCB_repo -Force
+    Write-Host '  Deleted duplicate NPC\AoCChatBubble.cpp (repo clone)'
 }
+# Also delete repo clone UI duplicates to prevent re-copy
+$dupeHUD_h_repo = "$repoDir\Source\AOC\UI\AoCHUDWidget.h"
+$dupeHUD_cpp_repo = "$repoDir\Source\AOC\UI\AoCHUDWidget.cpp"
+if (Test-Path $dupeHUD_h_repo) { Remove-Item $dupeHUD_h_repo -Force; Write-Host '  Deleted UI\AoCHUDWidget.h (repo clone)' }
+if (Test-Path $dupeHUD_cpp_repo) { Remove-Item $dupeHUD_cpp_repo -Force; Write-Host '  Deleted UI\AoCHUDWidget.cpp (repo clone)' }
 
 Write-Host '[3/5] Syncing source files...'
 $repoSource = "$repoDir\Source\AOC"

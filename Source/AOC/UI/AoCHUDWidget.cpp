@@ -107,6 +107,7 @@ void UAoCHUDWidget::NativeConstruct()
 	BuildTargetFrame();
 	BuildHotbar();
 	BuildChatBox();
+	BuildLookAtTooltip();
 	BuildDeathScreen();
 }
 
@@ -385,6 +386,51 @@ void UAoCHUDWidget::BuildChatBox()
 }
 
 // ---------------------------------------------------------------------------
+// Center-Bottom: Look-At Tooltip (AoC-style floating label)
+// ---------------------------------------------------------------------------
+
+void UAoCHUDWidget::BuildLookAtTooltip()
+{
+	// Outer border — thin crimson outline
+	LookAtBorder = MakeBorder(CrimsonAccent(), 2.f, 2.f);
+
+	// Inner dark background
+	UBorder* InnerBg = MakeBorder(DarkBg(), 14.f, 8.f);
+	LookAtBorder->AddChild(InnerBg);
+
+	UVerticalBox* TooltipContent = WidgetTree->ConstructWidget<UVerticalBox>();
+	InnerBg->AddChild(TooltipContent);
+
+	// Object name — bold, crimson, centered
+	LookAtNameText = MakeText(TEXT(""), 18, CrimsonAccent());
+	LookAtNameText->SetJustification(ETextJustify::Center);
+	{
+		FSlateFontInfo Font = LookAtNameText->GetFont();
+		Font.TypefaceFontName = FName(TEXT("Bold"));
+		LookAtNameText->SetFont(Font);
+	}
+	{
+		UVerticalBoxSlot* VS = TooltipContent->AddChildToVerticalBox(LookAtNameText);
+		VS->SetHorizontalAlignment(HAlign_Center);
+		VS->SetPadding(FMargin(0, 0, 0, 2));
+	}
+
+	// Description — smaller, bone text, centered
+	LookAtDescText = MakeText(TEXT(""), 13, BoneText());
+	LookAtDescText->SetJustification(ETextJustify::Center);
+	{
+		UVerticalBoxSlot* VS = TooltipContent->AddChildToVerticalBox(LookAtDescText);
+		VS->SetHorizontalAlignment(HAlign_Center);
+	}
+
+	// Place at center of screen, slightly below middle (60% down from top)
+	AddToCanvas(LookAtBorder, FVector2D(0.5f, 0.6f), FVector2D(0, 0));
+
+	// Hidden by default
+	LookAtBorder->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+// ---------------------------------------------------------------------------
 // Center: Death screen
 // ---------------------------------------------------------------------------
 
@@ -574,5 +620,41 @@ void UAoCHUDWidget::SetRespawnTimer(float SecondsRemaining)
 	{
 		DeathTimerText->SetText(FText::FromString(
 			FString::Printf(TEXT("Respawning in %.0f..."), FMath::Max(0.f, SecondsRemaining))));
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Look-At Tooltip
+// ---------------------------------------------------------------------------
+
+void UAoCHUDWidget::ShowLookAtTooltip(const FString& Name, const FString& Description)
+{
+	if (!LookAtBorder) return;
+
+	if (LookAtNameText)
+	{
+		LookAtNameText->SetText(FText::FromString(Name));
+	}
+	if (LookAtDescText)
+	{
+		if (Description.IsEmpty())
+		{
+			LookAtDescText->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		else
+		{
+			LookAtDescText->SetText(FText::FromString(Description));
+			LookAtDescText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+	}
+
+	LookAtBorder->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+}
+
+void UAoCHUDWidget::HideLookAtTooltip()
+{
+	if (LookAtBorder)
+	{
+		LookAtBorder->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }

@@ -33,6 +33,8 @@
 #include "Herbalism/AoCHerbalismComponent.h"
 #include "Inventory/AoCInventoryComponent.h"
 #include "Skills/AoCSkillComponent.h"
+#include "UI/AoCHUDWidget.h"
+#include "Blueprint/UserWidget.h"
 
 // ============================================================================
 // CONSTRUCTION & LIFECYCLE
@@ -134,6 +136,9 @@ void AAoCPlayerPawn::BeginPlay()
 	// Initialize rebindable key bindings
 	SetupDefaultKeyBindings();
 	LoadKeyBindings();
+
+	// Create and display the HUD widget
+	CreateHUDWidget();
 }
 
 void AAoCPlayerPawn::Tick(float DeltaTime)
@@ -149,6 +154,7 @@ void AAoCPlayerPawn::Tick(float DeltaTime)
 
 	// Core per-frame systems
 	UpdateInteractionTarget();
+	UpdateLookAtTooltip();
 	ProcessMovement(PC);
 	ProcessCamera(PC);
 	ProcessInteractionInput(PC);
@@ -952,7 +958,191 @@ void AAoCPlayerPawn::ExecuteMiningAction(int32 ActionIndex)
 }
 
 // ============================================================================
-// HUD DISPLAY — Context-sensitive on-screen info
+// HUD WIDGET — Create and manage the AoC HUD
+// ============================================================================
+
+void AAoCPlayerPawn::CreateHUDWidget()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	// Find the HUD widget class
+	UClass* HUDClass = LoadObject<UClass>(nullptr, TEXT("/Script/AOC.AoCHUDWidget"));
+	if (!HUDClass)
+	{
+		// Try StaticLoadClass as fallback
+		HUDClass = UAoCHUDWidget::StaticClass();
+	}
+
+	if (HUDClass)
+	{
+		GameHUD = CreateWidget<UAoCHUDWidget>(PC, HUDClass);
+		if (GameHUD)
+		{
+			GameHUD->AddToViewport(0);
+			UE_LOG(LogTemp, Log, TEXT("AoC HUD Widget created and added to viewport."));
+		}
+	}
+}
+
+// ============================================================================
+// LOOK-AT TOOLTIP — Show clean description when looking at world objects
+// ============================================================================
+
+void AAoCPlayerPawn::UpdateLookAtTooltip()
+{
+	if (!GameHUD) return;
+
+	// Use the existing raycast hit to determine what we're looking at
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	FVector CamLoc;
+	FRotator CamRot;
+	PC->GetPlayerViewPoint(CamLoc, CamRot);
+
+	const float LookAtRange = 3000.0f; // 30 meters — much further than interaction range
+	FVector TraceEnd = CamLoc + CamRot.Vector() * LookAtRange;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CamLoc, TraceEnd, ECC_Visibility, Params);
+
+	if (bHit && Hit.GetActor())
+	{
+		AActor* HitActor = Hit.GetActor();
+
+		// Don't update tooltip if it's the same actor
+		if (LastLookAtActor.IsValid() && LastLookAtActor.Get() == HitActor)
+		{
+			return; // Same target, tooltip already showing
+		}
+
+		LastLookAtActor = HitActor;
+
+		FString DisplayName;
+		FString Description;
+
+		// ── Ore Veins ──────────────────────────────────────────────────────
+		if (HitActor->ActorHasTag(TEXT("OreVein")))
+		{
+			// Get ore type from property
+			FString OreType;
+			FProperty* OreProp = HitActor->GetClass()->FindPropertyByName(FName(TEXT("OreMaterial")));
+			if (OreProp)
+			{
+				const UEnum* OreEnum = FindObject<UEnum>(nullptr, TEXT("/Script/AOC.EAoCOreMaterial"), true);
+				if (OreEnum)
+				{
+					const void* ValuePtr = OreProp->ContainerPtrToValuePtr<void>(HitActor);
+					uint8 EnumVal = *static_cast<const uint8*>(ValuePtr);
+					OreType = OreEnum->GetDisplayNameTextByValue(EnumVal).ToString();
+					OreType.RemoveFromStart(TEXT("ORE_"));
+					// Title case
+					if (OreType.Len() > 0)
+					{
+						OreType = OreType.Left(1).ToUpper() + OreType.Mid(1).ToLower();
+					}
+				}
+			}
+
+			if (OreType.IsEmpty()) OreType = TEXT("Unknown");
+			DisplayName = FString::Printf(TEXT("%s Ore Vein"), *OreType);
+
+			// Read quality and remaining ore via property reflection
+			float Quality = 0.f;
+			int32 RemainingOre = 0;
+			FProperty* QualProp = HitActor->GetClass()->FindPropertyByName(FName(TEXT("Quality")));
+			FProperty* RemProp = HitActor->GetClass()->FindPropertyByName(FName(TEXT("RemainingOre")));
+			if (QualProp)
+			{
+				const void* QPtr = QualProp->ContainerPtrToValuePtr<void>(HitActor);
+				Quality = *static_cast<const float*>(QPtr);
+			}
+			if (RemProp)
+			{
+				const void* RPtr = RemProp->ContainerPtrToValuePtr<void>(HitActor);
+				RemainingOre = *static_cast<const int32*>(RPtr);
+			}
+
+			Description = FString::Printf(TEXT("Quality: %.0f  |  Ore: %d"), Quality, RemainingOre);
+		}
+		// ── Furnaces ───────────────────────────────────────────────────────
+		else if (HitActor->ActorHasTag(TEXT("Furnace")))
+		{
+			DisplayName = HitActor->GetActorNameOrLabel();
+			if (DisplayName.IsEmpty()) DisplayName = TEXT("Furnace");
+			Description = TEXT("Press [E] to Smelt");
+		}
+		// ── Herb Bushes ────────────────────────────────────────────────────
+		else if (HitActor->ActorHasTag(TEXT("HerbBush")))
+		{
+			DisplayName = HitActor->GetActorNameOrLabel();
+			if (DisplayName.IsEmpty()) DisplayName = TEXT("Herb Bush");
+			Description = TEXT("Press [E] to Gather");
+		}
+		// ── Resource Nodes (wood, stone, etc.) ─────────────────────────────
+		else if (HitActor->ActorHasTag(TEXT("ResourceNode")))
+		{
+			DisplayName = HitActor->GetActorNameOrLabel();
+			if (DisplayName.IsEmpty()) DisplayName = TEXT("Resource");
+			Description = TEXT("Press [E] to Gather");
+		}
+		// ── Trees ──────────────────────────────────────────────────────────
+		else if (HitActor->ActorHasTag(TEXT("Tree")) ||
+		         HitActor->GetActorNameOrLabel().Contains(TEXT("Tree")))
+		{
+			DisplayName = HitActor->GetActorNameOrLabel();
+			if (DisplayName.IsEmpty()) DisplayName = TEXT("Tree");
+		}
+		// ── NPCs & Creatures ───────────────────────────────────────────────
+		else if (HitActor->ActorHasTag(TEXT("NPC")) ||
+		         HitActor->ActorHasTag(TEXT("Creature")))
+		{
+			DisplayName = HitActor->GetActorNameOrLabel();
+			if (DisplayName.IsEmpty()) DisplayName = TEXT("Character");
+		}
+		// ── Generic named actors (with a DisplayName tag) ──────────────────
+		else
+		{
+			// Check for "DisplayName:Something" tag convention
+			for (const FName& Tag : HitActor->Tags)
+			{
+				FString TagStr = Tag.ToString();
+				if (TagStr.StartsWith(TEXT("DisplayName:")))
+				{
+					DisplayName = TagStr.Mid(12); // After "DisplayName:"
+					break;
+				}
+			}
+		}
+
+		// Only show tooltip if we have something to display
+		if (!DisplayName.IsEmpty())
+		{
+			GameHUD->ShowLookAtTooltip(DisplayName, Description);
+		}
+		else
+		{
+			GameHUD->HideLookAtTooltip();
+			LastLookAtActor.Reset();
+		}
+	}
+	else
+	{
+		// Not looking at anything — hide tooltip
+		if (LastLookAtActor.IsValid())
+		{
+			LastLookAtActor.Reset();
+			GameHUD->HideLookAtTooltip();
+		}
+	}
+}
+
+// ============================================================================
+// HUD DISPLAY — Context-sensitive on-screen info (debug overlay)
 // ============================================================================
 
 void AAoCPlayerPawn::DisplayHUD()

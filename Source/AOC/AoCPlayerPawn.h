@@ -26,6 +26,7 @@ class UAoCGatheringComponent;
 class UAoCHerbalismComponent;
 class UAoCInventoryComponent;
 class UAoCSkillComponent;
+class UAoCHUDWidget;
 
 /** What the player's crosshair is currently pointing at. */
 UENUM(BlueprintType)
@@ -102,6 +103,11 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gameplay")
 	UAoCSkillComponent* SkillComponent;
+
+	// ── HUD Widget reference ────────────────────────────────────────────────
+
+	UPROPERTY()
+	UAoCHUDWidget* GameHUD = nullptr;
 
 	// ── Animations (loaded at BeginPlay) ────────────────────────────────────
 
@@ -240,6 +246,13 @@ private:
 	// HUD rendering
 	void DisplayHUD();
 	void ShowNotification(const FString& Message, FColor Color = FColor::White, float Duration = 3.0f);
+
+	// Look-at tooltip (clean AoC-style description when looking at world objects)
+	void UpdateLookAtTooltip();
+	void CreateHUDWidget();
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> LastLookAtActor;
 
 	// State
 	float ActionCooldown;

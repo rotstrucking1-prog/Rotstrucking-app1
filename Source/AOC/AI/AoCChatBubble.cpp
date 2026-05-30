@@ -634,12 +634,13 @@ float UAoCChatBubble::GetCharDelay(int32 CharIndex) const
 // =============================================================================
 // GetDisplayDuration — How long the completed message stays on screen
 // =============================================================================
-// Rule: 1 second per 10 characters, clamped to [3, 8] seconds.
+// Rule: 30 seconds real-time so player can read at leisure.
 
 float UAoCChatBubble::GetDisplayDuration(const FString& Msg) const
 {
-	const float Raw = static_cast<float>(Msg.Len()) / 10.0f;
-	return FMath::Clamp(Raw, 3.0f, 8.0f);
+	// Minimum 15 s for short lines, scales up for long speeches, max 30 s
+	const float Raw = static_cast<float>(Msg.Len()) / 5.0f;
+	return FMath::Clamp(Raw, 15.0f, 30.0f);
 }
 
 // =============================================================================

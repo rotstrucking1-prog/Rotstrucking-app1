@@ -66,6 +66,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void SetRespawnTimer(float SecondsRemaining);
 
+	// --- Look-At Tooltip API (shows object name/desc when player looks at it) ---
+
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void ShowLookAtTooltip(const FString& Name, const FString& Description = FString());
+
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void HideLookAtTooltip();
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
@@ -126,6 +134,12 @@ private:
 	UPROPERTY() TObjectPtr<UScrollBox>         ChatScrollBox;
 	UPROPERTY() TObjectPtr<UEditableTextBox>   ChatInput;
 
+	// --- Center-Bottom: Look-At Tooltip ----------------------------------------
+
+	UPROPERTY() TObjectPtr<UBorder>    LookAtBorder;
+	UPROPERTY() TObjectPtr<UTextBlock> LookAtNameText;
+	UPROPERTY() TObjectPtr<UTextBlock> LookAtDescText;
+
 	// --- Center: Death Screen --------------------------------------------------
 
 	UPROPERTY() TObjectPtr<UOverlay>     DeathOverlay;
@@ -159,6 +173,9 @@ private:
 
 	/** Build the bottom-left chat box */
 	void BuildChatBox();
+
+	/** Build the center-bottom look-at tooltip */
+	void BuildLookAtTooltip();
 
 	/** Build the center death screen overlay */
 	void BuildDeathScreen();

@@ -635,8 +635,16 @@ void AAoCPlayerPawn::HandleInteract()
 
 		if (MiningComponent)
 		{
-			MiningComponent->MineOre(TargetActor.Get(), 80);
-			ShowNotification(FString::Printf(TEXT("Mining %s..."), *TargetDisplayName), FColor::Green);
+			FVector OreLocation = TargetActor.IsValid() ? TargetActor->GetActorLocation() : GetActorLocation();
+			FMiningResult MResult = MiningComponent->MineOre(OreLocation);
+			if (MResult.bSuccess)
+			{
+				ShowNotification(FString::Printf(TEXT("Mined %d ore (Q%d)"), MResult.Quantity, MResult.Quality), FColor::Green, 3.0f);
+			}
+			else
+			{
+				ShowNotification(FString::Printf(TEXT("Mining %s..."), *TargetDisplayName), FColor::Green);
+			}
 		}
 		else
 		{
@@ -674,7 +682,7 @@ void AAoCPlayerPawn::HandleInteract()
 		}
 		else if (GatheringComponent)
 		{
-			GatheringComponent->StartGathering(TargetActor.Get());
+			GatheringComponent->StartGathering(TargetActor.Get(), EGatheringType::Herbalism);
 			ShowNotification(FString::Printf(TEXT("Gathering %s..."), *TargetDisplayName), FColor::Green);
 		}
 		else
@@ -692,7 +700,7 @@ void AAoCPlayerPawn::HandleInteract()
 
 		if (GatheringComponent)
 		{
-			GatheringComponent->StartGathering(TargetActor.Get());
+			GatheringComponent->StartGathering(TargetActor.Get(), EGatheringType::Mining);
 			ShowNotification(FString::Printf(TEXT("Gathering %s..."), *TargetDisplayName), FColor::Green);
 		}
 		break;
@@ -778,6 +786,7 @@ void AAoCPlayerPawn::HandleProspect()
 
 	if (ProspectingComponent)
 	{
+		ProspectingComponent->StartProspect(GetActorLocation());
 		ShowNotification(TEXT("Prospecting... listening for vibrations..."), FColor::Yellow, 4.0f);
 	}
 	else
@@ -902,9 +911,9 @@ void AAoCPlayerPawn::ExecuteMiningAction(int32 ActionIndex)
 		// Get the direction based on camera forward
 		const FVector Dir = FollowCamera ? FollowCamera->GetForwardVector() : GetActorForwardVector();
 
-		if (ActionIndex == 1) MiningComponent->TunnelForward(GetActorLocation(), Dir);
-		else if (ActionIndex == 2) MiningComponent->TunnelDown(GetActorLocation(), Dir);
-		else if (ActionIndex == 3) MiningComponent->TunnelUp(GetActorLocation(), Dir);
+		if (ActionIndex == 1) MiningComponent->TunnelForward();
+		else if (ActionIndex == 2) MiningComponent->TunnelDown();
+		else if (ActionIndex == 3) MiningComponent->TunnelUp();
 
 		ShowNotification(FString::Printf(TEXT("Mining: %s"), *ActionName), FColor::Green);
 	}

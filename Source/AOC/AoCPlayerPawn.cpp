@@ -18,6 +18,7 @@
 #include "Misc/ConfigCacheIni.h"
 #include "TimerManager.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/AnimSingleNodeInstance.h"
 
 // Game Components
 #include "Mining/AoCMiningComponent.h"
@@ -635,7 +636,7 @@ void AAoCPlayerPawn::HandleInteract()
 
 		if (MiningComponent)
 		{
-			FVector OreLocation = TargetActor.IsValid() ? TargetActor->GetActorLocation() : GetActorLocation();
+			FVector OreLocation = (TargetActor != nullptr) ? TargetActor->GetActorLocation() : GetActorLocation();
 			FMiningResult MResult = MiningComponent->MineOre(OreLocation);
 			if (MResult.bSuccess)
 			{
@@ -860,14 +861,15 @@ void AAoCPlayerPawn::ExecuteTerraformAction(int32 ActionIndex)
 	if (ActionCooldown > 0.0f) return;
 	ActionCooldown = 1.0f;
 
+	ETerraformAction TAction;
 	FString ActionName;
 	switch (ActionIndex)
 	{
-	case 1: ActionName = TEXT("Raise");      break;
-	case 2: ActionName = TEXT("Lower");      break;
-	case 3: ActionName = TEXT("Flatten");    break;
-	case 4: ActionName = TEXT("Slope Up");   break;
-	case 5: ActionName = TEXT("Slope Down"); break;
+	case 1: TAction = ETerraformAction::RaiseGround;        ActionName = TEXT("Raise");      break;
+	case 2: TAction = ETerraformAction::LowerGround;        ActionName = TEXT("Lower");      break;
+	case 3: TAction = ETerraformAction::Flatten;            ActionName = TEXT("Flatten");    break;
+	case 4: TAction = ETerraformAction::FlattenSlopeUp;     ActionName = TEXT("Slope Up");   break;
+	case 5: TAction = ETerraformAction::FlattenSlopeDown;   ActionName = TEXT("Slope Down"); break;
 	default:
 		ShowNotification(TEXT("Invalid terraform action"), FColor::Red);
 		return;
@@ -878,7 +880,7 @@ void AAoCPlayerPawn::ExecuteTerraformAction(int32 ActionIndex)
 
 	if (TerraformingComponent)
 	{
-		TerraformingComponent->TerraformAction(TargetLocation, ActionName, TEXT("Dirt"));
+		TerraformingComponent->StartTerraform(TAction, GetActorLocation());
 		ShowNotification(FString::Printf(TEXT("Terraforming: %s"), *ActionName), FColor::Green);
 	}
 	else

@@ -33,7 +33,7 @@
 #include "Herbalism/AoCHerbalismComponent.h"
 #include "Inventory/AoCInventoryComponent.h"
 #include "Skills/AoCSkillComponent.h"
-#include "UI/AoCHUDWidget.h"
+#include "UI/Widgets/AoCHUDWidget.h"
 #include "Blueprint/UserWidget.h"
 
 // ============================================================================

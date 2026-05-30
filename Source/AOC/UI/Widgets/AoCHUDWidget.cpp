@@ -112,8 +112,8 @@ void UAoCHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		AAoCPlayerPawn* P = OwnerPawn.Get();
 
 		// Auto-show/hide context menus when mode changes
-		bool bTF = P->bTerraformMode;
-		bool bTN = P->bTunnelMode;
+		bool bTF = (P->CurrentMode == EInteractionMode::TerraformMenu);
+		bool bTN = (P->CurrentMode == EInteractionMode::MiningMenu);
 
 		if (bTF != bLastTerraformShown || bTN != bLastTunnelShown)
 		{
@@ -213,13 +213,13 @@ UCanvasPanelSlot* UAoCHUDWidget::PlaceOnCanvas(UWidget* Widget,
 	FVector2D AnchorMin, FVector2D AnchorMax, FVector2D Position,
 	FVector2D Size, FVector2D Alignment, bool bAutoSize)
 {
-	UCanvasPanelSlot* Slot = RootCanvas->AddChildToCanvas(Widget);
-	Slot->SetAnchors(FAnchors(AnchorMin.X, AnchorMin.Y, AnchorMax.X, AnchorMax.Y));
-	Slot->SetPosition(Position);
-	Slot->SetSize(Size);
-	Slot->SetAlignment(Alignment);
-	Slot->SetAutoSize(bAutoSize);
-	return Slot;
+	UCanvasPanelSlot* PanelSlot = RootCanvas->AddChildToCanvas(Widget);
+	PanelSlot->SetAnchors(FAnchors(AnchorMin.X, AnchorMin.Y, AnchorMax.X, AnchorMax.Y));
+	PanelSlot->SetPosition(Position);
+	PanelSlot->SetSize(Size);
+	PanelSlot->SetAlignment(Alignment);
+	PanelSlot->SetAutoSize(bAutoSize);
+	return PanelSlot;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -682,9 +682,9 @@ void UAoCHUDWidget::BuildDeathScreen()
 	TSlot->SetVerticalAlignment(VAlign_Center);
 
 	// Full-screen stretch
-	UCanvasPanelSlot* Slot = RootCanvas->AddChildToCanvas(DeathOverlay);
-	Slot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
-	Slot->SetOffsets(FMargin(0.f));
+	UCanvasPanelSlot* DeathSlot = RootCanvas->AddChildToCanvas(DeathOverlay);
+	DeathSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
+	DeathSlot->SetOffsets(FMargin(0.f));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -780,8 +780,8 @@ void UAoCHUDWidget::ShowNotification(const FString& Message, FLinearColor Color)
 	Font.OutlineSettings.OutlineColor = FLinearColor(0.f, 0.f, 0.f, 0.8f);
 	Msg->SetFont(Font);
 
-	UVerticalBoxSlot* Slot = NotificationBox->AddChildToVerticalBox(Msg);
-	Slot->SetPadding(FMargin(0.f, 1.f));
+	UVerticalBoxSlot* MsgSlot = NotificationBox->AddChildToVerticalBox(Msg);
+	MsgSlot->SetPadding(FMargin(0.f, 1.f));
 
 	FAoCNotification Entry;
 	Entry.TextWidget = Msg;

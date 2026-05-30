@@ -651,7 +651,7 @@ struct FGeoOreRule
 
 	/** Ore units per voxel (small node). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	uint16 UnitsPerVoxel = 5;
+	int32 UnitsPerVoxel = 5;
 
 	/** Spawns per km² (controls rarity). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

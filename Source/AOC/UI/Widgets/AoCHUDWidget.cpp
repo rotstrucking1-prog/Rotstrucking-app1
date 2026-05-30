@@ -52,10 +52,17 @@ namespace AoCUI
 //  Lifecycle
 // ═══════════════════════════════════════════════════════════════════════════════
 
+void UAoCHUDWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+	BuildHUD();
+}
+
 void UAoCHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	BuildHUD();
+	// BuildHUD moved to NativeOnInitialized so WidgetTree->RootWidget
+	// is set BEFORE RebuildWidget() builds the Slate hierarchy.
 }
 
 void UAoCHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

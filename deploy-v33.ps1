@@ -30,6 +30,18 @@ if (Test-Path $fixedC) {
     Write-Host '  Renamed -fixed.cpp'
 }
 
+# Clean duplicate HUD widget files (correct location is UI\Widgets\, not UI\)
+$dupeHUD_h = "$sourceDir\UI\AoCHUDWidget.h"
+$dupeHUD_cpp = "$sourceDir\UI\AoCHUDWidget.cpp"
+if (Test-Path $dupeHUD_h) {
+    Remove-Item $dupeHUD_h -Force
+    Write-Host '  Deleted duplicate UI\AoCHUDWidget.h'
+}
+if (Test-Path $dupeHUD_cpp) {
+    Remove-Item $dupeHUD_cpp -Force
+    Write-Host '  Deleted duplicate UI\AoCHUDWidget.cpp'
+}
+
 Write-Host '[3/5] Syncing source files...'
 $repoSource = "$repoDir\Source\AOC"
 Get-ChildItem $repoSource -Recurse -File | ForEach-Object {

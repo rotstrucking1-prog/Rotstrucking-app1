@@ -21,7 +21,8 @@
 #include "LandscapeProxy.h"
 #include "LandscapeComponent.h"
 #include "LandscapeInfo.h"
-// CPU cache approach replaces FLandscapeEditDataInterface — no editor-only deps
+// FLandscapeEditDataInterface — Epic's landscape editing API (handles rendering + collision)
+#include "LandscapeEdit.h"
 #include "Components/ActorComponent.h"
 #include "NavigationSystem.h"
 #include "Async/Async.h"
@@ -232,11 +233,11 @@ EGeoMaterial UTerraForgeSubsystem::LowerTerrain(const FVector& WorldPos, float A
 
 	// Convert Amount (meters, default 0.1) to centimeters for heightmap delta
 	// Negative delta = lower the terrain
-	const float DeltaCm = -Amount * 100.0f; // e.g., -10 cm per dig
+	const float DeltaCm = -Amount * 500.0f; // 5x boost: 50cm per dig
 
-	// Shovel brush: 1.5 pixel radius (~1.5 meter), sigma 0.5 for Gaussian falloff
-	const float BrushRadius = 1.5f;
-	const float FalloffSigma = 0.5f;
+	// Shovel brush: 4 pixel radius (~4 meter), sigma 1.5 for smooth Gaussian falloff
+	const float BrushRadius = 4.0f;
+	const float FalloffSigma = 1.5f;
 
 	// Determine geological material at this depth before modifying
 	// Cache original surface height if not cached
@@ -284,11 +285,11 @@ bool UTerraForgeSubsystem::RaiseTerrain(const FVector& WorldPos, EGeoMaterial Ma
 		WorldPos.X, WorldPos.Y, WorldPos.Z, Amount, (int32)Material);
 
 	// Positive delta = raise the terrain
-	const float DeltaCm = Amount * 100.0f; // e.g., +10 cm per dump
+	const float DeltaCm = Amount * 500.0f; // 5x boost: 50cm per raise
 
 	// Same brush as shovel lowering
-	const float BrushRadius = 1.5f;
-	const float FalloffSigma = 0.5f;
+	const float BrushRadius = 4.0f;
+	const float FalloffSigma = 1.5f;
 
 	bool bSuccess = ModifyLandscapeHeight(WorldPos, DeltaCm, BrushRadius, FalloffSigma);
 
@@ -436,53 +437,47 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 {
 	// Ensure landscape data is cached
 	if (!bLandscapeTransformCached) CacheLandscapeTransform();
-	if (!CachedLandscape || ComponentMap.Num() == 0)
+	if (!CachedLandscape)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TerraForge: ModifyLandscapeHeight — no landscape cached!"));
 		return false;
 	}
 
+	// Use Epic's own landscape editing API — handles rendering, collision, everything
+	ULandscapeInfo* LandscapeInfo = CachedLandscape->GetLandscapeInfo();
+	if (!LandscapeInfo)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: ModifyLandscapeHeight — no LandscapeInfo!"));
+		return false;
+	}
+
 	// Convert world position to heightmap grid coordinates
-	float HmapXf = (WorldPos.X - LandscapeOrigin.X) / LandscapeScale.X;
-	float HmapYf = (WorldPos.Y - LandscapeOrigin.Y) / LandscapeScale.Y;
-	int32 CenterX = FMath::RoundToInt(HmapXf);
-	int32 CenterY = FMath::RoundToInt(HmapYf);
+	int32 CenterX = FMath::RoundToInt((WorldPos.X - LandscapeOrigin.X) / LandscapeScale.X);
+	int32 CenterY = FMath::RoundToInt((WorldPos.Y - LandscapeOrigin.Y) / LandscapeScale.Y);
 	int32 BrushExtent = FMath::CeilToInt(BrushRadiusPixels);
 
 	// Convert cm delta to uint16 heightmap units
-	// Each uint16 step = LandscapeScale.Z * TF_ZSCALE cm = Scale.Z / 128 cm
-	// So delta in uint16 = DeltaCm / (Scale.Z / 128) = DeltaCm * 128 / Scale.Z
 	float DeltaUnits = DeltaCm * 128.0f / LandscapeScale.Z;
 
 	UE_LOG(LogTemp, Log, TEXT("TerraForge: ModifyLandscapeHeight — center(%d,%d) delta=%.1fcm (%.1f units) brush=%.1f sigma=%.1f"),
 		CenterX, CenterY, DeltaCm, DeltaUnits, BrushRadiusPixels, FalloffSigma);
 
-	// ──────────────────────────────────────────────────────────────
-	// PHASE 1: Collect all pixel modifications, grouped by UNIQUE TEXTURE.
-	// CRITICAL: Multiple landscape components share the same heightmap texture.
-	// Locking per-component causes double-lock assertion crash.
-	// We lock each unique texture exactly ONCE.
-	// ──────────────────────────────────────────────────────────────
+	// Define brush rectangle
+	int32 X1 = CenterX - BrushExtent;
+	int32 Y1 = CenterY - BrushExtent;
+	int32 X2 = CenterX + BrushExtent;
+	int32 Y2 = CenterY + BrushExtent;
+	int32 Width = X2 - X1 + 1;
+	int32 Height = Y2 - Y1 + 1;
 
-	struct FPixelMod
-	{
-		int32 TexPixelX;
-		int32 TexPixelY;
-		float Weight;
-		FIntPoint GlobalCoord;
-	};
+	// Read current heights using FLandscapeEditDataInterface
+	FLandscapeEditDataInterface EditInterface(LandscapeInfo);
+	TArray<uint16> HeightData;
+	HeightData.SetNum(Width * Height);
+	EditInterface.GetHeightDataFast(X1, Y1, X2, Y2, HeightData.GetData(), 0);
 
-	struct FTextureBatch
-	{
-		UTexture2D* Texture = nullptr;
-		int32 TexW = 0;
-		int32 TexH = 0;
-		TArray<FPixelMod> Pixels;
-		TArray<ULandscapeComponent*> AffectedComponents;
-	};
-
-	TMap<UTexture2D*, FTextureBatch> TextureBatches;
-
+	// Apply Gaussian brush modifications
+	bool bAnyModified = false;
 	for (int32 dy = -BrushExtent; dy <= BrushExtent; dy++)
 	{
 		for (int32 dx = -BrushExtent; dx <= BrushExtent; dx++)
@@ -490,139 +485,33 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			float Dist = FMath::Sqrt((float)(dx * dx + dy * dy));
 			if (Dist > BrushRadiusPixels) continue;
 
-			// Gaussian weight: center=1.0, edges→0
 			float Weight = FMath::Exp(-Dist * Dist / (2.0f * FalloffSigma * FalloffSigma));
 
-			int32 PixelX = CenterX + dx;
-			int32 PixelY = CenterY + dy;
+			int32 ArrayIdx = (dy + BrushExtent) * Width + (dx + BrushExtent);
+			if (ArrayIdx < 0 || ArrayIdx >= HeightData.Num()) continue;
 
-			// Find which component owns this pixel
-			FVector PixelWorldPos(
-				LandscapeOrigin.X + PixelX * LandscapeScale.X,
-				LandscapeOrigin.Y + PixelY * LandscapeScale.Y,
-				0.0f);
-
-			ULandscapeComponent* Comp = FindComponentAtWorldPos(PixelWorldPos);
-			if (!Comp) continue;
-
-			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
-			if (!HeightmapTex) continue;
-
-			if (HeightmapTex->GetSizeX() == 0 || HeightmapTex->GetSizeY() == 0) continue;
-
-			// Convert to texture pixel coordinates via this component's ScaleBias
-			FIntPoint SectionBase = Comp->GetSectionBase();
-			int32 CompQuads = Comp->ComponentSizeQuads;
-			FVector4 ScaleBias = Comp->HeightmapScaleBias;
-
-			int32 LocalX = PixelX - SectionBase.X;
-			int32 LocalY = PixelY - SectionBase.Y;
-			if (LocalX < 0 || LocalX > CompQuads || LocalY < 0 || LocalY > CompQuads)
-				continue;
-
-			float LocalUV_X = (float)LocalX / (float)CompQuads;
-			float LocalUV_Y = (float)LocalY / (float)CompQuads;
-			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
-			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
-
-			int32 TexW = HeightmapTex->GetSizeX();
-			int32 TexH = HeightmapTex->GetSizeY();
-
-			FPixelMod Mod;
-			Mod.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
-			Mod.TexPixelY = FMath::Clamp(FMath::RoundToInt(TexUV_Y * (float)TexH), 0, TexH - 1);
-			Mod.Weight = Weight;
-			Mod.GlobalCoord = FIntPoint(PixelX, PixelY);
-
-			FTextureBatch& Batch = TextureBatches.FindOrAdd(HeightmapTex);
-			Batch.Texture = HeightmapTex;
-			Batch.TexW = TexW;
-			Batch.TexH = TexH;
-			Batch.Pixels.Add(Mod);
-			Batch.AffectedComponents.AddUnique(Comp);
-		}
-	}
-
-	if (TextureBatches.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TerraForge: ModifyLandscapeHeight — no components found for brush area!"));
-		return false;
-	}
-
-	// ──────────────────────────────────────────────────────────────
-	// PHASE 2: Modify pixels.
-	// SESSION MODE: textures are pre-locked by BeginEditSession() — just
-	//   modify pixels using cached pointers. No lock/unlock/UpdateResource.
-	//   GPU update + collision happen later in EndEditSession().
-	// SINGLE-CALL MODE: full lock → modify → unlock → UpdateResource cycle.
-	//   Works for one-off calls (no subsequent Lock() to conflict with).
-	// ──────────────────────────────────────────────────────────────
-
-	bool bAnyModified = false;
-
-	// ── UNIFIED MODIFICATION (CPU cache — runtime compatible) ─────
-	// Both session and single-call modes modify our CPU-side heightmap cache.
-	// Session mode defers GPU push to EndEditSession().
-	// Single-call mode pushes to GPU immediately.
-
-	for (auto& BatchPair : TextureBatches)
-	{
-		FTextureBatch& Batch = BatchPair.Value;
-		UTexture2D* Tex = Batch.Texture;
-
-		// Ensure texture is cached
-		if (!CacheHeightmapTexture(Tex))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("TerraForge: Cannot cache heightmap texture — skipping"));
-			continue;
-		}
-
-		FHeightmapCache* Cache = HeightmapCPUCache.Find(Tex);
-
-		for (const FPixelMod& Mod : Batch.Pixels)
-		{
-			int32 PixelIdx = Mod.TexPixelY * Cache->SizeX + Mod.TexPixelX;
-			if (PixelIdx < 0 || PixelIdx >= Cache->Pixels.Num()) continue;
-
-			FColor& Pixel = Cache->Pixels[PixelIdx];
-			uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
-
-			int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
+			uint16 CurrentHeight = HeightData[ArrayIdx];
+			int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Weight);
 			NewHeight = FMath::Clamp(NewHeight, 0, 65535);
 
-			Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-			Pixel.G = (uint8)(NewHeight & 0xFF);
-
-			RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-			bAnyModified = true;
-		}
-
-		// Track affected components for collision update
-		for (ULandscapeComponent* Comp : Batch.AffectedComponents)
-		{
-			SessionAffectedComponents.Add(Comp);
-		}
-
-		if (bEditSessionActive)
-		{
-			// Session mode: mark texture dirty, GPU push deferred to EndEditSession
-			SessionDirtyTextures.Add(Tex);
-		}
-		else if (bAnyModified)
-		{
-			// Single-call mode: push to GPU immediately
-			PushHeightmapToGPU(Tex);
+			if (NewHeight != (int32)CurrentHeight)
+			{
+				HeightData[ArrayIdx] = (uint16)NewHeight;
+				RecordTerrainDelta(FIntPoint(CenterX + dx, CenterY + dy),
+					(int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
 		}
 	}
 
-	if (!bEditSessionActive && bAnyModified)
+	if (bAnyModified)
 	{
-		FlushRenderingCommands();
-		UpdateCollisionForComponents(SessionAffectedComponents);
-		SessionAffectedComponents.Empty();
+		// SetHeightData handles EVERYTHING: texture update, render proxy rebuild,
+		// collision update, normal recalculation — exactly like the editor sculpt tool
+		EditInterface.SetHeightData(X1, Y1, X2, Y2, HeightData.GetData(), 0, true);
 
-		UE_LOG(LogTemp, Log, TEXT("TerraForge: Single-call heightmap modification SUCCESS at center(%d,%d)"),
-			CenterX, CenterY);
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: ModifyLandscapeHeight SUCCESS at center(%d,%d) — %dx%d region"),
+			CenterX, CenterY, Width, Height);
 	}
 
 	return bAnyModified;
@@ -633,7 +522,10 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 {
 	// Ensure landscape data is cached
 	if (!bLandscapeTransformCached) CacheLandscapeTransform();
-	if (!CachedLandscape || ComponentMap.Num() == 0) return false;
+	if (!CachedLandscape) return false;
+
+	ULandscapeInfo* LandscapeInfo = CachedLandscape->GetLandscapeInfo();
+	if (!LandscapeInfo) return false;
 
 	// Convert world position to heightmap grid coordinates
 	int32 CenterX = FMath::RoundToInt((WorldPos.X - LandscapeOrigin.X) / LandscapeScale.X);
@@ -649,28 +541,22 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 	UE_LOG(LogTemp, Log, TEXT("TerraForge: FlattenLandscapeHeight — target Z=%.1f cm → uint16=%d"),
 		TargetHeightCm, TargetUint16);
 
-	// ──────────────────────────────────────────────────────────────
-	// PHASE 1: Collect pixels grouped by UNIQUE TEXTURE (same pattern as ModifyLandscapeHeight)
-	// ──────────────────────────────────────────────────────────────
+	// Define brush rectangle
+	int32 X1 = CenterX - BrushExtent;
+	int32 Y1 = CenterY - BrushExtent;
+	int32 X2 = CenterX + BrushExtent;
+	int32 Y2 = CenterY + BrushExtent;
+	int32 Width = X2 - X1 + 1;
+	int32 Height = Y2 - Y1 + 1;
 
-	struct FFlattenPixel
-	{
-		int32 TexPixelX;
-		int32 TexPixelY;
-		FIntPoint GlobalCoord;
-	};
+	// Read current heights
+	FLandscapeEditDataInterface EditInterface(LandscapeInfo);
+	TArray<uint16> HeightData;
+	HeightData.SetNum(Width * Height);
+	EditInterface.GetHeightDataFast(X1, Y1, X2, Y2, HeightData.GetData(), 0);
 
-	struct FFlattenBatch
-	{
-		UTexture2D* Texture = nullptr;
-		int32 TexW = 0;
-		int32 TexH = 0;
-		TArray<FFlattenPixel> Pixels;
-		TArray<ULandscapeComponent*> AffectedComponents;
-	};
-
-	TMap<UTexture2D*, FFlattenBatch> TextureBatches;
-
+	// Flatten: move each pixel halfway toward the target height
+	bool bAnyModified = false;
 	for (int32 dy = -BrushExtent; dy <= BrushExtent; dy++)
 	{
 		for (int32 dx = -BrushExtent; dx <= BrushExtent; dx++)
@@ -678,114 +564,26 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			float Dist = FMath::Sqrt((float)(dx * dx + dy * dy));
 			if (Dist > BrushRadiusPixels) continue;
 
-			int32 PixelX = CenterX + dx;
-			int32 PixelY = CenterY + dy;
+			int32 ArrayIdx = (dy + BrushExtent) * Width + (dx + BrushExtent);
+			if (ArrayIdx < 0 || ArrayIdx >= HeightData.Num()) continue;
 
-			FVector PixelWorldPos(
-				LandscapeOrigin.X + PixelX * LandscapeScale.X,
-				LandscapeOrigin.Y + PixelY * LandscapeScale.Y,
-				0.0f);
-
-			ULandscapeComponent* Comp = FindComponentAtWorldPos(PixelWorldPos);
-			if (!Comp) continue;
-
-			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
-			if (!HeightmapTex) continue;
-
-			if (HeightmapTex->GetSizeX() == 0 || HeightmapTex->GetSizeY() == 0) continue;
-
-			FIntPoint SectionBase = Comp->GetSectionBase();
-			int32 CompQuads = Comp->ComponentSizeQuads;
-			FVector4 ScaleBias = Comp->HeightmapScaleBias;
-
-			int32 LocalX = PixelX - SectionBase.X;
-			int32 LocalY = PixelY - SectionBase.Y;
-			if (LocalX < 0 || LocalX > CompQuads || LocalY < 0 || LocalY > CompQuads)
-				continue;
-
-			float LocalUV_X = (float)LocalX / (float)CompQuads;
-			float LocalUV_Y = (float)LocalY / (float)CompQuads;
-			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
-			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
-
-			int32 TexW = HeightmapTex->GetSizeX();
-			int32 TexH = HeightmapTex->GetSizeY();
-
-			FFlattenPixel FP;
-			FP.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
-			FP.TexPixelY = FMath::Clamp(FMath::RoundToInt(TexUV_Y * (float)TexH), 0, TexH - 1);
-			FP.GlobalCoord = FIntPoint(PixelX, PixelY);
-
-			FFlattenBatch& Batch = TextureBatches.FindOrAdd(HeightmapTex);
-			Batch.Texture = HeightmapTex;
-			Batch.TexW = TexW;
-			Batch.TexH = TexH;
-			Batch.Pixels.Add(FP);
-			Batch.AffectedComponents.AddUnique(Comp);
-		}
-	}
-
-	if (TextureBatches.Num() == 0) return false;
-
-	// ──────────────────────────────────────────────────────────────
-	// PHASE 2: Flatten pixels — session or single-call mode (same pattern
-	// as ModifyLandscapeHeight).
-	// ──────────────────────────────────────────────────────────────
-
-	bool bAnyModified = false;
-
-	// ── UNIFIED FLATTEN (CPU cache — runtime compatible) ──────────
-	for (auto& BatchPair : TextureBatches)
-	{
-		FFlattenBatch& Batch = BatchPair.Value;
-		UTexture2D* Tex = Batch.Texture;
-
-		if (!CacheHeightmapTexture(Tex))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("TerraForge: Cannot cache heightmap for flatten — skipping"));
-			continue;
-		}
-
-		FHeightmapCache* Cache = HeightmapCPUCache.Find(Tex);
-
-		for (const FFlattenPixel& FP : Batch.Pixels)
-		{
-			int32 PixelIdx = FP.TexPixelY * Cache->SizeX + FP.TexPixelX;
-			if (PixelIdx < 0 || PixelIdx >= Cache->Pixels.Num()) continue;
-
-			FColor& Pixel = Cache->Pixels[PixelIdx];
-			uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
-
-			int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
+			uint16 CurrentHeight = HeightData[ArrayIdx];
+			int32 NewHeight = (int32)CurrentHeight + ((int32)TargetUint16 - (int32)CurrentHeight) / 2;
 			NewHeight = FMath::Clamp(NewHeight, 0, 65535);
 
-			Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-			Pixel.G = (uint8)(NewHeight & 0xFF);
-
-			RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-			bAnyModified = true;
-		}
-
-		for (ULandscapeComponent* Comp : Batch.AffectedComponents)
-		{
-			SessionAffectedComponents.Add(Comp);
-		}
-
-		if (bEditSessionActive)
-		{
-			SessionDirtyTextures.Add(Tex);
-		}
-		else if (bAnyModified)
-		{
-			PushHeightmapToGPU(Tex);
+			if (NewHeight != (int32)CurrentHeight)
+			{
+				HeightData[ArrayIdx] = (uint16)NewHeight;
+				RecordTerrainDelta(FIntPoint(CenterX + dx, CenterY + dy),
+					(int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
 		}
 	}
 
-	if (!bEditSessionActive && bAnyModified)
+	if (bAnyModified)
 	{
-		FlushRenderingCommands();
-		UpdateCollisionForComponents(SessionAffectedComponents);
-		SessionAffectedComponents.Empty();
+		EditInterface.SetHeightData(X1, Y1, X2, Y2, HeightData.GetData(), 0, true);
 
 		UE_LOG(LogTemp, Log, TEXT("TerraForge: Flatten SUCCESS at center(%d,%d)"), CenterX, CenterY);
 	}
@@ -967,6 +765,21 @@ bool UTerraForgeSubsystem::CacheHeightmapTexture(UTexture2D* Tex)
 	if (!Tex) return false;
 	if (HeightmapCPUCache.Contains(Tex)) return true;  // Already cached
 
+	// CRITICAL: Disable texture streaming permanently for any heightmap we modify.
+	// Without this, the streaming system can reduce GPU texture resolution between
+	// cache and push, causing UpdateTextureRegions to crash with assertion:
+	// "UpdateRegion.DestX + UpdateRegion.Width <= Texture->GetSizeX()"
+	if (!Tex->NeverStream)
+	{
+		Tex->NeverStream = true;
+		// Do NOT call UpdateResource() — it destroys the FTextureResource and corrupts
+		// landscape render proxy state (causes DestX garbage / assertion crash on render thread).
+		// Instead force all mip levels to stay resident at full resolution.
+		Tex->SetForceMipLevelsToBeResident(120.0f);
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Disabled streaming for '%s' — forced mips resident"),
+			*Tex->GetName());
+	}
+
 	int32 SizeX = Tex->GetSizeX();
 	int32 SizeY = Tex->GetSizeY();
 	if (SizeX == 0 || SizeY == 0)
@@ -1044,48 +857,63 @@ void UTerraForgeSubsystem::PushHeightmapToGPU(UTexture2D* Tex)
 		return;
 	}
 
-	bool bPushSuccess = false;
-	int64 DataSize = (int64)Cache->SizeX * Cache->SizeY * sizeof(FColor);
-
-	// Method 1: PlatformData BulkData write + UpdateResource (runtime-compatible)
-	FTexturePlatformData* PD = Tex->GetPlatformData();
-	if (PD && PD->Mips.Num() > 0)
+	// Verify the texture has a GPU resource to update
+	if (!Tex->GetResource())
 	{
-		FTexture2DMipMap& Mip = PD->Mips[0];
-		void* DestData = Mip.BulkData.Lock(LOCK_READ_WRITE);
-		if (DestData)
-		{
-			FMemory::Memcpy(DestData, Cache->Pixels.GetData(), DataSize);
-			Mip.BulkData.Unlock();
-			Tex->UpdateResource();
-			bPushSuccess = true;
-			UE_LOG(LogTemp, Log, TEXT("TerraForge: GPU push via PlatformData BulkData (%dx%d)"),
-				Cache->SizeX, Cache->SizeY);
-		}
-	}
-
-#if WITH_EDITOR
-	// Method 2: Source write + UpdateResource (editor fallback)
-	if (!bPushSuccess && Tex->Source.GetNumMips() > 0)
-	{
-		uint8* DestData = Tex->Source.LockMip(0);
-		if (DestData)
-		{
-			FMemory::Memcpy(DestData, Cache->Pixels.GetData(), DataSize);
-			Tex->Source.UnlockMip(0);
-			Tex->UpdateResource();
-			bPushSuccess = true;
-			UE_LOG(LogTemp, Log, TEXT("TerraForge: GPU push via Source (%dx%d)"),
-				Cache->SizeX, Cache->SizeY);
-		}
-	}
-#endif
-
-	if (!bPushSuccess)
-	{
-		UE_LOG(LogTemp, Error, TEXT("TerraForge: FAILED to push heightmap '%s' to GPU — no writable path!"),
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: Texture '%s' has no GPU resource — cannot push!"),
 			*Tex->GetName());
+		return;
 	}
+
+	int32 SizeX = Cache->SizeX;
+	int32 SizeY = Cache->SizeY;
+	int64 DataSize = (int64)SizeX * SizeY * sizeof(FColor);
+
+	// CRITICAL: Disable texture streaming for this heightmap.
+	// Without this, the streaming system will overwrite our GPU modifications
+	// with the original heightmap data from disk, making changes invisible.
+	Tex->TemporarilyDisableStreaming();
+
+	// Safety check: verify GPU texture matches our cache resolution.
+	// If streaming changed the GPU texture size after we cached, pushing would crash.
+	int32 GpuSizeX = Tex->GetSizeX();
+	int32 GpuSizeY = Tex->GetSizeY();
+	if (GpuSizeX != SizeX || GpuSizeY != SizeY)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: GPU size %dx%d != cache %dx%d — aborting push (would crash)"),
+			GpuSizeX, GpuSizeY, SizeX, SizeY);
+		return;
+	}
+
+	// UpdateTextureRegions: Enqueues a render command to update the GPU texture directly.
+	// This does NOT touch BulkData — avoids the IsUnlocked() assertion crash that occurs
+	// when the render thread holds a lock on BulkData while we try to write.
+	// This is the standard UE method for runtime texture updates.
+
+	// Must copy data — the render command executes asynchronously on the render thread
+	uint8* DataCopy = (uint8*)FMemory::Malloc(DataSize);
+	FMemory::Memcpy(DataCopy, Cache->Pixels.GetData(), DataSize);
+
+	// CRITICAL: Region must be HEAP-ALLOCATED because UpdateTextureRegions
+	// captures the pointer by value (does NOT copy the struct). If stack-allocated,
+	// the render thread reads dangling stack memory — causes DestX = -232M garbage crash.
+	FUpdateTextureRegion2D* Region = new FUpdateTextureRegion2D(0, 0, 0, 0, SizeX, SizeY);
+
+	Tex->UpdateTextureRegions(
+		0,                          // MipIndex
+		1,                          // NumRegions
+		Region,                     // Regions — heap-allocated, freed in cleanup lambda
+		SizeX * sizeof(FColor),     // SrcPitch (bytes per row)
+		sizeof(FColor),             // SrcBpp (bytes per pixel)
+		DataCopy,                   // SrcData
+		[](uint8* SrcData, const FUpdateTextureRegion2D* Regions) {
+			FMemory::Free(SrcData);
+			delete Regions;
+		}
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: GPU push via UpdateTextureRegions (%dx%d)"),
+		SizeX, SizeY);
 }
 
 void UTerraForgeSubsystem::UpdateCollisionForComponents(const TSet<ULandscapeComponent*>& Components)

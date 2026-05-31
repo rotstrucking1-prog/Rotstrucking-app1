@@ -504,8 +504,7 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
 			if (!HeightmapTex) continue;
 
-			FTexturePlatformData* PD = HeightmapTex->GetPlatformData();
-			if (!PD || PD->Mips.Num() == 0) continue;
+			if (HeightmapTex->Source.GetNumMips() == 0) continue;
 
 			// Convert to texture pixel coordinates via this component's ScaleBias
 			FIntPoint SectionBase = Comp->GetSectionBase();
@@ -522,8 +521,8 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
 			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
 
-			int32 TexW = PD->Mips[0].SizeX;
-			int32 TexH = PD->Mips[0].SizeY;
+			int32 TexW = HeightmapTex->Source.GetSizeX();
+			int32 TexH = HeightmapTex->Source.GetSizeY();
 
 			FPixelMod Mod;
 			Mod.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
@@ -547,69 +546,105 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// PHASE 2: Lock each unique texture ONCE, modify all pixels, unlock ONCE
+	// PHASE 2: Modify pixels.
+	// SESSION MODE: textures are pre-locked by BeginEditSession() — just
+	//   modify pixels using cached pointers. No lock/unlock/UpdateResource.
+	//   GPU update + collision happen later in EndEditSession().
+	// SINGLE-CALL MODE: full lock → modify → unlock → UpdateResource cycle.
+	//   Works for one-off calls (no subsequent Lock() to conflict with).
 	// ──────────────────────────────────────────────────────────────
 
 	bool bAnyModified = false;
 
-	for (auto& BatchPair : TextureBatches)
+	if (bEditSessionActive)
 	{
-		FTextureBatch& Batch = BatchPair.Value;
-		UTexture2D* Tex = Batch.Texture;
-
-		FTexturePlatformData* PlatformData = Tex->GetPlatformData();
-		FTexture2DMipMap& Mip = PlatformData->Mips[0];
-		int32 TexW = Batch.TexW;
-
-		// Lock this texture ONCE (no matter how many components share it)
-		void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
-		if (!RawData)
+		// ── SESSION MODE ──────────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
 		{
-			UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock heightmap texture!"));
-			continue;
+			FTextureBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
+
+			FLockedTextureInfo* Info = SessionLockedTextures.Find(Tex);
+			if (!Info || !Info->MipData)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("TerraForge: Session mode — texture not pre-locked, skipping"));
+				continue;
+			}
+
+			for (const FPixelMod& Mod : Batch.Pixels)
+			{
+				FColor& Pixel = Info->MipData[Mod.TexPixelY * Info->SizeX + Mod.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			// Track components for collision update at EndEditSession()
+			for (ULandscapeComponent* Comp : Batch.AffectedComponents)
+			{
+				SessionAffectedComponents.Add(Comp);
+			}
 		}
-
-		FColor* TexData = static_cast<FColor*>(RawData);
-
-		// Modify ALL pixels that belong to this texture
-		for (const FPixelMod& Mod : Batch.Pixels)
-		{
-			FColor& Pixel = TexData[Mod.TexPixelY * TexW + Mod.TexPixelX];
-			uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
-
-			int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
-			NewHeight = FMath::Clamp(NewHeight, 0, 65535);
-
-			Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-			Pixel.G = (uint8)(NewHeight & 0xFF);
-
-			RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-			bAnyModified = true;
-		}
-
-		// Unlock this texture ONCE
-		Mip.BulkData.Unlock();
-
-		// Push updated texture to GPU
-		Tex->UpdateResource();
-
-		UE_LOG(LogTemp, Log, TEXT("TerraForge: Modified %d pixels across %d components in texture '%s'"),
-			Batch.Pixels.Num(), Batch.AffectedComponents.Num(), *Tex->GetName());
+		// No unlock, no UpdateResource, no FlushRenderingCommands.
+		// EndEditSession() handles all of that.
 	}
-
-	// ──────────────────────────────────────────────────────────────
-	// PHASE 3: Wait for GPU texture upload, then update collision/bounds
-	// Must happen AFTER unlock + UpdateResource for all textures.
-	// ──────────────────────────────────────────────────────────────
-
-	FlushRenderingCommands();
-
-	for (auto& BatchPair : TextureBatches)
+	else
 	{
-		for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
+		// ── SINGLE-CALL MODE ──────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
 		{
-			Comp->UpdateCollisionData(false);
-			Comp->UpdateCachedBounds(false);
+			FTextureBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
+
+			int32 TexW = Batch.TexW;
+
+			uint8* RawData = Tex->Source.LockMip(0);
+			if (!RawData)
+			{
+				UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock heightmap texture!"));
+				continue;
+			}
+
+			FColor* TexData = reinterpret_cast<FColor*>(RawData);
+
+			for (const FPixelMod& Mod : Batch.Pixels)
+			{
+				FColor& Pixel = TexData[Mod.TexPixelY * TexW + Mod.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			Tex->Source.UnlockMip(0);
+			Tex->UpdateResource();
+
+			UE_LOG(LogTemp, Log, TEXT("TerraForge: Modified %d pixels across %d components in texture '%s'"),
+				Batch.Pixels.Num(), Batch.AffectedComponents.Num(), *Tex->GetName());
+		}
+
+		FlushRenderingCommands();
+
+		for (auto& BatchPair : TextureBatches)
+		{
+			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
+			{
+				Comp->UpdateCollisionData(false);
+				Comp->UpdateCachedBounds(false);
+			}
 		}
 	}
 
@@ -680,8 +715,7 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
 			if (!HeightmapTex) continue;
 
-			FTexturePlatformData* PD = HeightmapTex->GetPlatformData();
-			if (!PD || PD->Mips.Num() == 0) continue;
+			if (HeightmapTex->Source.GetNumMips() == 0) continue;
 
 			FIntPoint SectionBase = Comp->GetSectionBase();
 			int32 CompQuads = Comp->ComponentSizeQuads;
@@ -697,8 +731,8 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
 			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
 
-			int32 TexW = PD->Mips[0].SizeX;
-			int32 TexH = PD->Mips[0].SizeY;
+			int32 TexW = HeightmapTex->Source.GetSizeX();
+			int32 TexH = HeightmapTex->Source.GetSizeY();
 
 			FFlattenPixel FP;
 			FP.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
@@ -717,56 +751,85 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 	if (TextureBatches.Num() == 0) return false;
 
 	// ──────────────────────────────────────────────────────────────
-	// PHASE 2: Lock each unique texture ONCE, flatten all pixels, unlock ONCE
+	// PHASE 2: Flatten pixels — session or single-call mode (same pattern
+	// as ModifyLandscapeHeight).
 	// ──────────────────────────────────────────────────────────────
 
 	bool bAnyModified = false;
 
-	for (auto& BatchPair : TextureBatches)
+	if (bEditSessionActive)
 	{
-		FFlattenBatch& Batch = BatchPair.Value;
-		UTexture2D* Tex = Batch.Texture;
-
-		FTexturePlatformData* PlatformData = Tex->GetPlatformData();
-		FTexture2DMipMap& Mip = PlatformData->Mips[0];
-
-		void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
-		if (!RawData) continue;
-
-		FColor* TexData = static_cast<FColor*>(RawData);
-
-		for (const FFlattenPixel& FP : Batch.Pixels)
+		// ── SESSION MODE ──────────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
 		{
-			FColor& Pixel = TexData[FP.TexPixelY * Batch.TexW + FP.TexPixelX];
-			uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+			FFlattenBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
 
-			// Blend 50% per call for smooth flattening toward target
-			int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
-			NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+			FLockedTextureInfo* Info = SessionLockedTextures.Find(Tex);
+			if (!Info || !Info->MipData) continue;
 
-			Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-			Pixel.G = (uint8)(NewHeight & 0xFF);
+			for (const FFlattenPixel& FP : Batch.Pixels)
+			{
+				FColor& Pixel = Info->MipData[FP.TexPixelY * Info->SizeX + FP.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
 
-			RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-			bAnyModified = true;
+				int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			for (ULandscapeComponent* Comp : Batch.AffectedComponents)
+			{
+				SessionAffectedComponents.Add(Comp);
+			}
+		}
+	}
+	else
+	{
+		// ── SINGLE-CALL MODE ──────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
+		{
+			FFlattenBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
+
+			uint8* RawData = Tex->Source.LockMip(0);
+			if (!RawData) continue;
+
+			FColor* TexData = reinterpret_cast<FColor*>(RawData);
+
+			for (const FFlattenPixel& FP : Batch.Pixels)
+			{
+				FColor& Pixel = TexData[FP.TexPixelY * Batch.TexW + FP.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+				int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			Tex->Source.UnlockMip(0);
+			Tex->UpdateResource();
 		}
 
-		Mip.BulkData.Unlock();
-		Tex->UpdateResource();
-	}
+		FlushRenderingCommands();
 
-	// ──────────────────────────────────────────────────────────────
-	// PHASE 3: Flush GPU, then update collision/bounds
-	// ──────────────────────────────────────────────────────────────
-
-	FlushRenderingCommands();
-
-	for (auto& BatchPair : TextureBatches)
-	{
-		for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
+		for (auto& BatchPair : TextureBatches)
 		{
-			Comp->UpdateCollisionData(false);
-			Comp->UpdateCachedBounds(false);
+			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
+			{
+				Comp->UpdateCollisionData(false);
+				Comp->UpdateCachedBounds(false);
+			}
 		}
 	}
 
@@ -803,6 +866,149 @@ void UTerraForgeSubsystem::RecordTerrainDelta(const FIntPoint& HeightmapCoord, i
 {
 	int32& CumulativeDelta = TerrainDeltas.FindOrAdd(HeightmapCoord);
 	CumulativeDelta += (int32)HeightDelta;
+}
+
+// ============================================================================
+// EDIT SESSION MANAGEMENT
+// ============================================================================
+//
+// Session-based texture locking eliminates the BulkData double-lock crash.
+//
+// Problem: UTexture2D::UpdateResource() internally re-locks BulkData via
+//   InitRHI → LockMip → BulkData.Lock(). Even with FlushRenderingCommands(),
+//   the internal lock state isn't fully released before the next explicit Lock()
+//   call, causing "Assertion failed: IsUnlocked()" in BulkData.cpp.
+//
+// Solution: Lock all heightmap textures ONCE at session start. All terrain
+//   modifications during the session modify the pre-locked pixel data directly.
+//   Unlock + UpdateResource happens ONCE at session end. No intermediate
+//   Lock/Unlock cycles = no double-lock crash.
+//
+// Flow: Player presses G → BeginEditSession (lock textures)
+//       Player digs/raises/flattens multiple times → pixels modified in-place
+//       Player presses G → EndEditSession (unlock, GPU push, collision update)
+// ============================================================================
+
+bool UTerraForgeSubsystem::BeginEditSession(const FVector& Center, float Radius)
+{
+	if (bEditSessionActive)
+	{
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session already active."));
+		return true;
+	}
+
+	// Ensure landscape data is cached
+	if (!bLandscapeTransformCached) CacheLandscapeTransform();
+	if (!CachedLandscape || ComponentMap.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: BeginEditSession — no landscape found!"));
+		return false;
+	}
+
+	// Determine component grid range to scan
+	const int32 PixelRadius = FMath::CeilToInt(Radius / LandscapeScale.X) + CachedComponentSizeQuads;
+	const int32 CenterPX = FMath::RoundToInt((Center.X - LandscapeOrigin.X) / LandscapeScale.X);
+	const int32 CenterPY = FMath::RoundToInt((Center.Y - LandscapeOrigin.Y) / LandscapeScale.Y);
+	const int32 CompStep = FMath::Max(CachedComponentSizeQuads, 1);
+
+	const int32 MinGX = (CenterPX - PixelRadius) / CompStep;
+	const int32 MaxGX = (CenterPX + PixelRadius) / CompStep;
+	const int32 MinGY = (CenterPY - PixelRadius) / CompStep;
+	const int32 MaxGY = (CenterPY + PixelRadius) / CompStep;
+
+	// Collect unique textures from all components in range
+	TSet<UTexture2D*> UniqueTextures;
+
+	for (int32 gy = MinGY; gy <= MaxGY; gy++)
+	{
+		for (int32 gx = MinGX; gx <= MaxGX; gx++)
+		{
+			FIntPoint GridKey(gx * CompStep, gy * CompStep);
+			ULandscapeComponent** FoundComp = ComponentMap.Find(GridKey);
+			if (!FoundComp || !(*FoundComp)) continue;
+
+			ULandscapeComponent* Comp = *FoundComp;
+			UTexture2D* Tex = Comp->GetHeightmap(false);
+			if (!Tex) continue;
+
+			SessionAffectedComponents.Add(Comp);
+			UniqueTextures.Add(Tex);
+		}
+	}
+
+	if (UniqueTextures.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: BeginEditSession — no textures found in radius %.0f at (%.0f, %.0f)"),
+			Radius, Center.X, Center.Y);
+		SessionAffectedComponents.Empty();
+		return false;
+	}
+
+	// Lock each unique texture exactly ONCE
+	for (UTexture2D* Tex : UniqueTextures)
+	{
+		if (Tex->Source.GetNumMips() == 0) continue;
+
+		uint8* RawData = Tex->Source.LockMip(0);
+		if (!RawData)
+		{
+			UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock texture '%s'"), *Tex->GetName());
+			continue;
+		}
+
+		FLockedTextureInfo Info;
+		Info.MipData = reinterpret_cast<FColor*>(RawData);
+		Info.SizeX = Tex->Source.GetSizeX();
+		Info.SizeY = Tex->Source.GetSizeY();
+		SessionLockedTextures.Add(Tex, Info);
+	}
+
+	bEditSessionActive = true;
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session STARTED — %d unique textures locked, %d components in range"),
+		SessionLockedTextures.Num(), SessionAffectedComponents.Num());
+
+	return true;
+}
+
+void UTerraForgeSubsystem::EndEditSession()
+{
+	if (!bEditSessionActive)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: EndEditSession called with no active session."));
+		return;
+	}
+
+	// Unlock all textures and push updated data to GPU
+	for (auto& Pair : SessionLockedTextures)
+	{
+		UTexture2D* Tex = Pair.Key;
+		Tex->Source.UnlockMip(0);
+		Tex->UpdateResource();
+	}
+
+	// Wait for all GPU texture uploads to complete before touching collision
+	FlushRenderingCommands();
+
+	// Update collision and bounds for every component that was modified
+	int32 CollisionUpdates = 0;
+	for (ULandscapeComponent* Comp : SessionAffectedComponents)
+	{
+		if (Comp)
+		{
+			Comp->UpdateCollisionData(false);
+			Comp->UpdateCachedBounds(false);
+			CollisionUpdates++;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session ENDED — %d textures unlocked, %d collision updates"),
+		SessionLockedTextures.Num(), CollisionUpdates);
+
+	// Clean up session state
+	SessionLockedTextures.Empty();
+	SessionAffectedComponents.Empty();
+	bEditSessionActive = false;
 }
 
 // ============================================================================

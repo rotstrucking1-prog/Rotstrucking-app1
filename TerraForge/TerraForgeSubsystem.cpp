@@ -504,8 +504,7 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
 			if (!HeightmapTex) continue;
 
-			FTexturePlatformData* PD = HeightmapTex->GetPlatformData();
-			if (!PD || PD->Mips.Num() == 0) continue;
+			if (HeightmapTex->Source.GetNumMips() == 0) continue;
 
 			// Convert to texture pixel coordinates via this component's ScaleBias
 			FIntPoint SectionBase = Comp->GetSectionBase();
@@ -522,8 +521,8 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
 			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
 
-			int32 TexW = PD->Mips[0].SizeX;
-			int32 TexH = PD->Mips[0].SizeY;
+			int32 TexW = HeightmapTex->Source.GetSizeX();
+			int32 TexH = HeightmapTex->Source.GetSizeY();
 
 			FPixelMod Mod;
 			Mod.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
@@ -604,18 +603,16 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			FTextureBatch& Batch = BatchPair.Value;
 			UTexture2D* Tex = Batch.Texture;
 
-			FTexturePlatformData* PlatformData = Tex->GetPlatformData();
-			FTexture2DMipMap& Mip = PlatformData->Mips[0];
 			int32 TexW = Batch.TexW;
 
-			void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+			uint8* RawData = Tex->Source.LockMip(0);
 			if (!RawData)
 			{
 				UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock heightmap texture!"));
 				continue;
 			}
 
-			FColor* TexData = static_cast<FColor*>(RawData);
+			FColor* TexData = reinterpret_cast<FColor*>(RawData);
 
 			for (const FPixelMod& Mod : Batch.Pixels)
 			{
@@ -632,7 +629,7 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 				bAnyModified = true;
 			}
 
-			Mip.BulkData.Unlock();
+			Tex->Source.UnlockMip(0);
 			Tex->UpdateResource();
 
 			UE_LOG(LogTemp, Log, TEXT("TerraForge: Modified %d pixels across %d components in texture '%s'"),
@@ -718,8 +715,7 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
 			if (!HeightmapTex) continue;
 
-			FTexturePlatformData* PD = HeightmapTex->GetPlatformData();
-			if (!PD || PD->Mips.Num() == 0) continue;
+			if (HeightmapTex->Source.GetNumMips() == 0) continue;
 
 			FIntPoint SectionBase = Comp->GetSectionBase();
 			int32 CompQuads = Comp->ComponentSizeQuads;
@@ -735,8 +731,8 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
 			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
 
-			int32 TexW = PD->Mips[0].SizeX;
-			int32 TexH = PD->Mips[0].SizeY;
+			int32 TexW = HeightmapTex->Source.GetSizeX();
+			int32 TexH = HeightmapTex->Source.GetSizeY();
 
 			FFlattenPixel FP;
 			FP.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
@@ -801,13 +797,10 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			FFlattenBatch& Batch = BatchPair.Value;
 			UTexture2D* Tex = Batch.Texture;
 
-			FTexturePlatformData* PlatformData = Tex->GetPlatformData();
-			FTexture2DMipMap& Mip = PlatformData->Mips[0];
-
-			void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+			uint8* RawData = Tex->Source.LockMip(0);
 			if (!RawData) continue;
 
-			FColor* TexData = static_cast<FColor*>(RawData);
+			FColor* TexData = reinterpret_cast<FColor*>(RawData);
 
 			for (const FFlattenPixel& FP : Batch.Pixels)
 			{
@@ -824,7 +817,7 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 				bAnyModified = true;
 			}
 
-			Mip.BulkData.Unlock();
+			Tex->Source.UnlockMip(0);
 			Tex->UpdateResource();
 		}
 
@@ -954,11 +947,9 @@ bool UTerraForgeSubsystem::BeginEditSession(const FVector& Center, float Radius)
 	// Lock each unique texture exactly ONCE
 	for (UTexture2D* Tex : UniqueTextures)
 	{
-		FTexturePlatformData* PD = Tex->GetPlatformData();
-		if (!PD || PD->Mips.Num() == 0) continue;
+		if (Tex->Source.GetNumMips() == 0) continue;
 
-		FTexture2DMipMap& Mip = PD->Mips[0];
-		void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+		uint8* RawData = Tex->Source.LockMip(0);
 		if (!RawData)
 		{
 			UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock texture '%s'"), *Tex->GetName());
@@ -966,9 +957,9 @@ bool UTerraForgeSubsystem::BeginEditSession(const FVector& Center, float Radius)
 		}
 
 		FLockedTextureInfo Info;
-		Info.MipData = static_cast<FColor*>(RawData);
-		Info.SizeX = Mip.SizeX;
-		Info.SizeY = Mip.SizeY;
+		Info.MipData = reinterpret_cast<FColor*>(RawData);
+		Info.SizeX = Tex->Source.GetSizeX();
+		Info.SizeY = Tex->Source.GetSizeY();
 		SessionLockedTextures.Add(Tex, Info);
 	}
 
@@ -992,12 +983,8 @@ void UTerraForgeSubsystem::EndEditSession()
 	for (auto& Pair : SessionLockedTextures)
 	{
 		UTexture2D* Tex = Pair.Key;
-		FTexturePlatformData* PD = Tex->GetPlatformData();
-		if (PD && PD->Mips.Num() > 0)
-		{
-			PD->Mips[0].BulkData.Unlock();
-			Tex->UpdateResource();
-		}
+		Tex->Source.UnlockMip(0);
+		Tex->UpdateResource();
 	}
 
 	// Wait for all GPU texture uploads to complete before touching collision

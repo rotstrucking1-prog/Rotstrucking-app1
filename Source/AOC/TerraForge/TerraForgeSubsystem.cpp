@@ -20,6 +20,10 @@
 #include "Landscape.h"
 #include "LandscapeProxy.h"
 #include "LandscapeComponent.h"
+#include "LandscapeInfo.h"
+#if WITH_EDITOR
+#include "LandscapeEdit.h"      // FLandscapeEditDataInterface — official heightmap read/write API
+#endif
 #include "Components/ActorComponent.h"
 #include "NavigationSystem.h"
 #include "Async/Async.h"
@@ -597,55 +601,72 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 	}
 	else
 	{
-		// ── SINGLE-CALL MODE ──────────────────────────────────────
-		for (auto& BatchPair : TextureBatches)
+		// ── SINGLE-CALL MODE (via FLandscapeEditDataInterface) ───
+		// Uses UE5's official landscape editing API which handles internal
+		// texture locking, GPU updates, and collision correctly.
+		// Source.LockMip(0) returns nullptr on landscape heightmaps in UE5 5.7
+		// because the texture source bulk data is not in a lockable state at runtime.
+#if WITH_EDITOR
+		ULandscapeInfo* LandscapeInfo = CachedLandscape->GetLandscapeInfo();
+		if (!LandscapeInfo)
 		{
-			FTextureBatch& Batch = BatchPair.Value;
-			UTexture2D* Tex = Batch.Texture;
+			UE_LOG(LogTemp, Error, TEXT("TerraForge: No LandscapeInfo available — cannot modify heightmap!"));
+			return false;
+		}
 
-			int32 TexW = Batch.TexW;
+		int32 X1 = CenterX - BrushExtent;
+		int32 Y1 = CenterY - BrushExtent;
+		int32 X2 = CenterX + BrushExtent;
+		int32 Y2 = CenterY + BrushExtent;
+		int32 Width = X2 - X1 + 1;
+		int32 Height = Y2 - Y1 + 1;
 
-			uint8* RawData = Tex->Source.LockMip(0);
-			if (!RawData)
+		// Read current heightmap data via official API
+		TArray<uint16> HeightData;
+		HeightData.SetNum(Width * Height);
+
+		FLandscapeEditDataInterface DataInterface(LandscapeInfo);
+		DataInterface.GetHeightDataFast(X1, Y1, X2, Y2, HeightData.GetData(), 0);
+
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Read %d heightmap vertices via LandscapeEditDataInterface (center=%d,%d, area=%dx%d)"),
+			Width * Height, CenterX, CenterY, Width, Height);
+
+		// Apply Gaussian brush to the height data
+		for (int32 dy = -BrushExtent; dy <= BrushExtent; dy++)
+		{
+			for (int32 dx = -BrushExtent; dx <= BrushExtent; dx++)
 			{
-				UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock heightmap texture!"));
-				continue;
-			}
+				float Dist = FMath::Sqrt((float)(dx * dx + dy * dy));
+				if (Dist > BrushRadiusPixels) continue;
 
-			FColor* TexData = reinterpret_cast<FColor*>(RawData);
+				float Weight = FMath::Exp(-Dist * Dist / (2.0f * FalloffSigma * FalloffSigma));
 
-			for (const FPixelMod& Mod : Batch.Pixels)
-			{
-				FColor& Pixel = TexData[Mod.TexPixelY * TexW + Mod.TexPixelX];
-				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+				int32 ArrayIdx = (dy + BrushExtent) * Width + (dx + BrushExtent);
+				if (ArrayIdx < 0 || ArrayIdx >= HeightData.Num()) continue;
 
-				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
+				uint16 CurrentHeight = HeightData[ArrayIdx];
+				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Weight);
 				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
 
-				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-				Pixel.G = (uint8)(NewHeight & 0xFF);
-
-				RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				HeightData[ArrayIdx] = (uint16)NewHeight;
+				RecordTerrainDelta(FIntPoint(CenterX + dx, CenterY + dy),
+					(int16)(NewHeight - (int32)CurrentHeight));
 				bAnyModified = true;
 			}
-
-			Tex->Source.UnlockMip(0);
-			Tex->UpdateResource();
-
-			UE_LOG(LogTemp, Log, TEXT("TerraForge: Modified %d pixels across %d components in texture '%s'"),
-				Batch.Pixels.Num(), Batch.AffectedComponents.Num(), *Tex->GetName());
 		}
 
-		FlushRenderingCommands();
-
-		for (auto& BatchPair : TextureBatches)
+		if (bAnyModified)
 		{
-			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
-			{
-				Comp->UpdateCollisionData(false);
-				Comp->UpdateCachedBounds(false);
-			}
+			// Write modified heights back — handles texture update, normals, collision
+			DataInterface.SetHeightData(X1, Y1, X2, Y2, HeightData.GetData(), 0, true);
+
+			UE_LOG(LogTemp, Log, TEXT("TerraForge: SetHeightData SUCCESS — %d vertices modified at center(%d,%d)"),
+				Width * Height, CenterX, CenterY);
 		}
+#else
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: Single-call heightmap modification requires editor (WITH_EDITOR)"));
+		return false;
+#endif
 	}
 
 	return bAnyModified;
@@ -791,46 +812,59 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 	}
 	else
 	{
-		// ── SINGLE-CALL MODE ──────────────────────────────────────
-		for (auto& BatchPair : TextureBatches)
+		// ── SINGLE-CALL MODE (via FLandscapeEditDataInterface) ───
+#if WITH_EDITOR
+		ULandscapeInfo* LandscapeInfo = CachedLandscape->GetLandscapeInfo();
+		if (!LandscapeInfo)
 		{
-			FFlattenBatch& Batch = BatchPair.Value;
-			UTexture2D* Tex = Batch.Texture;
+			UE_LOG(LogTemp, Error, TEXT("TerraForge: No LandscapeInfo for flatten!"));
+			return false;
+		}
 
-			uint8* RawData = Tex->Source.LockMip(0);
-			if (!RawData) continue;
+		int32 X1 = CenterX - BrushExtent;
+		int32 Y1 = CenterY - BrushExtent;
+		int32 X2 = CenterX + BrushExtent;
+		int32 Y2 = CenterY + BrushExtent;
+		int32 Width = X2 - X1 + 1;
+		int32 Height = Y2 - Y1 + 1;
 
-			FColor* TexData = reinterpret_cast<FColor*>(RawData);
+		TArray<uint16> HeightData;
+		HeightData.SetNum(Width * Height);
 
-			for (const FFlattenPixel& FP : Batch.Pixels)
+		FLandscapeEditDataInterface DataInterface(LandscapeInfo);
+		DataInterface.GetHeightDataFast(X1, Y1, X2, Y2, HeightData.GetData(), 0);
+
+		for (int32 dy = -BrushExtent; dy <= BrushExtent; dy++)
+		{
+			for (int32 dx = -BrushExtent; dx <= BrushExtent; dx++)
 			{
-				FColor& Pixel = TexData[FP.TexPixelY * Batch.TexW + FP.TexPixelX];
-				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+				float Dist = FMath::Sqrt((float)(dx * dx + dy * dy));
+				if (Dist > BrushRadiusPixels) continue;
 
+				int32 ArrayIdx = (dy + BrushExtent) * Width + (dx + BrushExtent);
+				if (ArrayIdx < 0 || ArrayIdx >= HeightData.Num()) continue;
+
+				uint16 CurrentHeight = HeightData[ArrayIdx];
 				int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
 				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
 
-				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-				Pixel.G = (uint8)(NewHeight & 0xFF);
-
-				RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				HeightData[ArrayIdx] = (uint16)NewHeight;
+				RecordTerrainDelta(FIntPoint(CenterX + dx, CenterY + dy),
+					(int16)(NewHeight - (int32)CurrentHeight));
 				bAnyModified = true;
 			}
-
-			Tex->Source.UnlockMip(0);
-			Tex->UpdateResource();
 		}
 
-		FlushRenderingCommands();
-
-		for (auto& BatchPair : TextureBatches)
+		if (bAnyModified)
 		{
-			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
-			{
-				Comp->UpdateCollisionData(false);
-				Comp->UpdateCachedBounds(false);
-			}
+			DataInterface.SetHeightData(X1, Y1, X2, Y2, HeightData.GetData(), 0, true);
+			UE_LOG(LogTemp, Log, TEXT("TerraForge: Flatten SUCCESS via LandscapeEditDataInterface at center(%d,%d)"),
+				CenterX, CenterY);
 		}
+#else
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: Flatten requires editor (WITH_EDITOR)"));
+		return false;
+#endif
 	}
 
 	return bAnyModified;

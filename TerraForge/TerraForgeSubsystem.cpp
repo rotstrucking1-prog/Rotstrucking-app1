@@ -20,6 +20,8 @@
 #include "Landscape.h"
 #include "LandscapeProxy.h"
 #include "LandscapeComponent.h"
+#include "LandscapeInfo.h"
+// CPU cache approach replaces FLandscapeEditDataInterface — no editor-only deps
 #include "Components/ActorComponent.h"
 #include "NavigationSystem.h"
 #include "Async/Async.h"
@@ -27,7 +29,7 @@
 #include "RenderingThread.h"  // FlushRenderingCommands()
 
 // Heightmap constants — use TF_ prefix to avoid collision with UE5 macros
-// (LANDSCAPE_ZSCALE is already #defined in LandscapeDataAccess.h)
+// Heightmap constants for landscape height encoding
 static constexpr float TF_ZSCALE = 1.0f / 128.0f;
 static constexpr uint16 TF_HEIGHT_MID = 32768;
 
@@ -80,6 +82,8 @@ void UTerraForgeSubsystem::Deinitialize()
 	DirtyChunkQueue.Empty();
 
 	// Clean up heightmap caches
+	HeightmapCPUCache.Empty();
+	SessionDirtyTextures.Empty();
 	ComponentMap.Empty();
 	TerrainDeltas.Empty();
 	OriginalSurfaceHeights.Empty();
@@ -504,7 +508,7 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
 			if (!HeightmapTex) continue;
 
-			if (HeightmapTex->Source.GetNumMips() == 0) continue;
+			if (HeightmapTex->GetSizeX() == 0 || HeightmapTex->GetSizeY() == 0) continue;
 
 			// Convert to texture pixel coordinates via this component's ScaleBias
 			FIntPoint SectionBase = Comp->GetSectionBase();
@@ -521,8 +525,8 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
 			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
 
-			int32 TexW = HeightmapTex->Source.GetSizeX();
-			int32 TexH = HeightmapTex->Source.GetSizeY();
+			int32 TexW = HeightmapTex->GetSizeX();
+			int32 TexH = HeightmapTex->GetSizeY();
 
 			FPixelMod Mod;
 			Mod.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
@@ -556,96 +560,69 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 
 	bool bAnyModified = false;
 
-	if (bEditSessionActive)
+	// ── UNIFIED MODIFICATION (CPU cache — runtime compatible) ─────
+	// Both session and single-call modes modify our CPU-side heightmap cache.
+	// Session mode defers GPU push to EndEditSession().
+	// Single-call mode pushes to GPU immediately.
+
+	for (auto& BatchPair : TextureBatches)
 	{
-		// ── SESSION MODE ──────────────────────────────────────────
-		for (auto& BatchPair : TextureBatches)
+		FTextureBatch& Batch = BatchPair.Value;
+		UTexture2D* Tex = Batch.Texture;
+
+		// Ensure texture is cached
+		if (!CacheHeightmapTexture(Tex))
 		{
-			FTextureBatch& Batch = BatchPair.Value;
-			UTexture2D* Tex = Batch.Texture;
-
-			FLockedTextureInfo* Info = SessionLockedTextures.Find(Tex);
-			if (!Info || !Info->MipData)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("TerraForge: Session mode — texture not pre-locked, skipping"));
-				continue;
-			}
-
-			for (const FPixelMod& Mod : Batch.Pixels)
-			{
-				FColor& Pixel = Info->MipData[Mod.TexPixelY * Info->SizeX + Mod.TexPixelX];
-				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
-
-				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
-				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
-
-				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-				Pixel.G = (uint8)(NewHeight & 0xFF);
-
-				RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-				bAnyModified = true;
-			}
-
-			// Track components for collision update at EndEditSession()
-			for (ULandscapeComponent* Comp : Batch.AffectedComponents)
-			{
-				SessionAffectedComponents.Add(Comp);
-			}
+			UE_LOG(LogTemp, Warning, TEXT("TerraForge: Cannot cache heightmap texture — skipping"));
+			continue;
 		}
-		// No unlock, no UpdateResource, no FlushRenderingCommands.
-		// EndEditSession() handles all of that.
+
+		FHeightmapCache* Cache = HeightmapCPUCache.Find(Tex);
+
+		for (const FPixelMod& Mod : Batch.Pixels)
+		{
+			int32 PixelIdx = Mod.TexPixelY * Cache->SizeX + Mod.TexPixelX;
+			if (PixelIdx < 0 || PixelIdx >= Cache->Pixels.Num()) continue;
+
+			FColor& Pixel = Cache->Pixels[PixelIdx];
+			uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+			int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
+			NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+			Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+			Pixel.G = (uint8)(NewHeight & 0xFF);
+
+			RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+			bAnyModified = true;
+		}
+
+		// Track affected components for collision update
+		for (ULandscapeComponent* Comp : Batch.AffectedComponents)
+		{
+			SessionAffectedComponents.Add(Comp);
+		}
+
+		if (bEditSessionActive)
+		{
+			// Session mode: mark texture dirty, GPU push deferred to EndEditSession
+			SessionDirtyTextures.Add(Tex);
+		}
+		else if (bAnyModified)
+		{
+			// Single-call mode: push to GPU immediately
+			PushHeightmapToGPU(Tex);
+		}
 	}
-	else
+
+	if (!bEditSessionActive && bAnyModified)
 	{
-		// ── SINGLE-CALL MODE ──────────────────────────────────────
-		for (auto& BatchPair : TextureBatches)
-		{
-			FTextureBatch& Batch = BatchPair.Value;
-			UTexture2D* Tex = Batch.Texture;
-
-			int32 TexW = Batch.TexW;
-
-			uint8* RawData = Tex->Source.LockMip(0);
-			if (!RawData)
-			{
-				UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock heightmap texture!"));
-				continue;
-			}
-
-			FColor* TexData = reinterpret_cast<FColor*>(RawData);
-
-			for (const FPixelMod& Mod : Batch.Pixels)
-			{
-				FColor& Pixel = TexData[Mod.TexPixelY * TexW + Mod.TexPixelX];
-				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
-
-				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
-				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
-
-				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-				Pixel.G = (uint8)(NewHeight & 0xFF);
-
-				RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-				bAnyModified = true;
-			}
-
-			Tex->Source.UnlockMip(0);
-			Tex->UpdateResource();
-
-			UE_LOG(LogTemp, Log, TEXT("TerraForge: Modified %d pixels across %d components in texture '%s'"),
-				Batch.Pixels.Num(), Batch.AffectedComponents.Num(), *Tex->GetName());
-		}
-
 		FlushRenderingCommands();
+		UpdateCollisionForComponents(SessionAffectedComponents);
+		SessionAffectedComponents.Empty();
 
-		for (auto& BatchPair : TextureBatches)
-		{
-			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
-			{
-				Comp->UpdateCollisionData(false);
-				Comp->UpdateCachedBounds(false);
-			}
-		}
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Single-call heightmap modification SUCCESS at center(%d,%d)"),
+			CenterX, CenterY);
 	}
 
 	return bAnyModified;
@@ -715,7 +692,7 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
 			if (!HeightmapTex) continue;
 
-			if (HeightmapTex->Source.GetNumMips() == 0) continue;
+			if (HeightmapTex->GetSizeX() == 0 || HeightmapTex->GetSizeY() == 0) continue;
 
 			FIntPoint SectionBase = Comp->GetSectionBase();
 			int32 CompQuads = Comp->ComponentSizeQuads;
@@ -731,8 +708,8 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
 			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
 
-			int32 TexW = HeightmapTex->Source.GetSizeX();
-			int32 TexH = HeightmapTex->Source.GetSizeY();
+			int32 TexW = HeightmapTex->GetSizeX();
+			int32 TexH = HeightmapTex->GetSizeY();
 
 			FFlattenPixel FP;
 			FP.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
@@ -757,80 +734,60 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 
 	bool bAnyModified = false;
 
-	if (bEditSessionActive)
+	// ── UNIFIED FLATTEN (CPU cache — runtime compatible) ──────────
+	for (auto& BatchPair : TextureBatches)
 	{
-		// ── SESSION MODE ──────────────────────────────────────────
-		for (auto& BatchPair : TextureBatches)
+		FFlattenBatch& Batch = BatchPair.Value;
+		UTexture2D* Tex = Batch.Texture;
+
+		if (!CacheHeightmapTexture(Tex))
 		{
-			FFlattenBatch& Batch = BatchPair.Value;
-			UTexture2D* Tex = Batch.Texture;
+			UE_LOG(LogTemp, Warning, TEXT("TerraForge: Cannot cache heightmap for flatten — skipping"));
+			continue;
+		}
 
-			FLockedTextureInfo* Info = SessionLockedTextures.Find(Tex);
-			if (!Info || !Info->MipData) continue;
+		FHeightmapCache* Cache = HeightmapCPUCache.Find(Tex);
 
-			for (const FFlattenPixel& FP : Batch.Pixels)
-			{
-				FColor& Pixel = Info->MipData[FP.TexPixelY * Info->SizeX + FP.TexPixelX];
-				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+		for (const FFlattenPixel& FP : Batch.Pixels)
+		{
+			int32 PixelIdx = FP.TexPixelY * Cache->SizeX + FP.TexPixelX;
+			if (PixelIdx < 0 || PixelIdx >= Cache->Pixels.Num()) continue;
 
-				int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
-				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+			FColor& Pixel = Cache->Pixels[PixelIdx];
+			uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
 
-				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-				Pixel.G = (uint8)(NewHeight & 0xFF);
+			int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
+			NewHeight = FMath::Clamp(NewHeight, 0, 65535);
 
-				RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-				bAnyModified = true;
-			}
+			Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+			Pixel.G = (uint8)(NewHeight & 0xFF);
 
-			for (ULandscapeComponent* Comp : Batch.AffectedComponents)
-			{
-				SessionAffectedComponents.Add(Comp);
-			}
+			RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+			bAnyModified = true;
+		}
+
+		for (ULandscapeComponent* Comp : Batch.AffectedComponents)
+		{
+			SessionAffectedComponents.Add(Comp);
+		}
+
+		if (bEditSessionActive)
+		{
+			SessionDirtyTextures.Add(Tex);
+		}
+		else if (bAnyModified)
+		{
+			PushHeightmapToGPU(Tex);
 		}
 	}
-	else
+
+	if (!bEditSessionActive && bAnyModified)
 	{
-		// ── SINGLE-CALL MODE ──────────────────────────────────────
-		for (auto& BatchPair : TextureBatches)
-		{
-			FFlattenBatch& Batch = BatchPair.Value;
-			UTexture2D* Tex = Batch.Texture;
-
-			uint8* RawData = Tex->Source.LockMip(0);
-			if (!RawData) continue;
-
-			FColor* TexData = reinterpret_cast<FColor*>(RawData);
-
-			for (const FFlattenPixel& FP : Batch.Pixels)
-			{
-				FColor& Pixel = TexData[FP.TexPixelY * Batch.TexW + FP.TexPixelX];
-				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
-
-				int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
-				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
-
-				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
-				Pixel.G = (uint8)(NewHeight & 0xFF);
-
-				RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
-				bAnyModified = true;
-			}
-
-			Tex->Source.UnlockMip(0);
-			Tex->UpdateResource();
-		}
-
 		FlushRenderingCommands();
+		UpdateCollisionForComponents(SessionAffectedComponents);
+		SessionAffectedComponents.Empty();
 
-		for (auto& BatchPair : TextureBatches)
-		{
-			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
-			{
-				Comp->UpdateCollisionData(false);
-				Comp->UpdateCachedBounds(false);
-			}
-		}
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Flatten SUCCESS at center(%d,%d)"), CenterX, CenterY);
 	}
 
 	return bAnyModified;
@@ -872,21 +829,17 @@ void UTerraForgeSubsystem::RecordTerrainDelta(const FIntPoint& HeightmapCoord, i
 // EDIT SESSION MANAGEMENT
 // ============================================================================
 //
-// Session-based texture locking eliminates the BulkData double-lock crash.
+// CPU cache approach: heightmap texture data is read ONCE into a TArray<FColor>
+// cache (HeightmapCPUCache) on first access. All terrain modifications update
+// this CPU cache directly — no texture locking during editing. At session end
+// (or immediately for single-call mode), the modified data is pushed to the
+// GPU via PlatformData BulkData write + UpdateResource().
 //
-// Problem: UTexture2D::UpdateResource() internally re-locks BulkData via
-//   InitRHI → LockMip → BulkData.Lock(). Even with FlushRenderingCommands(),
-//   the internal lock state isn't fully released before the next explicit Lock()
-//   call, causing "Assertion failed: IsUnlocked()" in BulkData.cpp.
+// This is fully runtime-compatible — no #if WITH_EDITOR on the hot path.
 //
-// Solution: Lock all heightmap textures ONCE at session start. All terrain
-//   modifications during the session modify the pre-locked pixel data directly.
-//   Unlock + UpdateResource happens ONCE at session end. No intermediate
-//   Lock/Unlock cycles = no double-lock crash.
-//
-// Flow: Player presses G → BeginEditSession (lock textures)
-//       Player digs/raises/flattens multiple times → pixels modified in-place
-//       Player presses G → EndEditSession (unlock, GPU push, collision update)
+// Flow: Player presses G → BeginEditSession (cache textures)
+//       Player digs/raises/flattens → CPU cache modified in-place
+//       Player presses G → EndEditSession (GPU push, collision update)
 // ============================================================================
 
 bool UTerraForgeSubsystem::BeginEditSession(const FVector& Center, float Radius)
@@ -918,6 +871,7 @@ bool UTerraForgeSubsystem::BeginEditSession(const FVector& Center, float Radius)
 
 	// Collect unique textures from all components in range
 	TSet<UTexture2D*> UniqueTextures;
+	int32 CachedCount = 0;
 
 	for (int32 gy = MinGY; gy <= MaxGY; gy++)
 	{
@@ -944,29 +898,31 @@ bool UTerraForgeSubsystem::BeginEditSession(const FVector& Center, float Radius)
 		return false;
 	}
 
-	// Lock each unique texture exactly ONCE
+	// Cache each unique texture's pixel data to CPU (if not already cached)
 	for (UTexture2D* Tex : UniqueTextures)
 	{
-		if (Tex->Source.GetNumMips() == 0) continue;
-
-		uint8* RawData = Tex->Source.LockMip(0);
-		if (!RawData)
+		if (CacheHeightmapTexture(Tex))
 		{
-			UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock texture '%s'"), *Tex->GetName());
-			continue;
+			CachedCount++;
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to cache heightmap texture '%s'"), *Tex->GetName());
+		}
+	}
 
-		FLockedTextureInfo Info;
-		Info.MipData = reinterpret_cast<FColor*>(RawData);
-		Info.SizeX = Tex->Source.GetSizeX();
-		Info.SizeY = Tex->Source.GetSizeY();
-		SessionLockedTextures.Add(Tex, Info);
+	if (CachedCount == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: BeginEditSession — could not cache any textures!"));
+		SessionAffectedComponents.Empty();
+		return false;
 	}
 
 	bEditSessionActive = true;
+	SessionDirtyTextures.Empty();
 
-	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session STARTED — %d unique textures locked, %d components in range"),
-		SessionLockedTextures.Num(), SessionAffectedComponents.Num());
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session STARTED — %d textures cached, %d components in range"),
+		CachedCount, SessionAffectedComponents.Num());
 
 	return true;
 }
@@ -979,36 +935,175 @@ void UTerraForgeSubsystem::EndEditSession()
 		return;
 	}
 
-	// Unlock all textures and push updated data to GPU
-	for (auto& Pair : SessionLockedTextures)
+	// Push all modified textures to GPU
+	int32 PushedCount = 0;
+	for (UTexture2D* Tex : SessionDirtyTextures)
 	{
-		UTexture2D* Tex = Pair.Key;
-		Tex->Source.UnlockMip(0);
-		Tex->UpdateResource();
+		PushHeightmapToGPU(Tex);
+		PushedCount++;
 	}
 
 	// Wait for all GPU texture uploads to complete before touching collision
 	FlushRenderingCommands();
 
-	// Update collision and bounds for every component that was modified
-	int32 CollisionUpdates = 0;
-	for (ULandscapeComponent* Comp : SessionAffectedComponents)
+	// Update collision for every component that was modified
+	UpdateCollisionForComponents(SessionAffectedComponents);
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session ENDED — %d textures pushed to GPU, %d collision updates"),
+		PushedCount, SessionAffectedComponents.Num());
+
+	// Clean up session state
+	SessionDirtyTextures.Empty();
+	SessionAffectedComponents.Empty();
+	bEditSessionActive = false;
+}
+
+// ============================================================================
+// HEIGHTMAP CPU CACHE + GPU PUSH (runtime-compatible)
+// ============================================================================
+
+bool UTerraForgeSubsystem::CacheHeightmapTexture(UTexture2D* Tex)
+{
+	if (!Tex) return false;
+	if (HeightmapCPUCache.Contains(Tex)) return true;  // Already cached
+
+	int32 SizeX = Tex->GetSizeX();
+	int32 SizeY = Tex->GetSizeY();
+	if (SizeX == 0 || SizeY == 0)
 	{
-		if (Comp)
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: CacheHeightmapTexture — texture '%s' has zero dimensions!"),
+			*Tex->GetName());
+		return false;
+	}
+
+	FHeightmapCache Cache;
+	Cache.SizeX = SizeX;
+	Cache.SizeY = SizeY;
+	Cache.Pixels.SetNum(SizeX * SizeY);
+
+	bool bReadSuccess = false;
+	int64 ExpectedSize = (int64)SizeX * SizeY * sizeof(FColor);
+
+	// Method 1: PlatformData BulkData (runtime-compatible)
+	FTexturePlatformData* PD = Tex->GetPlatformData();
+	if (PD && PD->Mips.Num() > 0)
+	{
+		FTexture2DMipMap& Mip = PD->Mips[0];
+		int64 BulkSize = Mip.BulkData.GetBulkDataSize();
+		if (BulkSize > 0)
 		{
-			Comp->UpdateCollisionData(false);
-			Comp->UpdateCachedBounds(false);
-			CollisionUpdates++;
+			const void* SrcData = Mip.BulkData.LockReadOnly();
+			if (SrcData)
+			{
+				FMemory::Memcpy(Cache.Pixels.GetData(), SrcData,
+					FMath::Min(BulkSize, ExpectedSize));
+				Mip.BulkData.Unlock();
+				bReadSuccess = true;
+				UE_LOG(LogTemp, Log, TEXT("TerraForge: Cached heightmap via PlatformData (%dx%d, %lld bytes)"),
+					SizeX, SizeY, BulkSize);
+			}
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session ENDED — %d textures unlocked, %d collision updates"),
-		SessionLockedTextures.Num(), CollisionUpdates);
+#if WITH_EDITOR
+	// Method 2: Source (editor fallback — available in PIE but stripped in packaged builds)
+	if (!bReadSuccess && Tex->Source.GetNumMips() > 0)
+	{
+		const uint8* SrcData = Tex->Source.LockMipReadOnly(0);
+		if (SrcData)
+		{
+			int64 SourceSize = (int64)Tex->Source.GetSizeX() * Tex->Source.GetSizeY() * sizeof(FColor);
+			FMemory::Memcpy(Cache.Pixels.GetData(), SrcData,
+				FMath::Min(SourceSize, ExpectedSize));
+			Tex->Source.UnlockMip(0);
+			bReadSuccess = true;
+			UE_LOG(LogTemp, Log, TEXT("TerraForge: Cached heightmap via Source (%dx%d)"),
+				SizeX, SizeY);
+		}
+	}
+#endif
 
-	// Clean up session state
-	SessionLockedTextures.Empty();
-	SessionAffectedComponents.Empty();
-	bEditSessionActive = false;
+	if (!bReadSuccess)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: FAILED to cache heightmap texture '%s' — no accessible CPU data!"),
+			*Tex->GetName());
+		return false;
+	}
+
+	HeightmapCPUCache.Add(Tex, MoveTemp(Cache));
+	return true;
+}
+
+void UTerraForgeSubsystem::PushHeightmapToGPU(UTexture2D* Tex)
+{
+	FHeightmapCache* Cache = HeightmapCPUCache.Find(Tex);
+	if (!Cache)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: PushHeightmapToGPU — no cached data for texture '%s'!"),
+			*Tex->GetName());
+		return;
+	}
+
+	bool bPushSuccess = false;
+	int64 DataSize = (int64)Cache->SizeX * Cache->SizeY * sizeof(FColor);
+
+	// Method 1: PlatformData BulkData write + UpdateResource (runtime-compatible)
+	FTexturePlatformData* PD = Tex->GetPlatformData();
+	if (PD && PD->Mips.Num() > 0)
+	{
+		FTexture2DMipMap& Mip = PD->Mips[0];
+		void* DestData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+		if (DestData)
+		{
+			FMemory::Memcpy(DestData, Cache->Pixels.GetData(), DataSize);
+			Mip.BulkData.Unlock();
+			Tex->UpdateResource();
+			bPushSuccess = true;
+			UE_LOG(LogTemp, Log, TEXT("TerraForge: GPU push via PlatformData BulkData (%dx%d)"),
+				Cache->SizeX, Cache->SizeY);
+		}
+	}
+
+#if WITH_EDITOR
+	// Method 2: Source write + UpdateResource (editor fallback)
+	if (!bPushSuccess && Tex->Source.GetNumMips() > 0)
+	{
+		uint8* DestData = Tex->Source.LockMip(0);
+		if (DestData)
+		{
+			FMemory::Memcpy(DestData, Cache->Pixels.GetData(), DataSize);
+			Tex->Source.UnlockMip(0);
+			Tex->UpdateResource();
+			bPushSuccess = true;
+			UE_LOG(LogTemp, Log, TEXT("TerraForge: GPU push via Source (%dx%d)"),
+				Cache->SizeX, Cache->SizeY);
+		}
+	}
+#endif
+
+	if (!bPushSuccess)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: FAILED to push heightmap '%s' to GPU — no writable path!"),
+			*Tex->GetName());
+	}
+}
+
+void UTerraForgeSubsystem::UpdateCollisionForComponents(const TSet<ULandscapeComponent*>& Components)
+{
+	int32 Updated = 0;
+	for (ULandscapeComponent* Comp : Components)
+	{
+		if (!Comp || !IsValid(Comp)) continue;
+
+		// UpdateCollisionData rebuilds collision from heightmap data
+		Comp->UpdateCollisionData(false);
+		Updated++;
+	}
+
+	if (Updated > 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Updated collision for %d landscape components"), Updated);
+	}
 }
 
 // ============================================================================

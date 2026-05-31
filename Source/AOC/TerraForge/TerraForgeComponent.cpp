@@ -350,6 +350,26 @@ bool UTerraForgeComponent::ExecuteAction(ETerraAction Action)
 	return bSuccess;
 }
 
+bool UTerraForgeComponent::ExecuteActionAtLocation(FVector WorldLocation, ETerraAction Action)
+{
+	// Bypass line trace — set target directly from supplied world position.
+	// Used for testing/scripting without camera manipulation.
+	TargetPosition = WorldLocation;
+	bTargetValid = true;
+
+	// Sample terrain info at this location
+	if (TerraForgeSubsystem)
+	{
+		TargetMaterial = TerraForgeSubsystem->GetSurfaceMaterialAt(WorldLocation);
+		TargetStructuralState = TerraForgeSubsystem->GetStructuralState(WorldLocation);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: ExecuteActionAtLocation at (%.1f, %.1f, %.1f) action=%d"),
+		WorldLocation.X, WorldLocation.Y, WorldLocation.Z, (int32)Action);
+
+	return ExecuteAction(Action);
+}
+
 bool UTerraForgeComponent::ExecuteActionBySlot(int32 Slot)
 {
 	TArray<ETerraAction> Available = GetAvailableActions();

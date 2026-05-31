@@ -78,6 +78,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "TerraForge")
 	bool ExecuteAction(ETerraAction Action);
 
+	/** Execute a terraforming action at a specific world location.
+	 *  Bypasses the camera line trace — used for testing and server-authoritative calls.
+	 *  @param WorldLocation  World-space position to perform the action at.
+	 *  @param Action         The terraform action to execute.
+	 *  @return True if the action was performed successfully. */
+	UFUNCTION(BlueprintCallable, Category = "TerraForge")
+	bool ExecuteActionAtLocation(FVector WorldLocation, ETerraAction Action);
+
 	/** Select an action by number (1-6, for number key hotbar). */
 	UFUNCTION(BlueprintCallable, Category = "TerraForge")
 	bool ExecuteActionBySlot(int32 Slot);

@@ -1,6 +1,11 @@
 // TerraForgeSubsystem.h
-// TerraForge — World subsystem managing all terrain chunks, streaming,
-// async mesh generation, and landscape integration.
+// TerraForge — World subsystem managing terrain modification,
+// chunk management, and landscape integration.
+//
+// ARCHITECTURE (v2 — Heightmap-based surface terraforming):
+// Surface: Direct landscape heightmap texture modification (same as UE5 sculpt tools).
+// Underground: Voxel chunk system + ProceduralMesh (kept for tunnels/ore).
+// No ProceduralMesh replacement of surface terrain. No landscape hiding.
 
 #pragma once
 
@@ -9,6 +14,7 @@
 #include "TerraForgeTypes.h"
 #include "TerraForgeChunk.h"
 #include "ProceduralMeshComponent.h"
+#include "Engine/Texture2D.h"
 #include "TerraForgeSubsystem.generated.h"
 
 class ALandscapeProxy;
@@ -229,12 +235,6 @@ private:
 	/** Calculate structural stress at a position. */
 	float CalculateStress(const FTerraForgeChunk& Chunk, int32 X, int32 Y, int32 Z) const;
 
-	/** Hide landscape component(s) overlapping a modified chunk. */
-	void HideLandscapeForChunk(const FTerraChunkKey& Key);
-
-	/** Set of landscape components we have already hidden. */
-	TSet<ULandscapeComponent*> HiddenLandscapeComponents;
-
 	/** Set voxel material at a world position. */
 	void SetVoxelMaterial(const FVector& WorldPos, EGeoMaterial Material);
 
@@ -243,4 +243,62 @@ private:
 
 	/** Get a loaded chunk by coordinate. Returns nullptr if not loaded. */
 	FTerraForgeChunk* GetChunkAt(const FIntVector& ChunkCoord) const;
+
+	// ── Heightmap Surface Terraforming (v2) ─────────────────────────────────
+
+	/** Cache landscape transform data for fast coordinate conversion. */
+	void CacheLandscapeTransform();
+
+	/** Find the landscape component that contains a world XY position.
+	 *  Uses cached O(1) grid lookup. */
+	ULandscapeComponent* FindComponentAtWorldPos(const FVector& WorldPos);
+
+	/** Core heightmap modification: apply brush at world position.
+	 *  @param WorldPos        Center of the brush in world space.
+	 *  @param DeltaCm         Height change in centimeters (negative=lower, positive=raise).
+	 *  @param BrushRadiusPixels Brush radius in heightmap pixels (~1 pixel = 1 meter).
+	 *  @param FalloffSigma    Gaussian sigma for edge falloff (in pixels).
+	 *  @return True if any heightmap pixels were modified. */
+	bool ModifyLandscapeHeight(const FVector& WorldPos, float DeltaCm,
+		float BrushRadiusPixels = 1.5f, float FalloffSigma = 0.5f);
+
+	/** Flatten landscape heights in a brush area to a target height.
+	 *  @param WorldPos      Center of the brush.
+	 *  @param TargetHeightCm Target world Z height in cm.
+	 *  @param BrushRadiusPixels Brush radius in heightmap pixels.
+	 *  @return True if any heights were modified. */
+	bool FlattenLandscapeHeight(const FVector& WorldPos, float TargetHeightCm,
+		float BrushRadiusPixels = 1.5f);
+
+	/** Convert world position to landscape heightmap coordinates. */
+	FIntPoint WorldToHeightmapCoord(const FVector& WorldPos) const;
+
+	/** Get geological material at a depth below surface (uses biome profile). */
+	EGeoMaterial GetGeologicalMaterialAtDepth(const FVector& WorldPos, float DepthMeters) const;
+
+	/** Track a terrain modification for persistence (delta system). */
+	void RecordTerrainDelta(const FIntPoint& HeightmapCoord, int16 HeightDelta);
+
+	// ── Cached Landscape Data ───────────────────────────────────────────────
+
+	/** Landscape world-space origin (cached). */
+	FVector LandscapeOrigin = FVector::ZeroVector;
+
+	/** Landscape actor scale (cached). */
+	FVector LandscapeScale = FVector(100.0f, 100.0f, 100.0f);
+
+	/** Whether landscape transform has been cached. */
+	bool bLandscapeTransformCached = false;
+
+	/** Cached component size (quads per side). All components share this value. */
+	int32 CachedComponentSizeQuads = 127;
+
+	/** O(1) component lookup: grid index → component pointer. */
+	TMap<FIntPoint, ULandscapeComponent*> ComponentMap;
+
+	/** Terrain modification deltas for persistence (heightmap coord → cumulative delta). */
+	TMap<FIntPoint, int32> TerrainDeltas;
+
+	/** Original landscape heights (sampled at first dig) for geological material lookup. */
+	TMap<FIntPoint, float> OriginalSurfaceHeights;
 };

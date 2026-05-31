@@ -25,9 +25,10 @@
 #include "Async/Async.h"
 #include "ProceduralMeshComponent.h"
 
-// Heightmap constants (from UE5 LandscapeDataAccess.h)
-static constexpr float LANDSCAPE_ZSCALE = 1.0f / 128.0f;
-static constexpr uint16 LANDSCAPE_HEIGHT_MIDPOINT = 32768;
+// Heightmap constants — use TF_ prefix to avoid collision with UE5 macros
+// (LANDSCAPE_ZSCALE is already #defined in LandscapeDataAccess.h)
+static constexpr float TF_ZSCALE = 1.0f / 128.0f;
+static constexpr uint16 TF_HEIGHT_MID = 32768;
 
 // ============================================================================
 // LIFECYCLE
@@ -444,7 +445,7 @@ bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float 
 	int32 BrushExtent = FMath::CeilToInt(BrushRadiusPixels);
 
 	// Convert cm delta to uint16 heightmap units
-	// Each uint16 step = LandscapeScale.Z * LANDSCAPE_ZSCALE cm = Scale.Z / 128 cm
+	// Each uint16 step = LandscapeScale.Z * TF_ZSCALE cm = Scale.Z / 128 cm
 	// So delta in uint16 = DeltaCm / (Scale.Z / 128) = DeltaCm * 128 / Scale.Z
 	float DeltaUnits = DeltaCm * 128.0f / LandscapeScale.Z;
 
@@ -607,7 +608,7 @@ bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float
 
 	// Convert target world Z to uint16 heightmap value
 	uint16 TargetUint16 = (uint16)FMath::Clamp(
-		(int32)(LANDSCAPE_HEIGHT_MIDPOINT +
+		(int32)(TF_HEIGHT_MID +
 			FMath::RoundToInt((TargetHeightCm - LandscapeOrigin.Z) * 128.0f / LandscapeScale.Z)),
 		0, 65535);
 

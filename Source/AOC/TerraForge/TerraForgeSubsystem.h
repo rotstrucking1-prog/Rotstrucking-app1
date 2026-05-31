@@ -89,6 +89,30 @@ public:
 	/** Mine ore from a voxel. Returns units extracted. */
 	int32 MineOre(const FVector& WorldPos, int32 SkillLevel);
 
+	// ── Edit Session Management ────────────────────────────────────────────
+
+	/** Begin an edit session — pre-locks all landscape heightmap textures
+	 *  within radius. Subsequent LowerTerrain/RaiseTerrain/FlattenTerrain calls
+	 *  modify pre-locked data without per-call lock/unlock/UpdateResource.
+	 *  Call EndEditSession() to commit changes to GPU and update collision.
+	 *  This eliminates the BulkData double-lock crash caused by UpdateResource()
+	 *  internally re-locking textures via InitRHI → LockMip.
+	 *  @param Center  World position center of the edit region.
+	 *  @param Radius  Radius in world units to pre-lock (default 1000 cm = 10m).
+	 *  @return True if session started (or was already active). */
+	UFUNCTION(BlueprintCallable, Category = "TerraForge")
+	bool BeginEditSession(const FVector& Center, float Radius = 1000.0f);
+
+	/** End the current edit session — unlocks heightmap textures, pushes
+	 *  changes to GPU, and updates landscape collision.
+	 *  Other players see terrain changes only after this call. */
+	UFUNCTION(BlueprintCallable, Category = "TerraForge")
+	void EndEditSession();
+
+	/** Is an edit session currently active? */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "TerraForge")
+	bool IsEditSessionActive() const { return bEditSessionActive; }
+
 	// ── Observe Mode ────────────────────────────────────────────────────────
 
 	/** Get observe-mode grid data around a world position.
@@ -301,4 +325,23 @@ private:
 
 	/** Original landscape heights (sampled at first dig) for geological material lookup. */
 	TMap<FIntPoint, float> OriginalSurfaceHeights;
+
+	// ── Edit Session State ─────────────────────────────────────────────────
+
+	/** Info about a locked heightmap texture during an edit session. */
+	struct FLockedTextureInfo
+	{
+		FColor* MipData = nullptr;
+		int32 SizeX = 0;
+		int32 SizeY = 0;
+	};
+
+	/** Whether an edit session is currently active (textures are locked). */
+	bool bEditSessionActive = false;
+
+	/** Map of unique texture → locked mip data during edit session. */
+	TMap<UTexture2D*, FLockedTextureInfo> SessionLockedTextures;
+
+	/** All landscape components touched during this edit session (for collision update). */
+	TSet<ULandscapeComponent*> SessionAffectedComponents;
 };

@@ -55,6 +55,9 @@ public class AOC : ModuleRules
             // Landscape (surface height queries for world generation)
             "Landscape",
 
+            // Rendering (FlushRenderingCommands for heightmap texture sync)
+            "RenderCore",
+
             // Water (existing dependency)
             "Water",
 

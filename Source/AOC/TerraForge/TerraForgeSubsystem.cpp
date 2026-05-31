@@ -1074,7 +1074,7 @@ void UTerraForgeSubsystem::PushHeightmapToGPU(UTexture2D* Tex)
 		SizeX * sizeof(FColor),     // SrcPitch (bytes per row)
 		sizeof(FColor),             // SrcBpp (bytes per pixel)
 		DataCopy,                   // SrcData
-		true                        // bFreeData — UE frees DataCopy after render thread consumes it
+		[](uint8* SrcData, const FUpdateTextureRegion2D* Regions) { FMemory::Free(SrcData); }
 	);
 
 	UE_LOG(LogTemp, Log, TEXT("TerraForge: GPU push via UpdateTextureRegions (%dx%d)"),

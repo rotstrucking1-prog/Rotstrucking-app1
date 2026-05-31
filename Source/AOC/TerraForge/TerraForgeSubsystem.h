@@ -326,22 +326,41 @@ private:
 	/** Original landscape heights (sampled at first dig) for geological material lookup. */
 	TMap<FIntPoint, float> OriginalSurfaceHeights;
 
-	// ── Edit Session State ─────────────────────────────────────────────────
+	// ── Heightmap CPU Cache + Edit Session ──────────────────────────────────
 
-	/** Info about a locked heightmap texture during an edit session. */
-	struct FLockedTextureInfo
+	/** CPU-side copy of a heightmap texture's pixel data.
+	 *  Enables runtime-compatible modification without editor-only APIs.
+	 *  Persistent across sessions — once cached, stays in memory. */
+	struct FHeightmapCache
 	{
-		FColor* MipData = nullptr;
+		TArray<FColor> Pixels;
 		int32 SizeX = 0;
 		int32 SizeY = 0;
 	};
 
-	/** Whether an edit session is currently active (textures are locked). */
+	/** Whether an edit session is currently active. */
 	bool bEditSessionActive = false;
 
-	/** Map of unique texture → locked mip data during edit session. */
-	TMap<UTexture2D*, FLockedTextureInfo> SessionLockedTextures;
+	/** CPU-side heightmap data cache per texture.
+	 *  Populated on first access via CacheHeightmapTexture().
+	 *  Modified during terraforming, pushed to GPU at commit time. */
+	TMap<UTexture2D*, FHeightmapCache> HeightmapCPUCache;
+
+	/** Textures modified during current edit session (need GPU push at EndEditSession). */
+	TSet<UTexture2D*> SessionDirtyTextures;
 
 	/** All landscape components touched during this edit session (for collision update). */
 	TSet<ULandscapeComponent*> SessionAffectedComponents;
+
+	/** Read a heightmap texture into the CPU cache.
+	 *  Tries PlatformData BulkData (runtime) then Source (editor fallback).
+	 *  @return True if data was successfully read and cached. */
+	bool CacheHeightmapTexture(UTexture2D* Tex);
+
+	/** Push modified CPU cache data back to the GPU heightmap texture.
+	 *  Tries PlatformData BulkData write (runtime) then Source write (editor fallback). */
+	void PushHeightmapToGPU(UTexture2D* Tex);
+
+	/** Update collision for landscape components after height modification. */
+	void UpdateCollisionForComponents(const TSet<ULandscapeComponent*>& Components);
 };

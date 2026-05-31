@@ -85,6 +85,21 @@ AAoCPlayerPawn::AAoCPlayerPawn()
 	SkillComponent        = CreateDefaultSubobject<UAoCSkillComponent>(TEXT("SkillComponent"));
 	TerraForgeComp        = CreateDefaultSubobject<UTerraForgeComponent>(TEXT("TerraForgeComp"));
 
+	// ── Pickaxe visual (attached to right hand) ────────────────────────────
+	PickaxeMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PickaxeMesh"));
+	PickaxeMeshComp->SetupAttachment(GetMesh(), FName("mixamorig:RightHand"));
+	PickaxeMeshComp->SetRelativeScale3D(FVector(0.04f, 0.25f, 0.04f));
+	PickaxeMeshComp->SetRelativeLocation(FVector(5.0f, 0.0f, 20.0f));
+	PickaxeMeshComp->SetRelativeRotation(FRotator(0.0f, 0.0f, 90.0f));
+	PickaxeMeshComp->SetVisibility(false);
+	PickaxeMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> PickMeshFinder(
+		TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (PickMeshFinder.Succeeded())
+	{
+		PickaxeMeshComp->SetStaticMesh(PickMeshFinder.Object);
+	}
+
 	// ── Default state ───────────────────────────────────────────────────────
 	InteractionRange    = 800.0f;
 	CurrentTarget       = EInteractionTarget::Nothing;
@@ -282,11 +297,28 @@ void AAoCPlayerPawn::PlayActionAnimation(UAnimSequence* Anim, float OverrideDura
 void AAoCPlayerPawn::ReturnToIdle()
 {
 	bPlayingActionAnim = false;
+	HidePickaxe(); // Hide pickaxe when returning to idle
 
 	USkeletalMeshComponent* SkelMesh = GetMesh();
 	if (SkelMesh && AnimIdle)
 	{
 		SkelMesh->PlayAnimation(AnimIdle, true); // loop idle
+	}
+}
+
+void AAoCPlayerPawn::ShowPickaxe()
+{
+	if (PickaxeMeshComp)
+	{
+		PickaxeMeshComp->SetVisibility(true);
+	}
+}
+
+void AAoCPlayerPawn::HidePickaxe()
+{
+	if (PickaxeMeshComp)
+	{
+		PickaxeMeshComp->SetVisibility(false);
 	}
 }
 
@@ -667,23 +699,50 @@ void AAoCPlayerPawn::HandleInteract()
 	{
 		ActionCooldown = 1.5f;
 		PlayActionAnimation(AnimMiningSwing);
+		ShowPickaxe();
 
-		if (MiningComponent)
+		// Try direct OreVein actor interaction (standalone — no VoxelWorld needed)
+		AAoCOreVein* OreVein = Cast<AAoCOreVein>(TargetActor.Get());
+		if (OreVein && !OreVein->IsDepleted())
 		{
-			FVector OreLocation = (TargetActor != nullptr) ? TargetActor->GetActorLocation() : GetActorLocation();
-			FMiningResult MResult = MiningComponent->MineOre(OreLocation);
-			if (MResult.bSuccess)
+			const float Skill = MiningComponent ? MiningComponent->MiningSkill : 0.f;
+			const float ToolQ = MiningComponent ? MiningComponent->ToolQuality : 50.f;
+
+			FOreExtractResult Result = OreVein->ExtractOre(Skill, ToolQ);
+
+			if (Result.bSuccess)
 			{
-				ShowNotification(FString::Printf(TEXT("Mined %d ore (Q%d)"), MResult.Quantity, MResult.Quality), FColor::Green, 3.0f);
+				// Add ore to inventory
+				if (InventoryComponent)
+				{
+					FName ItemID = AAoCOreVein::GetItemIDForMaterial(Result.Material);
+					InventoryComponent->AddItem(ItemID, Result.AmountExtracted);
+				}
+
+				// Gain mining XP
+				if (MiningComponent)
+				{
+					MiningComponent->GainMiningXP(10.f * Result.AmountExtracted);
+				}
+
+				FString OreName = AAoCOreVein::GetShortOreName(Result.Material);
+				ShowNotification(FString::Printf(TEXT("+%d %s (Q%d) — %d remaining"),
+					Result.AmountExtracted, *OreName, Result.OutputQuality,
+					OreVein->RemainingOre), FColor::Green, 3.0f);
+
+				if (Result.bVeinDepleted)
+				{
+					ShowNotification(TEXT("Ore vein depleted!"), FColor::Yellow, 3.0f);
+				}
 			}
-			else
-			{
-				ShowNotification(FString::Printf(TEXT("Mining %s..."), *TargetDisplayName), FColor::Green);
-			}
+		}
+		else if (OreVein && OreVein->IsDepleted())
+		{
+			ShowNotification(TEXT("This ore vein is depleted"), FColor(180, 180, 180));
 		}
 		else
 		{
-			ShowNotification(TEXT("Mining component not ready"), FColor::Red);
+			ShowNotification(TEXT("Walk closer to mine this"), FColor::Red);
 		}
 		break;
 	}

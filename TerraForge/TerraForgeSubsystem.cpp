@@ -1599,6 +1599,15 @@ FTerraForgeChunk* UTerraForgeSubsystem::GetChunkAt(const FIntVector& ChunkCoord)
 
 void UTerraForgeSubsystem::HideLandscapeForChunk(const FTerraChunkKey& Key)
 {
+	// Track which chunk positions have already had landscape removed
+	// (uses static set since DestroyComponent is permanent within a PIE session)
+	static TSet<FTerraChunkKey> ProcessedChunks;
+	if (ProcessedChunks.Contains(Key))
+	{
+		return; // Already removed landscape for this chunk
+	}
+	ProcessedChunks.Add(Key);
+
 	if (!CachedLandscape)
 	{
 		CachedLandscape = FindLandscape();
@@ -1609,25 +1618,24 @@ void UTerraForgeSubsystem::HideLandscapeForChunk(const FTerraChunkKey& Key)
 		return;
 	}
 
-	// Get chunk world bounds (2D, XY plane)
+	// Get chunk world bounds (2D, XY plane) with padding for seamless coverage
 	const FVector ChunkOrigin = Key.ToWorldPos(); // in cm
 	const float ChunkSizeCm = TF_CHUNK_WORLD_SIZE * 100.0f;
-	const FVector ChunkEnd = ChunkOrigin + FVector(ChunkSizeCm, ChunkSizeCm, ChunkSizeCm);
+	const float Padding = ChunkSizeCm * 0.1f; // 10% padding to avoid edge seams
+	const FVector PaddedOrigin = ChunkOrigin - FVector(Padding, Padding, 0.0f);
+	const FVector PaddedEnd = ChunkOrigin + FVector(ChunkSizeCm + Padding, ChunkSizeCm + Padding, ChunkSizeCm);
 
-	// Get landscape transform
-	const FVector LandscapePos = CachedLandscape->GetActorLocation();
-	const FVector LandscapeScale = CachedLandscape->GetActorScale3D();
-
-	// Iterate through landscape components and hide those overlapping with this chunk
+	// Get all landscape components
 	TArray<ULandscapeComponent*> Comps;
 	CachedLandscape->GetComponents<ULandscapeComponent>(Comps);
 
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk — checking %d landscape components, chunk origin=(%.0f,%.0f)"),
-		Comps.Num(), ChunkOrigin.X, ChunkOrigin.Y);
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk(%s) — checking %d landscape components"),
+		*Key.ToString(), Comps.Num());
 
+	int32 DestroyedCount = 0;
 	for (ULandscapeComponent* LC : Comps)
 	{
-		if (!LC || HiddenLandscapeComponents.Contains(LC))
+		if (!LC || !IsValid(LC))
 		{
 			continue;
 		}
@@ -1638,20 +1646,24 @@ void UTerraForgeSubsystem::HideLandscapeForChunk(const FTerraChunkKey& Key)
 
 		// Check 2D overlap (XY plane)
 		bool bOverlaps =
-			CompBox.Max.X >= ChunkOrigin.X && CompBox.Min.X <= ChunkEnd.X &&
-			CompBox.Max.Y >= ChunkOrigin.Y && CompBox.Min.Y <= ChunkEnd.Y;
+			CompBox.Max.X >= PaddedOrigin.X && CompBox.Min.X <= PaddedEnd.X &&
+			CompBox.Max.Y >= PaddedOrigin.Y && CompBox.Min.Y <= PaddedEnd.Y;
 
 		if (bOverlaps)
 		{
-			LC->SetVisibility(false, true);
-			LC->SetHiddenInGame(true);
-			HiddenLandscapeComponents.Add(LC);
-
+			// DestroyComponent is the ONLY method that visually removes landscape during PIE.
+			// SetVisibility(false) and SetHiddenInGame(true) do NOT work on ULandscapeComponent.
 			UE_LOG(LogTemp, Warning,
-				TEXT("TerraForge: Hidden landscape component '%s' at bounds (%.0f,%.0f)-(%.0f,%.0f)"),
+				TEXT("TerraForge: DESTROYING landscape component '%s' at bounds (%.0f,%.0f)-(%.0f,%.0f)"),
 				*LC->GetName(),
 				CompBox.Min.X, CompBox.Min.Y,
 				CompBox.Max.X, CompBox.Max.Y);
+
+			LC->DestroyComponent();
+			DestroyedCount++;
 		}
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk(%s) — destroyed %d landscape components"),
+		*Key.ToString(), DestroyedCount);
 }

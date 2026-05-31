@@ -232,11 +232,11 @@ EGeoMaterial UTerraForgeSubsystem::LowerTerrain(const FVector& WorldPos, float A
 
 	// Convert Amount (meters, default 0.1) to centimeters for heightmap delta
 	// Negative delta = lower the terrain
-	const float DeltaCm = -Amount * 100.0f; // e.g., -10 cm per dig
+	const float DeltaCm = -Amount * 500.0f; // 5x boost: 50cm per dig
 
-	// Shovel brush: 1.5 pixel radius (~1.5 meter), sigma 0.5 for Gaussian falloff
-	const float BrushRadius = 1.5f;
-	const float FalloffSigma = 0.5f;
+	// Shovel brush: 4 pixel radius (~4 meter), sigma 1.5 for smooth Gaussian falloff
+	const float BrushRadius = 4.0f;
+	const float FalloffSigma = 1.5f;
 
 	// Determine geological material at this depth before modifying
 	// Cache original surface height if not cached
@@ -284,11 +284,11 @@ bool UTerraForgeSubsystem::RaiseTerrain(const FVector& WorldPos, EGeoMaterial Ma
 		WorldPos.X, WorldPos.Y, WorldPos.Z, Amount, (int32)Material);
 
 	// Positive delta = raise the terrain
-	const float DeltaCm = Amount * 100.0f; // e.g., +10 cm per dump
+	const float DeltaCm = Amount * 500.0f; // 5x boost: 50cm per raise
 
 	// Same brush as shovel lowering
-	const float BrushRadius = 1.5f;
-	const float FalloffSigma = 0.5f;
+	const float BrushRadius = 4.0f;
+	const float FalloffSigma = 1.5f;
 
 	bool bSuccess = ModifyLandscapeHeight(WorldPos, DeltaCm, BrushRadius, FalloffSigma);
 
@@ -967,6 +967,21 @@ bool UTerraForgeSubsystem::CacheHeightmapTexture(UTexture2D* Tex)
 	if (!Tex) return false;
 	if (HeightmapCPUCache.Contains(Tex)) return true;  // Already cached
 
+	// CRITICAL: Disable texture streaming permanently for any heightmap we modify.
+	// Without this, the streaming system can reduce GPU texture resolution between
+	// cache and push, causing UpdateTextureRegions to crash with assertion:
+	// "UpdateRegion.DestX + UpdateRegion.Width <= Texture->GetSizeX()"
+	if (!Tex->NeverStream)
+	{
+		Tex->NeverStream = true;
+		// Do NOT call UpdateResource() — it destroys the FTextureResource and corrupts
+		// landscape render proxy state (causes DestX garbage / assertion crash on render thread).
+		// Instead force all mip levels to stay resident at full resolution.
+		Tex->SetForceMipLevelsToBeResident(120.0f);
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Disabled streaming for '%s' — forced mips resident"),
+			*Tex->GetName());
+	}
+
 	int32 SizeX = Tex->GetSizeX();
 	int32 SizeY = Tex->GetSizeY();
 	if (SizeX == 0 || SizeY == 0)
@@ -1056,6 +1071,22 @@ void UTerraForgeSubsystem::PushHeightmapToGPU(UTexture2D* Tex)
 	int32 SizeY = Cache->SizeY;
 	int64 DataSize = (int64)SizeX * SizeY * sizeof(FColor);
 
+	// CRITICAL: Disable texture streaming for this heightmap.
+	// Without this, the streaming system will overwrite our GPU modifications
+	// with the original heightmap data from disk, making changes invisible.
+	Tex->TemporarilyDisableStreaming();
+
+	// Safety check: verify GPU texture matches our cache resolution.
+	// If streaming changed the GPU texture size after we cached, pushing would crash.
+	int32 GpuSizeX = Tex->GetSizeX();
+	int32 GpuSizeY = Tex->GetSizeY();
+	if (GpuSizeX != SizeX || GpuSizeY != SizeY)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: GPU size %dx%d != cache %dx%d — aborting push (would crash)"),
+			GpuSizeX, GpuSizeY, SizeX, SizeY);
+		return;
+	}
+
 	// UpdateTextureRegions: Enqueues a render command to update the GPU texture directly.
 	// This does NOT touch BulkData — avoids the IsUnlocked() assertion crash that occurs
 	// when the render thread holds a lock on BulkData while we try to write.
@@ -1065,16 +1096,22 @@ void UTerraForgeSubsystem::PushHeightmapToGPU(UTexture2D* Tex)
 	uint8* DataCopy = (uint8*)FMemory::Malloc(DataSize);
 	FMemory::Memcpy(DataCopy, Cache->Pixels.GetData(), DataSize);
 
-	FUpdateTextureRegion2D Region(0, 0, 0, 0, SizeX, SizeY);
+	// CRITICAL: Region must be HEAP-ALLOCATED because UpdateTextureRegions
+	// captures the pointer by value (does NOT copy the struct). If stack-allocated,
+	// the render thread reads dangling stack memory — causes DestX = -232M garbage crash.
+	FUpdateTextureRegion2D* Region = new FUpdateTextureRegion2D(0, 0, 0, 0, SizeX, SizeY);
 
 	Tex->UpdateTextureRegions(
 		0,                          // MipIndex
 		1,                          // NumRegions
-		&Region,                    // Regions (copied internally by UE)
+		Region,                     // Regions — heap-allocated, freed in cleanup lambda
 		SizeX * sizeof(FColor),     // SrcPitch (bytes per row)
 		sizeof(FColor),             // SrcBpp (bytes per pixel)
 		DataCopy,                   // SrcData
-		[](uint8* SrcData, const FUpdateTextureRegion2D* Regions) { FMemory::Free(SrcData); }
+		[](uint8* SrcData, const FUpdateTextureRegion2D* Regions) {
+			FMemory::Free(SrcData);
+			delete Regions;
+		}
 	);
 
 	UE_LOG(LogTemp, Log, TEXT("TerraForge: GPU push via UpdateTextureRegions (%dx%d)"),

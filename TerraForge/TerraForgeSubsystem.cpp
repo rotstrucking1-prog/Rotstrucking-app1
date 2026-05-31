@@ -1,6 +1,10 @@
 // TerraForgeSubsystem.cpp
 // TerraForge — World subsystem implementation.
-// Manages chunks, streaming, landscape integration, and mesh generation.
+//
+// ARCHITECTURE v2:
+// Surface terraforming → direct landscape heightmap texture modification.
+// Underground tunnels  → voxel chunks + ProceduralMesh (unchanged).
+// No ProceduralMesh replacement for surface. No landscape hiding/destroying.
 
 #include "TerraForgeSubsystem.h"
 #include "TerraForgeStructural.h"
@@ -8,6 +12,7 @@
 #include "TerraForgeSaveLoad.h"
 #include "TerraForgeDualContour.h"
 #include "Engine/World.h"
+#include "Engine/Texture2D.h"
 #include "Materials/Material.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
@@ -19,6 +24,12 @@
 #include "NavigationSystem.h"
 #include "Async/Async.h"
 #include "ProceduralMeshComponent.h"
+#include "RenderingThread.h"  // FlushRenderingCommands()
+
+// Heightmap constants — use TF_ prefix to avoid collision with UE5 macros
+// (LANDSCAPE_ZSCALE is already #defined in LandscapeDataAccess.h)
+static constexpr float TF_ZSCALE = 1.0f / 128.0f;
+static constexpr uint16 TF_HEIGHT_MID = 32768;
 
 // ============================================================================
 // LIFECYCLE
@@ -28,7 +39,7 @@ void UTerraForgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	UE_LOG(LogTemp, Log, TEXT("TerraForge: Subsystem initializing..."));
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Subsystem initializing (v2 — heightmap surface)..."));
 
 	InitializeDataTables();
 	InitializePool();
@@ -59,13 +70,20 @@ void UTerraForgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UTerraForgeSubsystem::Deinitialize()
 {
-	UE_LOG(LogTemp, Log, TEXT("TerraForge: Subsystem deinitializing. %d chunks active."), ChunkMap.Num());
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Subsystem deinitializing. %d chunks, %d terrain deltas."),
+		ChunkMap.Num(), TerrainDeltas.Num());
 
 	// Clean up chunks
 	ChunkMap.Empty();
 	ChunkMeshMap.Empty();
 	LoadedChunkKeys.Empty();
 	DirtyChunkQueue.Empty();
+
+	// Clean up heightmap caches
+	ComponentMap.Empty();
+	TerrainDeltas.Empty();
+	OriginalSurfaceHeights.Empty();
+	bLandscapeTransformCached = false;
 
 	// Pool components are owned by the pool actor — destroyed with it
 	MeshPool.Empty();
@@ -86,7 +104,7 @@ void UTerraForgeSubsystem::InitializePool()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Create the pool actor to hold all ProceduralMeshComponents
+	// Create the pool actor to hold all ProceduralMeshComponents (for underground)
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	MeshPoolActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
@@ -98,7 +116,7 @@ void UTerraForgeSubsystem::InitializePool()
 		MeshPoolActor->SetActorLabel(TEXT("TerraForge Mesh Pool"));
 #endif
 
-		// Pre-allocate mesh components
+		// Pre-allocate mesh components (for underground tunnel rendering)
 		const int32 InitialPoolSize = 64;
 		MeshPool.Reserve(InitialPoolSize);
 		FreeMeshPool.Reserve(InitialPoolSize);
@@ -144,7 +162,7 @@ void UTerraForgeSubsystem::TickSubsystem(float DeltaTime)
 }
 
 // ============================================================================
-// CHUNK ACCESS
+// CHUNK ACCESS (unchanged — used for underground/ore tracking)
 // ============================================================================
 
 FTerraForgeChunk* UTerraForgeSubsystem::GetOrCreateChunk(const FVector& WorldPos)
@@ -200,190 +218,815 @@ bool UTerraForgeSubsystem::HasChunk(const FTerraChunkKey& Key) const
 }
 
 // ============================================================================
-// TERRAFORMING ACTIONS
+// SURFACE TERRAFORMING ACTIONS (v2 — Heightmap-based)
 // ============================================================================
 
 EGeoMaterial UTerraForgeSubsystem::LowerTerrain(const FVector& WorldPos, float Amount)
 {
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain at (%.1f, %.1f, %.1f) amount=%.2f"),
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: LowerTerrain at (%.1f, %.1f, %.1f) amount=%.3f"),
 		WorldPos.X, WorldPos.Y, WorldPos.Z, Amount);
 
-	FTerraForgeChunk* Chunk = GetOrCreateChunk(WorldPos);
-	if (!Chunk)
+	// Convert Amount (meters, default 0.1) to centimeters for heightmap delta
+	// Negative delta = lower the terrain
+	const float DeltaCm = -Amount * 100.0f; // e.g., -10 cm per dig
+
+	// Shovel brush: 1.5 pixel radius (~1.5 meter), sigma 0.5 for Gaussian falloff
+	const float BrushRadius = 1.5f;
+	const float FalloffSigma = 0.5f;
+
+	// Determine geological material at this depth before modifying
+	// Cache original surface height if not cached
+	FIntPoint HeightmapCoord = WorldToHeightmapCoord(WorldPos);
+
+	float OriginalSurfaceZ = WorldPos.Z; // Fallback
+	if (const float* CachedOriginal = OriginalSurfaceHeights.Find(HeightmapCoord))
 	{
-		UE_LOG(LogTemp, Error, TEXT("TerraForge: LowerTerrain — failed to get/create chunk!"));
+		OriginalSurfaceZ = *CachedOriginal;
+	}
+	else
+	{
+		// First dig at this location — record original surface height
+		OriginalSurfaceZ = SampleLandscapeHeight(WorldPos.X, WorldPos.Y);
+		OriginalSurfaceHeights.Add(HeightmapCoord, OriginalSurfaceZ);
+	}
+
+	// How deep below original surface are we now?
+	const float CurrentDepthCm = OriginalSurfaceZ - WorldPos.Z;
+	const float DepthMeters = CurrentDepthCm / 100.0f;
+
+	// Determine what material the player is digging through
+	EGeoMaterial DugMaterial = GetGeologicalMaterialAtDepth(WorldPos, DepthMeters);
+
+	// Apply the heightmap modification
+	bool bSuccess = ModifyLandscapeHeight(WorldPos, DeltaCm, BrushRadius, FalloffSigma);
+
+	if (bSuccess)
+	{
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: LowerTerrain SUCCESS — depth=%.2fm, material=%d"),
+			DepthMeters, (int32)DugMaterial);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain FAILED — could not modify heightmap"));
 		return EGeoMaterial::Air;
 	}
-
-	FIntVector Local = Chunk->WorldToLocal(WorldPos);
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — local coords (%d,%d,%d), chunk key (%d,%d,%d)"),
-		Local.X, Local.Y, Local.Z, Chunk->GetKey().X, Chunk->GetKey().Y, Chunk->GetKey().Z);
-
-	if (!FTerraForgeChunk::IsInBounds(Local.X, Local.Y, Local.Z))
-	{
-		UE_LOG(LogTemp, Error, TEXT("TerraForge: LowerTerrain — local coords out of bounds!"));
-		return EGeoMaterial::Air;
-	}
-
-	Chunk->Lock();
-
-	// Find the topmost solid voxel in this column near the target Z
-	// Start from the target Z and scan downward
-	int32 TargetZ = Local.Z;
-	bool bFoundSolid = false;
-	for (int32 Z = FMath::Min(TargetZ + 2, TF_CHUNK_SIZE - 1); Z >= 0; --Z)
-	{
-		const FGeoVoxel& V = Chunk->GetVoxel(Local.X, Local.Y, Z);
-		if (V.IsSolid())
-		{
-			TargetZ = Z;
-			bFoundSolid = true;
-			break;
-		}
-	}
-
-	if (!bFoundSolid)
-	{
-		Chunk->Unlock();
-		UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — no solid voxel found in column!"));
-		return EGeoMaterial::Air;
-	}
-
-	// Get the material before we remove it
-	FGeoVoxel& Voxel = Chunk->GetVoxelMutable(Local.X, Local.Y, TargetZ);
-	const EGeoMaterial DugMaterial = Voxel.GetMaterial();
-	const float OldDensity = Voxel.Density;
-
-	// Modify the density to create the surface transition
-	const float DigVoxels = Amount / TF_VOXEL_SIZE;
-	Voxel.Density += DigVoxels;
-
-	// If density is now positive (above surface), make it air
-	if (Voxel.Density > 0.0f)
-	{
-		Voxel.MakeAir();
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — voxel (%d,%d,%d) density %.3f -> %.3f, material=%d, made air=%s"),
-		Local.X, Local.Y, TargetZ, OldDensity, Voxel.Density,
-		(int32)DugMaterial, Voxel.GetMaterial() == EGeoMaterial::Air ? TEXT("YES") : TEXT("NO"));
-
-	Chunk->MarkDirty();
-	Chunk->Unlock();
-
-	// Add to dirty queue
-	DirtyChunkQueue.AddUnique(Chunk->GetKey());
-
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: LowerTerrain — chunk marked dirty, queue size=%d"), DirtyChunkQueue.Num());
 
 	return DugMaterial;
 }
 
 bool UTerraForgeSubsystem::RaiseTerrain(const FVector& WorldPos, EGeoMaterial Material, float Amount)
 {
-	FTerraForgeChunk* Chunk = GetOrCreateChunk(WorldPos);
-	if (!Chunk) return false;
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: RaiseTerrain at (%.1f, %.1f, %.1f) amount=%.3f material=%d"),
+		WorldPos.X, WorldPos.Y, WorldPos.Z, Amount, (int32)Material);
 
-	FIntVector Local = Chunk->WorldToLocal(WorldPos);
-	if (!FTerraForgeChunk::IsInBounds(Local.X, Local.Y, Local.Z))
-		return false;
+	// Positive delta = raise the terrain
+	const float DeltaCm = Amount * 100.0f; // e.g., +10 cm per dump
 
-	Chunk->Lock();
+	// Same brush as shovel lowering
+	const float BrushRadius = 1.5f;
+	const float FalloffSigma = 0.5f;
 
-	// Find the first air voxel above ground at this column
-	int32 TargetZ = -1;
-	for (int32 Z = 0; Z < TF_CHUNK_SIZE; ++Z)
+	bool bSuccess = ModifyLandscapeHeight(WorldPos, DeltaCm, BrushRadius, FalloffSigma);
+
+	if (bSuccess)
 	{
-		const FGeoVoxel& V = Chunk->GetVoxel(Local.X, Local.Y, Z);
-		if (V.IsAir())
-		{
-			// Check if there's solid below
-			if (Z == 0 || Chunk->GetVoxel(Local.X, Local.Y, Z - 1).IsSolid())
-			{
-				TargetZ = Z;
-				break;
-			}
-		}
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: RaiseTerrain SUCCESS"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: RaiseTerrain FAILED"));
 	}
 
-	if (TargetZ < 0)
-	{
-		Chunk->Unlock();
-		return false;
-	}
-
-	// Make the air voxel solid with the given material
-	FGeoVoxel& Voxel = Chunk->GetVoxelMutable(Local.X, Local.Y, TargetZ);
-	const float RaiseVoxels = Amount / TF_VOXEL_SIZE;
-	Voxel.Density -= RaiseVoxels;
-
-	if (Voxel.Density <= 0.0f)
-	{
-		Voxel.MakeSolid(Material, 50.0f);
-	}
-
-	Chunk->MarkDirty();
-	Chunk->Unlock();
-
-	DirtyChunkQueue.AddUnique(Chunk->GetKey());
-	return true;
+	return bSuccess;
 }
 
 bool UTerraForgeSubsystem::FlattenTerrain(const FVector& TargetPos, float ReferenceHeight)
 {
-	FTerraForgeChunk* Chunk = GetOrCreateChunk(TargetPos);
-	if (!Chunk) return false;
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: FlattenTerrain at (%.1f, %.1f, %.1f) refHeight=%.1f"),
+		TargetPos.X, TargetPos.Y, TargetPos.Z, ReferenceHeight);
 
-	FIntVector Local = Chunk->WorldToLocal(TargetPos);
-	if (!FTerraForgeChunk::IsInBounds(Local.X, Local.Y, Local.Z))
-		return false;
+	// Use a slightly larger brush for flatten (2 pixel radius = ~2m)
+	const float BrushRadius = 2.0f;
 
-	Chunk->Lock();
+	bool bSuccess = FlattenLandscapeHeight(TargetPos, ReferenceHeight, BrushRadius);
 
-	// Convert reference height to local Z voxel
-	const FVector ChunkOrigin = Chunk->GetWorldOrigin();
-	const float RefZ = (ReferenceHeight - ChunkOrigin.Z) / (TF_VOXEL_SIZE * 100.0f);
-
-	// Set all voxels in this column: solid below ref height, air above
-	for (int32 Z = 0; Z < TF_CHUNK_SIZE; ++Z)
+	if (bSuccess)
 	{
-		FGeoVoxel& V = Chunk->GetVoxelMutable(Local.X, Local.Y, Z);
-		const float VoxelZ = (float)Z;
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: FlattenTerrain SUCCESS"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: FlattenTerrain FAILED"));
+	}
 
-		if (VoxelZ < RefZ - 1.0f)
+	return bSuccess;
+}
+
+// ============================================================================
+// HEIGHTMAP MODIFICATION ENGINE (v2 core)
+// ============================================================================
+
+void UTerraForgeSubsystem::CacheLandscapeTransform()
+{
+	if (!CachedLandscape)
+	{
+		CachedLandscape = FindLandscape();
+	}
+	if (!CachedLandscape)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: CacheLandscapeTransform — no landscape found!"));
+		return;
+	}
+
+	LandscapeOrigin = CachedLandscape->GetActorLocation();
+	LandscapeScale = CachedLandscape->GetActorScale3D();
+
+	// Build O(1) component lookup map
+	TArray<ULandscapeComponent*> Comps;
+	CachedLandscape->GetComponents<ULandscapeComponent>(Comps);
+
+	ComponentMap.Empty();
+	if (Comps.Num() > 0)
+	{
+		CachedComponentSizeQuads = Comps[0]->ComponentSizeQuads;
+
+		for (ULandscapeComponent* LC : Comps)
 		{
-			// Well below reference — ensure solid
-			if (V.IsAir())
-			{
-				V.MakeSolid(EGeoMaterial::Topsoil, 50.0f);
-			}
-		}
-		else if (VoxelZ > RefZ + 1.0f)
-		{
-			// Well above reference — ensure air
-			if (V.IsSolid())
-			{
-				V.MakeAir();
-			}
-		}
-		else
-		{
-			// Transition zone — set density based on distance from reference
-			V.Density = (VoxelZ - RefZ) * 0.5f;
-			if (V.Density <= 0.0f && V.GetMaterial() == EGeoMaterial::Air)
-			{
-				V.SetMaterial(EGeoMaterial::Topsoil);
-			}
-			V.Flags |= FGeoVoxel::FLAG_MODIFIED;
+			if (!LC || !IsValid(LC)) continue;
+
+			FIntPoint Base = LC->GetSectionBase();
+			// Grid key = which component cell this belongs to
+			FIntPoint CompKey(Base.X / CachedComponentSizeQuads, Base.Y / CachedComponentSizeQuads);
+			ComponentMap.Add(CompKey, LC);
 		}
 	}
 
-	Chunk->MarkDirty();
-	Chunk->Unlock();
+	bLandscapeTransformCached = true;
 
-	DirtyChunkQueue.AddUnique(Chunk->GetKey());
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Cached landscape transform. Origin=(%.0f,%.0f,%.0f) Scale=(%.0f,%.0f,%.0f) Components=%d QuadsPerComp=%d"),
+		LandscapeOrigin.X, LandscapeOrigin.Y, LandscapeOrigin.Z,
+		LandscapeScale.X, LandscapeScale.Y, LandscapeScale.Z,
+		ComponentMap.Num(), CachedComponentSizeQuads);
+}
+
+ULandscapeComponent* UTerraForgeSubsystem::FindComponentAtWorldPos(const FVector& WorldPos)
+{
+	if (!bLandscapeTransformCached) CacheLandscapeTransform();
+	if (!CachedLandscape || ComponentMap.Num() == 0) return nullptr;
+
+	// Convert world pos to heightmap coordinate
+	int32 HmapX = FMath::FloorToInt((WorldPos.X - LandscapeOrigin.X) / LandscapeScale.X);
+	int32 HmapY = FMath::FloorToInt((WorldPos.Y - LandscapeOrigin.Y) / LandscapeScale.Y);
+
+	// Which component cell does this heightmap coordinate fall in?
+	int32 CompIdxX = HmapX / CachedComponentSizeQuads;
+	int32 CompIdxY = HmapY / CachedComponentSizeQuads;
+
+	FIntPoint CompKey(CompIdxX, CompIdxY);
+	ULandscapeComponent** Found = ComponentMap.Find(CompKey);
+
+	if (Found && *Found && IsValid(*Found))
+	{
+		return *Found;
+	}
+
+	// Fallback: try adjacent cells (rounding at boundaries)
+	for (int32 dx = -1; dx <= 1; dx++)
+	{
+		for (int32 dy = -1; dy <= 1; dy++)
+		{
+			if (dx == 0 && dy == 0) continue;
+			FIntPoint AdjKey(CompIdxX + dx, CompIdxY + dy);
+			ULandscapeComponent** AdjFound = ComponentMap.Find(AdjKey);
+			if (AdjFound && *AdjFound && IsValid(*AdjFound))
+			{
+				// Verify this component actually contains the position
+				FIntPoint Base = (*AdjFound)->GetSectionBase();
+				int32 Quads = (*AdjFound)->ComponentSizeQuads;
+				if (HmapX >= Base.X && HmapX <= Base.X + Quads &&
+					HmapY >= Base.Y && HmapY <= Base.Y + Quads)
+				{
+					return *AdjFound;
+				}
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+FIntPoint UTerraForgeSubsystem::WorldToHeightmapCoord(const FVector& WorldPos) const
+{
+	if (!bLandscapeTransformCached)
+	{
+		const_cast<UTerraForgeSubsystem*>(this)->CacheLandscapeTransform();
+	}
+
+	int32 HmapX = FMath::RoundToInt((WorldPos.X - LandscapeOrigin.X) / LandscapeScale.X);
+	int32 HmapY = FMath::RoundToInt((WorldPos.Y - LandscapeOrigin.Y) / LandscapeScale.Y);
+	return FIntPoint(HmapX, HmapY);
+}
+
+bool UTerraForgeSubsystem::ModifyLandscapeHeight(const FVector& WorldPos, float DeltaCm,
+	float BrushRadiusPixels, float FalloffSigma)
+{
+	// Ensure landscape data is cached
+	if (!bLandscapeTransformCached) CacheLandscapeTransform();
+	if (!CachedLandscape || ComponentMap.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: ModifyLandscapeHeight — no landscape cached!"));
+		return false;
+	}
+
+	// Convert world position to heightmap grid coordinates
+	float HmapXf = (WorldPos.X - LandscapeOrigin.X) / LandscapeScale.X;
+	float HmapYf = (WorldPos.Y - LandscapeOrigin.Y) / LandscapeScale.Y;
+	int32 CenterX = FMath::RoundToInt(HmapXf);
+	int32 CenterY = FMath::RoundToInt(HmapYf);
+	int32 BrushExtent = FMath::CeilToInt(BrushRadiusPixels);
+
+	// Convert cm delta to uint16 heightmap units
+	// Each uint16 step = LandscapeScale.Z * TF_ZSCALE cm = Scale.Z / 128 cm
+	// So delta in uint16 = DeltaCm / (Scale.Z / 128) = DeltaCm * 128 / Scale.Z
+	float DeltaUnits = DeltaCm * 128.0f / LandscapeScale.Z;
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: ModifyLandscapeHeight — center(%d,%d) delta=%.1fcm (%.1f units) brush=%.1f sigma=%.1f"),
+		CenterX, CenterY, DeltaCm, DeltaUnits, BrushRadiusPixels, FalloffSigma);
+
+	// ──────────────────────────────────────────────────────────────
+	// PHASE 1: Collect all pixel modifications, grouped by UNIQUE TEXTURE.
+	// CRITICAL: Multiple landscape components share the same heightmap texture.
+	// Locking per-component causes double-lock assertion crash.
+	// We lock each unique texture exactly ONCE.
+	// ──────────────────────────────────────────────────────────────
+
+	struct FPixelMod
+	{
+		int32 TexPixelX;
+		int32 TexPixelY;
+		float Weight;
+		FIntPoint GlobalCoord;
+	};
+
+	struct FTextureBatch
+	{
+		UTexture2D* Texture = nullptr;
+		int32 TexW = 0;
+		int32 TexH = 0;
+		TArray<FPixelMod> Pixels;
+		TArray<ULandscapeComponent*> AffectedComponents;
+	};
+
+	TMap<UTexture2D*, FTextureBatch> TextureBatches;
+
+	for (int32 dy = -BrushExtent; dy <= BrushExtent; dy++)
+	{
+		for (int32 dx = -BrushExtent; dx <= BrushExtent; dx++)
+		{
+			float Dist = FMath::Sqrt((float)(dx * dx + dy * dy));
+			if (Dist > BrushRadiusPixels) continue;
+
+			// Gaussian weight: center=1.0, edges→0
+			float Weight = FMath::Exp(-Dist * Dist / (2.0f * FalloffSigma * FalloffSigma));
+
+			int32 PixelX = CenterX + dx;
+			int32 PixelY = CenterY + dy;
+
+			// Find which component owns this pixel
+			FVector PixelWorldPos(
+				LandscapeOrigin.X + PixelX * LandscapeScale.X,
+				LandscapeOrigin.Y + PixelY * LandscapeScale.Y,
+				0.0f);
+
+			ULandscapeComponent* Comp = FindComponentAtWorldPos(PixelWorldPos);
+			if (!Comp) continue;
+
+			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
+			if (!HeightmapTex) continue;
+
+			FTexturePlatformData* PD = HeightmapTex->GetPlatformData();
+			if (!PD || PD->Mips.Num() == 0) continue;
+
+			// Convert to texture pixel coordinates via this component's ScaleBias
+			FIntPoint SectionBase = Comp->GetSectionBase();
+			int32 CompQuads = Comp->ComponentSizeQuads;
+			FVector4 ScaleBias = Comp->HeightmapScaleBias;
+
+			int32 LocalX = PixelX - SectionBase.X;
+			int32 LocalY = PixelY - SectionBase.Y;
+			if (LocalX < 0 || LocalX > CompQuads || LocalY < 0 || LocalY > CompQuads)
+				continue;
+
+			float LocalUV_X = (float)LocalX / (float)CompQuads;
+			float LocalUV_Y = (float)LocalY / (float)CompQuads;
+			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
+			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
+
+			int32 TexW = PD->Mips[0].SizeX;
+			int32 TexH = PD->Mips[0].SizeY;
+
+			FPixelMod Mod;
+			Mod.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
+			Mod.TexPixelY = FMath::Clamp(FMath::RoundToInt(TexUV_Y * (float)TexH), 0, TexH - 1);
+			Mod.Weight = Weight;
+			Mod.GlobalCoord = FIntPoint(PixelX, PixelY);
+
+			FTextureBatch& Batch = TextureBatches.FindOrAdd(HeightmapTex);
+			Batch.Texture = HeightmapTex;
+			Batch.TexW = TexW;
+			Batch.TexH = TexH;
+			Batch.Pixels.Add(Mod);
+			Batch.AffectedComponents.AddUnique(Comp);
+		}
+	}
+
+	if (TextureBatches.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: ModifyLandscapeHeight — no components found for brush area!"));
+		return false;
+	}
+
+	// ──────────────────────────────────────────────────────────────
+	// PHASE 2: Modify pixels.
+	// SESSION MODE: textures are pre-locked by BeginEditSession() — just
+	//   modify pixels using cached pointers. No lock/unlock/UpdateResource.
+	//   GPU update + collision happen later in EndEditSession().
+	// SINGLE-CALL MODE: full lock → modify → unlock → UpdateResource cycle.
+	//   Works for one-off calls (no subsequent Lock() to conflict with).
+	// ──────────────────────────────────────────────────────────────
+
+	bool bAnyModified = false;
+
+	if (bEditSessionActive)
+	{
+		// ── SESSION MODE ──────────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
+		{
+			FTextureBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
+
+			FLockedTextureInfo* Info = SessionLockedTextures.Find(Tex);
+			if (!Info || !Info->MipData)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("TerraForge: Session mode — texture not pre-locked, skipping"));
+				continue;
+			}
+
+			for (const FPixelMod& Mod : Batch.Pixels)
+			{
+				FColor& Pixel = Info->MipData[Mod.TexPixelY * Info->SizeX + Mod.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			// Track components for collision update at EndEditSession()
+			for (ULandscapeComponent* Comp : Batch.AffectedComponents)
+			{
+				SessionAffectedComponents.Add(Comp);
+			}
+		}
+		// No unlock, no UpdateResource, no FlushRenderingCommands.
+		// EndEditSession() handles all of that.
+	}
+	else
+	{
+		// ── SINGLE-CALL MODE ──────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
+		{
+			FTextureBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
+
+			FTexturePlatformData* PlatformData = Tex->GetPlatformData();
+			FTexture2DMipMap& Mip = PlatformData->Mips[0];
+			int32 TexW = Batch.TexW;
+
+			void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+			if (!RawData)
+			{
+				UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock heightmap texture!"));
+				continue;
+			}
+
+			FColor* TexData = static_cast<FColor*>(RawData);
+
+			for (const FPixelMod& Mod : Batch.Pixels)
+			{
+				FColor& Pixel = TexData[Mod.TexPixelY * TexW + Mod.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+				int32 NewHeight = (int32)CurrentHeight + FMath::RoundToInt(DeltaUnits * Mod.Weight);
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(Mod.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			Mip.BulkData.Unlock();
+			Tex->UpdateResource();
+
+			UE_LOG(LogTemp, Log, TEXT("TerraForge: Modified %d pixels across %d components in texture '%s'"),
+				Batch.Pixels.Num(), Batch.AffectedComponents.Num(), *Tex->GetName());
+		}
+
+		FlushRenderingCommands();
+
+		for (auto& BatchPair : TextureBatches)
+		{
+			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
+			{
+				Comp->UpdateCollisionData(false);
+				Comp->UpdateCachedBounds(false);
+			}
+		}
+	}
+
+	return bAnyModified;
+}
+
+bool UTerraForgeSubsystem::FlattenLandscapeHeight(const FVector& WorldPos, float TargetHeightCm,
+	float BrushRadiusPixels)
+{
+	// Ensure landscape data is cached
+	if (!bLandscapeTransformCached) CacheLandscapeTransform();
+	if (!CachedLandscape || ComponentMap.Num() == 0) return false;
+
+	// Convert world position to heightmap grid coordinates
+	int32 CenterX = FMath::RoundToInt((WorldPos.X - LandscapeOrigin.X) / LandscapeScale.X);
+	int32 CenterY = FMath::RoundToInt((WorldPos.Y - LandscapeOrigin.Y) / LandscapeScale.Y);
+	int32 BrushExtent = FMath::CeilToInt(BrushRadiusPixels);
+
+	// Convert target world Z to uint16 heightmap value
+	uint16 TargetUint16 = (uint16)FMath::Clamp(
+		(int32)(TF_HEIGHT_MID +
+			FMath::RoundToInt((TargetHeightCm - LandscapeOrigin.Z) * 128.0f / LandscapeScale.Z)),
+		0, 65535);
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: FlattenLandscapeHeight — target Z=%.1f cm → uint16=%d"),
+		TargetHeightCm, TargetUint16);
+
+	// ──────────────────────────────────────────────────────────────
+	// PHASE 1: Collect pixels grouped by UNIQUE TEXTURE (same pattern as ModifyLandscapeHeight)
+	// ──────────────────────────────────────────────────────────────
+
+	struct FFlattenPixel
+	{
+		int32 TexPixelX;
+		int32 TexPixelY;
+		FIntPoint GlobalCoord;
+	};
+
+	struct FFlattenBatch
+	{
+		UTexture2D* Texture = nullptr;
+		int32 TexW = 0;
+		int32 TexH = 0;
+		TArray<FFlattenPixel> Pixels;
+		TArray<ULandscapeComponent*> AffectedComponents;
+	};
+
+	TMap<UTexture2D*, FFlattenBatch> TextureBatches;
+
+	for (int32 dy = -BrushExtent; dy <= BrushExtent; dy++)
+	{
+		for (int32 dx = -BrushExtent; dx <= BrushExtent; dx++)
+		{
+			float Dist = FMath::Sqrt((float)(dx * dx + dy * dy));
+			if (Dist > BrushRadiusPixels) continue;
+
+			int32 PixelX = CenterX + dx;
+			int32 PixelY = CenterY + dy;
+
+			FVector PixelWorldPos(
+				LandscapeOrigin.X + PixelX * LandscapeScale.X,
+				LandscapeOrigin.Y + PixelY * LandscapeScale.Y,
+				0.0f);
+
+			ULandscapeComponent* Comp = FindComponentAtWorldPos(PixelWorldPos);
+			if (!Comp) continue;
+
+			UTexture2D* HeightmapTex = Comp->GetHeightmap(false);
+			if (!HeightmapTex) continue;
+
+			FTexturePlatformData* PD = HeightmapTex->GetPlatformData();
+			if (!PD || PD->Mips.Num() == 0) continue;
+
+			FIntPoint SectionBase = Comp->GetSectionBase();
+			int32 CompQuads = Comp->ComponentSizeQuads;
+			FVector4 ScaleBias = Comp->HeightmapScaleBias;
+
+			int32 LocalX = PixelX - SectionBase.X;
+			int32 LocalY = PixelY - SectionBase.Y;
+			if (LocalX < 0 || LocalX > CompQuads || LocalY < 0 || LocalY > CompQuads)
+				continue;
+
+			float LocalUV_X = (float)LocalX / (float)CompQuads;
+			float LocalUV_Y = (float)LocalY / (float)CompQuads;
+			float TexUV_X = LocalUV_X * ScaleBias.X + ScaleBias.Z;
+			float TexUV_Y = LocalUV_Y * ScaleBias.Y + ScaleBias.W;
+
+			int32 TexW = PD->Mips[0].SizeX;
+			int32 TexH = PD->Mips[0].SizeY;
+
+			FFlattenPixel FP;
+			FP.TexPixelX = FMath::Clamp(FMath::RoundToInt(TexUV_X * (float)TexW), 0, TexW - 1);
+			FP.TexPixelY = FMath::Clamp(FMath::RoundToInt(TexUV_Y * (float)TexH), 0, TexH - 1);
+			FP.GlobalCoord = FIntPoint(PixelX, PixelY);
+
+			FFlattenBatch& Batch = TextureBatches.FindOrAdd(HeightmapTex);
+			Batch.Texture = HeightmapTex;
+			Batch.TexW = TexW;
+			Batch.TexH = TexH;
+			Batch.Pixels.Add(FP);
+			Batch.AffectedComponents.AddUnique(Comp);
+		}
+	}
+
+	if (TextureBatches.Num() == 0) return false;
+
+	// ──────────────────────────────────────────────────────────────
+	// PHASE 2: Flatten pixels — session or single-call mode (same pattern
+	// as ModifyLandscapeHeight).
+	// ──────────────────────────────────────────────────────────────
+
+	bool bAnyModified = false;
+
+	if (bEditSessionActive)
+	{
+		// ── SESSION MODE ──────────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
+		{
+			FFlattenBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
+
+			FLockedTextureInfo* Info = SessionLockedTextures.Find(Tex);
+			if (!Info || !Info->MipData) continue;
+
+			for (const FFlattenPixel& FP : Batch.Pixels)
+			{
+				FColor& Pixel = Info->MipData[FP.TexPixelY * Info->SizeX + FP.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+				int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			for (ULandscapeComponent* Comp : Batch.AffectedComponents)
+			{
+				SessionAffectedComponents.Add(Comp);
+			}
+		}
+	}
+	else
+	{
+		// ── SINGLE-CALL MODE ──────────────────────────────────────
+		for (auto& BatchPair : TextureBatches)
+		{
+			FFlattenBatch& Batch = BatchPair.Value;
+			UTexture2D* Tex = Batch.Texture;
+
+			FTexturePlatformData* PlatformData = Tex->GetPlatformData();
+			FTexture2DMipMap& Mip = PlatformData->Mips[0];
+
+			void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+			if (!RawData) continue;
+
+			FColor* TexData = static_cast<FColor*>(RawData);
+
+			for (const FFlattenPixel& FP : Batch.Pixels)
+			{
+				FColor& Pixel = TexData[FP.TexPixelY * Batch.TexW + FP.TexPixelX];
+				uint16 CurrentHeight = ((uint16)Pixel.R << 8) | (uint16)Pixel.G;
+
+				int32 NewHeight = CurrentHeight + (int32)(TargetUint16 - CurrentHeight) / 2;
+				NewHeight = FMath::Clamp(NewHeight, 0, 65535);
+
+				Pixel.R = (uint8)((NewHeight >> 8) & 0xFF);
+				Pixel.G = (uint8)(NewHeight & 0xFF);
+
+				RecordTerrainDelta(FP.GlobalCoord, (int16)(NewHeight - (int32)CurrentHeight));
+				bAnyModified = true;
+			}
+
+			Mip.BulkData.Unlock();
+			Tex->UpdateResource();
+		}
+
+		FlushRenderingCommands();
+
+		for (auto& BatchPair : TextureBatches)
+		{
+			for (ULandscapeComponent* Comp : BatchPair.Value.AffectedComponents)
+			{
+				Comp->UpdateCollisionData(false);
+				Comp->UpdateCachedBounds(false);
+			}
+		}
+	}
+
+	return bAnyModified;
+}
+
+EGeoMaterial UTerraForgeSubsystem::GetGeologicalMaterialAtDepth(const FVector& WorldPos, float DepthMeters) const
+{
+	// Determine what geological layer exists at this depth below original surface
+	const EGeoBiome Biome = GetBiomeAt(WorldPos);
+	const FGeoBiomeProfile* Profile = GetBiomeProfile(Biome);
+
+	if (Profile)
+	{
+		for (const FGeoLayerDef& Layer : Profile->Layers)
+		{
+			if (DepthMeters >= Layer.MinDepth && DepthMeters < Layer.MaxDepth)
+			{
+				return Layer.Material;
+			}
+		}
+	}
+
+	// Default geological layers if no biome profile
+	if (DepthMeters < 0.5f)  return EGeoMaterial::Topsoil;
+	if (DepthMeters < 2.0f)  return EGeoMaterial::Topsoil;
+	if (DepthMeters < 4.0f)  return EGeoMaterial::Clay;
+	if (DepthMeters < 8.0f)  return EGeoMaterial::Sandstone;
+	if (DepthMeters < 15.0f) return EGeoMaterial::Limestone;
+	return EGeoMaterial::Granite;
+}
+
+void UTerraForgeSubsystem::RecordTerrainDelta(const FIntPoint& HeightmapCoord, int16 HeightDelta)
+{
+	int32& CumulativeDelta = TerrainDeltas.FindOrAdd(HeightmapCoord);
+	CumulativeDelta += (int32)HeightDelta;
+}
+
+// ============================================================================
+// EDIT SESSION MANAGEMENT
+// ============================================================================
+//
+// Session-based texture locking eliminates the BulkData double-lock crash.
+//
+// Problem: UTexture2D::UpdateResource() internally re-locks BulkData via
+//   InitRHI → LockMip → BulkData.Lock(). Even with FlushRenderingCommands(),
+//   the internal lock state isn't fully released before the next explicit Lock()
+//   call, causing "Assertion failed: IsUnlocked()" in BulkData.cpp.
+//
+// Solution: Lock all heightmap textures ONCE at session start. All terrain
+//   modifications during the session modify the pre-locked pixel data directly.
+//   Unlock + UpdateResource happens ONCE at session end. No intermediate
+//   Lock/Unlock cycles = no double-lock crash.
+//
+// Flow: Player presses G → BeginEditSession (lock textures)
+//       Player digs/raises/flattens multiple times → pixels modified in-place
+//       Player presses G → EndEditSession (unlock, GPU push, collision update)
+// ============================================================================
+
+bool UTerraForgeSubsystem::BeginEditSession(const FVector& Center, float Radius)
+{
+	if (bEditSessionActive)
+	{
+		UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session already active."));
+		return true;
+	}
+
+	// Ensure landscape data is cached
+	if (!bLandscapeTransformCached) CacheLandscapeTransform();
+	if (!CachedLandscape || ComponentMap.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TerraForge: BeginEditSession — no landscape found!"));
+		return false;
+	}
+
+	// Determine component grid range to scan
+	const int32 PixelRadius = FMath::CeilToInt(Radius / LandscapeScale.X) + CachedComponentSizeQuads;
+	const int32 CenterPX = FMath::RoundToInt((Center.X - LandscapeOrigin.X) / LandscapeScale.X);
+	const int32 CenterPY = FMath::RoundToInt((Center.Y - LandscapeOrigin.Y) / LandscapeScale.Y);
+	const int32 CompStep = FMath::Max(CachedComponentSizeQuads, 1);
+
+	const int32 MinGX = (CenterPX - PixelRadius) / CompStep;
+	const int32 MaxGX = (CenterPX + PixelRadius) / CompStep;
+	const int32 MinGY = (CenterPY - PixelRadius) / CompStep;
+	const int32 MaxGY = (CenterPY + PixelRadius) / CompStep;
+
+	// Collect unique textures from all components in range
+	TSet<UTexture2D*> UniqueTextures;
+
+	for (int32 gy = MinGY; gy <= MaxGY; gy++)
+	{
+		for (int32 gx = MinGX; gx <= MaxGX; gx++)
+		{
+			FIntPoint GridKey(gx * CompStep, gy * CompStep);
+			ULandscapeComponent** FoundComp = ComponentMap.Find(GridKey);
+			if (!FoundComp || !(*FoundComp)) continue;
+
+			ULandscapeComponent* Comp = *FoundComp;
+			UTexture2D* Tex = Comp->GetHeightmap(false);
+			if (!Tex) continue;
+
+			SessionAffectedComponents.Add(Comp);
+			UniqueTextures.Add(Tex);
+		}
+	}
+
+	if (UniqueTextures.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: BeginEditSession — no textures found in radius %.0f at (%.0f, %.0f)"),
+			Radius, Center.X, Center.Y);
+		SessionAffectedComponents.Empty();
+		return false;
+	}
+
+	// Lock each unique texture exactly ONCE
+	for (UTexture2D* Tex : UniqueTextures)
+	{
+		FTexturePlatformData* PD = Tex->GetPlatformData();
+		if (!PD || PD->Mips.Num() == 0) continue;
+
+		FTexture2DMipMap& Mip = PD->Mips[0];
+		void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+		if (!RawData)
+		{
+			UE_LOG(LogTemp, Error, TEXT("TerraForge: Failed to lock texture '%s'"), *Tex->GetName());
+			continue;
+		}
+
+		FLockedTextureInfo Info;
+		Info.MipData = static_cast<FColor*>(RawData);
+		Info.SizeX = Mip.SizeX;
+		Info.SizeY = Mip.SizeY;
+		SessionLockedTextures.Add(Tex, Info);
+	}
+
+	bEditSessionActive = true;
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session STARTED — %d unique textures locked, %d components in range"),
+		SessionLockedTextures.Num(), SessionAffectedComponents.Num());
+
 	return true;
 }
+
+void UTerraForgeSubsystem::EndEditSession()
+{
+	if (!bEditSessionActive)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TerraForge: EndEditSession called with no active session."));
+		return;
+	}
+
+	// Unlock all textures and push updated data to GPU
+	for (auto& Pair : SessionLockedTextures)
+	{
+		UTexture2D* Tex = Pair.Key;
+		FTexturePlatformData* PD = Tex->GetPlatformData();
+		if (PD && PD->Mips.Num() > 0)
+		{
+			PD->Mips[0].BulkData.Unlock();
+			Tex->UpdateResource();
+		}
+	}
+
+	// Wait for all GPU texture uploads to complete before touching collision
+	FlushRenderingCommands();
+
+	// Update collision and bounds for every component that was modified
+	int32 CollisionUpdates = 0;
+	for (ULandscapeComponent* Comp : SessionAffectedComponents)
+	{
+		if (Comp)
+		{
+			Comp->UpdateCollisionData(false);
+			Comp->UpdateCachedBounds(false);
+			CollisionUpdates++;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Edit session ENDED — %d textures unlocked, %d collision updates"),
+		SessionLockedTextures.Num(), CollisionUpdates);
+
+	// Clean up session state
+	SessionLockedTextures.Empty();
+	SessionAffectedComponents.Empty();
+	bEditSessionActive = false;
+}
+
+// ============================================================================
+// UNDERGROUND TUNNEL ACTIONS (voxel-based — unchanged)
+// ============================================================================
 
 bool UTerraForgeSubsystem::DigTunnel(const FVector& WorldPos, const FVector& Direction, float Radius)
 {
@@ -497,7 +1140,7 @@ TArray<FObserveTile> UTerraForgeSubsystem::GetObserveGrid(const FVector& CenterP
 			Tile.SurfaceMaterial = GetSurfaceMaterialAt(Tile.WorldPosition);
 			Tile.HeightDelta = Tile.Elevation - (CenterElevation / 100.0f);
 
-			// Flat if height delta is within ±0.1m
+			// Flat if height delta is within +/-0.1m
 			Tile.bIsFlat = FMath::Abs(Tile.HeightDelta) < 0.1f;
 
 			// Get quality from voxel if available
@@ -645,7 +1288,6 @@ TArray<FProspectingResult> UTerraForgeSubsystem::Prospect(const FVector& WorldPo
 							{
 								PR.DetailLevel = 2;
 								PR.Direction = (OreWorldPos - WorldPos).GetSafeNormal();
-								// Add some noise
 								PR.Direction += FVector(FMath::RandRange(-0.2f, 0.2f),
 								                        FMath::RandRange(-0.2f, 0.2f), 0.0f);
 								PR.Direction.Normalize();
@@ -1026,7 +1668,7 @@ void UTerraForgeSubsystem::PlaceOreVeinsInChunk(FTerraForgeChunk& Chunk)
 void UTerraForgeSubsystem::UpdateStreaming(const FVector& PlayerPos)
 {
 	const FTerraChunkKey PlayerChunk = FTerraChunkKey::FromWorldPos(PlayerPos);
-	const int32 LoadRadius = TF_RING_LOW; // Load chunks within this radius
+	const int32 LoadRadius = TF_RING_LOW;
 
 	// Determine which chunks should be loaded
 	TSet<FTerraChunkKey> DesiredChunks;
@@ -1034,10 +1676,9 @@ void UTerraForgeSubsystem::UpdateStreaming(const FVector& PlayerPos)
 	{
 		for (int32 DY = -LoadRadius; DY <= LoadRadius; ++DY)
 		{
-			for (int32 DZ = -2; DZ <= 2; ++DZ) // Vertical range limited
+			for (int32 DZ = -2; DZ <= 2; ++DZ)
 			{
 				FTerraChunkKey Key(PlayerChunk.X + DX, PlayerChunk.Y + DY, PlayerChunk.Z + DZ);
-				// Only desire chunks that actually have modifications
 				if (ChunkMap.Contains(Key))
 				{
 					DesiredChunks.Add(Key);
@@ -1058,7 +1699,6 @@ void UTerraForgeSubsystem::UpdateStreaming(const FVector& PlayerPos)
 
 	for (const FTerraChunkKey& Key : ToUnload)
 	{
-		// Release mesh component
 		UProceduralMeshComponent** MeshComp = ChunkMeshMap.Find(Key);
 		if (MeshComp && *MeshComp)
 		{
@@ -1091,11 +1731,7 @@ void UTerraForgeSubsystem::UpdateStreaming(const FVector& PlayerPos)
 
 void UTerraForgeSubsystem::ProcessDirtyChunks(int32 MaxPerFrame)
 {
-	if (DirtyChunkQueue.Num() > 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — %d chunks in queue"), DirtyChunkQueue.Num());
-	}
-
+	// Underground chunks still use ProceduralMesh rendering
 	int32 Processed = 0;
 	while (DirtyChunkQueue.Num() > 0 && Processed < MaxPerFrame)
 	{
@@ -1103,21 +1739,11 @@ void UTerraForgeSubsystem::ProcessDirtyChunks(int32 MaxPerFrame)
 		DirtyChunkQueue.RemoveAt(0);
 
 		FTerraForgeChunk* Chunk = GetChunk(Key);
-		if (!Chunk || !Chunk->IsDirty())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — skipping chunk (%d,%d,%d): null=%s dirty=%s"),
-				Key.X, Key.Y, Key.Z, Chunk ? TEXT("no") : TEXT("YES"), Chunk && Chunk->IsDirty() ? TEXT("yes") : TEXT("NO"));
-			continue;
-		}
-		if (Chunk->IsMeshGenerating())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — chunk (%d,%d,%d) already generating mesh, skipping"),
-				Key.X, Key.Y, Key.Z);
-			continue;
-		}
+		if (!Chunk || !Chunk->IsDirty()) continue;
+		if (Chunk->IsMeshGenerating()) continue;
 
-		UE_LOG(LogTemp, Warning, TEXT("TerraForge: ProcessDirtyChunks — regenerating mesh for chunk (%d,%d,%d)"),
-			Key.X, Key.Y, Key.Z);
+		// Only regenerate ProceduralMesh for underground chunks
+		// Surface terrain changes are handled by heightmap modification (no mesh needed)
 		RegenerateMesh(Key);
 		Processed++;
 	}
@@ -1128,28 +1754,21 @@ void UTerraForgeSubsystem::RegenerateMesh(const FTerraChunkKey& Key)
 	FTerraForgeChunk* Chunk = GetChunk(Key);
 	if (!Chunk) return;
 
-	// Determine LOD based on... for now just full
-	// TODO: Calculate LOD from player distance
 	const EChunkLOD LOD = EChunkLOD::Full;
 
 	// Create snapshot for thread-safe mesh generation
 	Chunk->SetMeshGenerating(true);
 	TSharedPtr<FTerraForgeChunk> Snapshot = Chunk->CreateSnapshot();
 
-	// Generate mesh (currently synchronous — TODO: move to async task)
+	// Generate mesh
 	FTerraChunkMeshData MeshData;
 	FTerraForgeDualContour::GenerateMesh(*Snapshot, LOD, MeshData);
 
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — chunk (%d,%d,%d): valid=%s verts=%d tris=%d"),
-		Key.X, Key.Y, Key.Z, MeshData.bValid ? TEXT("YES") : TEXT("NO"),
-		MeshData.Vertices.Num(), MeshData.Triangles.Num() / 3);
-
-	// Apply mesh to ProceduralMeshComponent
+	// Apply mesh to ProceduralMeshComponent (underground visualization)
 	if (MeshData.bValid && MeshData.Vertices.Num() > 0)
 	{
 		UProceduralMeshComponent* MeshComp = nullptr;
 
-		// Check if we already have a mesh component for this chunk
 		UProceduralMeshComponent** ExistingComp = ChunkMeshMap.Find(Key);
 		if (ExistingComp && *ExistingComp)
 		{
@@ -1166,15 +1785,11 @@ void UTerraForgeSubsystem::RegenerateMesh(const FTerraChunkKey& Key)
 
 		if (MeshComp)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — generating mesh for chunk (%d,%d,%d): %d verts, %d tris"),
-				Key.X, Key.Y, Key.Z, MeshData.Vertices.Num(), MeshData.Triangles.Num() / 3);
-
 			// Convert tangent vectors to FProcMeshTangent
 			TArray<FProcMeshTangent> ProcTangents;
 			ProcTangents.SetNum(MeshData.Vertices.Num());
 			for (int32 I = 0; I < ProcTangents.Num(); ++I)
 			{
-				// Compute tangent from normal
 				const FVector& N = MeshData.Normals[I];
 				FVector T = FVector::CrossProduct(N, FVector::UpVector);
 				if (T.IsNearlyZero()) T = FVector::CrossProduct(N, FVector::RightVector);
@@ -1191,13 +1806,12 @@ void UTerraForgeSubsystem::RegenerateMesh(const FTerraChunkKey& Key)
 				MeshData.UV0,
 				MeshData.VertexColors,
 				ProcTangents,
-				true /* collision */);
+				true);
 
 			MeshComp->SetVisibility(true);
 			MeshComp->SetHiddenInGame(false);
 			MeshComp->SetCastShadow(true);
 
-			// Apply a visible material so the mesh isn't invisible
 			UMaterial* DefaultMat = UMaterial::GetDefaultMaterial(MD_Surface);
 			if (DefaultMat)
 			{
@@ -1206,21 +1820,9 @@ void UTerraForgeSubsystem::RegenerateMesh(const FTerraChunkKey& Key)
 
 			Chunk->SetHasRenderedMesh(true);
 
-			// Hide the landscape at this chunk's location so our mesh is visible
-			HideLandscapeForChunk(Key);
-
-			UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — mesh applied successfully, landscape hidden"));
+			// NOTE: No landscape hiding for surface. Underground chunks will use
+			// landscape hole material when tunnel system is implemented.
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — no MeshComp available (pool actor=%s)"),
-				MeshPoolActor ? TEXT("exists") : TEXT("NULL"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TerraForge: RegenerateMesh — no valid mesh generated (valid=%s verts=%d)"),
-			MeshData.bValid ? TEXT("YES") : TEXT("NO"), MeshData.Vertices.Num());
 	}
 
 	Chunk->SetMeshGenerating(false);
@@ -1304,11 +1906,9 @@ void UTerraForgeSubsystem::UpdateRegeneration(float DeltaTime)
 		{
 			Chunk->TimeSinceLastInteraction += DeltaTime;
 
-			// Check if enough time has passed for regeneration
-			const float RegenTimeSeconds = TF_REGEN_DAYS_UNCLAIMED * 86400.0f; // days to seconds
+			const float RegenTimeSeconds = TF_REGEN_DAYS_UNCLAIMED * 86400.0f;
 			if (Chunk->TimeSinceLastInteraction >= RegenTimeSeconds)
 			{
-				// Regenerate: restore to original landscape state
 				if (Chunk->bHasOriginalData)
 				{
 					const EGeoBiome Biome = GetBiomeAt(Chunk->GetWorldOrigin());
@@ -1323,7 +1923,6 @@ void UTerraForgeSubsystem::UpdateRegeneration(float DeltaTime)
 
 					Chunk->InitializeFromLandscape(Chunk->OriginalSurfaceHeights, Layers, SoilQ);
 
-					// Mark for mesh rebuild or remove entirely
 					UProceduralMeshComponent** MeshComp = ChunkMeshMap.Find(Key);
 					if (MeshComp && *MeshComp)
 					{
@@ -1331,7 +1930,6 @@ void UTerraForgeSubsystem::UpdateRegeneration(float DeltaTime)
 						ChunkMeshMap.Remove(Key);
 					}
 
-					// Remove the chunk entirely to free memory
 					LoadedChunkKeys.Remove(Key);
 					ChunkMap.Remove(Key);
 
@@ -1369,10 +1967,10 @@ void UTerraForgeSubsystem::SaveAllChunks(const FString& SaveSlot)
 	PlatformFile.CreateDirectoryTree(*SaveDir);
 
 	int32 SavedCount = 0;
-	for (auto& Pair : ChunkMap)
+	for (auto& ChunkPair : ChunkMap)
 	{
-		const FTerraChunkKey& Key = Pair.Key;
-		const FTerraForgeChunk& Chunk = *Pair.Value;
+		const FTerraChunkKey& Key = ChunkPair.Key;
+		const FTerraForgeChunk& Chunk = *ChunkPair.Value;
 
 		if (!Chunk.HasModifications()) continue;
 
@@ -1383,7 +1981,7 @@ void UTerraForgeSubsystem::SaveAllChunks(const FString& SaveSlot)
 		FMemoryWriter Writer(Data);
 
 		// Header
-		const int32 MagicNumber = 0x54464247; // "TFBG" - TerraForge Binary Geology
+		const int32 MagicNumber = 0x54464247; // "TFBG"
 		const int32 Version = 1;
 		Writer << const_cast<int32&>(MagicNumber);
 		Writer << const_cast<int32&>(Version);
@@ -1408,10 +2006,8 @@ void UTerraForgeSubsystem::SaveAllChunks(const FString& SaveSlot)
 					if (V.IsModified())
 					{
 						ModifiedCount++;
-						// Encode position as single uint16 (X*256 + Y*16 + Z)
 						uint16 Pos = (uint16)(X * TF_CHUNK_SIZE * TF_CHUNK_SIZE + Y * TF_CHUNK_SIZE + Z);
 						VoxelWriter << Pos;
-						// Encode voxel data
 						float D = V.Density;
 						VoxelWriter << D;
 						uint8 Mat = V.Material;
@@ -1440,7 +2036,35 @@ void UTerraForgeSubsystem::SaveAllChunks(const FString& SaveSlot)
 		SavedCount++;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("TerraForge: Saved %d chunks to '%s'"), SavedCount, *SaveSlot);
+	// Also save heightmap deltas
+	if (TerrainDeltas.Num() > 0)
+	{
+		const FString DeltaFile = SaveDir / TEXT("terrain_deltas.tfd");
+		TArray<uint8> DeltaData;
+		FMemoryWriter DeltaWriter(DeltaData);
+
+		int32 DeltaMagic = 0x54464844; // "TFHD" — TerraForge Height Deltas
+		int32 DeltaVersion = 1;
+		int32 DeltaCount = TerrainDeltas.Num();
+		DeltaWriter << DeltaMagic;
+		DeltaWriter << DeltaVersion;
+		DeltaWriter << DeltaCount;
+
+		for (auto& DeltaPair : TerrainDeltas)
+		{
+			int32 PX = DeltaPair.Key.X;
+			int32 PY = DeltaPair.Key.Y;
+			int32 DV = DeltaPair.Value;
+			DeltaWriter << PX;
+			DeltaWriter << PY;
+			DeltaWriter << DV;
+		}
+
+		FFileHelper::SaveArrayToFile(DeltaData, *DeltaFile);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("TerraForge: Saved %d chunks + %d height deltas to '%s'"),
+		SavedCount, TerrainDeltas.Num(), *SaveSlot);
 }
 
 void UTerraForgeSubsystem::LoadChunks(const FString& SaveSlot)
@@ -1477,11 +2101,9 @@ void UTerraForgeSubsystem::LoadChunks(const FString& SaveSlot)
 
 		FTerraChunkKey Key(X, Y, Z);
 
-		// Create or get chunk
 		TUniquePtr<FTerraForgeChunk> Chunk = MakeUnique<FTerraForgeChunk>(Key);
 		InitializeChunkFromLandscape(*Chunk);
 
-		// Load modified voxels
 		int32 ModifiedCount;
 		Reader << ModifiedCount;
 
@@ -1511,12 +2133,42 @@ void UTerraForgeSubsystem::LoadChunks(const FString& SaveSlot)
 		LoadedCount++;
 	}
 
+	// Load heightmap deltas
+	const FString DeltaFile = SaveDir / TEXT("terrain_deltas.tfd");
+	TArray<uint8> DeltaData;
+	if (FFileHelper::LoadFileToArray(DeltaData, *DeltaFile) && DeltaData.Num() > 12)
+	{
+		FMemoryReader DeltaReader(DeltaData);
+		int32 DeltaMagic, DeltaVersion, DeltaCount;
+		DeltaReader << DeltaMagic;
+		DeltaReader << DeltaVersion;
+		DeltaReader << DeltaCount;
+
+		if (DeltaMagic == 0x54464844 && DeltaVersion == 1)
+		{
+			for (int32 I = 0; I < DeltaCount; ++I)
+			{
+				int32 PX, PY, DV;
+				DeltaReader << PX;
+				DeltaReader << PY;
+				DeltaReader << DV;
+				TerrainDeltas.Add(FIntPoint(PX, PY), DV);
+			}
+
+			// Re-apply height deltas to landscape
+			if (TerrainDeltas.Num() > 0 && bLandscapeTransformCached)
+			{
+				UE_LOG(LogTemp, Log, TEXT("TerraForge: Loaded %d height deltas — re-applying to landscape..."), TerrainDeltas.Num());
+				// TODO: batch re-apply deltas to landscape heightmap
+			}
+		}
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("TerraForge: Loaded %d chunks from '%s'"), LoadedCount, *SaveSlot);
 }
 
 void UTerraForgeSubsystem::SetVoxelMaterial(const FVector& WorldPos, EGeoMaterial Material)
 {
-	// Convert world position to chunk + local coordinates
 	const FIntVector VoxelCoord(
 		FMath::FloorToInt(WorldPos.X / TF_VOXEL_SIZE_CM),
 		FMath::FloorToInt(WorldPos.Y / TF_VOXEL_SIZE_CM),
@@ -1543,7 +2195,6 @@ void UTerraForgeSubsystem::SetVoxelMaterial(const FVector& WorldPos, EGeoMateria
 	V.Density = (Material == EGeoMaterial::Air) ? 1.0f : -1.0f;
 	Chunk->MarkDirty();
 
-	// Queue mesh regen
 	DirtyChunkQueue.AddUnique(Key);
 }
 
@@ -1591,79 +2242,4 @@ FTerraForgeChunk* UTerraForgeSubsystem::GetChunkAt(const FIntVector& ChunkCoord)
 		return Found->Get();
 	}
 	return nullptr;
-}
-
-// ============================================================================
-// LANDSCAPE HIDING
-// ============================================================================
-
-void UTerraForgeSubsystem::HideLandscapeForChunk(const FTerraChunkKey& Key)
-{
-	// Track which chunk positions have already had landscape removed
-	// (uses static set since DestroyComponent is permanent within a PIE session)
-	static TSet<FTerraChunkKey> ProcessedChunks;
-	if (ProcessedChunks.Contains(Key))
-	{
-		return; // Already removed landscape for this chunk
-	}
-	ProcessedChunks.Add(Key);
-
-	if (!CachedLandscape)
-	{
-		CachedLandscape = FindLandscape();
-	}
-	if (!CachedLandscape)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk — no landscape found!"));
-		return;
-	}
-
-	// Get chunk world bounds (2D, XY plane) with padding for seamless coverage
-	const FVector ChunkOrigin = Key.ToWorldPos(); // in cm
-	const float ChunkSizeCm = TF_CHUNK_WORLD_SIZE * 100.0f;
-	const float Padding = ChunkSizeCm * 0.1f; // 10% padding to avoid edge seams
-	const FVector PaddedOrigin = ChunkOrigin - FVector(Padding, Padding, 0.0f);
-	const FVector PaddedEnd = ChunkOrigin + FVector(ChunkSizeCm + Padding, ChunkSizeCm + Padding, ChunkSizeCm);
-
-	// Get all landscape components
-	TArray<ULandscapeComponent*> Comps;
-	CachedLandscape->GetComponents<ULandscapeComponent>(Comps);
-
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk(%s) — checking %d landscape components"),
-		*Key.ToString(), Comps.Num());
-
-	int32 DestroyedCount = 0;
-	for (ULandscapeComponent* LC : Comps)
-	{
-		if (!LC || !IsValid(LC))
-		{
-			continue;
-		}
-
-		// Get component's world bounds
-		FBoxSphereBounds CompBounds = LC->CalcBounds(CachedLandscape->GetActorTransform());
-		FBox CompBox = CompBounds.GetBox();
-
-		// Check 2D overlap (XY plane)
-		bool bOverlaps =
-			CompBox.Max.X >= PaddedOrigin.X && CompBox.Min.X <= PaddedEnd.X &&
-			CompBox.Max.Y >= PaddedOrigin.Y && CompBox.Min.Y <= PaddedEnd.Y;
-
-		if (bOverlaps)
-		{
-			// DestroyComponent is the ONLY method that visually removes landscape during PIE.
-			// SetVisibility(false) and SetHiddenInGame(true) do NOT work on ULandscapeComponent.
-			UE_LOG(LogTemp, Warning,
-				TEXT("TerraForge: DESTROYING landscape component '%s' at bounds (%.0f,%.0f)-(%.0f,%.0f)"),
-				*LC->GetName(),
-				CompBox.Min.X, CompBox.Min.Y,
-				CompBox.Max.X, CompBox.Max.Y);
-
-			LC->DestroyComponent();
-			DestroyedCount++;
-		}
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("TerraForge: HideLandscapeForChunk(%s) — destroyed %d landscape components"),
-		*Key.ToString(), DestroyedCount);
 }

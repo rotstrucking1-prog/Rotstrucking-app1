@@ -55,6 +55,9 @@ public class AOC : ModuleRules
             // Landscape (surface height queries for world generation)
             "Landscape",
 
+            // Foliage (required by LandscapeEdit.h -> InstancedFoliageActor.h)
+            "Foliage",
+
             // Rendering (FlushRenderingCommands for heightmap texture sync)
             "RenderCore",
 

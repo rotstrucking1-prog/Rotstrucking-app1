@@ -5,11 +5,24 @@
 #include "AoCHumanoidNPCV2.h"
 #include "AoCNPCRelationship.h"
 #include "AoCAILODManager.h"
+#include "AoCNPCNeedSystem.h"
+#include "AoCNPCMemory.h"
+#include "AoCNPCInventory.h"
+#include "AoCNPCGoalPlanner.h"
+#include "AoCNPCPersonality.h"
+#include "AoCNPCBrainV2.h"
+#include "AoCNPCSkillSystem.h"
+#include "AoCNPCCombatBrain.h"
+#include "AoCNPCLootBrain.h"
+#include "AoCNPCSocialBrain.h"
+#include "AoCNPCLifeBrain.h"
+#include "AoCNPCTaskGovernor.h"
+#include "AoCNPCSpeech.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/World.h"
+#include "AIController.h"
 
-DEFINE_LOG_CATEGORY(LogAoCNPC);
 
 // ---------------------------------------------------------------------------
 // Name tables for random name generation
@@ -64,6 +77,11 @@ AoCHumanoidNPCV2::AoCHumanoidNPCV2()
 	LootBrain = CreateDefaultSubobject<UAoCNPCLootBrain>(TEXT("LootBrain"));
 	SocialBrain = CreateDefaultSubobject<UAoCNPCSocialBrain>(TEXT("SocialBrain"));
 	LifeBrain = CreateDefaultSubobject<UAoCNPCLifeBrain>(TEXT("LifeBrain"));
+
+	// v18 FIX: Create the 3 missing components that Oracle and all NPCs need
+	TaskGovernor = CreateDefaultSubobject<UAoCNPCTaskGovernor>(TEXT("TaskGovernor"));
+	Speech = CreateDefaultSubobject<UAoCNPCSpeech>(TEXT("Speech"));
+	Relationships = CreateDefaultSubobject<UAoCNPCRelationship>(TEXT("Relationships"));
 
 	// Sensible character movement defaults
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
@@ -786,7 +804,7 @@ FString AoCHumanoidNPCV2::SaveState() const
 	// Skill system serialization
 	if (Skills)
 	{
-		State += FString::Printf(TEXT("Skills=%d\n"), Skills->GetTotalSkillCount());
+		State += FString::Printf(TEXT("Skills=%d\n"), Skills->GetTopSkills(100).Num());
 	}
 
 	// Combat brain state
@@ -848,3 +866,47 @@ void AoCHumanoidNPCV2::LoadState(const FString& StateData)
 	bIsInitialized = true;
 	UE_LOG(LogAoCNPC, Log, TEXT("NPC %s state loaded."), *NPCName);
 }
+
+// ==================== LOD Materialization ====================
+
+void AoCHumanoidNPCV2::OnMaterialize()
+{
+    bIsMaterialized = true;
+    
+    // Re-enable mesh and collision
+    if (USkeletalMeshComponent* MeshComp = GetMesh())
+    {
+        MeshComp->SetVisibility(true);
+        MeshComp->SetComponentTickEnabled(true);
+    }
+    SetActorEnableCollision(true);
+    SetActorTickEnabled(true);
+}
+
+void AoCHumanoidNPCV2::OnDematerialize()
+{
+    bIsMaterialized = false;
+    
+    // Disable mesh rendering and collision for performance
+    if (USkeletalMeshComponent* MeshComp = GetMesh())
+    {
+        MeshComp->SetVisibility(false);
+        MeshComp->SetComponentTickEnabled(false);
+    }
+    SetActorEnableCollision(false);
+    SetActorTickEnabled(false);
+}
+
+// ---------------------------------------------------------------------------
+// MoveToLocation — Delegate to AI Controller for proper pathfinding
+// ---------------------------------------------------------------------------
+
+void AoCHumanoidNPCV2::MoveToLocation(const FVector& Location, float AcceptanceRadius)
+{
+    AAIController* AIC = Cast<AAIController>(GetController());
+    if (AIC)
+    {
+        AIC->MoveToLocation(Location, AcceptanceRadius, true, true, true, true);
+    }
+}
+

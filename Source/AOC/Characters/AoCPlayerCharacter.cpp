@@ -10,6 +10,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
+#include "../AbilitySystem/AoCAbilitySystemComponent.h"
+#include "../Inventory/AoCInventoryComponent.h"
+#include "../Spellcraft/AoCSpellCastingComponent.h"
 
 AAoCPlayerCharacter::AAoCPlayerCharacter()
 {

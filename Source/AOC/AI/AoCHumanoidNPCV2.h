@@ -24,6 +24,9 @@ class UAoCNPCInventory;
 class UAoCNPCGoalPlanner;
 class UAoCNPCPersonality;
 class UAoCNPCBrainV2;
+class UAoCNPCTaskGovernor;
+class UAoCNPCSpeech;
+class UAoCNPCRelationship;
 
 
 
@@ -232,6 +235,16 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
 	UAoCNPCLifeBrain* LifeBrain = nullptr;
 
+	/** v18: Previously missing components — needed by Oracle and all NPCs */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
+	UAoCNPCTaskGovernor* TaskGovernor = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
+	UAoCNPCSpeech* Speech = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AoC|NPC|Components")
+	UAoCNPCRelationship* Relationships = nullptr;
+
 private:
 	// --- Internal State ---
 	FGuid UniqueID;
@@ -277,7 +290,7 @@ public:
 	virtual void OnSpeechOutput(const FString& Line) {}
 	virtual bool CanBetrayTarget(AActor* Target = nullptr) const { return false; }
 	virtual void OnDamageTaken(float Damage, AActor* DamageInstigator) {}
-	virtual void MoveToLocation(const FVector& Location, float AcceptanceRadius = 0.f) {}
+	virtual void MoveToLocation(const FVector& Location, float AcceptanceRadius = 0.f);
 	virtual void PlayEmote(const FString& EmoteName) {}
 	virtual void SetNPCDisplayName(const FString& Name) {}
 

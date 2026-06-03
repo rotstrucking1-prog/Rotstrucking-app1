@@ -16,6 +16,7 @@
 // =============================================================================
 
 #include "AoCOracleCompanion.h"
+#include "Engine/Engine.h"
 #include "AoCChatBubble.h"
 
 #include "Components/WidgetComponent.h"
@@ -40,6 +41,11 @@
 #include "AoCNPCSpeech.h"
 #include "AoCNPCImperfection.h"
 #include "AoCNPCGoalPlanner.h"
+#include "Blueprint/UserWidget.h"
+#include "../Spellcraft/AoCSpellCastingComponent.h"
+#include "../Spellcraft/AoCStaffWeapon.h"
+#include "../Spellcraft/AoCSpellData.h"
+#include "../AnimLab/AoCAnimationManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogOracle, Log, All);
 
@@ -126,6 +132,15 @@ void AAoCOracleCompanion::BeginPlay()
 	           FString::Printf(TEXT("Mode: %s | Following: %s"),
 	                           *UEnum::GetValueAsString(CurrentMode),
 	                           OwnerPlayer ? *OwnerPlayer->GetName() : TEXT("nobody")));
+
+	// Set up the spell system (staff weapon, spell bar, animation manager)
+	SetupSpellSystem();
+	SetupStaffWeapon();
+
+	// Start the idle animation loop so Oracle doesn't T-pose
+	// Slight delay to ensure AnimManager has finished loading
+	FTimerHandle IdleStartHandle;
+	GetWorldTimerManager().SetTimer(IdleStartHandle, this, &AAoCOracleCompanion::PlayIdleLoop, 1.0f, false);
 
 	UE_LOG(LogOracle, Log, TEXT("=== Oracle Companion ready ==="));
 }
@@ -253,6 +268,30 @@ void AAoCOracleCompanion::OracleSay(const FString& Message,
 	if (ChatBubbleWidget)
 	{
 		ChatBubbleWidget->ShowMessage(Message, BubblePriority);
+	}
+
+	// ALWAYS show on screen via PrintString (fallback if bubble not visible)
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(42, 12.0f, FColor::Cyan, FString::Printf(TEXT("Oracle: %s"), *Message));
+	}
+
+	// Push to the HUD chat panel (Local channel) so it persists in the scrollable chat log
+	// Use reflection to avoid cross-folder include issues
+	for (TObjectIterator<UUserWidget> It; It; ++It)
+	{
+		if (It->GetWorld() != GetWorld()) continue;
+		UFunction* ChatFunc = It->GetClass()->FindFunctionByName(TEXT("AddChatMessage"));
+		if (!ChatFunc) continue;
+
+		// AoCRuntimeUI::AddChatMessage(FString Sender, FString Msg, EChatChannel Channel)
+		// EChatChannel::Local = 0
+		struct { FString Sender; FString Msg; uint8 Channel; } Params;
+		Params.Sender = TEXT("Oracle");
+		Params.Msg = Message;
+		Params.Channel = 0; // EChatChannel::Local
+		It->ProcessEvent(ChatFunc, &Params);
+		break;
 	}
 
 	// Write to disk log
@@ -624,6 +663,14 @@ void AAoCOracleCompanion::TickFollowMode(float DeltaSeconds)
 		// Move toward the player, staying at FollowDistance
 		const FVector TargetPos = OwnerPlayer->GetActorLocation();
 		MoveToLocation(TargetPos, FollowDistance * 0.8f);
+	}
+
+	// Idle speech — talk while following (not during combat/tests)
+	IdleSpeechTimer += DeltaSeconds;
+	if (IdleSpeechTimer >= IdleSpeechInterval)
+	{
+		IdleSpeechTimer = 0.0f;
+		SpeakIdleLine();
 	}
 
 	// If investigating something, check if we've arrived
@@ -1792,6 +1839,9 @@ void AAoCOracleCompanion::EvaluateAndComment()
 	if (CommentOnUnreachableResources()) return;
 	if (CommentOnWorldPopulation()) return;
 	if (CommentOnLootQuality()) return;
+
+	// No issues found — say a random idle line instead
+	SpeakIdleLine();
 }
 
 bool AAoCOracleCompanion::CommentOnMissingMiningNodes()
@@ -1974,6 +2024,304 @@ bool AAoCOracleCompanion::CommentOnLootQuality()
 		}
 	}
 	return false;
+}
+
+
+// =============================================================================
+// IDLE SPEECH — Ambient chatter while following the player
+// =============================================================================
+
+void AAoCOracleCompanion::SpeakIdleLine()
+{
+	// Don't chatter during full test or combat
+	if (FullTestCurrentPhase != EFullTestPhase::NotRunning)
+	{
+		return;
+	}
+
+	if (UAoCNPCCombatBrain* LocalCombatBrain = FindComponentByClass<UAoCNPCCombatBrain>())
+	{
+		if (LocalCombatBrain->IsInCombat())
+		{
+			return;
+		}
+	}
+
+	static const TArray<FString> IdleLines = {
+		TEXT("Nice day for an adventure, don't you think?"),
+		TEXT("I wonder what's over that next hill..."),
+		TEXT("Did you know I can mine, fish, and craft? Just say the word."),
+		TEXT("This world has so much potential. I can feel it growing."),
+		TEXT("Stay sharp... you never know what's lurking around here."),
+		TEXT("I've been keeping an eye on my skill levels. Getting better every day."),
+		TEXT("If you need me to gather something, just tell me what you need."),
+		TEXT("My hunger's ticking down slowly. Should probably eat something soon."),
+		TEXT("I like following you around. Beats standing in one spot all day."),
+		TEXT("You know, for a world that's still being built, this place isn't half bad."),
+		TEXT("I keep running diagnostics in the background. I'll let you know if something breaks."),
+		TEXT("Have you tried checking out those rock formations? Could be ore deposits."),
+		TEXT("I could really go for some cooked fish right about now."),
+		TEXT("Sometimes I think about what it'd be like to have more NPCs to talk to."),
+		TEXT("My combat brain is itching for a fight. Let's find something to spar with."),
+		TEXT("I wonder if there are any crafting stations nearby..."),
+		TEXT("Keep moving, I'm right behind you!"),
+		TEXT("This terrain is interesting. Very... sandy."),
+		TEXT("I'm tracking my needs... hunger, energy, safety. All part of being alive."),
+		TEXT("Just so you know, I've got your back if anything attacks us."),
+		TEXT("The wind feels different here. Or it would, if I could feel wind."),
+		TEXT("I've memorized 170 different things to say, by the way."),
+		TEXT("Hey, look at us. An adventurer and their companion. Classic."),
+		TEXT("You ever wonder what the map looks like from above?"),
+		TEXT("My pathfinding just got an upgrade. I can actually follow you now!"),
+		TEXT("I was thinking... maybe we should find an anvil and craft something."),
+		TEXT("I bet there are dungeons out there somewhere. We should explore."),
+		TEXT("Another day, another adventure. I wouldn't have it any other way."),
+		TEXT("If you ever need a status report, just ask. I've always got the data."),
+		TEXT("I'm still in a T-pose, aren't I? Don't worry, my brain works fine.")
+	};
+
+	const int32 Idx = FMath::RandRange(0, IdleLines.Num() - 1);
+	OracleSay(IdleLines[Idx], EOracleLogCategory::Commentary, EChatBubblePriority::Normal);
+}
+
+// =============================================================================
+// SetupStaffWeapon — Spawn and attach the procedural staff to Oracle's hand
+// =============================================================================
+
+void AAoCOracleCompanion::SetupStaffWeapon()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	StaffWeapon = World->SpawnActor<AAoCStaffWeapon>(
+		AAoCStaffWeapon::StaticClass(),
+		GetActorLocation(),
+		GetActorRotation(),
+		Params);
+
+	if (StaffWeapon)
+	{
+		// Attach to right hand socket
+		StaffWeapon->AttachToCharacter(this, TEXT("hand_r"));
+		StaffWeapon->SetActiveSchool(EAoCMagicSchool::Arcana);
+
+		UE_LOG(LogOracle, Log, TEXT("Staff weapon spawned and attached to Oracle's hand"));
+		OracleSay(TEXT("My staff is ready. Time to channel some magic."),
+		          EOracleLogCategory::Status, EChatBubblePriority::Normal);
+	}
+	else
+	{
+		UE_LOG(LogOracle, Warning, TEXT("Failed to spawn staff weapon for Oracle"));
+	}
+}
+
+// =============================================================================
+// SetupSpellSystem — Initialize spell casting with a curated spell bar
+// =============================================================================
+
+void AAoCOracleCompanion::SetupSpellSystem()
+{
+	// Find or create the spell casting component
+	SpellCasting = FindComponentByClass<UAoCSpellCastingComponent>();
+	if (!SpellCasting)
+	{
+		SpellCasting = NewObject<UAoCSpellCastingComponent>(this, TEXT("SpellCasting"));
+		if (SpellCasting)
+		{
+			SpellCasting->RegisterComponent();
+		}
+	}
+
+	if (!SpellCasting) return;
+
+	// Oracle has generous mana as a powerful companion
+	SpellCasting->MaxMana = 500.f;
+	SpellCasting->CurrentMana = 500.f;
+	SpellCasting->ManaRegenRate = 10.f;
+
+	// Load one representative spell from each of the 10 schools into the spell bar
+	// Uses VERIFIED spell IDs from AoCSpellData.cpp — case-sensitive exact match
+	// Slot 0: Arcana — Arcane Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(0, TEXT("Spell_ArcaneBolt"));
+	// Slot 1: Pyromancy — Fireball (projectile)
+	SpellCasting->AssignSpellToSlot(1, TEXT("Spell_Fireball"));
+	// Slot 2: Cryomancy — Frostbolt (projectile)
+	SpellCasting->AssignSpellToSlot(2, TEXT("Spell_Frostbolt"));
+	// Slot 3: Stormcalling — Lightning Bolt (beam)
+	SpellCasting->AssignSpellToSlot(3, TEXT("Spell_LightningBolt"));
+	// Slot 4: Necromancy — Death Coil (projectile) — REPLACES removed Tempest
+	SpellCasting->AssignSpellToSlot(4, TEXT("Spell_DeathCoil"));
+	// Slot 5: Verdancy — Vine Whip (nature attack)
+	SpellCasting->AssignSpellToSlot(5, TEXT("Spell_VineWhip"));
+	// Slot 6: Umbramancy — Shadow Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(6, TEXT("Spell_ShadowBolt"));
+	// Slot 7: Radiance — Holy Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(7, TEXT("Spell_HolyBolt"));
+	// Slot 8: Sangromancy — Blood Bolt (projectile)
+	SpellCasting->AssignSpellToSlot(8, TEXT("Spell_BloodBolt"));
+	// Slot 9: Dominion — Dominate Mind (control)
+	SpellCasting->AssignSpellToSlot(9, TEXT("Spell_DominateMind"));
+
+	UE_LOG(LogOracle, Log, TEXT("Oracle spell bar loaded: 10 spells across 10 schools"));
+
+	// Find or create the animation manager
+	AnimManager = FindComponentByClass<UAoCAnimationManager>();
+	if (!AnimManager)
+	{
+		AnimManager = NewObject<UAoCAnimationManager>(this, TEXT("AnimManager"));
+		if (AnimManager)
+		{
+			AnimManager->RegisterComponent();
+		}
+	}
+
+	if (AnimManager)
+	{
+		UE_LOG(LogOracle, Log, TEXT("Animation Manager loaded: %d animations available"),
+		       AnimManager->GetAnimationCount());
+	}
+}
+
+// =============================================================================
+// OracleCastSpell — Cast a spell from the Oracle's spell bar
+// =============================================================================
+
+void AAoCOracleCompanion::OracleCastSpell(int32 SlotIndex)
+{
+	if (!SpellCasting) return;
+
+	// Play cast animation directly on mesh (bypasses empty AnimBP)
+	USkeletalMeshComponent* SKMesh = GetMesh();
+	if (SKMesh && AnimManager)
+	{
+		UAnimSequence* CastAnim = AnimManager->GetAnimationForAction(TEXT("Cast"));
+		if (CastAnim)
+		{
+			SKMesh->PlayAnimation(CastAnim, false); // one-shot
+
+			// Return to idle loop after cast animation finishes
+			float CastDuration = CastAnim->GetPlayLength();
+			GetWorldTimerManager().ClearTimer(CastAnimTimerHandle);
+			GetWorldTimerManager().SetTimer(
+				CastAnimTimerHandle,
+				this,
+				&AAoCOracleCompanion::ReturnToIdleAfterCast,
+				CastDuration + 0.1f, // small buffer
+				false
+			);
+		}
+	}
+
+	// Set staff to casting mode with the appropriate school
+	if (StaffWeapon && SpellCasting->SpellBar.IsValidIndex(SlotIndex))
+	{
+		FName SpellID = SpellCasting->SpellBar[SlotIndex].SpellID;
+		FAoCSpellInfo* Info = UAoCSpellDatabase::FindSpell(SpellID);
+		if (Info)
+		{
+			StaffWeapon->SetActiveSchool(Info->School);
+			StaffWeapon->SetCasting(true);
+
+			// Announce the spell
+			OracleSay(FString::Printf(TEXT("Casting %s!"), *Info->DisplayName),
+			          EOracleLogCategory::Combat, EChatBubblePriority::Normal);
+		}
+	}
+
+	// Execute the spell
+	SpellCasting->CastSpellInSlot(SlotIndex);
+}
+
+// =============================================================================
+// OracleCastBestSpell — AI picks the best spell for the current situation
+// =============================================================================
+
+void AAoCOracleCompanion::OracleCastBestSpell()
+{
+	if (!SpellCasting) return;
+
+	// Set target to whatever the combat brain is targeting
+	if (UAoCNPCCombatBrain* LocalCombatBrain = FindComponentByClass<UAoCNPCCombatBrain>())
+	{
+		AActor* CombatTarget = LocalCombatBrain->GetCurrentTarget();
+		if (CombatTarget)
+		{
+			SpellCasting->SetTarget(CombatTarget);
+		}
+	}
+
+	// Find the best available spell (not on cooldown, have mana)
+	for (int32 i = 0; i < SpellCasting->SpellBar.Num(); ++i)
+	{
+		const FAoCSpellBarSlot& Slot = SpellCasting->SpellBar[i];
+		if (!Slot.SpellID.IsNone() && !Slot.bOnCooldown)
+		{
+			if (SpellCasting->CanCastSpell(Slot.SpellID))
+			{
+				OracleCastSpell(i);
+				return;
+			}
+		}
+	}
+
+	// No spells available — say so
+	OracleSay(TEXT("All my spells are on cooldown..."),
+	          EOracleLogCategory::Combat, EChatBubblePriority::Normal);
+}
+
+
+// =============================================================================
+// Animation — Idle Loop & Cast Return
+// =============================================================================
+
+void AAoCOracleCompanion::PlayIdleLoop()
+{
+	USkeletalMeshComponent* SKMesh = GetMesh();
+	if (!SKMesh) return;
+
+	if (AnimManager)
+	{
+		UAnimSequence* IdleAnim = AnimManager->GetAnimationForAction(TEXT("Idle"));
+		if (IdleAnim)
+		{
+			// Play directly on mesh in loop mode — bypasses empty AnimBP
+			SKMesh->PlayAnimation(IdleAnim, true); // true = looping
+			UE_LOG(LogOracle, Log, TEXT("Oracle idle animation started: %s (looping)"), *IdleAnim->GetName());
+			return;
+		}
+	}
+
+	// Fallback: try to load a standing idle animation directly
+	UAnimSequence* FallbackIdle = LoadObject<UAnimSequence>(nullptr,
+		TEXT("/Game/AoC/Animations/Movement/Standing_Idle/Standing_Idle.Standing_Idle"));
+
+	if (!FallbackIdle)
+	{
+		// Try alternate naming
+		FallbackIdle = LoadObject<UAnimSequence>(nullptr,
+			TEXT("/Game/AoC/Animations/Movement/Idle/Standing_Idle.Standing_Idle"));
+	}
+
+	if (FallbackIdle)
+	{
+		SKMesh->PlayAnimation(FallbackIdle, true);
+		UE_LOG(LogOracle, Log, TEXT("Oracle idle animation started (fallback): %s"), *FallbackIdle->GetName());
+	}
+	else
+	{
+		UE_LOG(LogOracle, Warning, TEXT("No idle animation found for Oracle — will T-pose"));
+	}
+}
+
+void AAoCOracleCompanion::ReturnToIdleAfterCast()
+{
+	// Resume idle loop after a one-shot cast animation
+	PlayIdleLoop();
+	UE_LOG(LogOracle, Verbose, TEXT("Oracle returned to idle after spell cast"));
 }
 
 // =============================================================================

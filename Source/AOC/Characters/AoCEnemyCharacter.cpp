@@ -1,6 +1,7 @@
 // Copyright Architect of Creation. All Rights Reserved.
 
 #include "AoCEnemyCharacter.h"
+#include "../Skills/AoCSkillComponent.h"
 #include "AIController.h"
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"

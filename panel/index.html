@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JECHT DISPATCHER PANEL v1.2</title>
+<style>
+:root{
+  --bg:#060a12; --bg2:#0c1428; --bg3:#101e38;
+  --card:#0c1428; --card2:#101e38;
+  --orange:#ff7700; --orange-dim:rgba(255,119,0,0.25);
+  --amber:#ffa726; --gold:#ffd54f;
+  --cyan:#00d4ff; --cyan-dim:rgba(0,212,255,0.18);
+  --line:rgba(0,212,255,0.22); --border-hot:rgba(255,119,0,0.45);
+  --green:#00ff88; --red:#ff5252; --redder:#ff2244;
+  --text:#b8ccdf; --bright:#e8f2fb; --dim:#4a6878;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);
+  font-family:'Courier New',Courier,monospace;font-size:12px;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:
+  repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.14) 2px,rgba(0,0,0,0.14) 4px)}
+header{display:flex;align-items:center;gap:14px;padding:12px 18px;
+  background:var(--bg2);border:1px solid var(--border-hot);border-left:none;border-right:none;
+  box-shadow:0 0 24px var(--orange-dim),inset 0 1px 0 var(--border-hot);
+  position:sticky;top:0;z-index:50;overflow:hidden}
+header::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(to bottom,var(--orange),transparent)}
+header .logo{font-size:26px;font-weight:bold;letter-spacing:10px;color:var(--orange);
+  text-shadow:0 0 18px var(--orange),0 0 40px var(--orange-dim);animation:flicker 9s infinite}
+header .logo em{color:var(--cyan);font-style:normal;text-shadow:0 0 14px var(--cyan)}
+@keyframes flicker{0%,91%,93%,95%,100%{opacity:1}92%,94%{opacity:.55}}
+header .sub{font-size:9px;color:var(--dim);letter-spacing:4px;margin-top:3px;text-transform:uppercase}
+header .sub b{color:var(--cyan);font-weight:normal}
+header .ver{margin-left:auto;font-size:10px;color:var(--cyan);border:1px solid var(--cyan);
+  padding:5px 12px;letter-spacing:2px;background:rgba(0,212,255,.05);
+  box-shadow:0 0 12px var(--cyan-dim);text-transform:uppercase}
+header .ver::before{content:"●";color:var(--green);margin-right:8px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;text-shadow:0 0 8px var(--green)}50%{opacity:.3}}
+header .clock{font-size:20px;color:var(--cyan);text-shadow:0 0 12px var(--cyan);
+  letter-spacing:3px;margin-left:14px}
+nav{display:flex;gap:8px;padding:10px 18px;background:var(--bg);
+  border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:49;flex-wrap:wrap}
+nav button{background:transparent;border:1px solid var(--line);color:var(--cyan);
+  padding:8px 18px;cursor:pointer;font-family:inherit;font-size:11px;
+  letter-spacing:3px;text-transform:uppercase;transition:.15s}
+nav button:hover{background:var(--cyan-dim);border-color:var(--cyan);box-shadow:0 0 10px var(--cyan-dim)}
+nav button.active{background:var(--orange);color:#000;border-color:var(--orange);
+  box-shadow:0 0 18px var(--orange-dim);font-weight:bold}
+main{padding:18px;max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.tab{display:none}.tab.show{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.card{border:1px solid var(--line);background:var(--bg2);padding:14px;margin-bottom:14px;
+  position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.4}
+h2{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--cyan);
+  font-weight:bold;margin-bottom:12px}
+h2::before{content:"// ";color:var(--cyan)}
+h2 .hint{font-size:9px;color:var(--dim);font-weight:normal;margin-left:8px;letter-spacing:1px;text-transform:none}
+textarea{width:100%;min-height:120px;background:var(--bg);border:1px dashed var(--line);
+  color:var(--green);font-family:inherit;font-size:11px;padding:10px;resize:vertical}
+textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
+  box-shadow:0 0 10px var(--orange-dim)}
+.btn{display:inline-block;border:1px solid var(--line);background:transparent;color:var(--cyan);
+  padding:9px 18px;font-family:inherit;font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;transition:.15s}
+.btn:hover{filter:brightness(1.25)}
+.btn-orange{border-color:var(--orange);color:var(--orange);background:rgba(255,119,0,.08);
+  box-shadow:0 0 12px var(--orange-dim)}
+.btn-orange:hover{background:var(--orange);color:#000;font-weight:bold}
+.btn-green{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.06);
+  box-shadow:0 0 12px rgba(0,255,136,.18)}
+.btn-green:hover{background:var(--green);color:#000;font-weight:bold}
+.btn-red{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.07)}
+.btn-red:hover{background:var(--red);color:#000;font-weight:bold}
+.btn-grey{border-color:var(--line);color:var(--dim)}
+.btn-grey:hover{color:var(--text);border-color:var(--text)}
+.btn-gold{border-color:var(--gold);color:var(--gold);background:rgba(255,213,79,.07);
+  box-shadow:0 0 12px rgba(255,213,79,.15)}
+.btn-gold:hover{background:var(--gold);color:#000;font-weight:bold}
+.btn[disabled]{opacity:.3;cursor:not-allowed}
+.company{border:1px solid var(--line);margin-bottom:10px;overflow:hidden}
+.company>.head{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;
+  background:var(--bg3);font-weight:bold;color:var(--bright);letter-spacing:1px}
+.company>.head:hover{border-color:var(--cyan);background:rgba(0,212,255,0.05)}
+.company .mc{font-size:10px;color:var(--dim);font-weight:normal;letter-spacing:1px}
+.caret{transition:.2s;color:var(--orange)}
+.open>.head .caret{transform:rotate(90deg)}
+.body{display:none;padding:6px 12px 12px}
+.open>.body{display:block}
+.truck{border:1px solid var(--line);margin:8px 0;overflow:hidden}
+.truck>.head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;
+  background:rgba(255,255,255,.02)}
+.truck>.head:hover{background:rgba(255,119,0,.06)}
+.truck .eq{font-size:10px;color:var(--amber);letter-spacing:1px}
+.truck .loc{font-size:10px;color:var(--dim);margin-left:auto;letter-spacing:1px}
+.loadrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line);
+  cursor:pointer;font-size:12px}
+.loadrow:hover{border-color:var(--cyan);background:rgba(0,212,255,0.05);box-shadow:inset 0 0 10px var(--cyan-dim)}
+.loadrow.done{opacity:.4}
+.loadrow .rpm{color:var(--green);font-weight:bold;min-width:70px;text-shadow:0 0 7px rgba(0,255,136,.3)}
+.loadrow .lane{flex:1;color:var(--bright)}
+.loadrow .lane .larrow{color:var(--cyan)}
+.grade{font-size:9px;font-weight:bold;padding:2px 7px;min-width:34px;text-align:center;letter-spacing:1px}
+.g-good{background:rgba(0,255,136,.1);color:var(--green);border:1px solid var(--green)}
+.g-mid{background:rgba(255,213,79,.08);color:var(--gold);border:1px solid var(--gold)}
+.g-bad{background:rgba(255,82,82,.08);color:var(--red);border:1px solid var(--red)}
+.tag{font-size:13px}
+.outcome{font-size:9px;color:var(--amber);margin-left:auto;letter-spacing:1px;text-transform:uppercase}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(4,8,18,.85);z-index:100;
+  align-items:center;justify-content:center;overflow:auto;padding:30px 14px}
+.modal-bg.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--orange);max-width:640px;
+  width:100%;padding:18px;box-shadow:0 0 40px var(--orange-dim);animation:fade .2s;position:relative;margin:auto}
+.modal::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--orange),transparent)}
+.modal h3{color:var(--orange);margin-bottom:6px;font-size:13px;letter-spacing:3px;
+  text-transform:uppercase;text-shadow:0 0 10px var(--orange-dim)}
+.modal h3::before{content:"// "}
+.modal .lane-big{color:var(--bright);font-size:14px;font-weight:bold;margin-bottom:12px;letter-spacing:1px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:12px;margin-bottom:14px}
+.grid2 b{color:var(--bright)}
+.offerbox{background:rgba(255,119,0,.05);border:1px solid var(--border-hot);
+  padding:13px;margin-bottom:14px;display:flex;gap:22px;justify-content:center;text-align:center}
+.offerbox .num{font-size:20px;font-weight:bold;letter-spacing:1px}
+.offerbox .lbl{font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.ask{color:var(--gold);text-shadow:0 0 10px rgba(255,213,79,.4)}
+.posted{color:var(--bright)}.floor{color:var(--red)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.formgrid label{font-size:9px;color:var(--dim);display:block;margin-bottom:3px;letter-spacing:2px;text-transform:uppercase}
+.formgrid input,.formgrid select{width:100%;background:var(--bg);border:1px solid var(--line);
+  color:var(--bright);padding:8px;font-size:12px;font-family:inherit}
+.money-co{border:1px solid var(--line);margin-bottom:12px;padding:13px}
+.money-co .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.money-co .name{font-weight:bold;color:var(--bright);font-size:13px;letter-spacing:1px}
+.money-co .gross{margin-left:auto;color:var(--green);font-weight:bold;font-size:15px;
+  text-shadow:0 0 10px rgba(0,255,136,.3)}
+.mt{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
+.mt td,.mt th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.mt th{color:var(--dim);font-size:9px;letter-spacing:2px;text-transform:uppercase}
+.owed{display:flex;gap:18px;margin-top:10px;font-size:12px;flex-wrap:wrap;align-items:center}
+.out-red{color:var(--redder);font-weight:bold;text-shadow:0 0 8px rgba(255,34,68,.4)}
+.out-green{color:var(--green);font-weight:bold}
+.paid-bad{font-size:9px;background:rgba(255,34,68,.12);color:var(--redder);
+  border:1px solid var(--redder);padding:2px 8px;font-weight:bold;letter-spacing:1px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg3);
+  border:1px solid var(--orange);color:var(--bright);padding:12px 22px;
+  z-index:200;display:none;box-shadow:0 0 24px var(--orange-dim);letter-spacing:1px}
+.empty{color:var(--dim);text-align:center;padding:30px;font-size:12px;letter-spacing:2px}
+.chk{width:15px;height:15px;accent-color:var(--orange)}
+.statbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{flex:1;min-width:110px;background:var(--bg2);border:1px solid var(--line);
+  padding:11px;text-align:center;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.4}
+.stat .n{font-size:20px;font-weight:bold;color:var(--orange);
+  text-shadow:0 0 14px var(--orange);letter-spacing:2px}
+.stat .l{font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.footer-send{position:sticky;bottom:0;background:linear-gradient(0deg,var(--bg) 70%,transparent);
+  padding:14px 0 6px;text-align:center}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg3);border:1px solid var(--line)}
+@media(max-width:640px){.formgrid{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">J E C H T <em>//</em></div>
+    <div class="sub">ROTS TRUCKING LLC &nbsp;·&nbsp; <b>DISPATCHER PANEL</b> &nbsp;·&nbsp; V1.2</div>
+  </div>
+  <div class="ver">WIRE-SEALED</div>
+  <div class="clock" id="hdrclock">--:--:--</div>
+</header>
+<nav>
+  <button class="active" data-tab="loads" onclick="tab(this)">📋 Loads</button>
+  <button data-tab="onboard" onclick="tab(this)">➕ Onboard</button>
+  <button data-tab="revenue" onclick="tab(this)">💰 Revenue</button>
+  <button data-tab="settings" onclick="tab(this)">⚙️ Settings</button>
+</nav>
+<main>
+
+<!-- ============ LOADS TAB ============ -->
+<div class="tab show" id="tab-loads">
+  <div class="card">
+    <h2>📥 Paste Bundle from Jecht <span class="hint">only blocks from dispatchjecht@gmail.com are valid — anything else bounces</span></h2>
+    <textarea id="paste" placeholder="Paste the entire ===JECHT|...=== bundle email here"></textarea>
+    <div class="btnrow">
+      <button class="btn btn-orange" onclick="importBundle()">IMPORT BUNDLE</button>
+      <button class="btn btn-grey" onclick="clearSession()">CLEAR SESSION</button>
+    </div>
+  </div>
+  <div class="statbar" id="stats"></div>
+  <div id="tree"><div class="empty">No loads yet — paste a bundle from Jecht above. 🚛</div></div>
+  <div class="card" id="multibox" style="display:none">
+    <h2>📧 Multi-Email <span class="hint">fires from YOUR email · ticked 📧 loads only</span></h2>
+    <div class="btnrow">
+      <button class="btn btn-gold" onclick="multiEmail()">OPEN EMAIL DRAFTS FOR TICKED LOADS</button>
+    </div>
+  </div>
+  <div class="footer-send" id="sendbox" style="display:none">
+    <button class="btn btn-green" style="font-size:16px;padding:14px 40px" onclick="sendToJecht()">📤 SEND TO JECHT</button>
+  </div>
+</div>
+
+<!-- ============ ONBOARD TAB ============ -->
+<div class="tab" id="tab-onboard">
+  <div class="card">
+    <h2>🏢 New Company</h2>
+    <div class="formgrid">
+      <div><label>COMPANY NAME *</label><input id="c_name"></div>
+      <div><label>MC NUMBER *</label><input id="c_mc"></div>
+      <div><label>DOT NUMBER</label><input id="c_dot"></div>
+      <div><label>EIN</label><input id="c_ein"></div>
+      <div><label>OWNER NAME *</label><input id="c_oname"></div>
+      <div><label>OWNER PHONE *</label><input id="c_ophone"></div>
+      <div><label>OWNER EMAIL</label><input id="c_oemail"></div>
+      <div><label>FACTORING COMPANY</label><input id="c_factor"></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-orange" onclick="sendNewCompany()">📤 SEND NEW COMPANY TO JECHT</button></div>
+  </div>
+  <div class="card">
+    <h2>🚛 New Truck</h2>
+    <div class="formgrid">
+      <div><label>COMPANY *</label><select id="t_co"></select></div>
+      <div><label>TRUCK # *</label><input id="t_num"></div>
+      <div><label>EQUIPMENT *</label><select id="t_eq"></select></div>
+      <div><label>MAX WEIGHT (lbs) *</label><input id="t_wt" value="45000"></div>
+      <div><label>TRUCK PLATE</label><input id="t_plate"></div>
+      <div><label>TRAILER #</label><input id="t_tnum"></div>
+      <div><label>TRAILER PLATE</label><input id="t_tplate"></div>
+      <div><label>HAZMAT</label><select id="t_haz"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div><label>DRIVER NAME *</label><input id="t_dname"></div>
+      <div><label>DRIVER PHONE *</label><input id="t_dphone"></div>
+      <div><label>ROLE *</label><select id="t_role"><option value="1">Owner</option><option value="2">Driver</option></select></div>
+      <div><label>MIN $/MILE *</label><input id="t_rpm" value="2.00"></div>
+      <div><label>PREFERRED DESTINATION</label><input id="t_dest" placeholder="e.g. Midwest, TX, anywhere"></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-orange" onclick="sendNewTruck()">📤 SEND NEW TRUCK TO JECHT</button></div>
+  </div>
+</div>
+
+<!-- ============ REVENUE TAB ============ -->
+<div class="tab" id="tab-revenue">
+  <div id="moneywrap"><div class="empty">Revenue arrives inside the bundle — paste one on the Loads tab and the money shows up here. 💰</div></div>
+</div>
+
+<!-- ============ SETTINGS TAB ============ -->
+<div class="tab" id="tab-settings">
+  <div class="card">
+    <h2>⚙️ Your Identity <span class="hint">stamped into every block you send</span></h2>
+    <div class="formgrid">
+      <div><label>DISPATCHER ID (from Jecht)</label><input id="s_id"></div>
+      <div><label>YOUR NAME</label><input id="s_name"></div>
+      <div><label>YOUR EMAIL (multi-email sends from this)</label><input id="s_email"></div>
+      <div><label>EMAIL OPENS IN</label><select id="s_mailmode"><option value="gmail">Gmail (browser — recommended)</option><option value="system">System mail app (Outlook etc.)</option></select></div>
+      <div style="grid-column:1/-1"><label>NEGOTIATION ASK — % ABOVE POSTED RATE: <span id="s_askpct_v" style="color:var(--orange);font-weight:bold">5%</span></label>
+       <input type="range" id="s_askpct" min="0" max="100" step="1" value="5" style="width:100%;accent-color:var(--orange)"
+        oninput="document.getElementById('s_askpct_v').textContent=this.value+'%'">
+       <div class="hint">0% = ask posted rate · every inquiry email asks posted&nbsp;+&nbsp;this&nbsp;% (rounded up to $25)</div></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-green" onclick="saveSettings()">SAVE</button></div>
+  </div>
+  <div class="card">
+    <h2>🔒 Wire Rules</h2>
+    <div style="font-size:13px;line-height:1.8">
+      • Inbound blocks accepted <b style="color:var(--orange)">only</b> from <b>dispatchjecht@gmail.com</b><br>
+      • All outbound blocks go <b style="color:var(--orange)">only</b> to <b>dispatchjecht@gmail.com</b> (not editable)<br>
+      • Broker emails fire from <b>your</b> address via Multi-Email — that lane never mixes with the wire<br>
+      • Every block is version-stamped + checksummed — a mangled block bounces, never lands
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal"><div class="modal" id="modal-inner"></div></div>
+<div class="toast" id="toast"></div>
+<div id="trustbar" style="display:none;position:sticky;top:0;z-index:60;background:linear-gradient(135deg,#7a5a00,#5a3c00);color:#ffd34d;text-align:center;padding:8px;font-weight:700;letter-spacing:.5px"></div>
+
+<script>
+"use strict";
+const WIRE_VERSION="1.2", JECHT_EMAIL="dispatchjecht@gmail.com";
+const EQUIPMENT={1:"53' Dry Van",2:"53' Reefer",3:"Flatbed",4:"Step Deck",5:"Straight/Box Truck",6:"Power Only",7:"Hotshot"};
+const GRADES={1:"AAA",2:"AA+",3:"AA",4:"A+",5:"A",6:"B+",7:"B",8:"C+",9:"C",10:"D+",11:"D",12:"E",13:"F"};
+const OUTCOMES={1:"✅ BOOKED",2:"✅ BOOKED @ rate",3:"☎️ NO ANSWER",4:"💨 LOAD GONE",5:"⛔ BAD BROKER",6:"📞 CALLED",7:"— not worked",8:"📧 EMAILED",9:"🚫 NOT INTERESTED"};
+// field order must mirror jecht_wire.py BLOCK_TYPES exactly
+const SPEC={
+ NEWCOMPANY:["name","mc_number","dot_number","ein","owner_name","owner_phone","owner_email","factoring_company"],
+ NEWTRUCK:["company_id","truck_number","equipment_code","plate","trailer_number","trailer_plate","max_weight","hazmat","min_rpm","driver_name","driver_phone","role_code","dest_pref"],
+ OUTCOME:["match_id","outcome_code","final_rate","dispatcher_id","seconds_open"]
+};
+let S=JSON.parse(localStorage.getItem("jecht_panel")||"{}");
+S.loads=S.loads||{}; S.pay=S.pay||{cos:{},trucks:[]}; S.seen=S.seen||[]; S.companies=S.companies||{};
+function save(){localStorage.setItem("jecht_panel",JSON.stringify(S))}
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2800)}
+function tab(b){document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("show"));
+ document.getElementById("tab-"+b.dataset.tab).classList.add("show")}
+
+// ---------- SHA-256 (pure JS, runs offline from a double-clicked file) ----------
+function sha256(ascii){function rr(v,a){return(v>>>a)|(v<<(32-a))}
+ var mc=Math.pow,ms=mc(2,32),res="",words=[],len=ascii.length*8;
+ var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pc=k.length,iscomp={};
+ for(var c=2;pc<64;c++){if(!iscomp[c]){for(var i=0;i<313;i+=c)iscomp[i]=c;
+  hash[pc]=(mc(c,.5)*ms)|0;k[pc++]=(mc(c,1/3)*ms)|0}}
+ ascii+="\x80";while(ascii.length%64-56)ascii+="\x00";
+ for(var i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8}
+ words[words.length]=(len/ms)|0;words[words.length]=len;
+ for(var j=0;j<words.length;){var w=words.slice(j,j+=16),old=hash.slice(0,8);
+  for(var i=0;i<64;i++){var w15=w[i-15],w2=w[i-2];
+   var a=hash[0],e=hash[4];
+   var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^(~e&hash[6]))+k[i]
+    +(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+   var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+   hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0}
+  for(var i=0;i<8;i++)hash[i]=(hash[i]+old[i])|0}
+ for(var i=0;i<8;i++)for(var j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;res+=((b>>4).toString(16))+((b&15).toString(16))}
+ return res}
+function csum(body){return sha256(unescape(encodeURIComponent(body))).slice(0,12)}
+function blockId(){let s="";for(let i=0;i<12;i++)s+="0123456789abcdef"[Math.floor(Math.random()*16)];return s}
+
+// ---------- WIRE: build + parse ----------
+function buildBlock(type,fields){const body=SPEC[type].filter(k=>fields[k]!==undefined&&fields[k]!==null&&fields[k]!=="")
+ .map(k=>k+"="+fields[k]).join("\n");
+ return "===JECHT|"+type+"|"+WIRE_VERSION+"|"+blockId()+"===\n"+body+"\n===END|"+csum(body)+"===\n"}
+function parseBundle(text){
+ const re=/===JECHT\|([A-Z]+)\|([\d.]+)\|([0-9a-f]+)===\n([\s\S]*?)\n===END\|([0-9a-f]+)===/g;
+ let m,out=[],bad=0,dupes=0;
+ while((m=re.exec(text))){
+  const[,type,ver,bid,body,sum]=m;
+  if(ver!==WIRE_VERSION){bad++;continue}
+  if(csum(body)!==sum){bad++;continue}
+  if(S.seen.includes(bid)){dupes++;continue}
+  const f={};body.split("\n").forEach(l=>{const i=l.indexOf("=");if(i>0)f[l.slice(0,i)]=l.slice(i+1)});
+  out.push({type,bid,f})}
+ return{out,bad,dupes}}
+
+// ---------- IMPORT ----------
+function importBundle(){
+ const txt=document.getElementById("paste").value;
+ if(!txt.trim())return toast("Nothing pasted yet");
+ const{out,bad,dupes}=parseBundle(txt);
+ let n=0;
+ out.forEach(b=>{
+  S.seen.push(b.bid);
+  if(b.type==="KILL"){
+   if(!S.settings?.id||String(b.f.dispatcher_id)===String(S.settings.id)){killPanel();return}
+  }else if(b.type==="TRUST"){
+   if(!S.settings?.id||String(b.f.dispatcher_id)===String(S.settings.id)){S.trust=+b.f.trust;n++}
+  }else if(b.type==="CALLSHEET"||b.type==="DISPATCH"){
+   b.f._contact=(b.type==="CALLSHEET")?2:1; b.f._outcome=0; b.f._ticked=0; b.f._t0=Date.now();
+   S.loads[b.f.match_id]=b.f; n++;
+  }else if(b.type==="PAYCO"){S.pay.cos[b.f.company_id]=b.f;n++}
+  else if(b.type==="PAYTRUCK"){S.pay.trucks=S.pay.trucks.filter(t=>!(t.company_id===b.f.company_id&&t.truck_number===b.f.truck_number));S.pay.trucks.push(b.f);n++}
+  else if(b.type==="COMPANYLIST"){S.companies[b.f.company_id]={name:b.f.name,mc:b.f.mc_number||""};n++}
+ });
+ save();render();renderMoney();fillCompanyDropdown();
+ document.getElementById("paste").value="";
+ toast(`Imported ${n} blocks ✓${bad?` · ${bad} bounced (bad seal)`:""}${dupes?` · ${dupes} duplicates ignored`:""}`)}
+function clearSession(){if(confirm("Clear all loads from this session? (Revenue and settings stay)")){S.loads={};save();render()}}
+
+// ---------- RENDER TREE ----------
+function gcls(g){g=+g;return g<=5?"g-good":g<=9?"g-mid":"g-bad"}
+function money(x){return"$"+(+x).toLocaleString(undefined,{maximumFractionDigits:0})}
+function render(){
+ const tb=document.getElementById("trustbar");
+ if(S.trust!=null&&+S.trust<=70){tb.style.display="block";
+  tb.textContent=`⚠️ TRUST SCORE ${S.trust} — verify your outcomes. At 50, access is revoked.`}
+ else tb.style.display="none";
+ const loads=Object.values(S.loads);
+ const tree=document.getElementById("tree");
+ document.getElementById("sendbox").style.display=loads.length?"block":"none";
+ document.getElementById("multibox").style.display=loads.some(l=>l._contact==1)?"block":"none";
+ const st=document.getElementById("stats");
+ if(!loads.length){tree.innerHTML='<div class="empty">No loads yet — paste a bundle from Jecht above. 🚛</div>';st.innerHTML="";return}
+ const worked=loads.filter(l=>l._outcome>0).length,booked=loads.filter(l=>l._outcome==1||l._outcome==2).length;
+ st.innerHTML=`<div class="stat"><div class="n">${loads.length}</div><div class="l">LOADS</div></div>
+  <div class="stat"><div class="n">${new Set(loads.map(l=>l.truck_number)).size}</div><div class="l">TRUCKS</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">${booked}</div><div class="l">BOOKED</div></div>
+  <div class="stat"><div class="n" style="color:var(--gold)">${worked}</div><div class="l">WORKED</div></div>`;
+ // group: company -> truck -> loads
+ const cos={};
+ loads.forEach(l=>{const cc=S.companies[l.company_id];const co=l.company_name||(cc&&(cc.name||cc))||"My Fleet";
+  cos[co]=cos[co]||{};const tk=l.truck_number;cos[co][tk]=cos[co][tk]||[];cos[co][tk].push(l)});
+ let html="";
+ for(const[co,trucks]of Object.entries(cos)){
+  html+=`<div class="company open"><div class="head" onclick="this.parentNode.classList.toggle('open')">
+   <span class="caret">▶</span> 🏢 ${esc(co)}</div><div class="body">`;
+  for(const[tk,ls]of Object.entries(trucks)){
+   ls.sort((a,b)=>(+a.grade_code)-(+b.grade_code));
+   const t=ls[0];
+   html+=`<div class="truck open"><div class="head" onclick="this.parentNode.classList.toggle('open')">
+    <span class="caret">▶</span> 🚛 <b>Truck ${esc(tk)}</b>
+    <span class="eq">${EQUIPMENT[t.equipment_code]||""}</span>
+    <span class="loc">📍 ${esc(t.gps_city)}, ${esc(t.gps_state)}</span></div><div class="body" style="padding:0">`;
+   ls.slice(0,5).forEach(l=>{
+    html+=`<div class="loadrow ${(l._released&&!l._outcome)||(l._outcome>0&&l._outcome!=6&&l._outcome!=8)?"done":""}" onclick="openLoad('${esc(l.match_id)}')">
+     ${l._contact==1?`<input type="checkbox" class="chk" onclick="event.stopPropagation();tick('${esc(l.match_id)}',this.checked)" ${l._ticked?"checked":""}>`:""}
+     <span class="tag">${l._contact==2?"📞":"📧"}</span>
+     <span class="grade ${gcls(l.grade_code)}">${GRADES[l.grade_code]||"?"}</span>
+     <span class="rpm">$${(+l.rpm).toFixed(2)}/mi</span>
+     <span class="lane">${esc(l.origin)} → ${esc(l.dest)}</span>
+     <span class="outcome">${OUTCOMES[l._outcome]||(l._released?"🔒 RELEASED — truck booked":"")}${(l._outcome==1||l._outcome==2)?' <span style="color:var(--amber)">⏳ awaiting ratecon</span>':""}</span></div>`});
+   html+=`</div></div>`}
+  html+=`</div></div>`}
+ tree.innerHTML=html}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function tick(id,v){S.loads[id]._ticked=v?1:0;save()}
+
+// ---------- LOAD DETAIL MODAL ----------
+function openLoad(id){const l=S.loads[id];if(!l)return;
+ const floor=(+l.floor_rpm)*(+l.miles), ask=askRate(l);
+ document.getElementById("modal-inner").innerHTML=`
+  <h3>${l._contact==2?"📞 CALL":"📧 EMAIL"} · Grade <span class="grade ${gcls(l.grade_code)}">${GRADES[l.grade_code]}</span></h3>
+  <div class="lane-big">${esc(l.origin)} → ${esc(l.dest)}</div>
+  <div class="grid2">
+   ${l.load_id?`<div style="grid-column:1/-1">Listing / Ref #: <b style="color:var(--cyan);font-size:15px">${esc(l.load_id)}</b></div>`:""}
+   <div>Truck: <b>${esc(l.truck_number)} (${EQUIPMENT[l.equipment_code]||""})</b></div>
+   <div>Truck at: <b>${esc(l.gps_city)}, ${esc(l.gps_state)}</b></div>
+   <div>Miles: <b>${(+l.miles).toLocaleString()}</b></div>
+   <div>Posted: <b>${money(l.rate)} ($${(+l.rpm).toFixed(2)}/mi)</b></div>
+   <div>Broker: <b>${esc(l.broker_name)}</b></div>
+   <div>${l._contact==2?`Phone: <b style="color:var(--gold);font-size:15px">${esc(l.broker_phone)}</b>`:`Email: <b>${esc(l.broker_email)}</b>`}</div>
+  </div>
+  <div class="offerbox">
+   <div><div class="num ask">${money(ask)}</div><div class="lbl">ASK</div></div>
+   <div><div class="num posted">${money(l.rate)}</div><div class="lbl">POSTED</div></div>
+   <div><div class="num floor">${money(floor)}</div><div class="lbl">FLOOR — walk away</div></div>
+  </div>
+  <div class="btnrow">
+   <button class="btn btn-grey" onclick="mark('${esc(id)}',6)">📞 CALLED — NOT BOOKED</button>
+   <button class="btn btn-green" onclick="mark('${esc(id)}',1)">✅ BOOKED @ POSTED</button>
+   <button class="btn btn-green" onclick="bookRate('${esc(id)}')">✅ BOOKED @ OTHER RATE</button>
+  </div>
+  <div class="btnrow">
+   <button class="btn btn-grey" onclick="mark('${esc(id)}',3)">☎️ NO ANSWER</button>
+   <button class="btn btn-grey" onclick="mark('${esc(id)}',4)">💨 LOAD GONE</button>
+   <button class="btn btn-red" onclick="mark('${esc(id)}',5)">⛔ BAD BROKER</button>
+   <button class="btn btn-orange" onclick="mark('${esc(id)}',9)">🚫 NOT INTERESTED — send back</button>
+  </div>
+  <div class="btnrow"><button class="btn btn-grey" onclick="closeModal()">CLOSE</button></div>`;
+ document.getElementById("modal").classList.add("show")}
+function closeModal(){document.getElementById("modal").classList.remove("show")}
+function mark(id,code){const l=S.loads[id];l._outcome=code;delete l._final_rate;
+ l._secs=l._t0?Math.round((Date.now()-l._t0)/1000):null;
+ if(code==1)l._final_rate=l.rate;
+ if(code==1||code==2)greyOutSiblings(l);
+ save();render();closeModal();
+ if(code==1)rateconStep(id);
+ else toast(OUTCOMES[code]+(code==9?" — released back to Jecht's pool":" — marked"))}
+function bookRate(id){const r=prompt("Final agreed rate ($):");if(!r)return;
+ const l=S.loads[id];
+ const n=parseFloat(r.replace(/[$,]/g,""));if(isNaN(n)||n<=0)return toast("That's not a number Jecht can read");
+ const lo=(+l.floor_rpm)*(+l.miles)*0.6, hi=(+l.rate)*3;   // sanity rail (section 10)
+ if((n<lo||n>hi)&&!confirm(`Confirm: ${money(n)} is far from the posted rate (${money(l.rate)}). Book anyway?`))return;
+ l._outcome=2;l._final_rate=n;l._secs=l._t0?Math.round((Date.now()-l._t0)/1000):null;
+ greyOutSiblings(l);save();render();closeModal();rateconStep(id)}
+// ---------- RATECON RELAY (section 10: no paper, no credit) ----------
+function rateconStep(id){const l=S.loads[id];
+ document.getElementById("modal-inner").innerHTML=`
+  <h3>📎 STEP 2 — FORWARD THE RATECON</h3>
+  <div class="lane-big">${esc(l.origin)} → ${esc(l.dest)} · booked at <span style="color:var(--green)">${money(l._final_rate)}</span></div>
+  <p style="color:var(--amber)">⏳ This load stays <b>UNVERIFIED</b> until the rate confirmation copy reaches Jecht.
+  No paper, no credit: it won't count on your pay sheet or your booked stats until then.</p>
+  <p style="font-size:13px;line-height:1.7">
+   1️⃣ Click below — Gmail opens already searched to <b>${esc(l.broker_name||"the broker")}</b>'s emails,
+   and the subject stamp is copied to your clipboard.<br>
+   2️⃣ Open the ratecon email → hit <b>Forward</b>.<br>
+   3️⃣ Send to <b style="color:var(--gold)">${JECHT_EMAIL}</b> and <b>paste the stamp into the subject line</b>.
+   The PDF rides along automatically — Jecht pairs it by the stamp.</p>
+  <div class="btnrow">
+   <button class="btn btn-gold" onclick="fwdRatecon('${esc(id)}')">🔎 OPEN GMAIL — FIND &amp; FORWARD</button>
+   <button class="btn btn-grey" onclick="copyTxt('${JECHT_EMAIL}');toast('Jecht address copied ✓')">COPY JECHT ADDRESS</button>
+   <button class="btn btn-grey" onclick="fwdRateconBlank('${esc(id)}')">BLANK EMAIL + ATTACH PDF MYSELF</button>
+   <button class="btn btn-grey" onclick="closeModal();toast('Booked ⏳ — still awaiting ratecon')">LATER — stays yellow</button>
+  </div>`;
+ document.getElementById("modal").classList.add("show")}
+function copyTxt(t){try{navigator.clipboard.writeText(t)}catch(e){}}
+function fwdRatecon(id){const l=S.loads[id];
+ copyTxt(`RATECON ${l.match_id} TRUCK ${l.truck_number}`);
+ if((S.settings?.mailmode||"gmail")==="gmail"&&l.broker_email){
+  window.open(`https://mail.google.com/mail/u/0/#search/${encodeURIComponent("from:("+l.broker_email+")")}`);
+  closeModal();toast("Stamp copied 📋 — Forward the ratecon to "+JECHT_EMAIL+" and paste the stamp in the subject")
+ }else fwdRateconBlank(id)}
+function fwdRateconBlank(id){const l=S.loads[id];
+ openMail(JECHT_EMAIL,`RATECON ${l.match_id} TRUCK ${l.truck_number}`,"Attach the rate confirmation PDF to this email, then send. Jecht pairs it automatically by the subject line.");
+ closeModal();toast("Attach the ratecon PDF and hit send ✓")}
+// ---------- KILL SWITCH (section 10) ----------
+function killPanel(){
+ try{localStorage.removeItem("jecht_panel")}catch(e){}
+ try{localStorage.setItem("jecht_killed","1")}catch(e){}
+ document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0e14">
+  <div style="text-align:center;color:#d8334f;font-family:inherit">
+   <div style="font-size:64px">💀</div>
+   <h1 style="letter-spacing:3px">ACCESS REVOKED</h1>
+   <p style="color:#8a93a6">This panel has been deactivated.<br>Contact Rots Trucking dispatch.</p>
+  </div></div>`}
+function greyOutSiblings(l){Object.values(S.loads).forEach(o=>{
+ // truck is booked: locally release its other loads. NOT an outcome claim —
+ // Jecht auto-releases them server-side; sending LOAD GONE here would
+ // falsely accuse the dispatcher (FAKE_GONE) for loads they never called.
+ if(o.truck_number===l.truck_number&&o.match_id!==l.match_id&&o._outcome===0)o._released=1})}
+
+// ---------- MAIL HELPER ----------
+// mailto: silently dies on Windows boxes with no default mail app.
+// Default = Gmail web compose (preloaded to/subject/body, dispatcher just hits Send).
+// Settings can switch back to the system mail app if they use Outlook etc.
+function openMail(to,subj,body){
+ if((S.settings?.mailmode||"gmail")==="gmail"){
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);
+ }else{
+  window.open(`mailto:${to}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);
+ }}
+// ---------- MULTI-EMAIL ----------
+function coInfo(l){
+ let c=S.companies[l.company_id];
+ if(typeof c==="string")c={name:c,mc:""};
+ const p=(S.pay.cos||{})[l.company_id];
+ return {name:l.company_name||(c&&c.name)||(p&&p.company_name)||"our carrier",
+         mc:(c&&c.mc)||(p&&p.mc_number)||""};}
+
+function askRate(l){const p=(S.settings?.askpct==null?5:+S.settings.askpct);
+ return Math.ceil((+l.rate)*(1+p/100)/25)*25}
+function inqSubject(l){return `Load inquiry: ${l.origin} -> ${l.dest} | ${EQUIPMENT[l.equipment_code]||"Van"}`+(l.load_id?` | Ref# ${l.load_id}`:"")}
+function inqBody(l){const me=S.settings?.email;
+ return `Hello ${l.broker_name},
+
+This is ${S.settings?.name||"Dispatch"}, dispatcher for ${coInfo(l).name}${coInfo(l).mc?" (MC# "+coInfo(l).mc+")":""}. I'm looking at your load:
+
+  ${l.origin} -> ${l.dest}${l.load_id?`
+  Listing / Ref #: ${l.load_id}`:""}
+  Equipment: ${EQUIPMENT[l.equipment_code]||"Van"}
+  Miles: ${l.miles}
+  Posted rate: ${money(l.rate)}
+
+Is this load still available?
+
+I have a truck empty in ${l.gps_city}, ${l.gps_state} that can cover it — asking ${money(askRate(l))} all-in. Full carrier packet on request.
+
+${S.settings?.name||"Dispatch"}${me?"\n"+me:""}`}
+
+// queue: one compose per click — browsers popup-block bulk window.open bursts
+let EQ=[],EQi=0;
+function multiEmail(){
+ const picked=Object.values(S.loads).filter(l=>l._contact==1&&l._ticked&&l._outcome===0);
+ if(!picked.length)return toast("Tick some 📧 loads first");
+ if(picked.length===1){const l=picked[0];openMail(l.broker_email,inqSubject(l),inqBody(l));
+  l._outcome=8;save();render();return toast("Email draft opened — hit Send ✓")}
+ EQ=picked.map(l=>l.match_id);EQi=0;emailQueueStep()}
+function emailQueueStep(){
+ if(EQi>=EQ.length){closeModal();save();render();return toast(EQ.length+" emails drafted — hit Send on each, then come back ✓")}
+ const l=S.loads[EQ[EQi]];
+ document.getElementById("modal-inner").innerHTML=`
+  <h3>📧 EMAIL QUEUE — ${EQi+1} OF ${EQ.length}</h3>
+  <div class="lane-big">${esc(l.origin)} → ${esc(l.dest)}${l.load_id?" · Ref# "+esc(l.load_id):""}</div>
+  <p style="font-size:13px;line-height:1.7">Posted <b>${money(l.rate)}</b> → asking <b style="color:var(--orange)">${money(askRate(l))}</b>
+   (${(S.settings?.askpct==null?5:S.settings.askpct)}% over, set in Settings)<br>
+   One compose tab opens per click — browsers block bulk popups, so we fire them one at a time.
+   Hit Send over there, come back, hit the next.</p>
+  <div class="btnrow">
+   <button class="btn btn-gold" onclick="emailQueueOpen()">📨 OPEN THIS EMAIL</button>
+   <button class="btn btn-grey" onclick="EQi++;emailQueueStep()">SKIP</button>
+   <button class="btn btn-grey" onclick="closeModal();save();render()">STOP QUEUE</button>
+  </div>`;
+ document.getElementById("modal").classList.add("show")}
+function emailQueueOpen(){const l=S.loads[EQ[EQi]];
+ openMail(l.broker_email,inqSubject(l),inqBody(l));
+ l._outcome=8;EQi++;save();render();emailQueueStep()}
+
+// ---------- SEND TO JECHT ----------
+function sendToJecht(){
+ const did=S.settings?.id||"0";
+ const loads=Object.values(S.loads);
+ if(!loads.length)return toast("Nothing to send");
+ let blocks="";
+ loads.forEach(l=>{
+  if(l._released&&!l._outcome)return; // truck booked — Jecht releases these itself, no claim sent
+  const code=l._outcome||7; // untouched auto-marks NOT WORKED
+  const f={match_id:l.match_id,outcome_code:code,dispatcher_id:did};
+  if(code==1||code==2)f.final_rate=l._final_rate||l.rate;
+  if(l._secs!=null)f.seconds_open=l._secs;
+  blocks+=buildBlock("OUTCOME",f)+"\n"});
+ wireOut("JECHT OUTCOMES "+new Date().toISOString().slice(0,16),blocks,
+  ()=>{S.loads={};save();render();toast("Session sent to Jecht — board cleared for the next cycle ✓")})}
+function sendNewCompany(){
+ const g=i=>document.getElementById(i).value.trim();
+ if(!g("c_name")||!g("c_mc")||!g("c_oname")||!g("c_ophone"))return toast("Fill the * fields");
+ const b=buildBlock("NEWCOMPANY",{name:g("c_name"),mc_number:g("c_mc"),dot_number:g("c_dot"),ein:g("c_ein"),
+  owner_name:g("c_oname"),owner_phone:g("c_ophone"),owner_email:g("c_oemail"),factoring_company:g("c_factor")});
+ wireOut("JECHT NEW COMPANY: "+g("c_name"),b,()=>toast("New company sent to Jecht ✓"))}
+function sendNewTruck(){
+ const g=i=>document.getElementById(i).value.trim();
+ if(!g("t_co")||!g("t_num")||!g("t_dname")||!g("t_dphone"))return toast("Fill the * fields");
+ const b=buildBlock("NEWTRUCK",{company_id:g("t_co"),truck_number:g("t_num"),equipment_code:g("t_eq"),
+  plate:g("t_plate"),trailer_number:g("t_tnum"),trailer_plate:g("t_tplate"),max_weight:g("t_wt"),
+  hazmat:g("t_haz"),min_rpm:g("t_rpm"),driver_name:g("t_dname"),driver_phone:g("t_dphone"),
+  role_code:g("t_role"),dest_pref:g("t_dest")});
+ wireOut("JECHT NEW TRUCK: "+g("t_num"),b,()=>toast("New truck sent to Jecht ✓"))}
+function wireOut(subject,blocks,after){
+ navigator.clipboard&&navigator.clipboard.writeText(blocks).catch(()=>{});
+ openMail(JECHT_EMAIL,subject,blocks);
+ after&&after()}
+
+// ---------- REVENUE ----------
+function renderMoney(){
+ const cos=Object.values(S.pay.cos);
+ const wrap=document.getElementById("moneywrap");
+ if(!cos.length){wrap.innerHTML='<div class="empty">Revenue arrives inside the bundle — paste one on the Loads tab and the money shows up here. 💰</div>';return}
+ let html="";
+ cos.forEach(c=>{
+  const trucks=S.pay.trucks.filter(t=>t.company_id===c.company_id);
+  html+=`<div class="money-co"><div class="top">
+    <span class="name">🏢 ${esc(c.company_name)}</span><span class="mc">MC# ${esc(c.mc_number)}</span>
+    ${+c.paid_flag?"":'<span class="paid-bad">UNPAID — TRUCKS FROZEN</span>'}
+    <span class="gross">${money(c.gross)}</span></div>
+   <table class="mt"><tr><th>TRUCK</th><th>LOADS</th><th>GROSS</th><th>AVG $/MI</th></tr>
+   ${trucks.map(t=>`<tr><td>🚛 ${esc(t.truck_number)}</td><td>${t.loads_delivered}</td><td>${money(t.gross)}</td><td>$${(+t.avg_rpm).toFixed(2)}</td></tr>`).join("")}</table>
+   <div class="owed">
+    <span>5% due: <b>${money(c.pct_due)}</b></span>
+    <span class="out-green">Collected: ${money(c.collected)}</span>
+    <span class="${+c.outstanding>0?"out-red":"out-green"}">Outstanding: ${money(c.outstanding)}</span>
+    <button class="btn" style="margin-left:auto" onclick="invoicePayroll('${esc(c.company_id)}')">🧾 INVOICE</button>
+    <button class="btn btn-gold" ${c.owner_email?"":"disabled title='no email on file'"}
+     onclick="emailPayroll('${esc(c.company_id)}')">📤 EMAIL PAYROLL</button>
+   </div></div>`});
+ wrap.innerHTML=html}
+function emailPayroll(cid){
+ const c=S.pay.cos[cid];if(!c||!c.owner_email)return;
+ const trucks=S.pay.trucks.filter(t=>t.company_id===c.company_id);
+ const body=
+`${c.owner_name},
+
+Settlement statement for ${c.company_name} (MC# ${c.mc_number}) as of ${new Date().toLocaleDateString()}:
+
+${trucks.map(t=>`  Truck ${t.truck_number}: ${t.loads_delivered} loads delivered — ${money(t.gross)} gross (avg $${(+t.avg_rpm).toFixed(2)}/mi)`).join("\n")}
+
+  TOTAL GROSS:        ${money(c.gross)}
+  DISPATCH FEE (5%):  ${money(c.pct_due)}
+  PAID TO DATE:       ${money(c.collected)}
+  BALANCE DUE:        ${money(c.outstanding)}
+
+${+c.outstanding>0?"Please remit the balance due to keep dispatch service active.":"Account current — thank you!"}
+
+The full invoice is attached to this email as a PDF.
+
+${S.settings?.name||"Dispatch"}`;
+ const inv=buildInvoice(cid);if(!inv)return;
+ openMail(c.owner_email,"Invoice "+inv.invno+" — "+c.company_name,body);
+ printInvoice(inv);
+ toast("Print dialog: choose Save as PDF 🖨 — then drag the PDF into the Gmail draft and send 📎")}
+
+function buildInvoice(cid){
+ const c=S.pay.cos[cid];if(!c)return null;
+ const trucks=S.pay.trucks.filter(t=>t.company_id===c.company_id);
+ const today=new Date();
+ const dstr=today.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+ const invno="JD-"+today.getFullYear()+String(today.getMonth()+1).padStart(2,"0")+String(today.getDate()).padStart(2,"0")+"-"+String(c.mc_number||cid).slice(-4);
+ const due=+c.outstanding>0;
+ const m=x=>"$"+(+x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+ const rows=trucks.map(t=>`<tr>
+   <td>Truck ${esc(t.truck_number)}</td>
+   <td style="text-align:center">${t.loads_delivered}</td>
+   <td style="text-align:right">$${(+t.avg_rpm).toFixed(2)}/mi</td>
+   <td style="text-align:right">${m(t.gross)}</td>
+   <td style="text-align:right">${m(t.gross*0.05)}</td></tr>`).join("");
+ const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>JECHT_INV_${invno}</title><style>
+  @page{margin:0.6in}
+  body{font-family:Helvetica,Arial,sans-serif;color:#1a2230;margin:0;padding:48px 56px;max-width:760px}
+  .bar{height:6px;background:linear-gradient(90deg,#ff7a18,#ffb347);margin:-48px -56px 36px}
+  .hd{display:flex;justify-content:space-between;align-items:flex-start}
+  .wordmark{font-size:26px;font-weight:800;letter-spacing:7px;color:#1a2230}
+  .wordmark span{color:#ff7a18}
+  .tag{font-size:10px;letter-spacing:3px;color:#8a93a3;margin-top:4px}
+  .invmeta{text-align:right;font-size:12px;color:#555;line-height:1.7}
+  .invmeta .no{font-size:16px;font-weight:700;color:#1a2230;letter-spacing:1px}
+  h2{font-size:11px;letter-spacing:3px;color:#8a93a3;margin:34px 0 6px;font-weight:600}
+  .billto{font-size:14px;line-height:1.6}
+  table{width:100%;border-collapse:collapse;margin-top:28px;font-size:13px}
+  th{text-align:left;font-size:10px;letter-spacing:2px;color:#8a93a3;border-bottom:2px solid #1a2230;padding:8px 10px}
+  th:nth-child(2){text-align:center}th:nth-child(n+3){text-align:right}
+  td{padding:11px 10px;border-bottom:1px solid #e6e9ee}
+  .totals{margin-top:22px;margin-left:auto;width:300px;font-size:13px}
+  .totals div{display:flex;justify-content:space-between;padding:7px 10px}
+  .totals .grand{border-top:2px solid #1a2230;font-size:17px;font-weight:800;padding-top:12px}
+  .grand b{color:${due?"#c0392b":"#1e8e3e"}}
+  .stamp{display:inline-block;margin-top:34px;padding:10px 26px;border:3px solid ${due?"#c0392b":"#1e8e3e"};color:${due?"#c0392b":"#1e8e3e"};font-weight:800;font-size:15px;letter-spacing:4px;transform:rotate(-3deg)}
+  .note{margin-top:38px;font-size:12px;color:#555;line-height:1.7}
+  .ft{margin-top:46px;padding-top:14px;border-top:1px solid #e6e9ee;font-size:10px;letter-spacing:2px;color:#aab2bf;display:flex;justify-content:space-between}
+  @media print{.noprint{display:none}}
+  .noprint{position:fixed;top:12px;right:12px;padding:10px 18px;background:#ff7a18;color:#fff;border:none;font-weight:700;letter-spacing:2px;cursor:pointer;border-radius:4px}
+ </style></head><body>
+ <div class="bar"></div>
+ <button class="noprint" onclick="window.print()">🖨 PRINT / SAVE PDF</button>
+ <div class="hd">
+  <div><div class="wordmark">J E C H T <span>//</span></div><div class="tag">DISPATCH SERVICES</div></div>
+  <div class="invmeta"><div class="no">INVOICE ${invno}</div>Date: ${dstr}<br>Terms: Due on receipt</div>
+ </div>
+ <h2>BILL TO</h2>
+ <div class="billto"><b>${esc(c.company_name)}</b><br>Attn: ${esc(c.owner_name||"Owner")}<br>MC# ${esc(c.mc_number||"—")}</div>
+ <h2 style="margin-top:30px">DISPATCH FEE — 5% OF RATECON-VERIFIED GROSS</h2>
+ <table><tr><th>UNIT</th><th>LOADS DELIVERED</th><th>AVG RATE</th><th>GROSS</th><th>FEE (5%)</th></tr>${rows}</table>
+ <div class="totals">
+  <div><span>Total gross</span><span>${m(c.gross)}</span></div>
+  <div><span>Dispatch fee (5%)</span><span>${m(c.pct_due)}</span></div>
+  <div><span>Paid to date</span><span>−${m(c.collected)}</span></div>
+  <div class="grand"><span>BALANCE DUE</span><b>${m(c.outstanding)}</b></div>
+ </div>
+ <br><span class="stamp">${due?"BALANCE DUE":"PAID IN FULL"}</span>
+ <div class="note">${due?"Please remit the balance due to keep dispatch service active. Reply to this email with any questions.":"Account current — thank you for your business!"}</div>
+ <div class="ft"><span>${esc(S.settings?.name||"DISPATCH")} · JECHT DISPATCH</span><span>${esc(JECHT_EMAIL)}</span></div>
+ </body></html>`;
+ return{html,invno}}
+
+function invoicePayroll(cid){
+ const inv=buildInvoice(cid);if(!inv)return;
+ const w=window.open("","_blank");
+ if(!w){toast("Popup blocked — allow popups to open the invoice");return}
+ w.document.write(inv.html);w.document.close();
+ toast("Invoice "+inv.invno+" opened — print or save as PDF 🧾")}
+
+function printInvoice(inv){
+ if(!inv)return null;
+ const old=document.getElementById("invframe");if(old)old.remove();
+ const f=document.createElement("iframe");
+ f.id="invframe";
+ f.style.cssText="position:fixed;width:0;height:0;border:0;visibility:hidden";
+ f.srcdoc=inv.html;
+ f.onload=()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){
+  const w=window.open("","_blank");
+  if(w){w.document.write(inv.html);w.document.close()}}};
+ document.body.appendChild(f);
+ return inv.invno}
+
+// ---------- SETTINGS ----------
+function saveSettings(){S.settings={id:document.getElementById("s_id").value.trim(),
+ name:document.getElementById("s_name").value.trim(),email:document.getElementById("s_email").value.trim(),
+ mailmode:document.getElementById("s_mailmode").value,
+ askpct:+document.getElementById("s_askpct").value};
+ save();toast("Saved ✓")}
+function fillCompanyDropdown(){
+ const sel=document.getElementById("t_co");sel.innerHTML="";
+ const ids=Object.keys(S.companies);
+ if(!ids.length){const co=Object.values(S.pay.cos);co.forEach(c=>S.companies[c.company_id]={name:c.company_name,mc:c.mc_number||""})}
+ Object.entries(S.companies).forEach(([id,c])=>{const o=document.createElement("option");o.value=id;o.textContent=(c&&c.name)||c;sel.appendChild(o)});
+ if(!sel.options.length){const o=document.createElement("option");o.value="1";o.textContent="Company #1";sel.appendChild(o)}}
+// init
+(function(){
+ if(localStorage.getItem("jecht_killed")){killPanel();return}
+ const eq=document.getElementById("t_eq");
+ Object.entries(EQUIPMENT).forEach(([c,n])=>{const o=document.createElement("option");o.value=c;o.textContent=n;eq.appendChild(o)});
+ if(S.settings){document.getElementById("s_id").value=S.settings.id||"";
+  document.getElementById("s_name").value=S.settings.name||"";
+  document.getElementById("s_email").value=S.settings.email||"";
+  document.getElementById("s_mailmode").value=S.settings.mailmode||"gmail";
+  const ap=(S.settings.askpct==null?5:+S.settings.askpct);
+  document.getElementById("s_askpct").value=ap;
+  document.getElementById("s_askpct_v").textContent=ap+"%"}
+ fillCompanyDropdown();render();renderMoney();
+ document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
+})();
+</script>
+<script>
+(function(){const c=document.getElementById("hdrclock");
+function t(){const d=new Date();c.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,"0")).join(":");}
+t();setInterval(t,1000);})();
+</script>
+</body>
+</html>

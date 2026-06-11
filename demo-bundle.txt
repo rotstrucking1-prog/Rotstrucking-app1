@@ -1,0 +1,778 @@
+Subject: JECHT DISPATCH BUNDLE — 8 trucks, 34 loads (MOCK / MEGA stress test)
+From: dispatchjecht@gmail.com
+
+Jecht here. Big board tonight: 8 trucks across 3 companies, 34 fresh matches —
+16 email-grade, 18 call-only, grades AAA down to C. Money rollups for all
+three companies plus per-truck lines. Trust dipped to 78 — watch the bar. — MOCK DATA
+
+===JECHT|COMPANYLIST|1.2|aeaa0b0e8a82===
+company_id=1
+name=Rots Trucking LLC
+mc_number=1422887
+===END|a401319eca5b===
+
+===JECHT|COMPANYLIST|1.2|9b9e5483aa68===
+company_id=2
+name=Delta Ridge Carriers
+mc_number=1098455
+===END|ecdddd7d9e3a===
+
+===JECHT|COMPANYLIST|1.2|870ae6c21ef7===
+company_id=3
+name=Bluff City Haulers Inc
+mc_number=1305672
+===END|03ca4045fa5d===
+
+===JECHT|CALLSHEET|1.2|c05b8e2164e9===
+match_id=M-0201
+truck_id=1
+truck_number=101
+equipment_code=1
+gps_city=McKenzie
+gps_state=TN
+load_id=9200
+origin=Memphis, TN
+dest=Dallas, TX
+miles=452.0
+rate=1618.0
+rpm=3.58
+grade_code=9
+broker_name=Fifth Wheel Freight
+broker_phone=(555) 014-7788
+floor_rpm=2.0
+===END|8a67924e56c6===
+
+===JECHT|CALLSHEET|1.2|14ea08ed6fa6===
+match_id=M-0202
+truck_id=2
+truck_number=102
+equipment_code=2
+gps_city=Jackson
+gps_state=TN
+load_id=9201
+origin=Jackson, TN
+dest=Atlanta, GA
+miles=394.0
+rate=1123.0
+rpm=2.85
+grade_code=7
+broker_name=Wildcat Logistics
+broker_phone=(555) 021-3409
+floor_rpm=2.0
+===END|491baedee321===
+
+===JECHT|CALLSHEET|1.2|0f8af83e35a1===
+match_id=M-0203
+truck_id=3
+truck_number=201
+equipment_code=1
+gps_city=Tupelo
+gps_state=MS
+load_id=9202
+origin=Tupelo, MS
+dest=Birmingham, AL
+miles=128.0
+rate=562.0
+rpm=4.39
+grade_code=5
+broker_name=Bluegrass Brokerage
+broker_phone=(555) 033-9921
+floor_rpm=2.0
+===END|58a385fff228===
+
+===JECHT|CALLSHEET|1.2|4202bbba55a8===
+match_id=M-0204
+truck_id=4
+truck_number=202
+equipment_code=3
+gps_city=Memphis
+gps_state=TN
+load_id=9203
+origin=Little Rock, AR
+dest=Oklahoma City, OK
+miles=340.0
+rate=1530.0
+rpm=4.5
+grade_code=8
+broker_name=Ironline Freight Co
+broker_phone=(555) 047-1100
+floor_rpm=2.0
+===END|f3b413ebf2bb===
+
+===JECHT|DISPATCH|1.2|129468675dda===
+match_id=M-0205
+truck_id=5
+truck_number=203
+equipment_code=1
+gps_city=Little Rock
+gps_state=AR
+load_id=9204
+origin=Nashville, TN
+dest=Louisville, KY
+miles=176.0
+rate=424.0
+rpm=2.41
+grade_code=2
+broker_name=Magnolia Cargo Group
+broker_email=carrier@magnoliacargo-demo.test
+floor_rpm=2.0
+===END|be47a6534b38===
+
+===JECHT|CALLSHEET|1.2|bfeb802a6416===
+match_id=M-0206
+truck_id=6
+truck_number=301
+equipment_code=2
+gps_city=Southaven
+gps_state=MS
+load_id=9205
+origin=Memphis, TN
+dest=St. Louis, MO
+miles=284.0
+rate=1062.0
+rpm=3.74
+grade_code=6
+broker_name=River Bend Logistics
+broker_phone=(555) 068-2244
+floor_rpm=2.0
+===END|b841b8bb9885===
+
+===JECHT|DISPATCH|1.2|9a81a8d0a8eb===
+match_id=M-0207
+truck_id=7
+truck_number=302
+equipment_code=1
+gps_city=Dyersburg
+gps_state=TN
+load_id=9206
+origin=Dyersburg, TN
+dest=Chicago, IL
+miles=468.0
+rate=973.0
+rpm=2.08
+grade_code=2
+broker_name=Patriot Star Freight
+broker_email=loads@patriotstar-demo.test
+floor_rpm=2.0
+===END|0628e90af55b===
+
+===JECHT|DISPATCH|1.2|189a4f17f787===
+match_id=M-0208
+truck_id=8
+truck_number=303
+equipment_code=6
+gps_city=Paducah
+gps_state=KY
+load_id=9207
+origin=Southaven, MS
+dest=Houston, TX
+miles=560.0
+rate=1876.0
+rpm=3.35
+grade_code=1
+broker_name=Crossdock Carriers LLC
+broker_email=dispatch@crossdock-demo.test
+floor_rpm=2.0
+===END|2541d0d8c1f8===
+
+===JECHT|CALLSHEET|1.2|07c0f45b7a3c===
+match_id=M-0209
+truck_id=1
+truck_number=101
+equipment_code=1
+gps_city=McKenzie
+gps_state=TN
+load_id=9208
+origin=Paducah, KY
+dest=Indianapolis, IN
+miles=290.0
+rate=1412.0
+rpm=4.87
+grade_code=1
+broker_name=Summit Peak Brokerage
+broker_phone=(555) 093-7720
+floor_rpm=2.0
+===END|811e661b4f9e===
+
+===JECHT|CALLSHEET|1.2|46daaf6f3c33===
+match_id=M-0210
+truck_id=2
+truck_number=102
+equipment_code=2
+gps_city=Jackson
+gps_state=TN
+load_id=9209
+origin=McKenzie, TN
+dest=Knoxville, TN
+miles=310.0
+rate=828.0
+rpm=2.67
+grade_code=7
+broker_name=Delta Plains Freight
+broker_phone=(555) 099-1166
+floor_rpm=2.0
+===END|57883f0f70ff===
+
+===JECHT|DISPATCH|1.2|fb81e70e645d===
+match_id=M-0211
+truck_id=3
+truck_number=201
+equipment_code=1
+gps_city=Tupelo
+gps_state=MS
+load_id=9210
+origin=Jackson, TN
+dest=Charlotte, NC
+miles=520.0
+rate=2246.0
+rpm=4.32
+grade_code=4
+broker_name=Fifth Wheel Freight
+broker_email=ops@fifthwheelfreight-demo.test
+floor_rpm=2.0
+===END|00effb815927===
+
+===JECHT|CALLSHEET|1.2|c337bb61eee1===
+match_id=M-0212
+truck_id=4
+truck_number=202
+equipment_code=3
+gps_city=Memphis
+gps_state=TN
+load_id=9211
+origin=Memphis, TN
+dest=New Orleans, LA
+miles=394.0
+rate=1718.0
+rpm=4.36
+grade_code=3
+broker_name=Wildcat Logistics
+broker_phone=(555) 021-3409
+floor_rpm=2.0
+===END|dce3ab355296===
+
+===JECHT|CALLSHEET|1.2|63aea8de140e===
+match_id=M-0213
+truck_id=5
+truck_number=203
+equipment_code=1
+gps_city=Little Rock
+gps_state=AR
+load_id=9212
+origin=Tupelo, MS
+dest=Jacksonville, FL
+miles=515.0
+rate=1875.0
+rpm=3.64
+grade_code=9
+broker_name=Bluegrass Brokerage
+broker_phone=(555) 033-9921
+floor_rpm=2.0
+===END|13d3cf392ebb===
+
+===JECHT|DISPATCH|1.2|54dfe1fa5466===
+match_id=M-0214
+truck_id=6
+truck_number=301
+equipment_code=2
+gps_city=Southaven
+gps_state=MS
+load_id=9213
+origin=Little Rock, AR
+dest=Kansas City, MO
+miles=385.0
+rate=1290.0
+rpm=3.35
+grade_code=3
+broker_name=Ironline Freight Co
+broker_email=book@ironlinefrt-demo.test
+floor_rpm=2.0
+===END|47986f3b653d===
+
+===JECHT|CALLSHEET|1.2|cb9c94b3c27e===
+match_id=M-0215
+truck_id=7
+truck_number=302
+equipment_code=1
+gps_city=Dyersburg
+gps_state=TN
+load_id=9214
+origin=Nashville, TN
+dest=Cincinnati, OH
+miles=270.0
+rate=961.0
+rpm=3.56
+grade_code=5
+broker_name=Magnolia Cargo Group
+broker_phone=(555) 052-6630
+floor_rpm=2.0
+===END|ccacbd4ecb02===
+
+===JECHT|DISPATCH|1.2|4d9431daccc2===
+match_id=M-0216
+truck_id=8
+truck_number=303
+equipment_code=6
+gps_city=Paducah
+gps_state=KY
+load_id=9215
+origin=Memphis, TN
+dest=Birmingham, AL
+miles=237.0
+rate=581.0
+rpm=2.45
+grade_code=5
+broker_name=River Bend Logistics
+broker_email=ops@riverbendlogi-demo.test
+floor_rpm=2.0
+===END|d230258288c8===
+
+===JECHT|DISPATCH|1.2|dc7949cd4647===
+match_id=M-0217
+truck_id=1
+truck_number=101
+equipment_code=1
+gps_city=McKenzie
+gps_state=TN
+load_id=9216
+origin=Dyersburg, TN
+dest=Columbus, OH
+miles=430.0
+rate=1380.0
+rpm=3.21
+grade_code=2
+broker_name=Patriot Star Freight
+broker_email=loads@patriotstar-demo.test
+floor_rpm=2.0
+===END|93ff2c465af6===
+
+===JECHT|CALLSHEET|1.2|02b212a5508a===
+match_id=M-0218
+truck_id=2
+truck_number=102
+equipment_code=2
+gps_city=Jackson
+gps_state=TN
+load_id=9217
+origin=Southaven, MS
+dest=San Antonio, TX
+miles=660.0
+rate=2515.0
+rpm=3.81
+grade_code=1
+broker_name=Crossdock Carriers LLC
+broker_phone=(555) 089-4412
+floor_rpm=2.0
+===END|ca7f87d18f3f===
+
+===JECHT|CALLSHEET|1.2|412e7766bc97===
+match_id=M-0219
+truck_id=3
+truck_number=201
+equipment_code=1
+gps_city=Tupelo
+gps_state=MS
+load_id=9218
+origin=Paducah, KY
+dest=Detroit, MI
+miles=470.0
+rate=2007.0
+rpm=4.27
+grade_code=9
+broker_name=Summit Peak Brokerage
+broker_phone=(555) 093-7720
+floor_rpm=2.0
+===END|863b6cf22f41===
+
+===JECHT|DISPATCH|1.2|3a785f9841e9===
+match_id=M-0220
+truck_id=4
+truck_number=202
+equipment_code=3
+gps_city=Memphis
+gps_state=TN
+load_id=9219
+origin=McKenzie, TN
+dest=Tampa, FL
+miles=690.0
+rate=1697.0
+rpm=2.46
+grade_code=4
+broker_name=Delta Plains Freight
+broker_email=carrier@deltaplains-demo.test
+floor_rpm=2.0
+===END|d5f39e8390f8===
+
+===JECHT|CALLSHEET|1.2|6882f8cd572e===
+match_id=M-0221
+truck_id=5
+truck_number=203
+equipment_code=1
+gps_city=Little Rock
+gps_state=AR
+load_id=9220
+origin=Memphis, TN
+dest=Dallas, TX
+miles=452.0
+rate=1736.0
+rpm=3.84
+grade_code=5
+broker_name=Fifth Wheel Freight
+broker_phone=(555) 014-7788
+floor_rpm=2.0
+===END|2981d52eb300===
+
+===JECHT|DISPATCH|1.2|047ff039af78===
+match_id=M-0222
+truck_id=6
+truck_number=301
+equipment_code=2
+gps_city=Southaven
+gps_state=MS
+load_id=9221
+origin=Jackson, TN
+dest=Atlanta, GA
+miles=394.0
+rate=1044.0
+rpm=2.65
+grade_code=5
+broker_name=Wildcat Logistics
+broker_email=dispatch@wildcatlogi-demo.test
+floor_rpm=2.0
+===END|06132eb67310===
+
+===JECHT|DISPATCH|1.2|e8a30bdb4a61===
+match_id=M-0223
+truck_id=7
+truck_number=302
+equipment_code=1
+gps_city=Dyersburg
+gps_state=TN
+load_id=9222
+origin=Tupelo, MS
+dest=Birmingham, AL
+miles=128.0
+rate=351.0
+rpm=2.74
+grade_code=3
+broker_name=Bluegrass Brokerage
+broker_email=loads@bluegrassbrk-demo.test
+floor_rpm=2.0
+===END|6d9ee9cf1fa1===
+
+===JECHT|CALLSHEET|1.2|7d3a72b39907===
+match_id=M-0224
+truck_id=8
+truck_number=303
+equipment_code=6
+gps_city=Paducah
+gps_state=KY
+load_id=9223
+origin=Little Rock, AR
+dest=Oklahoma City, OK
+miles=340.0
+rate=908.0
+rpm=2.67
+grade_code=5
+broker_name=Ironline Freight Co
+broker_phone=(555) 047-1100
+floor_rpm=2.0
+===END|d2acedafebb0===
+
+===JECHT|DISPATCH|1.2|22f050ecc4dc===
+match_id=M-0225
+truck_id=1
+truck_number=101
+equipment_code=1
+gps_city=McKenzie
+gps_state=TN
+load_id=9224
+origin=Nashville, TN
+dest=Louisville, KY
+miles=176.0
+rate=447.0
+rpm=2.54
+grade_code=1
+broker_name=Magnolia Cargo Group
+broker_email=carrier@magnoliacargo-demo.test
+floor_rpm=2.0
+===END|3f1d87df2125===
+
+===JECHT|DISPATCH|1.2|7029f3dec88a===
+match_id=M-0226
+truck_id=2
+truck_number=102
+equipment_code=2
+gps_city=Jackson
+gps_state=TN
+load_id=9225
+origin=Memphis, TN
+dest=St. Louis, MO
+miles=284.0
+rate=1162.0
+rpm=4.09
+grade_code=1
+broker_name=River Bend Logistics
+broker_email=ops@riverbendlogi-demo.test
+floor_rpm=2.0
+===END|c9343ec7cf79===
+
+===JECHT|CALLSHEET|1.2|4272994edcba===
+match_id=M-0227
+truck_id=3
+truck_number=201
+equipment_code=1
+gps_city=Tupelo
+gps_state=MS
+load_id=9226
+origin=Dyersburg, TN
+dest=Chicago, IL
+miles=468.0
+rate=2157.0
+rpm=4.61
+grade_code=2
+broker_name=Patriot Star Freight
+broker_phone=(555) 071-8855
+floor_rpm=2.0
+===END|c92eab0b9bf2===
+
+===JECHT|DISPATCH|1.2|49fc414fbc96===
+match_id=M-0228
+truck_id=4
+truck_number=202
+equipment_code=3
+gps_city=Memphis
+gps_state=TN
+load_id=9227
+origin=Southaven, MS
+dest=Houston, TX
+miles=560.0
+rate=1271.0
+rpm=2.27
+grade_code=2
+broker_name=Crossdock Carriers LLC
+broker_email=dispatch@crossdock-demo.test
+floor_rpm=2.0
+===END|889cbc4fdae7===
+
+===JECHT|DISPATCH|1.2|df03e860120e===
+match_id=M-0229
+truck_id=5
+truck_number=203
+equipment_code=1
+gps_city=Little Rock
+gps_state=AR
+load_id=9228
+origin=Paducah, KY
+dest=Indianapolis, IN
+miles=290.0
+rate=626.0
+rpm=2.16
+grade_code=5
+broker_name=Summit Peak Brokerage
+broker_email=book@summitpeak-demo.test
+floor_rpm=2.0
+===END|d208551eea63===
+
+===JECHT|CALLSHEET|1.2|7c1956a71827===
+match_id=M-0230
+truck_id=6
+truck_number=301
+equipment_code=2
+gps_city=Southaven
+gps_state=MS
+load_id=9229
+origin=McKenzie, TN
+dest=Knoxville, TN
+miles=310.0
+rate=1355.0
+rpm=4.37
+grade_code=8
+broker_name=Delta Plains Freight
+broker_phone=(555) 099-1166
+floor_rpm=2.0
+===END|f00e88dd5b82===
+
+===JECHT|DISPATCH|1.2|ad21aa38e8ef===
+match_id=M-0231
+truck_id=7
+truck_number=302
+equipment_code=1
+gps_city=Dyersburg
+gps_state=TN
+load_id=9230
+origin=Jackson, TN
+dest=Charlotte, NC
+miles=520.0
+rate=1664.0
+rpm=3.2
+grade_code=3
+broker_name=Fifth Wheel Freight
+broker_email=ops@fifthwheelfreight-demo.test
+floor_rpm=2.0
+===END|5dacf6fc1032===
+
+===JECHT|DISPATCH|1.2|2c7a57075327===
+match_id=M-0232
+truck_id=8
+truck_number=303
+equipment_code=6
+gps_city=Paducah
+gps_state=KY
+load_id=9231
+origin=Memphis, TN
+dest=New Orleans, LA
+miles=394.0
+rate=1040.0
+rpm=2.64
+grade_code=3
+broker_name=Wildcat Logistics
+broker_email=dispatch@wildcatlogi-demo.test
+floor_rpm=2.0
+===END|7ef0b1bdb812===
+
+===JECHT|CALLSHEET|1.2|b9df23873993===
+match_id=M-0233
+truck_id=1
+truck_number=101
+equipment_code=1
+gps_city=McKenzie
+gps_state=TN
+load_id=9232
+origin=Tupelo, MS
+dest=Jacksonville, FL
+miles=515.0
+rate=1700.0
+rpm=3.3
+grade_code=2
+broker_name=Bluegrass Brokerage
+broker_phone=(555) 033-9921
+floor_rpm=2.0
+===END|f6901506c3b2===
+
+===JECHT|CALLSHEET|1.2|e9018ae5c31d===
+match_id=M-0234
+truck_id=2
+truck_number=102
+equipment_code=2
+gps_city=Jackson
+gps_state=TN
+load_id=9233
+origin=Little Rock, AR
+dest=Kansas City, MO
+miles=385.0
+rate=1240.0
+rpm=3.22
+grade_code=7
+broker_name=Ironline Freight Co
+broker_phone=(555) 047-1100
+floor_rpm=2.0
+===END|152394ddf90c===
+
+===JECHT|PAYCO|1.2|d4dddceea4bd===
+company_id=1
+company_name=Rots Trucking LLC
+mc_number=1422887
+owner_name=Brad H
+owner_email=rotstrucking1@gmail.com
+gross=24310.0
+pct_due=1215.5
+collected=900.0
+outstanding=315.5
+paid_flag=0
+===END|13915aacd13e===
+
+===JECHT|PAYCO|1.2|042b8edea105===
+company_id=2
+company_name=Delta Ridge Carriers
+mc_number=1098455
+owner_name=Marlon Reese
+owner_email=mreese@deltaridge-demo.test
+gross=31780.0
+pct_due=1589.0
+collected=1589.0
+outstanding=0.0
+paid_flag=1
+===END|3bb34b89c36e===
+
+===JECHT|PAYCO|1.2|175372fa86c6===
+company_id=3
+company_name=Bluff City Haulers Inc
+mc_number=1305672
+owner_name=Tina Calloway
+owner_email=tina@bluffcity-demo.test
+gross=15940.0
+pct_due=797.0
+collected=400.0
+outstanding=397.0
+paid_flag=0
+===END|5afa434317e0===
+
+===JECHT|PAYTRUCK|1.2|0c05c16c0757===
+company_id=1
+truck_number=101
+loads_delivered=3
+gross=4358.0
+avg_rpm=2.8
+===END|a3992d3f67f3===
+
+===JECHT|PAYTRUCK|1.2|0e46aeb4ccf1===
+company_id=1
+truck_number=102
+loads_delivered=8
+gross=19952.0
+avg_rpm=2.43
+===END|7e39b4dc8284===
+
+===JECHT|PAYTRUCK|1.2|d551bbc785c9===
+company_id=2
+truck_number=201
+loads_delivered=7
+gross=13633.0
+avg_rpm=2.26
+===END|41cd71fca48c===
+
+===JECHT|PAYTRUCK|1.2|eec533b52b03===
+company_id=2
+truck_number=202
+loads_delivered=5
+gross=5865.0
+avg_rpm=2.88
+===END|f2f274c5442b===
+
+===JECHT|PAYTRUCK|1.2|191df5892a6b===
+company_id=2
+truck_number=203
+loads_delivered=8
+gross=12282.0
+avg_rpm=3.0
+===END|806db2374152===
+
+===JECHT|PAYTRUCK|1.2|f7762df41c7b===
+company_id=3
+truck_number=301
+loads_delivered=6
+gross=5760.0
+avg_rpm=3.06
+===END|c4585a765329===
+
+===JECHT|PAYTRUCK|1.2|7f75be5e2b71===
+company_id=3
+truck_number=302
+loads_delivered=6
+gross=4958.0
+avg_rpm=2.12
+===END|6eb725b3b094===
+
+===JECHT|PAYTRUCK|1.2|f6cbf11d932a===
+company_id=3
+truck_number=303
+loads_delivered=5
+gross=5222.0
+avg_rpm=2.98
+===END|b4dc717ee5eb===
+
+===JECHT|TRUST|1.2|1dc9af8f708b===
+dispatcher_id=1
+trust=78
+===END|df22b67b830d===

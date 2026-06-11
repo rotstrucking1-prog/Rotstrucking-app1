@@ -100,6 +100,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
 .loadrow:hover{border-color:var(--cyan);background:rgba(0,212,255,0.05);box-shadow:inset 0 0 10px var(--cyan-dim)}
 .loadrow.done{opacity:.4}
 .loadrow .rpm{color:var(--green);font-weight:bold;min-width:70px;text-shadow:0 0 7px rgba(0,255,136,.3)}
+.loadrow .dh{color:var(--amber);font-size:11px;border:1px solid var(--amber);border-radius:3px;padding:0 4px;opacity:.85}
 .loadrow .lane{flex:1;color:var(--bright)}
 .loadrow .lane .larrow{color:var(--cyan)}
 .grade{font-size:9px;font-weight:bold;padding:2px 7px;min-width:34px;text-align:center;letter-spacing:1px}
@@ -401,6 +402,7 @@ function render(){
      <span class="tag">${l._contact==2?"📞":"📧"}</span>
      <span class="grade ${gcls(l.grade_code)}">${GRADES[l.grade_code]||"?"}</span>
      <span class="rpm">$${(+l.rpm).toFixed(2)}/mi</span>
+     ${l.deadhead_mi&&l.deadhead_mi!="?"&&+l.deadhead_mi>0?`<span class="dh">DH ${esc(l.deadhead_mi)}mi</span>`:""}
      <span class="lane">${esc(l.origin)} → ${esc(l.dest)}</span>
      <span class="outcome">${OUTCOMES[l._outcome]||(l._released?"🔒 RELEASED — truck booked":"")}${(l._outcome==1||l._outcome==2)?' <span style="color:var(--amber)">⏳ awaiting ratecon</span>':""}</span></div>`});
    html+=`</div></div>`}
@@ -419,8 +421,10 @@ function openLoad(id){const l=S.loads[id];if(!l)return;
    ${l.load_id?`<div style="grid-column:1/-1">Listing / Ref #: <b style="color:var(--cyan);font-size:15px">${esc(l.load_id)}</b></div>`:""}
    <div>Truck: <b>${esc(l.truck_number)} (${EQUIPMENT[l.equipment_code]||""})</b></div>
    <div>Truck at: <b>${esc(l.gps_city)}, ${esc(l.gps_state)}</b></div>
-   <div>Miles: <b>${(+l.miles).toLocaleString()}</b></div>
+   <div>Miles: <b>${(+l.miles).toLocaleString()}</b>${l.deadhead_mi&&l.deadhead_mi!="?"&&+l.deadhead_mi>0?` <span style="color:var(--amber)">+ ${esc(l.deadhead_mi)} mi deadhead</span>`:""}</div>
    <div>Posted: <b>${money(l.rate)} ($${(+l.rpm).toFixed(2)}/mi)</b></div>
+   ${l.pickup?`<div>Pickup: <b style="color:var(--cyan)">${esc(l.pickup)}</b></div>`:""}
+   ${l.dropoff&&l.dropoff!="TBD"?`<div>Drop: <b style="color:var(--cyan)">${esc(l.dropoff)}</b></div>`:""}
    <div>Broker: <b>${esc(l.broker_name)}</b></div>
    <div>${l._contact==2?`Phone: <b style="color:var(--gold);font-size:15px">${esc(l.broker_phone)}</b>`:`Email: <b>${esc(l.broker_email)}</b>`}</div>
   </div>

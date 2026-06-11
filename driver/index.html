@@ -96,6 +96,12 @@ footer b{color:var(--orange);font-weight:normal}
   </div>
 </div>
 
+<div class="card" id="gpszone">
+  <h2>&#128205; GPS LOCK <span class="hint">tap once, choose ALLOW &mdash; tells Jecht where to hunt loads FROM. optional but smart</span></h2>
+  <button class="copybtn" id="gpsbtn" onclick="getGPS()" style="margin-top:4px">&#128205; SHARE MY LOCATION</button>
+  <div class="preview empty" id="gpsout" style="margin-top:8px">no GPS lock &mdash; Jecht will use your last drop city</div>
+</div>
+
 <div class="card" id="hourszone">
   <h2>STEP 2 — DRIVE TIME LEFT<span class="hint">hours you can legally drive today — tap one</span></h2>
   <div class="hrgrid" id="hrgrid"></div>
@@ -178,9 +184,44 @@ function stateChanged(){
   } else { cs.disabled = true; }
   render();
 }
+var gpsCity = null;
+function getGPS(){
+  var out = document.getElementById("gpsout"), btn = document.getElementById("gpsbtn");
+  if (!navigator.geolocation){ out.textContent = "GPS not available on this phone"; return; }
+  btn.textContent = "LOCKING\u2026"; btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var la = pos.coords.latitude.toFixed(4), lo = pos.coords.longitude.toFixed(4);
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET","https://api.bigdatacloud.net/data/reverse-geocode-client?latitude="+la+"&longitude="+lo+"&localityLanguage=en");
+    xhr.onload = function(){
+      try{
+        var j = JSON.parse(xhr.responseText);
+        var city = (j.city || j.locality || "").toUpperCase();
+        var stc = (j.principalSubdivisionCode || "").replace("US-","");
+        if (city && stc){ gpsCity = city + "," + stc; }
+        else { gpsCity = "@" + la + "," + lo; }
+      }catch(e){ gpsCity = "@" + la + "," + lo; }
+      out.textContent = "GPS LOCKED: " + gpsCity.replace("@","");
+      out.className = "preview";
+      btn.textContent = "\u2713 LOCATION LOCKED"; btn.classList.add("done");
+      render();
+    };
+    xhr.onerror = function(){
+      gpsCity = "@" + la + "," + lo;
+      out.textContent = "GPS LOCKED: " + la + ", " + lo;
+      out.className = "preview";
+      btn.textContent = "\u2713 LOCATION LOCKED"; btn.classList.add("done");
+      render();
+    };
+    xhr.send();
+  }, function(){
+    out.textContent = "location denied \u2014 no problem, Jecht uses your last drop city";
+    btn.textContent = "\u{1F4CD} SHARE MY LOCATION"; btn.disabled = false;
+  }, {enableHighAccuracy:false, timeout:10000, maximumAge:300000});
+}
 function code(){
   if (!dest) return null;
-  if (dest === "DAYOFF") return "JECHT D=DAYOFF";
+  if (dest === "DAYOFF") return "JECHT D=DAYOFF" + (gpsCity ? " G=" + gpsCity : "");
   var d;
   if (dest === "CITY"){
     var st = document.getElementById("stsel").value;
@@ -189,7 +230,7 @@ function code(){
     d = c.toUpperCase() + "," + st;
   } else { d = dest; }
   if (hrs === null) return null;
-  return "JECHT D=" + d + " H=" + hrs + (lvl ? " L=" + lvl : "");
+  return "JECHT D=" + d + " H=" + hrs + (lvl ? " L=" + lvl : "") + (gpsCity ? " G=" + gpsCity : "");
 }
 function render(){
   var c = code(), p = document.getElementById("preview"), b = document.getElementById("copybtn");

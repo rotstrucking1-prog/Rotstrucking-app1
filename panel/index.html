@@ -742,17 +742,20 @@ function fSetDestMode(i,mode){S.fleet.trucks[i].dest_pref=(mode==='MONEY'||mode=
 function fSetStates(i,sel){const picks=[...sel.selectedOptions].map(o=>o.value);
  S.fleet.trucks[i].dest_pref=picks.join(',');save();fleetRender()}
 function addFleetCo(){
- const cid=(prompt("Company ID (the number JECHT assigned this authority):")||"").trim();
- if(!cid)return;
- if(S.fleet.cos[cid])return toast("That company lane already exists");
- S.fleet.cos[cid]=Object.assign({company_id:cid},CO_DEFAULTS);save();fleetRender()}
-function delFleetCo(cid){if(!confirm("Remove company lane "+cid+"? (does not change JECHT until you push)"))return;
+ const mc=(prompt("Carrier MC# (the authority's MC number — JECHT looks the company up by this):")||"").trim().replace(/^MC#?\s*/i,'');
+ if(!mc)return;
+ if(S.fleet.cos[mc])return toast("That company lane already exists");
+ const name=(prompt("Company name (for your reference on this panel):")||"").trim();
+ S.fleet.cos[mc]=Object.assign({company_id:mc,mc_number:mc,name:name},CO_DEFAULTS);save();fleetRender()}
+function delFleetCo(cid){if(!confirm("Remove company lane MC "+cid+"? (does not change JECHT until you push)"))return;
  delete S.fleet.cos[cid];save();fleetRender()}
 function addFleetTruck(){
- const cid=(prompt("Company ID this truck runs under:")||"").trim();if(!cid)return;
+ const cos=Object.keys(S.fleet.cos);
+ const menu=cos.length?("\n\nKnown carriers:\n"+cos.map(m=>{const c=S.fleet.cos[m];return "  • MC "+m+(c.name?" — "+c.name:"")}).join("\n")):"";
+ const mc=(prompt("Carrier MC# this truck runs under:"+menu)||"").trim().replace(/^MC#?\s*/i,'');if(!mc)return;
  const tn=(prompt("Truck number:")||"").trim();if(!tn)return;
- if(S.fleet.trucks.some(t=>t.company_id===cid&&t.truck_number===tn))return toast("That truck is already in Fleet Control");
- S.fleet.trucks.push(Object.assign({company_id:cid,truck_number:tn},TRUCK_DEFAULTS));save();fleetRender()}
+ if(S.fleet.trucks.some(t=>t.company_id===mc&&t.truck_number===tn))return toast("That truck is already in Fleet Control");
+ S.fleet.trucks.push(Object.assign({company_id:mc,truck_number:tn},TRUCK_DEFAULTS));save();fleetRender()}
 function delFleetTruck(i){if(!confirm("Remove truck "+S.fleet.trucks[i].truck_number+" from Fleet Control?"))return;
  S.fleet.trucks.splice(i,1);save();fleetRender()}
 function resetFleetTruck(i){if(!confirm("Reset truck "+S.fleet.trucks[i].truck_number+" to defaults? (location & destinations cleared)"))return;
@@ -768,7 +771,7 @@ function fleetRender(){
  if(!cos.length&&!S.fleet.trucks.length){
   w.innerHTML='<div class="card"><div class="empty">No fleet configured yet. Add a company lane and your trucks above. 🛻</div></div>';return}
  cos.forEach(cid=>{const c=S.fleet.cos[cid];
-  h+=`<div class="card"><h2>🏢 Company ${esc(cid)} <span style="color:var(--cyan)">// allowed lanes</span>
+  h+=`<div class="card"><h2>🏢 ${esc(c.name||('MC '+cid))} <span style="color:var(--cyan)">// MC ${esc(cid)} · allowed lanes</span>
    <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px" onclick="delFleetCo('${esc(cid)}')">✕ remove</button></h2>
    <div class="ftoggrid">
    ${cTog(cid,'feat_ratecon','📄 Ratecon handling','store + sign rate cons')}
@@ -779,7 +782,7 @@ function fleetRender(){
    </div></div>`});
  S.fleet.trucks.forEach((t,i)=>{
   const drvOff=!t.contact_driver;
-  h+=`<div class="card"><h2>🚛 Truck ${esc(t.truck_number)} <span style="color:var(--dim)">/ company ${esc(t.company_id)}</span>
+  h+=`<div class="card"><h2>🚛 Truck ${esc(t.truck_number)} <span style="color:var(--dim)">/ MC ${esc(t.company_id)}</span>
    <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px" onclick="delFleetTruck(${i})">✕</button>
    <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px;margin-right:6px" onclick="resetFleetTruck(${i})">↺ reset</button></h2>
    <div class="ftoggrid">
@@ -987,7 +990,7 @@ function fillCompanyDropdown(){
  const sel=document.getElementById("t_co");sel.innerHTML="";
  const ids=Object.keys(S.companies);
  if(!ids.length){const co=Object.values(S.pay.cos);co.forEach(c=>S.companies[c.company_id]={name:c.company_name,mc:c.mc_number||""})}
- Object.entries(S.companies).forEach(([id,c])=>{const o=document.createElement("option");o.value=id;o.textContent=(c&&c.name)||c;sel.appendChild(o)});
+ Object.entries(S.companies).forEach(([id,c])=>{const o=document.createElement("option");o.value=(c&&c.mc)||id;o.textContent=((c&&c.name)||c)+((c&&c.mc)?" — MC "+c.mc:"");sel.appendChild(o)});
  if(!sel.options.length){const o=document.createElement("option");o.value="1";o.textContent="Company #1";sel.appendChild(o)}}
 // init
 (function(){

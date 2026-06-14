@@ -49,6 +49,28 @@ nav button.active{background:var(--orange);color:#000;border-color:var(--orange)
   box-shadow:0 0 18px var(--orange-dim);font-weight:bold}
 main{padding:18px;max-width:1100px;margin:0 auto;position:relative;z-index:1}
 .tab{display:none}.tab.show{display:block;animation:fade .2s}
+.ftoggrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.ftog{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;
+  border:1px solid var(--line);background:rgba(0,212,255,0.03);font-size:13px;color:var(--text);
+  transition:all .15s;flex-wrap:wrap}
+.ftog span{flex-basis:100%;font-size:10px;color:var(--dim);margin-left:24px}
+.ftog input{accent-color:var(--green);width:15px;height:15px}
+.ftog.on{border-color:var(--green);box-shadow:0 0 10px rgba(0,255,136,0.15);color:var(--bright)}
+.ftog.off{border-color:var(--red);background:rgba(255,82,82,0.05);color:var(--dim)}
+.ftog.off input{accent-color:var(--red)}
+.themegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.themeswatch{cursor:pointer;border:1px solid var(--line);padding:8px;text-align:center;
+  transition:all .15s;background:rgba(0,212,255,0.02)}
+.themeswatch:hover{border-color:var(--cyan)}
+.themeswatch.on{border-color:var(--orange);box-shadow:0 0 14px var(--orange-dim)}
+.swchip{height:46px;border:1px solid;display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:6px}
+.swchip span{width:13px;height:13px;border-radius:50%;display:inline-block}
+.swchip b{font-family:inherit;font-size:14px;letter-spacing:1px}
+.swname{font-size:11px;letter-spacing:1px;color:var(--text);text-transform:uppercase}
+.themeswatch.on .swname{color:var(--orange);font-weight:bold}
+.tmulti{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+  font-family:inherit;font-size:12px;padding:4px}
+.tmulti option{padding:2px 4px}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
 .card{border:1px solid var(--line);background:var(--bg2);padding:14px;margin-bottom:14px;
   position:relative;overflow:hidden}
@@ -100,7 +122,6 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
 .loadrow:hover{border-color:var(--cyan);background:rgba(0,212,255,0.05);box-shadow:inset 0 0 10px var(--cyan-dim)}
 .loadrow.done{opacity:.4}
 .loadrow .rpm{color:var(--green);font-weight:bold;min-width:70px;text-shadow:0 0 7px rgba(0,255,136,.3)}
-.loadrow .dh{color:var(--amber);font-size:11px;border:1px solid var(--amber);border-radius:3px;padding:0 4px;opacity:.85}
 .loadrow .lane{flex:1;color:var(--bright)}
 .loadrow .lane .larrow{color:var(--cyan)}
 .grade{font-size:9px;font-weight:bold;padding:2px 7px;min-width:34px;text-align:center;letter-spacing:1px}
@@ -178,6 +199,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
 </header>
 <nav>
   <button class="active" data-tab="loads" onclick="tab(this)">📋 Loads</button>
+  <button data-tab="fleet" onclick="tab(this);fleetRender()">🎛️ Fleet Control</button>
   <button data-tab="onboard" onclick="tab(this)">➕ Onboard</button>
   <button data-tab="revenue" onclick="tab(this)">💰 Revenue</button>
   <button data-tab="settings" onclick="tab(this)">⚙️ Settings</button>
@@ -208,6 +230,31 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
 </div>
 
 <!-- ============ ONBOARD TAB ============ -->
+<div class="tab" id="tab-fleet">
+  <div class="card">
+    <h2>🎛️ Fleet Control <span style="color:var(--cyan)">// the dial</span></h2>
+    <p style="color:var(--dim);font-size:12px;margin:-4px 0 10px">
+      You are the cockpit. Pick what JECHT runs for each authority and each truck — from
+      <b style="color:var(--dim)">bare load-finding</b> at the bottom to <b style="color:var(--orange)">full autopilot</b> at the top.
+      Every setting is <b style="color:var(--cyan)">saved here</b> and survives a refresh — nothing resets until you hit Reset.
+      When a truck's <b>driver contact is OFF</b>, you set its location, hours, destinations & level right here — the driver never hears from JECHT.
+    </p>
+    <div class="btnrow">
+      <button class="btn btn-grey" onclick="addFleetCo()">➕ ADD COMPANY LANE</button>
+      <button class="btn btn-grey" onclick="addFleetTruck()">➕ ADD TRUCK</button>
+    </div>
+  </div>
+  <div id="fleetwrap"></div>
+  <div class="card">
+    <div class="btnrow">
+      <button class="btn btn-green" style="font-size:16px;padding:14px 40px" onclick="pushFleet()">📤 PUSH FLEET TO JECHT</button>
+    </div>
+    <p style="color:var(--dim);font-size:12px;margin:8px 0 0">
+      Builds one sealed block per company + per truck and opens an email to <b style="color:var(--orange)">dispatchjecht@gmail.com</b>. Send it — JECHT applies every switch on its next cycle.
+    </p>
+  </div>
+</div>
+
 <div class="tab" id="tab-onboard">
   <div class="card">
     <h2>🏢 New Company</h2>
@@ -242,6 +289,20 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
     </div>
     <div class="btnrow"><button class="btn btn-orange" onclick="sendNewTruck()">📤 SEND NEW TRUCK TO JECHT</button></div>
   </div>
+  <div class="card">
+    <h2>✍️ Signature &amp; Auto-Sign Consent</h2>
+    <p style="color:var(--dim);font-size:12px;margin:-4px 0 10px">
+      Arms JECHT to e-sign rate cons for this authority. <b style="color:var(--orange)">Standing consent ON</b> = JECHT signs &amp; returns the instant paper lands. <b>OFF</b> = JECHT waits for the owner's <code>SIGN M-XXXX</code> reply each time. No signature on file = never signs.
+    </p>
+    <div class="formgrid">
+      <div><label>MC NUMBER *</label><input id="cs_mc"></div>
+      <div><label>OWNER NAME *</label><input id="cs_oname"></div>
+      <div><label>OWNER TITLE</label><input id="cs_otitle" placeholder="Owner"></div>
+      <div><label>TYPED E-SIGNATURE * <span style="color:var(--dim)">(name as it signs)</span></label><input id="cs_sig" placeholder="exact name to stamp on the PDF"></div>
+      <div><label>STANDING CONSENT *</label><select id="cs_consent"><option value="off">OFF — ask every load (SIGN reply)</option><option value="on">ON — auto-sign &amp; return</option></select></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-orange" onclick="sendCarrierSign()">📤 SEND SIGNATURE TO JECHT</button></div>
+  </div>
 </div>
 
 <!-- ============ REVENUE TAB ============ -->
@@ -251,6 +312,11 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
 
 <!-- ============ SETTINGS TAB ============ -->
 <div class="tab" id="tab-settings">
+  <div class="card">
+    <h2>🎨 Display Theme <span class="hint">5 cockpit color schemes — pick what reads easiest</span></h2>
+    <p style="color:var(--dim);font-size:12px;margin:-4px 0 12px">Same Command Center layout, different palette &amp; contrast. Saved on this machine — applies instantly, sticks until you change it.</p>
+    <div id="themewrap" class="themegrid"></div>
+  </div>
   <div class="card">
     <h2>⚙️ Your Identity <span class="hint">stamped into every block you send</span></h2>
     <div class="formgrid">
@@ -283,17 +349,67 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
 <script>
 "use strict";
 const WIRE_VERSION="1.2", JECHT_EMAIL="dispatchjecht@gmail.com";
-const EQUIPMENT={1:"53' Dry Van",2:"53' Reefer",3:"Flatbed",4:"Step Deck",5:"Straight/Box Truck",6:"Power Only",7:"Hotshot"};
+// equipment_code = board-matchable FAMILY (mirrors jecht_db.EQUIPMENT_CODES).
+const EQUIPMENT={1:"Dry Van",2:"Reefer",3:"Flatbed",4:"Step Deck",5:"Straight/Box Truck",
+ 6:"Power Only",7:"Hotshot",8:"Sprinter/Cargo Van",9:"Conestoga",10:"Removable Gooseneck (RGN)",
+ 11:"Lowboy",12:"Double Drop",13:"Drop Deck Landoll",14:"Auto Carrier",15:"Tanker",
+ 16:"Dump Trailer",17:"Hopper Bottom",18:"Pneumatic",19:"Container/Intermodal",20:"B-Train",21:"Moving Van"};
+// Rich pick list: each option carries a family code + a precise spec (equipment_detail).
+// The detail is shown to drivers/owners & stamped on emails; the family does the board match.
+const EQUIP_MENU=[
+ {g:"Dry Van",fam:1,items:["53' Dry Van","48' Dry Van","Van Air-Ride","Van w/ Liftgate","Van w/ Curtains (Curtainside)","Van Vented","Van Insulated","Van w/ Pallet Exchange","Van Open-Top","Van Roller Bed","Van Hazmat","Van w/ Team","Van Double","Van Triple","Van Conestoga","Van w/ Blanket Wrap","Van Intermodal"]},
+ {g:"Reefer",fam:2,items:["53' Reefer","48' Reefer","Reefer Air-Ride","Reefer w/ Liftgate","Reefer Hazmat","Reefer w/ Pallet Exchange","Reefer w/ Team","Reefer Double","Reefer Logistics","Reefer Intermodal","Insulated Van"]},
+ {g:"Flatbed",fam:3,items:["48' Flatbed","53' Flatbed","Flatbed Air-Ride","Flatbed w/ Tarps","Flatbed w/ Sides","Flatbed w/ Chains","Flatbed w/ Team","Flatbed Over-Dimension","Flatbed Maxi","Flatbed Double","Flatbed Hazmat","Stretch Flatbed"]},
+ {g:"Step Deck",fam:4,items:["48' Step Deck","53' Step Deck","Step Deck w/ Ramps","Step Deck Conestoga","Stretch Step Deck"]},
+ {g:"Straight / Box Truck",fam:5,items:["26' Box Truck","26' Box Truck w/ Liftgate","24' Box Truck","24' Box Truck w/ Liftgate","22' Box Truck","20' Box Truck","18' Box Truck","16' Box Truck","16' Box Truck w/ Liftgate","Box Truck Reefer"]},
+ {g:"Power Only",fam:6,items:["Power Only","Truck & Trailer"]},
+ {g:"Hotshot",fam:7,items:["40' Hotshot (gooseneck)","Hotshot (bumper pull)","Hotshot w/ Tarps"]},
+ {g:"Sprinter / Cargo Van",fam:8,items:["Sprinter Van","Cargo Van","Sprinter w/ Liftgate"]},
+ {g:"Conestoga",fam:9,items:["48' Conestoga","53' Conestoga"]},
+ {g:"Removable Gooseneck (RGN)",fam:10,items:["RGN (detachable lowboy)","RGN Multi-Axle","RGN Over-Dimension"]},
+ {g:"Lowboy",fam:11,items:["Lowboy","Lowboy Over-Dimension"]},
+ {g:"Double Drop",fam:12,items:["Double Drop","Double Drop Stretch"]},
+ {g:"Drop Deck Landoll",fam:13,items:["Drop Deck Landoll"]},
+ {g:"Auto Carrier",fam:14,items:["Auto Carrier (open)","Auto Carrier (enclosed)"]},
+ {g:"Tanker",fam:15,items:["Tanker Steel","Tanker Aluminum","Tanker Food-Grade","Tanker Chemical","Tanker Intermodal"]},
+ {g:"Dump",fam:16,items:["Dump Trailer","End Dump","Side Dump","Belly Dump"]},
+ {g:"Hopper Bottom",fam:17,items:["Hopper Bottom"]},
+ {g:"Pneumatic",fam:18,items:["Pneumatic"]},
+ {g:"Container / Intermodal",fam:19,items:["20' Container","40' Container","45' Container","Container Insulated","Container Refrigerated","Container Chassis"]},
+ {g:"B-Train",fam:20,items:["B-Train"]},
+ {g:"Moving Van",fam:21,items:["Moving Van","Moving Van w/ Blanket Wrap"]},
+];
 const GRADES={1:"AAA",2:"AA+",3:"AA",4:"A+",5:"A",6:"B+",7:"B",8:"C+",9:"C",10:"D+",11:"D",12:"E",13:"F"};
 const OUTCOMES={1:"✅ BOOKED",2:"✅ BOOKED @ rate",3:"☎️ NO ANSWER",4:"💨 LOAD GONE",5:"⛔ BAD BROKER",6:"📞 CALLED",7:"— not worked",8:"📧 EMAILED",9:"🚫 NOT INTERESTED"};
 // field order must mirror jecht_wire.py BLOCK_TYPES exactly
 const SPEC={
  NEWCOMPANY:["name","mc_number","dot_number","ein","owner_name","owner_phone","owner_email","factoring_company"],
- NEWTRUCK:["company_id","truck_number","equipment_code","plate","trailer_number","trailer_plate","max_weight","hazmat","min_rpm","driver_name","driver_phone","role_code","dest_pref"],
- OUTCOME:["match_id","outcome_code","final_rate","dispatcher_id","seconds_open"]
+ NEWTRUCK:["company_id","truck_number","equipment_code","plate","trailer_number","trailer_plate","max_weight","hazmat","min_rpm","driver_name","driver_phone","role_code","dest_pref","equipment_detail"],
+ CARRIER_SIGN:["mc","owner_name","owner_title","sig_typed_name","consent"],
+ OUTCOME:["match_id","outcome_code","final_rate","dispatcher_id","seconds_open"],
+ TRUCKCFG:["company_id","truck_number","dispatch_enabled","contact_owner","contact_driver","gps_city","gps_state","dest_pref","level_code","drive_hours","allow_multi_load","allow_multi_stop"],
+ COMPANYCFG:["company_id","feat_ratecon","feat_ratecon_fwd","feat_autopilot","feat_status_text","feat_driver_text"]
 };
+const LEVELS={1:"CONSERVATIVE",2:"MODERATE",3:"AGGRESSIVE",4:"OUTLAW (exempt)"};
+const US_STATES=[["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["DC","District of Columbia"],["FL","Florida"],["GA","Georgia"],["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"]];
+const US_CITIES={"AK":["Anchorage","Fairbanks","Juneau","Wasilla","Sitka","Ketchikan","Kenai"],"AL":["Birmingham","Montgomery","Mobile","Huntsville","Tuscaloosa","Hoover","Dothan","Auburn","Decatur","Madison","Florence","Phenix City"],"AR":["Little Rock","Fort Smith","Fayetteville","Springdale","Jonesboro","North Little Rock","Conway","Rogers","Pine Bluff","Bentonville"],"AZ":["Phoenix","Tucson","Mesa","Chandler","Glendale","Gilbert","Scottsdale","Tempe","Peoria","Surprise","Yuma","Avondale","Goodyear","Flagstaff","Buckeye","Lake Havasu City","Casa Grande","Maricopa","Sierra Vista","Oro Valley","Prescott","Prescott Valley","Bullhead City","Marana","Apache Junction"],"CA":["Los Angeles","San Diego","San Jose","San Francisco","Fresno","Sacramento","Long Beach","Oakland","Bakersfield","Anaheim","Santa Ana","Riverside","Stockton","Chula Vista","Irvine","Fremont","San Bernardino","Modesto","Oxnard","Fontana","Moreno Valley","Huntington Beach","Glendale","Santa Clarita","Garden Grove","Oceanside","Santa Rosa","Rancho Cucamonga","Ontario","Elk Grove","Lancaster","Corona","Palmdale","Salinas","Hayward","Pomona","Escondido","Sunnyvale","Torrance","Orange","Pasadena","Fullerton","Thousand Oaks","Visalia","Roseville","Simi Valley","Concord","Victorville","Santa Clara","Vallejo","Berkeley","El Monte","Downey","Costa Mesa","Inglewood","Carlsbad","Fairfield","San Buenaventura (Ventura)","West Covina","Richmond","Murrieta","Antioch","Temecula","Norwalk","Daly City","Burbank","Santa Maria","El Cajon","Rialto","San Mateo","Clovis","Jurupa Valley","Compton","Vista","Mission Viejo","South Gate","Vacaville","Carson","Santa Monica","Hesperia","Westminster","Redding","Santa Barbara","San Marcos","Chico","San Leandro","Newport Beach","Whittier","Hawthorne","Citrus Heights","Livermore","Tracy","Alhambra","Indio","Menifee","Buena Park","Hemet","Lakewood","Merced","Chino","Redwood City","Lake Forest","Napa","Tustin","Mountain View","Bellflower","Baldwin Park","Chino Hills","Alameda","Upland","San Ramon","Pleasanton","Folsom","Union City","Perris","Manteca","Lynwood","Apple Valley","Turlock","Redlands","Milpitas","Rancho Cordova","Redondo Beach","Yorba Linda","Walnut Creek","Pittsburg","Palo Alto","Davis","South San Francisco","Camarillo","Yuba City","San Clemente","Laguna Niguel","Pico Rivera","Montebello","Lodi","Madera","Santa Cruz","La Habra","Encinitas","Tulare","Monterey Park","Cupertino","Gardena","National City","Rocklin","Petaluma","San Rafael","Huntington Park","La Mesa","Arcadia","Lake Elsinore","Fountain Valley","Woodland","Diamond Bar","Santee","Eastvale","Porterville","Brentwood","Paramount","Hanford","Rosemead","Highland","Novato","Colton","Cathedral City","Yucaipa","Watsonville","Delano","Placentia","Dublin","Gilroy","Glendora","Palm Desert","Aliso Viejo","West Sacramento","Cerritos","Poway","Rancho Santa Margarita","La Mirada","Cypress","Covina","Azusa","Ceres","San Luis Obispo","Palm Springs","San Jacinto","Lincoln","Newark","Lompoc","El Centro","Danville","Coachella","Bell Gardens","Rancho Palos Verdes","San Bruno","Rohnert Park","Brea","Morgan Hill","Campbell","Beaumont","La Puente","San Gabriel","Culver City","Calexico","La Quinta","Stanton","Pacifica","Oakley","Montclair","Martinez","Monrovia"],"CO":["Denver","Colorado Springs","Aurora","Fort Collins","Lakewood","Thornton","Arvada","Westminster","Pueblo","Centennial","Boulder","Greeley","Longmont","Loveland","Grand Junction","Broomfield","Castle Rock","Commerce City","Parker","Littleton","Northglenn"],"CT":["Bridgeport","New Haven","Stamford","Hartford","Waterbury","Norwalk","Danbury","New Britain","Bristol","Meriden","West Haven","Milford","Middletown","Shelton","Norwich"],"DC":["Washington"],"DE":["Wilmington","Dover","Newark","Middletown","Smyrna","Milford"],"FL":["Jacksonville","Miami","Tampa","Orlando","St. Petersburg","Hialeah","Tallahassee","Fort Lauderdale","Port St. Lucie","Cape Coral","Pembroke Pines","Hollywood","Miramar","Gainesville","Coral Springs","Miami Gardens","Clearwater","Palm Bay","Pompano Beach","West Palm Beach","Lakeland","Davie","Miami Beach","Plantation","Sunrise","Boca Raton","Deltona","Palm Coast","Largo","Deerfield Beach","Melbourne","Boynton Beach","Lauderhill","Weston","Fort Myers","Kissimmee","Homestead","Delray Beach","Tamarac","Daytona Beach","North Miami","Wellington","North Port","Jupiter","Ocala","Port Orange","Coconut Creek","Sanford","Margate","Sarasota","Pensacola","Bradenton","Palm Beach Gardens","Doral","Pinellas Park","Coral Gables","Bonita Springs","Apopka","Titusville","Cutler Bay","Oakland Park","North Miami Beach","Fort Pierce","North Lauderdale","Altamonte Springs","St. Cloud","Ocoee","Greenacres","Ormond Beach","Hallandale Beach","Winter Garden","Aventura","Panama City"],"GA":["Atlanta","Columbus","Augusta-Richmond County","Savannah","Athens-Clarke County","Sandy Springs","Roswell","Macon","Johns Creek","Albany","Warner Robins","Alpharetta","Marietta","Valdosta","Smyrna","Brookhaven","Dunwoody","Peachtree Corners"],"HI":["Honolulu","Hilo","Kailua","Kapolei","Pearl City","Waipahu","Kaneohe"],"IA":["Des Moines","Cedar Rapids","Davenport","Sioux City","Iowa City","Waterloo","Council Bluffs","Ames","West Des Moines","Dubuque","Ankeny","Urbandale","Cedar Falls"],"ID":["Boise City","Nampa","Meridian","Idaho Falls","Pocatello","Caldwell","Coeur d'Alene","Twin Falls"],"IL":["Chicago","Aurora","Rockford","Joliet","Naperville","Springfield","Peoria","Elgin","Waukegan","Cicero","Champaign","Bloomington","Arlington Heights","Evanston","Schaumburg","Decatur","Bolingbrook","Palatine","Skokie","Des Plaines","Orland Park","Tinley Park","Oak Lawn","Berwyn","Mount Prospect","Normal","Wheaton","Hoffman Estates","Oak Park","Downers Grove","Elmhurst","Glenview","Lombard","DeKalb","Moline","Belleville","Buffalo Grove","Urbana","Plainfield","Bartlett","Quincy","Crystal Lake","Carol Stream","Streamwood","Romeoville","Rock Island","Hanover Park","Carpentersville","Wheeling","Park Ridge","Addison","Calumet City"],"IN":["Indianapolis","Fort Wayne","Evansville","South Bend","Carmel","Fishers","Bloomington","Hammond","Gary","Lafayette","Muncie","Terre Haute","Kokomo","Noblesville","Anderson","Greenwood","Elkhart","Mishawaka","Lawrence","Jeffersonville","Columbus"],"KS":["Wichita","Overland Park","Kansas City","Olathe","Topeka","Lawrence","Shawnee","Manhattan","Lenexa","Salina","Hutchinson"],"KY":["Louisville","Lexington-Fayette","Bowling Green","Owensboro","Covington"],"LA":["New Orleans","Baton Rouge","Shreveport","Lafayette","Lake Charles","Kenner","Bossier City","Monroe","Alexandria"],"MA":["Boston","Worcester","Springfield","Lowell","Cambridge","New Bedford","Brockton","Quincy","Lynn","Fall River","Newton","Somerville","Lawrence","Waltham","Haverhill","Malden","Medford","Taunton","Chicopee","Weymouth Town","Revere","Peabody","Methuen","Barnstable Town","Pittsfield","Attleboro","Everett","Salem","Westfield","Leominster","Beverly","Fitchburg","Holyoke","Marlborough","Woburn","Chelsea"],"MD":["Baltimore","Frederick","Gaithersburg","Rockville","Bowie","Hagerstown","Annapolis"],"ME":["Portland","Lewiston","Bangor","Augusta","Auburn","Biddeford","Saco"],"MI":["Detroit","Grand Rapids","Warren","Sterling Heights","Ann Arbor","Lansing","Flint","Dearborn","Livonia","Troy","Westland","Farmington Hills","Kalamazoo","Wyoming","Southfield","Rochester Hills","Taylor","St. Clair Shores","Pontiac","Royal Oak","Novi","Dearborn Heights","Battle Creek","Saginaw","Kentwood","East Lansing","Roseville","Portage","Midland","Lincoln Park","Muskegon"],"MN":["Minneapolis","St. Paul","Rochester","Bloomington","Duluth","Brooklyn Park","Plymouth","St. Cloud","Woodbury","Eagan","Maple Grove","Eden Prairie","Coon Rapids","Burnsville","Blaine","Lakeville","Minnetonka","Apple Valley","Edina","St. Louis Park","Mankato","Maplewood","Moorhead","Shakopee"],"MO":["Kansas City","St. Louis","Springfield","Independence","Columbia","Lee's Summit","O'Fallon","St. Joseph","St. Charles","St. Peters","Blue Springs","Florissant","Joplin","Chesterfield","Jefferson City","Cape Girardeau"],"MS":["Jackson","Gulfport","Southaven","Hattiesburg","Biloxi","Meridian"],"MT":["Billings","Missoula","Great Falls","Bozeman","Butte","Helena","Kalispell"],"NC":["Charlotte","Raleigh","Greensboro","Durham","Winston-Salem","Fayetteville","Cary","Wilmington","High Point","Greenville","Asheville","Concord","Gastonia","Jacksonville","Chapel Hill","Rocky Mount","Burlington","Huntersville","Wilson","Kannapolis","Apex","Hickory"],"ND":["Fargo","Bismarck","Grand Forks","Minot","West Fargo","Williston","Dickinson"],"NE":["Omaha","Lincoln","Bellevue","Grand Island"],"NH":["Manchester","Nashua","Concord","Derry","Dover","Rochester","Salem"],"NJ":["Newark","Jersey City","Paterson","Elizabeth","Clifton","Trenton","Camden","Passaic","Union City","Bayonne","East Orange","Vineland","New Brunswick","Hoboken","West New York","Perth Amboy","Plainfield","Sayreville","Hackensack","Kearny","Linden","Atlantic City"],"NM":["Albuquerque","Las Cruces","Rio Rancho","Santa Fe","Roswell","Farmington","Clovis"],"NV":["Las Vegas","Henderson","Reno","North Las Vegas","Sparks","Carson City"],"NY":["New York","Buffalo","Rochester","Yonkers","Syracuse","Albany","New Rochelle","Mount Vernon","Schenectady","Utica","White Plains","Hempstead","Troy","Niagara Falls","Binghamton","Freeport","Valley Stream"],"OH":["Columbus","Cleveland","Cincinnati","Toledo","Akron","Dayton","Parma","Canton","Youngstown","Lorain","Hamilton","Springfield","Kettering","Elyria","Lakewood","Cuyahoga Falls","Middletown","Euclid","Newark","Mentor","Mansfield","Beavercreek","Cleveland Heights","Strongsville","Dublin","Fairfield","Findlay","Warren","Lancaster","Lima","Huber Heights","Westerville","Grove City"],"OK":["Oklahoma City","Tulsa","Norman","Broken Arrow","Lawton","Edmond","Moore","Midwest City","Enid","Stillwater","Muskogee"],"OR":["Portland","Salem","Eugene","Gresham","Hillsboro","Beaverton","Bend","Medford","Springfield","Corvallis","Albany","Tigard","Lake Oswego","Keizer"],"PA":["Philadelphia","Pittsburgh","Allentown","Erie","Reading","Scranton","Bethlehem","Lancaster","Harrisburg","Altoona","York","State College","Wilkes-Barre"],"RI":["Providence","Warwick","Cranston","Pawtucket","East Providence","Woonsocket"],"SC":["Columbia","Charleston","North Charleston","Mount Pleasant","Rock Hill","Greenville","Summerville","Sumter","Goose Creek","Hilton Head Island","Florence","Spartanburg"],"SD":["Sioux Falls","Rapid City","Aberdeen","Brookings","Watertown","Mitchell","Pierre"],"TN":["Memphis","Nashville","Knoxville","Chattanooga","Clarksville","Murfreesboro","Franklin","Jackson","Johnson City","Bartlett","Hendersonville","Kingsport","Collierville","Smyrna","Cleveland","Brentwood","Germantown"],"TX":["Houston","San Antonio","Dallas","Austin","Fort Worth","El Paso","Arlington","Corpus Christi","Plano","Laredo","Lubbock","Garland","Irving","Amarillo","Grand Prairie","Brownsville","Pasadena","McKinney","Mesquite","Killeen","Frisco","McAllen","Waco","Carrollton","Midland","Denton","Abilene","Beaumont","Odessa","Round Rock","Wichita Falls","Richardson","Lewisville","Tyler","Pearland","College Station","San Angelo","Allen","League City","Sugar Land","Longview","Mission","Edinburg","Bryan","Baytown","Pharr","Temple","Missouri City","Flower Mound","North Richland Hills","Harlingen","Victoria","New Braunfels","Conroe","Cedar Park","Mansfield","Rowlett","Georgetown","Port Arthur","San Marcos","Pflugerville","Euless","DeSoto","Grapevine","Galveston","Bedford","Cedar Hill","Texas City","Wylie","Haltom City","Keller","Rockwall","Burleson","Coppell","Huntsville","Duncanville","The Colony","Sherman","Hurst","Lancaster","Friendswood","Texarkana","Weslaco"],"UT":["Salt Lake City","West Valley City","Provo","West Jordan","Orem","Sandy","Ogden","St. George","Layton","Taylorsville","South Jordan","Lehi","Logan","Murray","Draper","Bountiful","Riverton","Roy","Spanish Fork"],"VA":["Virginia Beach","Norfolk","Chesapeake","Richmond","Newport News","Alexandria","Hampton","Roanoke","Portsmouth","Suffolk","Lynchburg","Harrisonburg","Leesburg","Charlottesville","Blacksburg","Danville","Manassas"],"VT":["Burlington","South Burlington","Rutland","Montpelier","Essex","Barre"],"WA":["Seattle","Spokane","Tacoma","Vancouver","Bellevue","Kent","Everett","Renton","Yakima","Federal Way","Spokane Valley","Kirkland","Bellingham","Kennewick","Auburn","Pasco","Marysville","Lakewood","Redmond","Shoreline","Richland","Sammamish","Burien","Olympia","Lacey","Edmonds","Bremerton","Puyallup"],"WI":["Milwaukee","Madison","Green Bay","Kenosha","Racine","Appleton","Waukesha","Eau Claire","Oshkosh","Janesville","West Allis","La Crosse","Sheboygan","Wauwatosa","Fond du Lac","New Berlin","Wausau","Brookfield","Greenfield","Beloit"],"WV":["Charleston","Huntington","Morgantown","Parkersburg","Wheeling","Beckley","Martinsburg"],"WY":["Cheyenne","Casper","Laramie","Gillette","Rock Springs","Sheridan","Evanston"]};
+const THEMES={"command":{"name":"Command Orange","sw":"#ff7700","v":{"bg":"#060a12","bg2":"#0c1428","bg3":"#101e38","card":"#0c1428","card2":"#101e38","orange":"#ff7700","orange-dim":"rgba(255,119,0,0.25)","amber":"#ffa726","gold":"#ffd54f","cyan":"#00d4ff","cyan-dim":"rgba(0,212,255,0.18)","line":"rgba(0,212,255,0.22)","border-hot":"rgba(255,119,0,0.45)","green":"#00ff88","red":"#ff5252","redder":"#ff2244","text":"#b8ccdf","bright":"#e8f2fb","dim":"#4a6878"}},"highvis":{"name":"High-Vis Cyan","sw":"#3fe0ff","v":{"bg":"#04080f","bg2":"#0a1626","bg3":"#10243c","card":"#0a1626","card2":"#10243c","orange":"#ff9d2e","orange-dim":"rgba(255,157,46,0.28)","amber":"#ffc14d","gold":"#ffe08a","cyan":"#3fe0ff","cyan-dim":"rgba(63,224,255,0.22)","line":"rgba(63,224,255,0.34)","border-hot":"rgba(255,157,46,0.5)","green":"#3dffa0","red":"#ff6b6b","redder":"#ff3b5c","text":"#d9e8f6","bright":"#ffffff","dim":"#6f90a8"}},"amber":{"name":"Amber CRT","sw":"#ffb000","v":{"bg":"#0a0700","bg2":"#140d02","bg3":"#1f1604","card":"#140d02","card2":"#1f1604","orange":"#ffb000","orange-dim":"rgba(255,176,0,0.3)","amber":"#ffcb52","gold":"#ffe08a","cyan":"#ffce6b","cyan-dim":"rgba(255,206,107,0.2)","line":"rgba(255,176,0,0.3)","border-hot":"rgba(255,176,0,0.5)","green":"#a6ff5a","red":"#ff7a52","redder":"#ff4326","text":"#f6dca6","bright":"#fff3d4","dim":"#8a6a3a"}},"phosphor":{"name":"Phosphor Green","sw":"#33ff99","v":{"bg":"#000a05","bg2":"#021610","bg3":"#04221a","card":"#021610","card2":"#04221a","orange":"#33ff99","orange-dim":"rgba(51,255,153,0.25)","amber":"#9dffba","gold":"#c6ffd9","cyan":"#16d27a","cyan-dim":"rgba(22,210,122,0.2)","line":"rgba(51,255,153,0.26)","border-hot":"rgba(51,255,153,0.45)","green":"#33ff99","red":"#ff6b6b","redder":"#ff3b3b","text":"#c4f6da","bright":"#ecfff4","dim":"#558a6f"}},"daylight":{"name":"Daylight (Light)","sw":"#d35400","v":{"bg":"#eef2f7","bg2":"#ffffff","bg3":"#e3e9f1","card":"#ffffff","card2":"#e3e9f1","orange":"#c0490a","orange-dim":"rgba(192,73,10,0.14)","amber":"#9a5b00","gold":"#7a5c00","cyan":"#0067a3","cyan-dim":"rgba(0,103,163,0.1)","line":"rgba(0,103,163,0.32)","border-hot":"rgba(192,73,10,0.4)","green":"#1b7f4d","red":"#b3261e","redder":"#8f160d","text":"#1d2a36","bright":"#091420","dim":"#5d6f7e"}}};
+
+function applyTheme(key){
+ const t=THEMES[key]||THEMES.command; const r=document.documentElement;
+ for(const k in t.v) r.style.setProperty('--'+k,t.v[k]);
+ r.setAttribute('data-theme',key);
+ S.settings=S.settings||{}; S.settings.theme=key; save();
+ document.querySelectorAll('.themeswatch').forEach(el=>el.classList.toggle('on',el.dataset.theme===key));
+}
+function fillCities(stateAb,dl){ dl.innerHTML='';
+ (US_CITIES[stateAb]||[]).forEach(c=>{const o=document.createElement('option');o.value=c;dl.appendChild(o)});
+}
+function stateOptions(sel){return US_STATES.map(([a,n])=>`<option value="${a}" ${sel===a?'selected':''}>${a} — ${n}</option>`).join('')}
+
 let S=JSON.parse(localStorage.getItem("jecht_panel")||"{}");
 S.loads=S.loads||{}; S.pay=S.pay||{cos:{},trucks:[]}; S.seen=S.seen||[]; S.companies=S.companies||{};
+S.fleet=S.fleet||{cos:{},trucks:[]};
 function save(){localStorage.setItem("jecht_panel",JSON.stringify(S))}
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2800)}
 function tab(b){document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
@@ -402,7 +518,6 @@ function render(){
      <span class="tag">${l._contact==2?"📞":"📧"}</span>
      <span class="grade ${gcls(l.grade_code)}">${GRADES[l.grade_code]||"?"}</span>
      <span class="rpm">$${(+l.rpm).toFixed(2)}/mi</span>
-     ${l.deadhead_mi&&l.deadhead_mi!="?"&&+l.deadhead_mi>0?`<span class="dh">DH ${esc(l.deadhead_mi)}mi</span>`:""}
      <span class="lane">${esc(l.origin)} → ${esc(l.dest)}</span>
      <span class="outcome">${OUTCOMES[l._outcome]||(l._released?"🔒 RELEASED — truck booked":"")}${(l._outcome==1||l._outcome==2)?' <span style="color:var(--amber)">⏳ awaiting ratecon</span>':""}</span></div>`});
    html+=`</div></div>`}
@@ -421,10 +536,8 @@ function openLoad(id){const l=S.loads[id];if(!l)return;
    ${l.load_id?`<div style="grid-column:1/-1">Listing / Ref #: <b style="color:var(--cyan);font-size:15px">${esc(l.load_id)}</b></div>`:""}
    <div>Truck: <b>${esc(l.truck_number)} (${EQUIPMENT[l.equipment_code]||""})</b></div>
    <div>Truck at: <b>${esc(l.gps_city)}, ${esc(l.gps_state)}</b></div>
-   <div>Miles: <b>${(+l.miles).toLocaleString()}</b>${l.deadhead_mi&&l.deadhead_mi!="?"&&+l.deadhead_mi>0?` <span style="color:var(--amber)">+ ${esc(l.deadhead_mi)} mi deadhead</span>`:""}</div>
+   <div>Miles: <b>${(+l.miles).toLocaleString()}</b></div>
    <div>Posted: <b>${money(l.rate)} ($${(+l.rpm).toFixed(2)}/mi)</b></div>
-   ${l.pickup?`<div>Pickup: <b style="color:var(--cyan)">${esc(l.pickup)}</b></div>`:""}
-   ${l.dropoff&&l.dropoff!="TBD"?`<div>Drop: <b style="color:var(--cyan)">${esc(l.dropoff)}</b></div>`:""}
    <div>Broker: <b>${esc(l.broker_name)}</b></div>
    <div>${l._contact==2?`Phone: <b style="color:var(--gold);font-size:15px">${esc(l.broker_phone)}</b>`:`Email: <b>${esc(l.broker_email)}</b>`}</div>
   </div>
@@ -597,11 +710,127 @@ function sendNewCompany(){
 function sendNewTruck(){
  const g=i=>document.getElementById(i).value.trim();
  if(!g("t_co")||!g("t_num")||!g("t_dname")||!g("t_dphone"))return toast("Fill the * fields");
- const b=buildBlock("NEWTRUCK",{company_id:g("t_co"),truck_number:g("t_num"),equipment_code:g("t_eq"),
+ const eqv=g("t_eq").split("::"); const fam=eqv[0]; const detail=eqv[1]||"";
+ const b=buildBlock("NEWTRUCK",{company_id:g("t_co"),truck_number:g("t_num"),equipment_code:fam,
   plate:g("t_plate"),trailer_number:g("t_tnum"),trailer_plate:g("t_tplate"),max_weight:g("t_wt"),
   hazmat:g("t_haz"),min_rpm:g("t_rpm"),driver_name:g("t_dname"),driver_phone:g("t_dphone"),
-  role_code:g("t_role"),dest_pref:g("t_dest")});
+  role_code:g("t_role"),dest_pref:g("t_dest"),equipment_detail:detail});
  wireOut("JECHT NEW TRUCK: "+g("t_num"),b,()=>toast("New truck sent to Jecht ✓"))}
+function sendCarrierSign(){
+ const g=i=>document.getElementById(i).value.trim();
+ if(!g("cs_mc")||!g("cs_oname")||!g("cs_sig"))return toast("Fill the * fields");
+ const consent=document.getElementById("cs_consent").value;
+ if(consent==="on"&&!confirm("Standing consent ON for MC "+g("cs_mc")+".\n\nJECHT will auto-sign & return EVERY rate con for this authority the moment it lands — no per-load approval. Continue?"))return;
+ const b=buildBlock("CARRIER_SIGN",{mc:g("cs_mc"),owner_name:g("cs_oname"),
+  owner_title:g("cs_otitle")||"Owner",sig_typed_name:g("cs_sig"),consent:consent});
+ wireOut("JECHT CARRIER SIGNATURE: MC "+g("cs_mc"),b,
+  ()=>toast("Signature + consent sent to Jecht ✓"))}
+// ================= FLEET CONTROL =================
+const TRUCK_DEFAULTS={dispatch_enabled:1,contact_owner:1,contact_driver:1,
+ gps_city:"",gps_state:"",dest_pref:"",level_code:2,drive_hours:11,
+ allow_multi_load:1,allow_multi_stop:1};
+const CO_DEFAULTS={feat_ratecon:1,feat_ratecon_fwd:1,feat_autopilot:1,
+ feat_status_text:1,feat_driver_text:1};
+function fSetCo(cid,k,v){S.fleet.cos[cid][k]=v;save()}
+function fSetTruck(i,k,v){S.fleet.trucks[i][k]=v;save()}
+function fSetTruckR(i,k,v){S.fleet.trucks[i][k]=v;save();fleetRender()}  // re-render (state->city list)
+// --- target-lane helpers: dest_pref is "MONEY" | "HOME" | "IN,IL,WI" ---
+function destMode(t){const d=(t.dest_pref||'').toUpperCase();return d==='MONEY'?'MONEY':d==='HOME'?'HOME':'states'}
+function destStates(t){const d=t.dest_pref||'';if(/^(MONEY|HOME)$/i.test(d.trim()))return [];
+ return d.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean)}
+function fSetDestMode(i,mode){S.fleet.trucks[i].dest_pref=(mode==='MONEY'||mode==='HOME')?mode:'';save();fleetRender()}
+function fSetStates(i,sel){const picks=[...sel.selectedOptions].map(o=>o.value);
+ S.fleet.trucks[i].dest_pref=picks.join(',');save();fleetRender()}
+function addFleetCo(){
+ const cid=(prompt("Company ID (the number JECHT assigned this authority):")||"").trim();
+ if(!cid)return;
+ if(S.fleet.cos[cid])return toast("That company lane already exists");
+ S.fleet.cos[cid]=Object.assign({company_id:cid},CO_DEFAULTS);save();fleetRender()}
+function delFleetCo(cid){if(!confirm("Remove company lane "+cid+"? (does not change JECHT until you push)"))return;
+ delete S.fleet.cos[cid];save();fleetRender()}
+function addFleetTruck(){
+ const cid=(prompt("Company ID this truck runs under:")||"").trim();if(!cid)return;
+ const tn=(prompt("Truck number:")||"").trim();if(!tn)return;
+ if(S.fleet.trucks.some(t=>t.company_id===cid&&t.truck_number===tn))return toast("That truck is already in Fleet Control");
+ S.fleet.trucks.push(Object.assign({company_id:cid,truck_number:tn},TRUCK_DEFAULTS));save();fleetRender()}
+function delFleetTruck(i){if(!confirm("Remove truck "+S.fleet.trucks[i].truck_number+" from Fleet Control?"))return;
+ S.fleet.trucks.splice(i,1);save();fleetRender()}
+function resetFleetTruck(i){if(!confirm("Reset truck "+S.fleet.trucks[i].truck_number+" to defaults? (location & destinations cleared)"))return;
+ const t=S.fleet.trucks[i];S.fleet.trucks[i]=Object.assign({company_id:t.company_id,truck_number:t.truck_number},TRUCK_DEFAULTS);save();fleetRender()}
+function fTog(i,k,label,hint){const on=S.fleet.trucks[i][k]?1:0;
+ return `<label class="ftog ${on?'on':'off'}"><input type="checkbox" ${on?'checked':''} onchange="fSetTruck(${i},'${k}',this.checked?1:0);fleetRender()"> ${label}<span>${hint||""}</span></label>`}
+function cTog(cid,k,label,hint){const on=S.fleet.cos[cid][k]?1:0;
+ return `<label class="ftog ${on?'on':'off'}"><input type="checkbox" ${on?'checked':''} onchange="fSetCo('${cid}','${k}',this.checked?1:0);fleetRender()"> ${label}<span>${hint||""}</span></label>`}
+function fleetRender(){
+ const w=document.getElementById("fleetwrap");if(!w)return;
+ let h="";
+ const cos=Object.keys(S.fleet.cos);
+ if(!cos.length&&!S.fleet.trucks.length){
+  w.innerHTML='<div class="card"><div class="empty">No fleet configured yet. Add a company lane and your trucks above. 🛻</div></div>';return}
+ cos.forEach(cid=>{const c=S.fleet.cos[cid];
+  h+=`<div class="card"><h2>🏢 Company ${esc(cid)} <span style="color:var(--cyan)">// allowed lanes</span>
+   <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px" onclick="delFleetCo('${esc(cid)}')">✕ remove</button></h2>
+   <div class="ftoggrid">
+   ${cTog(cid,'feat_ratecon','📄 Ratecon handling','store + sign rate cons')}
+   ${cTog(cid,'feat_ratecon_fwd','📨 Forward ratecon to owner','copy lands in owner inbox')}
+   ${cTog(cid,'feat_autopilot','🤝 Autopilot negotiation','AI works loads by email')}
+   ${cTog(cid,'feat_status_text','🔔 Owner status texts','3x/day rollups')}
+   ${cTog(cid,'feat_driver_text','📱 Driver texting (master)','OFF = no driver ever contacted')}
+   </div></div>`});
+ S.fleet.trucks.forEach((t,i)=>{
+  const drvOff=!t.contact_driver;
+  h+=`<div class="card"><h2>🚛 Truck ${esc(t.truck_number)} <span style="color:var(--dim)">/ company ${esc(t.company_id)}</span>
+   <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px" onclick="delFleetTruck(${i})">✕</button>
+   <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px;margin-right:6px" onclick="resetFleetTruck(${i})">↺ reset</button></h2>
+   <div class="ftoggrid">
+   ${fTog(i,'dispatch_enabled','✅ Dispatch enabled','OFF = JECHT ignores this truck')}
+   ${fTog(i,'contact_owner','👤 Contact owner','owner-directed messages')}
+   ${fTog(i,'contact_driver','📱 Contact driver','OFF = you set everything here')}
+   ${fTog(i,'allow_multi_load','🔗 Multi-load (stitching)','chain legal loads')}
+   ${fTog(i,'allow_multi_stop','📍 Multi-stop loads','accept multi-stop freight')}
+   </div>
+   ${drvOff?`<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
+    <p style="color:var(--orange);font-size:12px;margin:0 0 8px">Driver contact OFF — you are this truck's mouth. Set its position & plan:</p>
+    <div class="formgrid">
+     <div><label>WHERE IS IT — STATE</label><select onchange="fSetTruckR(${i},'gps_state',this.value)"><option value="">— pick state —</option>${stateOptions(t.gps_state||'')}</select></div>
+     <div><label>CITY</label><input list="cities_${i}" value="${esc(t.gps_city||'')}" placeholder="${t.gps_state?'pick or type city':'pick a state first'}" onchange="fSetTruck(${i},'gps_city',this.value.trim())"><datalist id="cities_${i}">${(US_CITIES[t.gps_state]||[]).map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+     <div style="grid-column:1/-1"><label>WHERE TO — TARGET <span style="color:var(--dim)">(ctrl/⌘-click to pick several states)</span></label>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+       <select onchange="fSetDestMode(${i},this.value)" style="flex:0 0 auto">
+        <option value="states" ${destMode(t)==='states'?'selected':''}>Target states ▾</option>
+        <option value="MONEY" ${destMode(t)==='MONEY'?'selected':''}>💰 MONEY — best pay anywhere</option>
+        <option value="HOME" ${destMode(t)==='HOME'?'selected':''}>🏠 HOME</option>
+       </select>
+       ${destMode(t)==='states'?`<select multiple class="tmulti" size="6" onchange="fSetStates(${i},this)" style="flex:1">${US_STATES.map(([a,n])=>`<option value="${a}" ${destStates(t).includes(a)?'selected':''}>${a} — ${n}</option>`).join("")}</select>`:''}
+      </div>
+      <div class="hint" style="margin-top:4px">JECHT hunts toward: <b style="color:var(--cyan)">${esc(t.dest_pref||'(anywhere)')}</b></div></div>
+     <div><label>DISPATCH LEVEL</label><select onchange="fSetTruck(${i},'level_code',+this.value)">${Object.entries(LEVELS).map(([v,n])=>`<option value="${v}" ${+t.level_code===+v?'selected':''}>${n}</option>`).join("")}</select></div>
+     <div><label>DRIVE HOURS LEFT (HOS)</label><input type="number" step="0.5" value="${esc(String(t.drive_hours))}" onchange="fSetTruck(${i},'drive_hours',this.value)"></div>
+    </div></div>`:`<p style="color:var(--dim);font-size:12px;margin:10px 0 0">Driver contact ON — JECHT will ask the driver for location & hours. Dispatch level is still your call:
+    <select style="margin-left:8px" onchange="fSetTruck(${i},'level_code',+this.value)">${Object.entries(LEVELS).map(([v,n])=>`<option value="${v}" ${+t.level_code===+v?'selected':''}>${n}</option>`).join("")}</select></p>`}
+   </div>`});
+ w.innerHTML=h}
+function pushFleet(){
+ const cos=Object.keys(S.fleet.cos);
+ if(!cos.length&&!S.fleet.trucks.length)return toast("Nothing to push — add a company or truck first");
+ let blocks="";
+ cos.forEach(cid=>{const c=S.fleet.cos[cid];
+  blocks+=buildBlock("COMPANYCFG",{company_id:c.company_id,
+   feat_ratecon:c.feat_ratecon?1:0,feat_ratecon_fwd:c.feat_ratecon_fwd?1:0,
+   feat_autopilot:c.feat_autopilot?1:0,feat_status_text:c.feat_status_text?1:0,
+   feat_driver_text:c.feat_driver_text?1:0})+"\n"});
+ S.fleet.trucks.forEach(t=>{
+  const f={company_id:t.company_id,truck_number:t.truck_number,
+   dispatch_enabled:t.dispatch_enabled?1:0,contact_owner:t.contact_owner?1:0,
+   contact_driver:t.contact_driver?1:0,level_code:t.level_code||2,
+   allow_multi_load:t.allow_multi_load?1:0,allow_multi_stop:t.allow_multi_stop?1:0};
+  if(t.gps_city)f.gps_city=t.gps_city;
+  if(t.gps_state)f.gps_state=t.gps_state;
+  if(t.dest_pref)f.dest_pref=t.dest_pref;
+  if(t.drive_hours!==""&&t.drive_hours!=null)f.drive_hours=t.drive_hours;
+  blocks+=buildBlock("TRUCKCFG",f)+"\n"});
+ wireOut("JECHT FLEET CONTROL "+new Date().toISOString().slice(0,16),blocks,
+  ()=>toast("Fleet pushed to Jecht — switches apply next cycle ✓"))}
 function wireOut(subject,blocks,after){
  navigator.clipboard&&navigator.clipboard.writeText(blocks).catch(()=>{});
  openMail(JECHT_EMAIL,subject,blocks);
@@ -738,11 +967,22 @@ function printInvoice(inv){
  return inv.invno}
 
 // ---------- SETTINGS ----------
-function saveSettings(){S.settings={id:document.getElementById("s_id").value.trim(),
+function saveSettings(){const theme=(S.settings&&S.settings.theme)||"command";
+ S.settings={id:document.getElementById("s_id").value.trim(),
  name:document.getElementById("s_name").value.trim(),email:document.getElementById("s_email").value.trim(),
  mailmode:document.getElementById("s_mailmode").value,
- askpct:+document.getElementById("s_askpct").value};
+ askpct:+document.getElementById("s_askpct").value,theme:theme};
  save();toast("Saved ✓")}
+function renderThemes(){
+ const w=document.getElementById("themewrap"); if(!w)return; let h="";
+ const cur=(S.settings&&S.settings.theme)||"command";
+ Object.entries(THEMES).forEach(([key,t])=>{
+  h+=`<div class="themeswatch ${key===cur?'on':''}" data-theme="${key}" onclick="applyTheme('${key}')">
+   <div class="swchip" style="background:${t.v.bg};border-color:${t.v.line}">
+    <span style="background:${t.v.orange}"></span><span style="background:${t.v.cyan}"></span>
+    <span style="background:${t.v.green}"></span><b style="color:${t.v.text}">Aa</b></div>
+   <div class="swname">${t.name}</div></div>`});
+ w.innerHTML=h}
 function fillCompanyDropdown(){
  const sel=document.getElementById("t_co");sel.innerHTML="";
  const ids=Object.keys(S.companies);
@@ -753,7 +993,9 @@ function fillCompanyDropdown(){
 (function(){
  if(localStorage.getItem("jecht_killed")){killPanel();return}
  const eq=document.getElementById("t_eq");
- Object.entries(EQUIPMENT).forEach(([c,n])=>{const o=document.createElement("option");o.value=c;o.textContent=n;eq.appendChild(o)});
+ EQUIP_MENU.forEach(grp=>{const og=document.createElement("optgroup");og.label=grp.g;
+  grp.items.forEach(d=>{const o=document.createElement("option");o.value=grp.fam+"::"+d;o.textContent=d;og.appendChild(o)});
+  eq.appendChild(og)});
  if(S.settings){document.getElementById("s_id").value=S.settings.id||"";
   document.getElementById("s_name").value=S.settings.name||"";
   document.getElementById("s_email").value=S.settings.email||"";
@@ -761,6 +1003,7 @@ function fillCompanyDropdown(){
   const ap=(S.settings.askpct==null?5:+S.settings.askpct);
   document.getElementById("s_askpct").value=ap;
   document.getElementById("s_askpct_v").textContent=ap+"%"}
+ applyTheme((S.settings&&S.settings.theme)||"command");renderThemes();
  fillCompanyDropdown();render();renderMoney();
  document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
 })();

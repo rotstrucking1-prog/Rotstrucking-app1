@@ -194,14 +194,18 @@ function getGPS(){
     var xhr = new XMLHttpRequest();
     xhr.open("GET","https://api.bigdatacloud.net/data/reverse-geocode-client?latitude="+la+"&longitude="+lo+"&localityLanguage=en");
     xhr.onload = function(){
+      // ALWAYS send raw coordinates on the wire — the JECHT engine owns the
+      // map and snaps to the nearest real freight city. A phone/web geocoder
+      // never gets to name a town (that is how "District 8" slipped through).
+      gpsCity = "@" + la + "," + lo;
+      var nice = "";
       try{
         var j = JSON.parse(xhr.responseText);
-        var city = (j.city || j.locality || "").toUpperCase();
+        var city = (j.city || j.locality || "");
         var stc = (j.principalSubdivisionCode || "").replace("US-","");
-        if (city && stc){ gpsCity = city + "," + stc; }
-        else { gpsCity = "@" + la + "," + lo; }
-      }catch(e){ gpsCity = "@" + la + "," + lo; }
-      out.textContent = "GPS LOCKED: " + gpsCity.replace("@","");
+        if (city && stc){ nice = city + ", " + stc; }
+      }catch(e){ nice = ""; }
+      out.textContent = nice ? ("GPS LOCKED near " + nice) : ("GPS LOCKED: " + la + ", " + lo);
       out.className = "preview";
       btn.textContent = "\u2713 LOCATION LOCKED"; btn.classList.add("done");
       render();

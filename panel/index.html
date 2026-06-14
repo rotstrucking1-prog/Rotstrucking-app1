@@ -285,8 +285,8 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--orange);
       <div><label>DRIVER PHONE *</label><input id="t_dphone"></div>
       <div><label>ROLE *</label><select id="t_role"><option value="1">Owner</option><option value="2">Driver</option></select></div>
       <div><label>MIN $/MILE *</label><input id="t_rpm" value="2.00"></div>
-      <div><label>PREFERRED DESTINATION</label><input id="t_dest" placeholder="e.g. Midwest, TX, anywhere"></div>
     </div>
+    <p class="hint" style="margin:6px 0 0">Where this truck goes is set per-truck in the <b style="color:var(--cyan)">FLEET</b> cockpit (Best Money / Home / Pick a City / Target States / Day Off).</p>
     <div class="btnrow"><button class="btn btn-orange" onclick="sendNewTruck()">📤 SEND NEW TRUCK TO JECHT</button></div>
   </div>
   <div class="card">
@@ -387,7 +387,7 @@ const SPEC={
  NEWTRUCK:["company_id","truck_number","equipment_code","plate","trailer_number","trailer_plate","max_weight","hazmat","min_rpm","driver_name","driver_phone","role_code","dest_pref","equipment_detail"],
  CARRIER_SIGN:["mc","owner_name","owner_title","sig_typed_name","consent"],
  OUTCOME:["match_id","outcome_code","final_rate","dispatcher_id","seconds_open"],
- TRUCKCFG:["company_id","truck_number","dispatch_enabled","contact_owner","contact_driver","gps_city","gps_state","dest_pref","level_code","drive_hours","allow_multi_load","allow_multi_stop"],
+ TRUCKCFG:["company_id","truck_number","dispatch_enabled","contact_owner","contact_driver","gps_city","gps_state","dest_pref","level_code","drive_hours","allow_multi_load","allow_multi_stop","day_off"],
  COMPANYCFG:["company_id","feat_ratecon","feat_ratecon_fwd","feat_autopilot","feat_status_text","feat_driver_text"]
 };
 const LEVELS={1:"CONSERVATIVE",2:"MODERATE",3:"AGGRESSIVE",4:"OUTLAW (exempt)"};
@@ -714,7 +714,7 @@ function sendNewTruck(){
  const b=buildBlock("NEWTRUCK",{company_id:g("t_co"),truck_number:g("t_num"),equipment_code:fam,
   plate:g("t_plate"),trailer_number:g("t_tnum"),trailer_plate:g("t_tplate"),max_weight:g("t_wt"),
   hazmat:g("t_haz"),min_rpm:g("t_rpm"),driver_name:g("t_dname"),driver_phone:g("t_dphone"),
-  role_code:g("t_role"),dest_pref:g("t_dest"),equipment_detail:detail});
+  role_code:g("t_role"),dest_pref:"MONEY",equipment_detail:detail});
  wireOut("JECHT NEW TRUCK: "+g("t_num"),b,()=>toast("New truck sent to Jecht ✓"))}
 function sendCarrierSign(){
  const g=i=>document.getElementById(i).value.trim();
@@ -727,20 +727,41 @@ function sendCarrierSign(){
   ()=>toast("Signature + consent sent to Jecht ✓"))}
 // ================= FLEET CONTROL =================
 const TRUCK_DEFAULTS={dispatch_enabled:1,contact_owner:1,contact_driver:1,
- gps_city:"",gps_state:"",dest_pref:"",level_code:2,drive_hours:11,
+ gps_city:"",gps_state:"",dest_pref:"MONEY",day_off:0,level_code:2,drive_hours:11,
  allow_multi_load:1,allow_multi_stop:1};
 const CO_DEFAULTS={feat_ratecon:1,feat_ratecon_fwd:1,feat_autopilot:1,
  feat_status_text:1,feat_driver_text:1};
 function fSetCo(cid,k,v){S.fleet.cos[cid][k]=v;save()}
 function fSetTruck(i,k,v){S.fleet.trucks[i][k]=v;save()}
 function fSetTruckR(i,k,v){S.fleet.trucks[i][k]=v;save();fleetRender()}  // re-render (state->city list)
-// --- target-lane helpers: dest_pref is "MONEY" | "HOME" | "IN,IL,WI" ---
-function destMode(t){const d=(t.dest_pref||'').toUpperCase();return d==='MONEY'?'MONEY':d==='HOME'?'HOME':'states'}
-function destStates(t){const d=t.dest_pref||'';if(/^(MONEY|HOME)$/i.test(d.trim()))return [];
+// --- WHERE-TO helpers: full Driver-Link parity ---
+//  dest_pref is "MONEY" | "HOME" | "Chicago, IL" (one city) | "IN,IL,WI" (states)
+//  day_off=1 parks the truck (engine sets no_load_until → next workday)
+function destMode(t){
+ if(t.day_off)return 'DAYOFF';
+ const d=(t.dest_pref||'').trim();
+ if(/^MONEY$/i.test(d))return 'MONEY';
+ if(/^HOME$/i.test(d))return 'HOME';
+ if(/^[A-Za-z][A-Za-z .'-]*,\s*[A-Za-z]{2}$/.test(d))return 'CITY';  // "City, ST"
+ if(/^[A-Za-z]{2}(\s*,\s*[A-Za-z]{2})*$/.test(d))return 'STATES';
+ return 'MONEY'}  // empty = best pay anywhere
+function destStates(t){const d=t.dest_pref||'';if(!/^[A-Za-z]{2}(\s*,\s*[A-Za-z]{2})*$/.test(d.trim()))return [];
  return d.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean)}
-function fSetDestMode(i,mode){S.fleet.trucks[i].dest_pref=(mode==='MONEY'||mode==='HOME')?mode:'';save();fleetRender()}
+function destCity(t){const m=(t.dest_pref||'').match(/^(.+),\s*([A-Za-z]{2})$/);return m?m[1].trim():''}
+function destCityState(t){const m=(t.dest_pref||'').match(/^(.+),\s*([A-Za-z]{2})$/);return m?m[2].toUpperCase():''}
+function fSetDestMode(i,mode){const t=S.fleet.trucks[i];t.day_off=0;
+ if(mode==='MONEY')t.dest_pref='MONEY';
+ else if(mode==='HOME')t.dest_pref='HOME';
+ else if(mode==='DAYOFF'){t.day_off=1}
+ else if(mode==='CITY'){if(destMode(t)!=='CITY')t.dest_pref=''}   // wait for picks
+ else if(mode==='STATES'){if(destMode(t)!=='STATES')t.dest_pref=''}
+ save();fleetRender()}
 function fSetStates(i,sel){const picks=[...sel.selectedOptions].map(o=>o.value);
  S.fleet.trucks[i].dest_pref=picks.join(',');save();fleetRender()}
+function fSetDestCitySt(i,st){const t=S.fleet.trucks[i];const c=destCity(t);
+ t.dest_pref=c?`${c}, ${st}`:`, ${st}`;save();fleetRender()}      // re-render scopes city list
+function fSetDestCity(i,city){const t=S.fleet.trucks[i];const st=destCityState(t);
+ t.dest_pref=(city&&st)?`${city.trim()}, ${st}`:t.dest_pref;save();fleetRender()}
 function addFleetCo(){
  const mc=(prompt("Carrier MC# (the authority's MC number — JECHT looks the company up by this):")||"").trim().replace(/^MC#?\s*/i,'');
  if(!mc)return;
@@ -781,36 +802,39 @@ function fleetRender(){
    ${cTog(cid,'feat_driver_text','📱 Driver texting (master)','OFF = no driver ever contacted')}
    </div></div>`});
  S.fleet.trucks.forEach((t,i)=>{
-  const drvOff=!t.contact_driver;
+  const drvOn=!!t.contact_driver, dm=destMode(t);
   h+=`<div class="card"><h2>🚛 Truck ${esc(t.truck_number)} <span style="color:var(--dim)">/ MC ${esc(t.company_id)}</span>
    <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px" onclick="delFleetTruck(${i})">✕</button>
    <button class="btn btn-grey" style="float:right;padding:4px 10px;font-size:11px;margin-right:6px" onclick="resetFleetTruck(${i})">↺ reset</button></h2>
    <div class="ftoggrid">
    ${fTog(i,'dispatch_enabled','✅ Dispatch enabled','OFF = JECHT ignores this truck')}
    ${fTog(i,'contact_owner','👤 Contact owner','owner-directed messages')}
-   ${fTog(i,'contact_driver','📱 Contact driver','OFF = you set everything here')}
+   ${fTog(i,'contact_driver','📱 Contact driver','ON = JECHT may ask driver too')}
    ${fTog(i,'allow_multi_load','🔗 Multi-load (stitching)','chain legal loads')}
    ${fTog(i,'allow_multi_stop','📍 Multi-stop loads','accept multi-stop freight')}
    </div>
-   ${drvOff?`<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
-    <p style="color:var(--orange);font-size:12px;margin:0 0 8px">Driver contact OFF — you are this truck's mouth. Set its position & plan:</p>
+   <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
+    <p style="color:var(--orange);font-size:12px;margin:0 0 8px">🎛️ COCKPIT — you drive this truck. ${drvOn?'Driver contact is ON, so JECHT may also ask the driver; whatever you set here is the standing plan until then.':'Driver contact is OFF — you are this truck\'s only voice.'}</p>
     <div class="formgrid">
      <div><label>WHERE IS IT — STATE</label><select onchange="fSetTruckR(${i},'gps_state',this.value)"><option value="">— pick state —</option>${stateOptions(t.gps_state||'')}</select></div>
      <div><label>CITY</label><input list="cities_${i}" value="${esc(t.gps_city||'')}" placeholder="${t.gps_state?'pick or type city':'pick a state first'}" onchange="fSetTruck(${i},'gps_city',this.value.trim())"><datalist id="cities_${i}">${(US_CITIES[t.gps_state]||[]).map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
-     <div style="grid-column:1/-1"><label>WHERE TO — TARGET <span style="color:var(--dim)">(ctrl/⌘-click to pick several states)</span></label>
-      <div style="display:flex;gap:8px;align-items:flex-start">
+     <div style="grid-column:1/-1"><label>WHERE TO <span style="color:var(--dim)">— same four picks the driver gets</span></label>
+      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
        <select onchange="fSetDestMode(${i},this.value)" style="flex:0 0 auto">
-        <option value="states" ${destMode(t)==='states'?'selected':''}>Target states ▾</option>
-        <option value="MONEY" ${destMode(t)==='MONEY'?'selected':''}>💰 MONEY — best pay anywhere</option>
-        <option value="HOME" ${destMode(t)==='HOME'?'selected':''}>🏠 HOME</option>
+        <option value="MONEY" ${dm==='MONEY'?'selected':''}>💰 BEST MONEY — any direction</option>
+        <option value="HOME" ${dm==='HOME'?'selected':''}>🏠 HOME</option>
+        <option value="CITY" ${dm==='CITY'?'selected':''}>📍 PICK A CITY</option>
+        <option value="STATES" ${dm==='STATES'?'selected':''}>🎯 TARGET STATES</option>
+        <option value="DAYOFF" ${dm==='DAYOFF'?'selected':''}>🛑 DAY OFF — park it</option>
        </select>
-       ${destMode(t)==='states'?`<select multiple class="tmulti" size="6" onchange="fSetStates(${i},this)" style="flex:1">${US_STATES.map(([a,n])=>`<option value="${a}" ${destStates(t).includes(a)?'selected':''}>${a} — ${n}</option>`).join("")}</select>`:''}
+       ${dm==='STATES'?`<select multiple class="tmulti" size="6" onchange="fSetStates(${i},this)" style="flex:1;min-width:180px" title="ctrl/⌘-click for several">${US_STATES.map(([a,n])=>`<option value="${a}" ${destStates(t).includes(a)?'selected':''}>${a} — ${n}</option>`).join("")}</select>`:''}
+       ${dm==='CITY'?`<select onchange="fSetDestCitySt(${i},this.value)" style="flex:0 0 auto"><option value="">— state —</option>${stateOptions(destCityState(t))}</select>
+        <input list="dcity_${i}" value="${esc(destCity(t))}" placeholder="${destCityState(t)?'pick or type city':'pick a state first'}" onchange="fSetDestCity(${i},this.value)" style="flex:1;min-width:160px"><datalist id="dcity_${i}">${(US_CITIES[destCityState(t)]||[]).map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`:''}
       </div>
-      <div class="hint" style="margin-top:4px">JECHT hunts toward: <b style="color:var(--cyan)">${esc(t.dest_pref||'(anywhere)')}</b></div></div>
-     <div><label>DISPATCH LEVEL</label><select onchange="fSetTruck(${i},'level_code',+this.value)">${Object.entries(LEVELS).map(([v,n])=>`<option value="${v}" ${+t.level_code===+v?'selected':''}>${n}</option>`).join("")}</select></div>
+      <div class="hint" style="margin-top:4px">JECHT hunts toward: <b style="color:var(--cyan)">${dm==='DAYOFF'?'🛑 parked (no loads until next workday)':esc(t.dest_pref||'best pay, anywhere')}</b></div></div>
+     <div><label>DISPATCH LEVEL <span style="color:var(--dim)">(your call)</span></label><select onchange="fSetTruck(${i},'level_code',+this.value)">${Object.entries(LEVELS).map(([v,n])=>`<option value="${v}" ${+t.level_code===+v?'selected':''}>${n}</option>`).join("")}</select></div>
      <div><label>DRIVE HOURS LEFT (HOS)</label><input type="number" step="0.5" value="${esc(String(t.drive_hours))}" onchange="fSetTruck(${i},'drive_hours',this.value)"></div>
-    </div></div>`:`<p style="color:var(--dim);font-size:12px;margin:10px 0 0">Driver contact ON — JECHT will ask the driver for location & hours. Dispatch level is still your call:
-    <select style="margin-left:8px" onchange="fSetTruck(${i},'level_code',+this.value)">${Object.entries(LEVELS).map(([v,n])=>`<option value="${v}" ${+t.level_code===+v?'selected':''}>${n}</option>`).join("")}</select></p>`}
+    </div></div>
    </div>`});
  w.innerHTML=h}
 function pushFleet(){
@@ -826,7 +850,8 @@ function pushFleet(){
   const f={company_id:t.company_id,truck_number:t.truck_number,
    dispatch_enabled:t.dispatch_enabled?1:0,contact_owner:t.contact_owner?1:0,
    contact_driver:t.contact_driver?1:0,level_code:t.level_code||2,
-   allow_multi_load:t.allow_multi_load?1:0,allow_multi_stop:t.allow_multi_stop?1:0};
+   allow_multi_load:t.allow_multi_load?1:0,allow_multi_stop:t.allow_multi_stop?1:0,
+   day_off:t.day_off?1:0};
   if(t.gps_city)f.gps_city=t.gps_city;
   if(t.gps_state)f.gps_state=t.gps_state;
   if(t.dest_pref)f.dest_pref=t.dest_pref;

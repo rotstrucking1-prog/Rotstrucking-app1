@@ -761,6 +761,15 @@ function fSetDestMode(i,mode){const t=S.fleet.trucks[i];t.day_off=0;t._mode=mode
 function fSetStates(i,sel){const picks=[...sel.selectedOptions].map(o=>o.value);
  S.fleet.trucks[i].dest_pref=picks.join(',');save();
  const h=document.getElementById('desthint_'+i);if(h)h.textContent=picks.length?picks.join(','):'best pay, anywhere'}  // no full re-render → smooth multi-pick
+function fToggleState(i,st,el){const t=S.fleet.trucks[i];   // tap-to-toggle chips — pick as many states as you want, no freeze
+ let arr=destStates(t); arr=arr.includes(st)?arr.filter(x=>x!==st):arr.concat(st);
+ t._mode='STATES'; t.dest_pref=arr.join(','); save();
+ if(el){const on=arr.includes(st);
+  el.style.background=on?'var(--cyan)':'transparent';
+  el.style.color=on?'#001014':'var(--cyan)';
+  el.style.borderColor=on?'var(--cyan)':'#2a4a55';
+  el.classList.toggle('on',on);}
+ const h=document.getElementById('desthint_'+i);if(h)h.textContent=arr.length?arr.join(','):'best pay, anywhere'}
 function fSetDestCitySt(i,st){const t=S.fleet.trucks[i];t._cs=st;t._mode='CITY';
  if(t._cn&&st)t.dest_pref=`${t._cn}, ${st}`;save();fleetRender()}      // re-render scopes city list
 function fSetDestCity(i,city){const t=S.fleet.trucks[i];city=(city||'').trim();t._cn=city;t._mode='CITY';
@@ -831,7 +840,7 @@ function fleetRender(){
         <option value="STATES" ${dm==='STATES'?'selected':''}>🎯 TARGET STATES</option>
         <option value="DAYOFF" ${dm==='DAYOFF'?'selected':''}>🛑 DAY OFF — park it</option>
        </select>
-       ${dm==='STATES'?`<select multiple class="tmulti" size="6" onchange="fSetStates(${i},this)" style="flex:1;min-width:180px" title="ctrl/⌘-click for several">${US_STATES.map(([a,n])=>`<option value="${a}" ${destStates(t).includes(a)?'selected':''}>${a} — ${n}</option>`).join("")}</select>`:''}
+       ${dm==='STATES'?`<div class="schipwrap" style="flex:1;min-width:240px;max-height:140px;overflow:auto;display:flex;flex-wrap:wrap;gap:5px;padding:7px;border:1px solid var(--cyan);border-radius:6px;background:rgba(0,0,0,.18)" title="tap as many states as you want — tap again to remove">${US_STATES.map(([a,n])=>{const on=destStates(t).includes(a);return `<button type="button" onclick="fToggleState(${i},'${a}',this)" class="schip${on?' on':''}" style="font:11px Courier,monospace;letter-spacing:.5px;cursor:pointer;padding:4px 8px;border-radius:5px;border:1px solid ${on?'var(--cyan)':'#2a4a55'};background:${on?'var(--cyan)':'transparent'};color:${on?'#001014':'var(--cyan)'}" title="${esc(n)}">${a}</button>`}).join("")}</div>`:''}
        ${dm==='CITY'?`<select onchange="fSetDestCitySt(${i},this.value)" style="flex:0 0 auto"><option value="">— state —</option>${stateOptions(destCityState(t))}</select>
         <input list="dcity_${i}" value="${esc(destCity(t))}" placeholder="${destCityState(t)?'pick or type city':'pick a state first'}" onchange="fSetDestCity(${i},this.value)" style="flex:1;min-width:160px"><datalist id="dcity_${i}">${(US_CITIES[destCityState(t)]||[]).map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`:''}
       </div>

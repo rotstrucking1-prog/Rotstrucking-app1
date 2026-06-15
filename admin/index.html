@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JECHT ADMIN // COMMAND CENTER</title>
+<style>
+:root{
+  --bg:#060a12; --bg2:#0c1428; --bg3:#101e38;
+  --card:#0c1428; --card2:#101e38;
+  --orange:#ff7700; --orange-dim:rgba(255,119,0,0.25);
+  --amber:#ffa726; --gold:#ffd54f;
+  --cyan:#00d4ff; --cyan-dim:rgba(0,212,255,0.18);
+  --line:rgba(0,212,255,0.22); --border-hot:rgba(255,119,0,0.45);
+  --green:#00ff88; --red:#ff5252; --redder:#ff2244;
+  --text:#b8ccdf; --bright:#e8f2fb; --dim:#4a6878;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);
+  font-family:'Courier New',Courier,monospace;font-size:12px;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:
+  repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.14) 2px,rgba(0,0,0,0.14) 4px)}
+header{display:flex;align-items:center;gap:14px;padding:12px 18px;
+  background:var(--bg2);border:1px solid var(--border-hot);border-left:none;border-right:none;
+  box-shadow:0 0 24px var(--orange-dim),inset 0 1px 0 var(--border-hot);
+  position:sticky;top:0;z-index:50;overflow:hidden}
+header::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(to bottom,var(--orange),transparent)}
+header .logo{font-size:24px;font-weight:bold;letter-spacing:9px;color:var(--orange);
+  text-shadow:0 0 18px var(--orange),0 0 40px var(--orange-dim);animation:flicker 9s infinite}
+header .logo em{color:var(--cyan);font-style:normal;text-shadow:0 0 14px var(--cyan)}
+@keyframes flicker{0%,91%,93%,95%,100%{opacity:1}92%,94%{opacity:.55}}
+header .sub{font-size:9px;color:var(--dim);letter-spacing:4px;margin-top:3px;text-transform:uppercase}
+header .sub b{color:var(--cyan);font-weight:normal}
+header .ver{margin-left:auto;font-size:10px;color:var(--orange);border:1px solid var(--orange);
+  padding:5px 12px;letter-spacing:2px;background:rgba(255,119,0,.06);
+  box-shadow:0 0 12px var(--orange-dim);text-transform:uppercase}
+header .ver::before{content:"●";color:var(--green);margin-right:8px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;text-shadow:0 0 8px var(--green)}50%{opacity:.3}}
+header .clock{font-size:20px;color:var(--cyan);text-shadow:0 0 12px var(--cyan);
+  letter-spacing:3px;margin-left:14px}
+nav{display:flex;gap:8px;padding:10px 18px;background:var(--bg);
+  border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:49;flex-wrap:wrap}
+nav button{background:transparent;border:1px solid var(--line);color:var(--cyan);
+  padding:8px 18px;cursor:pointer;font-family:inherit;font-size:11px;
+  letter-spacing:3px;text-transform:uppercase;transition:.15s}
+nav button:hover{background:var(--cyan-dim);border-color:var(--cyan);box-shadow:0 0 10px var(--cyan-dim)}
+nav button.active{background:var(--orange);color:#000;border-color:var(--orange);
+  box-shadow:0 0 18px var(--orange-dim);font-weight:bold}
+nav .qbadge{margin-left:auto;font-size:10px;color:var(--green);border:1px solid var(--green);
+  padding:6px 12px;letter-spacing:1px;background:rgba(0,255,136,.06);align-self:center}
+main{padding:18px;max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.tab{display:none}.tab.show{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.card{border:1px solid var(--line);background:var(--bg2);padding:14px;margin-bottom:14px;
+  position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.4}
+h2{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--cyan);
+  font-weight:bold;margin-bottom:12px}
+h2::before{content:"// ";color:var(--cyan)}
+h2 .hint{font-size:9px;color:var(--dim);font-weight:normal;margin-left:8px;letter-spacing:1px;text-transform:none}
+label{display:block;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin:8px 0 3px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);
+  color:var(--bright);font-family:inherit;font-size:12px;padding:8px}
+textarea{min-height:90px;border-style:dashed;color:var(--green);font-size:11px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 10px var(--orange-dim)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.btn{display:inline-block;border:1px solid var(--line);background:transparent;color:var(--cyan);
+  padding:9px 18px;font-family:inherit;font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;transition:.15s;margin-top:10px}
+.btn:hover{filter:brightness(1.25)}
+.btn-orange{border-color:var(--orange);color:var(--orange);background:rgba(255,119,0,.08);box-shadow:0 0 12px var(--orange-dim)}
+.btn-orange:hover{background:var(--orange);color:#000;font-weight:bold}
+.btn-green{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.06);box-shadow:0 0 12px rgba(0,255,136,.18)}
+.btn-green:hover{background:var(--green);color:#000;font-weight:bold}
+.btn-red{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.07)}
+.btn-red:hover{background:var(--red);color:#000;font-weight:bold}
+.btn-grey{border-color:var(--line);color:var(--dim)}
+.btn-grey:hover{color:var(--text);border-color:var(--text)}
+.btn.sm{padding:6px 12px;font-size:10px;margin-top:0}
+/* company card */
+.co{border:1px solid var(--border-hot);background:var(--bg3);margin-bottom:14px;padding:0;overflow:hidden}
+.co-head{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,119,0,.05);
+  border-bottom:1px solid var(--line);cursor:pointer}
+.co-head .nm{font-size:15px;color:var(--orange);letter-spacing:2px;font-weight:bold}
+.co-head .mc{font-size:10px;color:var(--dim);letter-spacing:1px}
+.co-body{padding:14px;display:none}
+.co.open .co-body{display:block}
+.co.open .co-head .chev{transform:rotate(90deg)}
+.chev{margin-left:auto;color:var(--cyan);transition:.2s}
+.badge{display:inline-block;font-size:9px;letter-spacing:1px;padding:3px 8px;border:1px solid;text-transform:uppercase}
+.b-charge{color:var(--cyan);border-color:var(--cyan)}
+.b-free{color:var(--green);border-color:var(--green);box-shadow:0 0 10px rgba(0,255,136,.2)}
+.b-grace{color:var(--gold);border-color:var(--gold)}
+.b-unpaid{color:var(--red);border-color:var(--red)}
+/* segmented mode picker */
+.seg{display:inline-flex;border:1px solid var(--line);overflow:hidden}
+.seg button{background:transparent;border:none;border-right:1px solid var(--line);color:var(--dim);
+  padding:7px 14px;font-family:inherit;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--orange);color:#000;font-weight:bold}
+.seg.green button.on{background:var(--green)}
+.seg.gold button.on{background:var(--gold)}
+/* truck row */
+.tk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;margin-top:8px;
+  border:1px solid var(--line);background:rgba(0,212,255,.03)}
+.tk .tno{font-size:13px;color:var(--bright);letter-spacing:1px;min-width:70px}
+.tk.outlaw{border-color:var(--gold);background:rgba(255,213,79,.06)}
+.sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.sw .dot{width:42px;height:20px;border:1px solid var(--line);border-radius:11px;position:relative;background:var(--bg);transition:.2s}
+.sw .dot::after{content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:var(--dim);transition:.2s}
+.sw.on .dot{border-color:var(--gold);box-shadow:0 0 10px rgba(255,213,79,.3)}
+.sw.on .dot::after{left:23px;background:var(--gold)}
+.sw .lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+.sw.on .lbl{color:var(--gold)}
+/* console */
+#console{background:#000;border:1px solid var(--line);min-height:240px;max-height:420px;overflow:auto;
+  padding:12px;font-size:12px;line-height:1.7;white-space:pre-wrap;color:var(--green)}
+#console .u{color:var(--cyan)}
+#console .j{color:var(--orange)}
+#console .e{color:var(--red)}
+.cmdline{display:flex;gap:8px;margin-top:10px}
+.cmdline span{color:var(--orange);align-self:center;font-size:16px}
+.themegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.themeswatch{cursor:pointer;border:1px solid var(--line);padding:8px;text-align:center;transition:all .15s;background:rgba(0,212,255,0.02)}
+.themeswatch:hover{border-color:var(--cyan)}
+.themeswatch.on{border-color:var(--orange);box-shadow:0 0 14px var(--orange-dim)}
+.swchip{height:46px;border:1px solid;display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:6px}
+.swchip span{width:13px;height:13px;border-radius:50%;display:inline-block}
+.swchip b{font-family:inherit;font-size:14px;letter-spacing:1px}
+.swname{font-size:11px;letter-spacing:1px;color:var(--text);text-transform:uppercase}
+.themeswatch.on .swname{color:var(--orange);font-weight:bold}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--orange);color:#000;
+  padding:12px 26px;font-weight:bold;letter-spacing:1px;display:none;z-index:99;box-shadow:0 0 30px var(--orange-dim)}
+.note{font-size:10px;color:var(--dim);line-height:1.6;margin-top:8px}
+.note b{color:var(--orange)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">J E C H T <em>//</em></div>
+    <div class="sub">ADMIN <b>COMMAND CENTER</b> · OWNER CONSOLE · <b>not for dispatchers</b></div>
+  </div>
+  <div class="clock" id="hdrclock">--:--:--</div>
+  <div class="ver">ADMIN LINK</div>
+</header>
+<nav>
+  <button class="active" data-tab="fleet" onclick="tab(this)">Fleet &amp; Billing</button>
+  <button data-tab="console" onclick="tab(this)">Command Console</button>
+  <button data-tab="settings" onclick="tab(this)">Settings</button>
+  <div class="qbadge" id="qbadge">OUTBOX: 0</div>
+</nav>
+<main>
+
+<!-- ============ FLEET & BILLING ============ -->
+<div class="tab show" id="tab-fleet">
+  <div class="card">
+    <h2>Add Authority <span class="hint">a trucking company you dispatch for</span></h2>
+    <div class="row">
+      <div><label>Company name</label><input id="c_name" placeholder="Rots Trucking LLC"></div>
+      <div><label>MC number</label><input id="c_mc" placeholder="1559338"></div>
+    </div>
+    <button class="btn btn-orange" onclick="addCo()">+ ADD AUTHORITY</button>
+    <div class="note">Tip: paste a bundle JECHT emailed you below to auto-load every company &amp; truck — no typing.</div>
+    <textarea id="sync" placeholder="(optional) paste a JECHT bundle here to auto-sync your roster" style="margin-top:10px"></textarea>
+    <button class="btn btn-grey sm" onclick="syncRoster()">SYNC ROSTER FROM BUNDLE</button>
+  </div>
+
+  <div id="fleetwrap"></div>
+
+  <div class="card">
+    <h2>Push to JECHT <span class="hint">sends every queued change in one sealed email</span></h2>
+    <div class="note" id="pushcount">Outbox empty — make a change above and it queues here.</div>
+    <button class="btn btn-green" style="font-size:15px;padding:13px 34px" onclick="pushOutbox()">📤 PUSH TO JECHT</button>
+    <button class="btn btn-grey" onclick="copyOutbox()">COPY BLOCKS</button>
+    <button class="btn btn-grey" onclick="clearOutbox()">CLEAR OUTBOX</button>
+    <div class="note">Builds one sealed block per change and opens an email to <b>dispatchjecht@gmail.com</b>. Send it — JECHT applies every switch on its next cycle. Paper-sealed, checksum-verified, owner-only.</div>
+  </div>
+</div>
+
+<!-- ============ COMMAND CONSOLE ============ -->
+<div class="tab" id="tab-console">
+  <div class="card">
+    <h2>Command Console <span class="hint">talk to JECHT in shorthand — every command queues a sealed block</span></h2>
+    <div id="console"></div>
+    <div class="cmdline">
+      <span>&gt;</span>
+      <input id="cmd" placeholder="e.g.  free 1559338   ·   outlaw 1559338 101 on   ·   charge 1559338 5" onkeydown="if(event.key==='Enter')runCmd()">
+      <button class="btn btn-orange sm" style="margin-top:0" onclick="runCmd()">RUN</button>
+    </div>
+    <div class="note">
+      <b>free</b> &lt;MC&gt; — comp this client (no fee, never shut off)<br>
+      <b>grace</b> &lt;MC&gt; — keep access on while unpaid (fee still accrues)<br>
+      <b>charge</b> &lt;MC&gt; [pct] — normal billing at pct% (default 5), marks paid<br>
+      <b>freeuntil</b> &lt;MC&gt; &lt;YYYY-MM-DD&gt; — free until a date, then auto-charge<br>
+      <b>paid</b> &lt;MC&gt; &lt;0|1&gt; — flip the paid flag<br>
+      <b>outlaw</b> &lt;MC&gt; &lt;truck#&gt; &lt;on|off&gt; — unlock/lock the OUTLAW lane<br>
+      <b>maxlevel</b> &lt;MC&gt; &lt;truck#&gt; &lt;1-4&gt; — set a hard dispatch ceiling<br>
+      <b>help</b> · <b>outbox</b> · <b>push</b>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="tab" id="tab-settings">
+  <div class="card">
+    <h2>Display Theme <span class="hint">5 cockpit color schemes — same feel, your palette</span></h2>
+    <div id="themewrap" class="themegrid"></div>
+  </div>
+  <div class="card">
+    <h2>Owner Identity <span class="hint">stamped on outbound, never leaves this machine</span></h2>
+    <div class="row">
+      <div><label>Your name</label><input id="o_name" placeholder="Brad Haga"></div>
+      <div><label>Mail compose</label>
+        <select id="o_mailmode"><option value="gmail">Gmail web compose</option><option value="mailto">System mail app</option></select>
+      </div>
+    </div>
+    <button class="btn btn-green" onclick="saveSettings()">SAVE</button>
+    <div class="note">Outbound billing &amp; rule blocks go <b>only</b> to <b>dispatchjecht@gmail.com</b>. Theme + roster persist in this browser and survive Save.</div>
+  </div>
+</div>
+
+</main>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const WIRE_VERSION="1.2", JECHT_EMAIL="dispatchjecht@gmail.com";
+// field order mirrors jecht_wire.py BLOCK_TYPES (owner-only blocks)
+const SPEC={
+ BILLING:["company_id","billing_mode","fee_pct","free_until","paid_flag"],
+ TRUCKADMIN:["company_id","truck_number","outlaw_ok","max_level"]
+};
+const THEMES={"command":{"name":"Command Orange","sw":"#ff7700","v":{"bg":"#060a12","bg2":"#0c1428","bg3":"#101e38","card":"#0c1428","card2":"#101e38","orange":"#ff7700","orange-dim":"rgba(255,119,0,0.25)","amber":"#ffa726","gold":"#ffd54f","cyan":"#00d4ff","cyan-dim":"rgba(0,212,255,0.18)","line":"rgba(0,212,255,0.22)","border-hot":"rgba(255,119,0,0.45)","green":"#00ff88","red":"#ff5252","redder":"#ff2244","text":"#b8ccdf","bright":"#e8f2fb","dim":"#4a6878"}},"highvis":{"name":"High-Vis Cyan","sw":"#3fe0ff","v":{"bg":"#04080f","bg2":"#0a1626","bg3":"#10243c","card":"#0a1626","card2":"#10243c","orange":"#ff9d2e","orange-dim":"rgba(255,157,46,0.28)","amber":"#ffc14d","gold":"#ffe08a","cyan":"#3fe0ff","cyan-dim":"rgba(63,224,255,0.22)","line":"rgba(63,224,255,0.34)","border-hot":"rgba(255,157,46,0.5)","green":"#3dffa0","red":"#ff6b6b","redder":"#ff3b5c","text":"#d9e8f6","bright":"#ffffff","dim":"#6f90a8"}},"amber":{"name":"Amber CRT","sw":"#ffb000","v":{"bg":"#0a0700","bg2":"#140d02","bg3":"#1f1604","card":"#140d02","card2":"#1f1604","orange":"#ffb000","orange-dim":"rgba(255,176,0,0.3)","amber":"#ffcb52","gold":"#ffe08a","cyan":"#ffce6b","cyan-dim":"rgba(255,206,107,0.2)","line":"rgba(255,176,0,0.3)","border-hot":"rgba(255,176,0,0.5)","green":"#a6ff5a","red":"#ff7a52","redder":"#ff4326","text":"#f6dca6","bright":"#fff3d4","dim":"#8a6a3a"}},"phosphor":{"name":"Phosphor Green","sw":"#33ff99","v":{"bg":"#000a05","bg2":"#021610","bg3":"#04221a","card":"#021610","card2":"#04221a","orange":"#33ff99","orange-dim":"rgba(51,255,153,0.25)","amber":"#9dffba","gold":"#c6ffd9","cyan":"#16d27a","cyan-dim":"rgba(22,210,122,0.2)","line":"rgba(51,255,153,0.26)","border-hot":"rgba(51,255,153,0.45)","green":"#33ff99","red":"#ff6b6b","redder":"#ff3b3b","text":"#c4f6da","bright":"#ecfff4","dim":"#558a6f"}},"daylight":{"name":"Daylight (Light)","sw":"#d35400","v":{"bg":"#eef2f7","bg2":"#ffffff","bg3":"#e3e9f1","card":"#ffffff","card2":"#e3e9f1","orange":"#c0490a","orange-dim":"rgba(192,73,10,0.14)","amber":"#9a5b00","gold":"#7a5c00","cyan":"#0067a3","cyan-dim":"rgba(0,103,163,0.1)","line":"rgba(0,103,163,0.32)","border-hot":"rgba(192,73,10,0.4)","green":"#1b7f4d","red":"#b3261e","redder":"#8f160d","text":"#1d2a36","bright":"#091420","dim":"#5d6f7e"}}};
+
+// ---------- state ----------
+let S=JSON.parse(localStorage.getItem("jecht_admin")||"{}");
+S.cos=S.cos||{}; S.settings=S.settings||{}; S.outbox=S.outbox||[]; S.clog=S.clog||[];
+function save(){localStorage.setItem("jecht_admin",JSON.stringify(S))}
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2600)}
+function tab(b){document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("show"));
+ document.getElementById("tab-"+b.dataset.tab).classList.add("show");
+ if(b.dataset.tab==="console")renderConsole();}
+
+// ---------- SHA-256 (offline, double-click-safe) ----------
+function sha256(ascii){function rr(v,a){return(v>>>a)|(v<<(32-a))}
+ var mc=Math.pow,ms=mc(2,32),res="",words=[],len=ascii.length*8;
+ var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pc=k.length,iscomp={};
+ for(var c=2;pc<64;c++){if(!iscomp[c]){for(var i=0;i<313;i+=c)iscomp[i]=c;
+  hash[pc]=(mc(c,.5)*ms)|0;k[pc++]=(mc(c,1/3)*ms)|0}}
+ ascii+="\x80";while(ascii.length%64-56)ascii+="\x00";
+ for(var i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8}
+ words[words.length]=(len/ms)|0;words[words.length]=len;
+ for(var j=0;j<words.length;){var w=words.slice(j,j+=16),old=hash.slice(0,8);
+  for(var i=0;i<64;i++){var w15=w[i-15],w2=w[i-2];
+   var a=hash[0],e=hash[4];
+   var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^(~e&hash[6]))+k[i]
+    +(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+   var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+   hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0}
+  for(var i=0;i<8;i++)hash[i]=(hash[i]+old[i])|0}
+ for(var i=0;i<8;i++)for(var j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;res+=((b>>4).toString(16))+((b&15).toString(16))}
+ return res}
+function csum(body){return sha256(unescape(encodeURIComponent(body))).slice(0,12)}
+function blockId(){let s="";for(let i=0;i<12;i++)s+="0123456789abcdef"[Math.floor(Math.random()*16)];return s}
+function buildBlock(type,fields){const body=SPEC[type].filter(k=>fields[k]!==undefined&&fields[k]!==null&&fields[k]!=="")
+ .map(k=>k+"="+fields[k]).join("\n");
+ return "===JECHT|"+type+"|"+WIRE_VERSION+"|"+blockId()+"===\n"+body+"\n===END|"+csum(body)+"===\n"}
+
+// ---------- theme ----------
+function applyTheme(key){const t=THEMES[key]||THEMES.command;const r=document.documentElement;
+ for(const k in t.v)r.style.setProperty('--'+k,t.v[k]);
+ r.setAttribute('data-theme',key);S.settings.theme=key;save();
+ document.querySelectorAll('.themeswatch').forEach(el=>el.classList.toggle('on',el.dataset.theme===key));}
+function renderThemes(){const w=document.getElementById("themewrap");let h="";
+ const cur=S.settings.theme||"command";
+ Object.entries(THEMES).forEach(([key,t])=>{
+  h+=`<div class="themeswatch ${key===cur?'on':''}" data-theme="${key}" onclick="applyTheme('${key}')">
+   <div class="swchip" style="background:${t.v.bg};border-color:${t.v.line}">
+    <span style="background:${t.v.orange}"></span><span style="background:${t.v.cyan}"></span>
+    <span style="background:${t.v.green}"></span><b style="color:${t.v.text}">Aa</b></div>
+   <div class="swname">${t.name}</div></div>`});
+ w.innerHTML=h}
+
+// ---------- mail ----------
+function openMail(to,subj,body){
+ if((S.settings.mailmode||"gmail")==="gmail"){
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);
+ }else{window.open(`mailto:${to}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);}}
+
+// ---------- roster ----------
+function co(mc){return S.cos[String(mc)]}
+function addCo(){
+ const name=document.getElementById("c_name").value.trim();
+ const mc=document.getElementById("c_mc").value.trim();
+ if(!mc)return toast("MC number required");
+ S.cos[mc]=S.cos[mc]||{name:name||("MC "+mc),mc,billing_mode:"CHARGE",fee_pct:5,free_until:"",paid:1,trucks:{}};
+ if(name)S.cos[mc].name=name;
+ document.getElementById("c_name").value="";document.getElementById("c_mc").value="";
+ save();renderFleet();toast("Authority added ✓");}
+function addTruck(mc){
+ const id="addtk_"+mc;const v=(document.getElementById(id).value||"").trim();
+ if(!v)return toast("Enter a truck number");
+ co(mc).trucks[v]=co(mc).trucks[v]||{outlaw_ok:0,max_level:""};
+ save();renderFleet();}
+function delCo(mc){if(!confirm("Remove "+(co(mc).name)+" from this console? (does not change JECHT)"))return;
+ delete S.cos[mc];save();renderFleet();}
+
+function billBadge(c){
+ const today=new Date().toISOString().slice(0,10);
+ const win=c.free_until&&c.free_until>=today;
+ if(c.billing_mode==="FREE")return '<span class="badge b-free">FREE · comped</span>';
+ if(c.billing_mode==="GRACE")return '<span class="badge b-grace">GRACE · on, unpaid</span>';
+ if(win)return '<span class="badge b-free">FREE until '+c.free_until+'</span>';
+ if(!c.paid)return '<span class="badge b-unpaid">UNPAID · no dispatch</span>';
+ return '<span class="badge b-charge">CHARGE · '+(c.fee_pct||5)+'%</span>';}
+
+function renderFleet(){
+ const w=document.getElementById("fleetwrap");
+ const ids=Object.keys(S.cos);
+ if(!ids.length){w.innerHTML='<div class="card"><div class="note">No authorities yet. Add one above, or paste a JECHT bundle to auto-sync.</div></div>';return}
+ let h="";
+ ids.forEach(mc=>{const c=co(mc);const open=c._open?"open":"";
+  let tk="";
+  Object.keys(c.trucks).forEach(tn=>{const t=c.trucks[tn];const on=t.outlaw_ok?"on":"";const ocls=t.outlaw_ok?"outlaw":"";
+   tk+=`<div class="tk ${ocls}">
+     <div class="tno">🚛 ${tn}</div>
+     <div class="sw ${on}" onclick="toggleOutlaw('${mc}','${tn}')"><div class="dot"></div><div class="lbl">OUTLAW ${t.outlaw_ok?'UNLOCKED':'locked'}</div></div>
+     <div style="display:flex;align-items:center;gap:6px"><label style="margin:0">max lvl</label>
+       <select style="width:auto" onchange="setMax('${mc}','${tn}',this.value)">
+         <option value="">—</option><option ${t.max_level==1?'selected':''} value="1">1 SAFE</option>
+         <option ${t.max_level==2?'selected':''} value="2">2 MOD</option>
+         <option ${t.max_level==3?'selected':''} value="3">3 AGGR</option>
+         <option ${t.max_level==4?'selected':''} value="4">4 OUTLAW</option></select></div>
+     <button class="btn btn-orange sm" style="margin-left:auto" onclick="queueTruck('${mc}','${tn}')">QUEUE RULE</button>
+   </div>`;});
+  h+=`<div class="co ${open}">
+   <div class="co-head" onclick="toggleCo('${mc}')">
+     <div><div class="nm">${c.name}</div><div class="mc">MC ${mc}</div></div>
+     ${billBadge(c)}<span class="chev">▶</span>
+   </div>
+   <div class="co-body">
+     <h2>Billing <span class="hint">who pays, how much, and whether to ever shut them off</span></h2>
+     <div class="seg" style="margin-bottom:6px">
+       <button class="${c.billing_mode==='CHARGE'?'on':''}" onclick="setMode('${mc}','CHARGE')">CHARGE</button>
+       <button class="${c.billing_mode==='FREE'?'on':''}" onclick="setMode('${mc}','FREE')">FREE</button>
+       <button class="${c.billing_mode==='GRACE'?'on':''}" onclick="setMode('${mc}','GRACE')">GRACE</button>
+     </div>
+     <div class="row">
+       <div><label>Fee %</label><input type="number" step="0.5" value="${c.fee_pct}" onchange="setFee('${mc}',this.value)"></div>
+       <div><label>Free until (optional)</label><input type="date" value="${c.free_until||''}" onchange="setFreeUntil('${mc}',this.value)"></div>
+       <div><label>Paid flag</label><select onchange="setPaid('${mc}',this.value)"><option ${c.paid?'selected':''} value="1">PAID</option><option ${!c.paid?'selected':''} value="0">UNPAID</option></select></div>
+     </div>
+     <button class="btn btn-orange" onclick="queueBilling('${mc}')">QUEUE BILLING CHANGE</button>
+     <button class="btn btn-red sm" style="margin-left:8px" onclick="delCo('${mc}')">remove</button>
+     <h2 style="margin-top:18px">Trucks <span class="hint">OUTLAW lane is owner-gated — flip it here per truck</span></h2>
+     ${tk||'<div class="note">No trucks yet.</div>'}
+     <div style="display:flex;gap:8px;margin-top:10px;max-width:320px">
+       <input id="addtk_${mc}" placeholder="truck # (e.g. 101)">
+       <button class="btn btn-grey sm" onclick="addTruck('${mc}')">+ TRUCK</button>
+     </div>
+   </div></div>`;});
+ w.innerHTML=h;}
+
+function toggleCo(mc){co(mc)._open=!co(mc)._open;save();renderFleet();}
+function setMode(mc,m){co(mc).billing_mode=m;if(m==="FREE")co(mc).paid=co(mc).paid;save();renderFleet();}
+function setFee(mc,v){co(mc).fee_pct=parseFloat(v)||0;save();renderFleet();}
+function setFreeUntil(mc,v){co(mc).free_until=v;save();renderFleet();}
+function setPaid(mc,v){co(mc).paid=(v==="1")?1:0;save();renderFleet();}
+function toggleOutlaw(mc,tn){const t=co(mc).trucks[tn];t.outlaw_ok=t.outlaw_ok?0:1;save();renderFleet();}
+function setMax(mc,tn,v){co(mc).trucks[tn].max_level=v;save();}
+
+// ---------- outbox ----------
+function qbadge(){document.getElementById("qbadge").textContent="OUTBOX: "+S.outbox.length;
+ const pc=document.getElementById("pushcount");
+ pc.textContent=S.outbox.length?(S.outbox.length+" change(s) queued — ready to push."):"Outbox empty — make a change above and it queues here.";}
+function enqueue(block,human){S.outbox.push(block);S.clog.push({t:"j",m:human});save();qbadge();renderConsole();}
+function queueBilling(mc){const c=co(mc);
+ const f={company_id:mc,billing_mode:c.billing_mode,fee_pct:c.fee_pct,free_until:c.free_until,paid_flag:c.paid};
+ enqueue(buildBlock("BILLING",f),`BILLING · ${c.name} (MC ${mc}) → ${c.billing_mode} @ ${c.fee_pct}%`+(c.free_until?` · free until ${c.free_until}`:"")+` · ${c.paid?'PAID':'UNPAID'}`);
+ toast("Billing change queued ✓");}
+function queueTruck(mc,tn){const t=co(mc).trucks[tn];
+ const f={company_id:mc,truck_number:tn,outlaw_ok:t.outlaw_ok,max_level:t.max_level};
+ enqueue(buildBlock("TRUCKADMIN",f),`TRUCKADMIN · MC ${mc} truck ${tn} → OUTLAW ${t.outlaw_ok?'UNLOCKED':'locked'}`+(t.max_level?` · max lvl ${t.max_level}`:""));
+ toast("Truck rule queued ✓");}
+function pushOutbox(){
+ if(!S.outbox.length)return toast("Nothing queued");
+ const body="JECHT ADMIN // OWNER PUSH\n\n"+S.outbox.join("\n");
+ openMail(JECHT_EMAIL,"JECHT ADMIN BLOCKS",body);
+ navigator.clipboard&&navigator.clipboard.writeText(body).catch(()=>{});
+ S.clog.push({t:"j",m:`✦ pushed ${S.outbox.length} block(s) to ${JECHT_EMAIL} — applies next cycle`});
+ S.outbox=[];save();qbadge();renderConsole();
+ toast("Pushed to JECHT — send the email ✓");}
+function copyOutbox(){if(!S.outbox.length)return toast("Nothing queued");
+ navigator.clipboard.writeText(S.outbox.join("\n")).then(()=>toast("Blocks copied ✓")).catch(()=>toast("Copy failed"));}
+function clearOutbox(){S.outbox=[];save();qbadge();renderConsole();toast("Outbox cleared");}
+
+// ---------- console / chat ----------
+function renderConsole(){const c=document.getElementById("console");if(!c)return;
+ if(!S.clog.length){c.innerHTML='<span class="j">JECHT // ADMIN LINK ONLINE.</span>\nType <span class="u">help</span> for commands, or use the Fleet tab.';return}
+ c.innerHTML=S.clog.slice(-200).map(l=>{
+  if(l.t==="u")return '<span class="u">&gt; '+esc(l.m)+'</span>';
+  if(l.t==="e")return '<span class="e">JECHT // '+esc(l.m)+'</span>';
+  return '<span class="j">JECHT // '+esc(l.m)+'</span>';}).join("\n");
+ c.scrollTop=c.scrollHeight;}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function jlog(m,t){S.clog.push({t:t||"j",m});save();renderConsole();}
+function ensureCo(mc){if(!co(mc)){S.cos[mc]={name:"MC "+mc,mc,billing_mode:"CHARGE",fee_pct:5,free_until:"",paid:1,trucks:{}};}return co(mc);}
+function runCmd(){
+ const el=document.getElementById("cmd");const raw=(el.value||"").trim();if(!raw)return;
+ el.value="";S.clog.push({t:"u",m:raw});save();
+ const p=raw.split(/\s+/);const cmd=p[0].toLowerCase();
+ try{
+  if(cmd==="help"){jlog("commands: free · grace · charge · freeuntil · paid · outlaw · maxlevel · outbox · push");}
+  else if(cmd==="outbox"){jlog(S.outbox.length?(S.outbox.length+" block(s) queued"):"outbox empty");}
+  else if(cmd==="push"){renderConsole();pushOutbox();}
+  else if(cmd==="free"){const mc=req(p[1],"MC");const c=ensureCo(mc);c.billing_mode="FREE";save();renderFleet();
+    enqueue(buildBlock("BILLING",{company_id:mc,billing_mode:"FREE"}),`BILLING · MC ${mc} → FREE (comped, never shut off)`);
+    jlog(`MC ${mc} set FREE — on the house, dispatch never cut off. Queued. Hit push when ready.`);}
+  else if(cmd==="grace"){const mc=req(p[1],"MC");const c=ensureCo(mc);c.billing_mode="GRACE";save();renderFleet();
+    enqueue(buildBlock("BILLING",{company_id:mc,billing_mode:"GRACE"}),`BILLING · MC ${mc} → GRACE (access on, fee still accrues)`);
+    jlog(`MC ${mc} set GRACE — access stays on while unpaid; fee still accrues. Queued.`);}
+  else if(cmd==="charge"){const mc=req(p[1],"MC");const pct=p[2]?parseFloat(p[2]):5;const c=ensureCo(mc);
+    c.billing_mode="CHARGE";c.fee_pct=pct;c.paid=1;c.free_until="";save();renderFleet();
+    enqueue(buildBlock("BILLING",{company_id:mc,billing_mode:"CHARGE",fee_pct:pct,paid_flag:1,free_until:""}),`BILLING · MC ${mc} → CHARGE @ ${pct}% (paid)`);
+    jlog(`MC ${mc} set CHARGE @ ${pct}%, marked paid. Queued.`);}
+  else if(cmd==="freeuntil"){const mc=req(p[1],"MC");const d=req(p[2],"date YYYY-MM-DD");const c=ensureCo(mc);
+    c.free_until=d;save();renderFleet();
+    enqueue(buildBlock("BILLING",{company_id:mc,free_until:d}),`BILLING · MC ${mc} → free until ${d}`);
+    jlog(`MC ${mc} comped until ${d}, then auto-charges. Queued.`);}
+  else if(cmd==="paid"){const mc=req(p[1],"MC");const v=req(p[2],"0 or 1");const c=ensureCo(mc);
+    c.paid=(v==="1")?1:0;save();renderFleet();
+    enqueue(buildBlock("BILLING",{company_id:mc,paid_flag:c.paid}),`BILLING · MC ${mc} → paid=${c.paid}`);
+    jlog(`MC ${mc} paid flag = ${c.paid}. Queued.`);}
+  else if(cmd==="outlaw"){const mc=req(p[1],"MC");const tn=req(p[2],"truck#");const st=req(p[3],"on/off").toLowerCase();
+    const on=(st==="on"||st==="1")?1:0;const c=ensureCo(mc);c.trucks[tn]=c.trucks[tn]||{outlaw_ok:0,max_level:""};c.trucks[tn].outlaw_ok=on;save();renderFleet();
+    enqueue(buildBlock("TRUCKADMIN",{company_id:mc,truck_number:tn,outlaw_ok:on}),`TRUCKADMIN · MC ${mc} truck ${tn} → OUTLAW ${on?'UNLOCKED':'locked'}`);
+    jlog(`Truck ${tn} (MC ${mc}) OUTLAW lane ${on?'UNLOCKED — exempt drive-time math live':'LOCKED — real HOS enforced'}. Queued.`);}
+  else if(cmd==="maxlevel"){const mc=req(p[1],"MC");const tn=req(p[2],"truck#");const lv=req(p[3],"1-4");const c=ensureCo(mc);
+    c.trucks[tn]=c.trucks[tn]||{outlaw_ok:0,max_level:""};c.trucks[tn].max_level=lv;save();renderFleet();
+    enqueue(buildBlock("TRUCKADMIN",{company_id:mc,truck_number:tn,max_level:lv}),`TRUCKADMIN · MC ${mc} truck ${tn} → max level ${lv}`);
+    jlog(`Truck ${tn} (MC ${mc}) hard ceiling set to level ${lv}. Queued.`);}
+  else{jlog("unknown command '"+cmd+"'. type help.","e");}
+ }catch(err){jlog(err.message||String(err),"e");}
+}
+function req(v,what){if(v===undefined||v==="")throw new Error("missing "+what);return v;}
+
+// ---------- roster sync from a JECHT bundle ----------
+function syncRoster(){
+ const txt=document.getElementById("sync").value;if(!txt.trim())return toast("Paste a bundle first");
+ const re=/===JECHT\|([A-Z]+)\|([\d.]+)\|([0-9a-f]+)===\n([\s\S]*?)\n===END\|([0-9a-f]+)===/g;
+ let m,learnedCo=0,learnedTk=0;const byId={};
+ while((m=re.exec(txt))){const[,type,,, body]=m;const f={};
+  body.split("\n").forEach(l=>{const i=l.indexOf("=");if(i>0)f[l.slice(0,i)]=l.slice(i+1)});
+  if(type==="NEWCOMPANY"||type==="PAYCO"){const mc=f.mc_number||f.company_id;if(mc){ensureCo(mc);co(mc).name=f.name||f.company_name||co(mc).name;
+    if(f.paid_flag!==undefined)co(mc).paid=+f.paid_flag?1:0;learnedCo++;byId[f.company_id]=mc;byId[mc]=mc;}}
+  if(type==="NEWTRUCK"||type==="PAYTRUCK"){const key=byId[f.company_id]||f.company_id;if(key&&co(key)&&f.truck_number){
+    co(key).trucks[f.truck_number]=co(key).trucks[f.truck_number]||{outlaw_ok:0,max_level:""};learnedTk++;}}
+ }
+ save();renderFleet();document.getElementById("sync").value="";
+ toast(`Synced ${learnedCo} company / ${learnedTk} truck rows ✓`);}
+
+// ---------- settings ----------
+function saveSettings(){S.settings.name=document.getElementById("o_name").value.trim();
+ S.settings.mailmode=document.getElementById("o_mailmode").value;save();toast("Saved ✓");}
+
+// ---------- init ----------
+(function(){
+ applyTheme(S.settings.theme||"command");renderThemes();
+ document.getElementById("o_name").value=S.settings.name||"";
+ document.getElementById("o_mailmode").value=S.settings.mailmode||"gmail";
+ renderFleet();qbadge();renderConsole();
+ const c=document.getElementById("hdrclock");
+ function t(){const d=new Date();c.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,"0")).join(":");}
+ t();setInterval(t,1000);
+})();
+</script>
+</body>
+</html>

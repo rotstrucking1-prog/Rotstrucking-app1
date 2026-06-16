@@ -1,0 +1,6342 @@
+{
+  "version": "1.0",
+  "skeleton": "SK_PeasantMan_Skeleton",
+  "totalEntries": 322,
+  "entries": [
+    {
+      "name": "Acknowledging",
+      "asset": "/Game/AoC/Animations/Emotes/Acknowledging",
+      "category": "social",
+      "subcategory": "acknowledging",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Angry_Gesture",
+      "asset": "/Game/AoC/Animations/Emotes/Angry_Gesture",
+      "category": "social",
+      "subcategory": "angry_gesture",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "angry",
+        "gesture",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Backward_Right_Turn",
+      "asset": "/Game/AoC/Animations/Movement/Backward_Right_Turn",
+      "category": "movement",
+      "subcategory": "backward_right_turn",
+      "duration": 0.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "backward",
+        "movement",
+        "right",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Backward_Walking_Turn",
+      "asset": "/Game/AoC/Animations/Movement/Backward_Walking_Turn",
+      "category": "movement",
+      "subcategory": "backward_walking_turn",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "backward",
+        "movement",
+        "turn",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Baseball_Bunt",
+      "asset": "/Game/AoC/Animations/Misc/Baseball_Bunt",
+      "category": "misc",
+      "subcategory": "baseball_bunt",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "baseball",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Baseball_Hit",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Baseball_Hit",
+      "category": "combat_melee",
+      "subcategory": "baseball_hit",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "baseball",
+        "combat",
+        "hit",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Baseball_Pitching",
+      "asset": "/Game/AoC/Animations/Misc/Baseball_Pitching",
+      "category": "misc",
+      "subcategory": "baseball_pitching",
+      "duration": 2.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "baseball",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Bash",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Bash",
+      "category": "combat_melee",
+      "subcategory": "bash",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Beckoning",
+      "asset": "/Game/AoC/Animations/Emotes/Beckoning",
+      "category": "social",
+      "subcategory": "beckoning",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Block",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Block",
+      "category": "combat_melee",
+      "subcategory": "block",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Body_Block",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Body_Block",
+      "category": "combat_melee",
+      "subcategory": "body_block",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "body",
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Booty_Hip_Hop_Dance",
+      "asset": "/Game/AoC/Animations/Dance/Booty_Hip_Hop_Dance",
+      "category": "dance",
+      "subcategory": "booty_hip_hop_dance",
+      "duration": 7.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance",
+        "hip_hop"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Bouncing_Fight_Idle",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Bouncing_Fight_Idle",
+      "category": "combat_melee",
+      "subcategory": "bouncing_fight_idle",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "idle",
+        "melee"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Braced_Hang_Hop_Left",
+      "asset": "/Game/AoC/Animations/Movement/Braced_Hang_Hop_Left",
+      "category": "movement",
+      "subcategory": "braced_hang_hop_left",
+      "duration": 1.2,
+      "bodyStateStart": "hanging",
+      "bodyStateEnd": "hanging",
+      "tags": [
+        "left",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Breakdance_1990",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_1990",
+      "category": "dance",
+      "subcategory": "breakdance_1990",
+      "duration": 8.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breakdance_Ending_1",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_Ending_1",
+      "category": "dance",
+      "subcategory": "breakdance_ending_1",
+      "duration": 7.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breakdance_Ending_2",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_Ending_2",
+      "category": "dance",
+      "subcategory": "breakdance_ending_2",
+      "duration": 6.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breakdance_Freeze_Var_2",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_Freeze_Var_2",
+      "category": "dance",
+      "subcategory": "breakdance_freeze_var_2",
+      "duration": 7.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breakdance_Freeze_Var_3",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_Freeze_Var_3",
+      "category": "dance",
+      "subcategory": "breakdance_freeze_var_3",
+      "duration": 9.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breakdance_Ready",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_Ready",
+      "category": "dance",
+      "subcategory": "breakdance_ready",
+      "duration": 5.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breakdance_Uprock_Var_1",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_Uprock_Var_1",
+      "category": "dance",
+      "subcategory": "breakdance_uprock_var_1",
+      "duration": 9.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breakdance_Uprock_Var_2",
+      "asset": "/Game/AoC/Animations/Dance/Breakdance_Uprock_Var_2",
+      "category": "dance",
+      "subcategory": "breakdance_uprock_var_2",
+      "duration": 8.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breakdance",
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Breathing_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Breathing_Idle",
+      "category": "idle",
+      "subcategory": "breathing_idle",
+      "duration": 3.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "breathing",
+        "idle"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Burpee_End",
+      "asset": "/Game/AoC/Animations/Misc/Burpee_End",
+      "category": "misc",
+      "subcategory": "burpee_end",
+      "duration": 2.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Butterfly_Twirl",
+      "asset": "/Game/AoC/Animations/Dance/Butterfly_Twirl",
+      "category": "dance",
+      "subcategory": "butterfly_twirl",
+      "duration": 9.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Button_Pushing",
+      "asset": "/Game/AoC/Animations/Crafting/Button_Pushing",
+      "category": "crafting",
+      "subcategory": "button_pushing",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Capoeira",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Capoeira",
+      "category": "combat_melee",
+      "subcategory": "capoeira",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "capoeira",
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Idle_To_Twist_R",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Idle_To_Twist_R",
+      "category": "movement",
+      "subcategory": "catwalk_idle_to_twist",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Idle_Twist_R",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Idle_Twist_R",
+      "category": "movement",
+      "subcategory": "catwalk_idle_twist_r",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Twist_L_To_Walk_180",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Twist_L_To_Walk_180",
+      "category": "movement",
+      "subcategory": "catwalk_twist_l_to",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Twist_R_To_Walk_180",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Twist_R_To_Walk_180",
+      "category": "movement",
+      "subcategory": "catwalk_twist_r_to",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Walk_Forward_Arc_90R",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Walk_Forward_Arc_90R",
+      "category": "movement",
+      "subcategory": "catwalk_walk_forward_arc",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Walk_Forward_HighKnees",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Catwalk_Walk_Forward_HighKnees",
+      "category": "combat_melee",
+      "subcategory": "catwalk_walk_forward_highknees",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "forward",
+        "knee",
+        "melee",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Walk_Start_Turn_180_Right",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Walk_Start_Turn_180_Right",
+      "category": "movement",
+      "subcategory": "catwalk_walk_start_turn",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "right",
+        "turn",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "right",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Walk_Stop_Twist_R",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Walk_Stop_Twist_R",
+      "category": "movement",
+      "subcategory": "catwalk_walk_stop_twist",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Catwalk_Walking",
+      "asset": "/Game/AoC/Animations/Movement/Catwalk_Walking",
+      "category": "movement",
+      "subcategory": "catwalk_walking",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Center_Block",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Center_Block",
+      "category": "combat_melee",
+      "subcategory": "center_block",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Change_Direction",
+      "asset": "/Game/AoC/Animations/Movement/Change_Direction",
+      "category": "movement",
+      "subcategory": "change_direction",
+      "duration": 1.6,
+      "bodyStateStart": "hanging",
+      "bodyStateEnd": "hanging",
+      "tags": [
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Chapa_Giratoria_2",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Chapa_Giratoria_2",
+      "category": "combat_melee",
+      "subcategory": "chapa_giratoria_2",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Chapaeu_De_Couro",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Chapaeu_De_Couro",
+      "category": "combat_melee",
+      "subcategory": "chapaeu_de_couro",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Checking_Dice",
+      "asset": "/Game/AoC/Animations/Crafting/Checking_Dice",
+      "category": "crafting",
+      "subcategory": "checking_dice",
+      "duration": 3.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Cheering",
+      "asset": "/Game/AoC/Animations/Emotes/Cheering",
+      "category": "social",
+      "subcategory": "cheering",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "cheer",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Circle_Crunch",
+      "asset": "/Game/AoC/Animations/Movement/Circle_Crunch",
+      "category": "movement",
+      "subcategory": "circle_crunch",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Clapping",
+      "asset": "/Game/AoC/Animations/Emotes/Clapping",
+      "category": "social",
+      "subcategory": "clapping",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "clap",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Climbing_To_Top",
+      "asset": "/Game/AoC/Animations/Movement/Climbing_To_Top",
+      "category": "movement",
+      "subcategory": "climbing_to_top",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "climb",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Closing",
+      "asset": "/Game/AoC/Animations/Crafting/Closing",
+      "category": "crafting",
+      "subcategory": "closing",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Cow_Milking",
+      "asset": "/Game/AoC/Animations/Crafting/Cow_Milking",
+      "category": "crafting",
+      "subcategory": "cow_milking",
+      "duration": 2.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting",
+        "milking"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Crawling",
+      "asset": "/Game/AoC/Animations/Movement/Crawling",
+      "category": "movement",
+      "subcategory": "crawling",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crawl",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Crossleg_Freeze",
+      "asset": "/Game/AoC/Animations/Misc/Crossleg_Freeze",
+      "category": "misc",
+      "subcategory": "crossleg_freeze",
+      "duration": 2.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Crouch_Idle_01",
+      "asset": "/Game/AoC/Animations/Idle/Crouch_Idle_01",
+      "category": "idle",
+      "subcategory": "crouch_idle_01",
+      "duration": 3.7,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "idle"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Crouch_To_Stand",
+      "asset": "/Game/AoC/Animations/Idle/Crouch_To_Stand",
+      "category": "idle",
+      "subcategory": "crouch_to_stand",
+      "duration": 3.7,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crouch",
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Crouch_Torch_To_Standing_Torch_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Crouch_Torch_To_Standing_Torch_Idle",
+      "category": "idle",
+      "subcategory": "crouch_torch_to_standing",
+      "duration": 3.4,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crouch",
+        "idle",
+        "standing",
+        "torch"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Crouch_Torch_Turn_Right_90",
+      "asset": "/Game/AoC/Animations/Movement/Crouch_Torch_Turn_Right_90",
+      "category": "movement",
+      "subcategory": "crouch_torch_turn_right",
+      "duration": 0.7,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "movement",
+        "right",
+        "torch",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Crouch_Turn_To_Stand",
+      "asset": "/Game/AoC/Animations/Movement/Crouch_Turn_To_Stand",
+      "category": "movement",
+      "subcategory": "crouch_turn_to_stand",
+      "duration": 1.0,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crouch",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Crouch_Walk_Right",
+      "asset": "/Game/AoC/Animations/Movement/Crouch_Walk_Right",
+      "category": "movement",
+      "subcategory": "crouch_walk_right",
+      "duration": 1.6,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "movement",
+        "right",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "right",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Crouched_Sneaking_Left",
+      "asset": "/Game/AoC/Animations/Stealth/Crouched_Sneaking_Left",
+      "category": "stealth",
+      "subcategory": "crouched_sneaking_left",
+      "duration": 2.4,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "left",
+        "sneak",
+        "stealth"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Crouched_To_Standing",
+      "asset": "/Game/AoC/Animations/Idle/Crouched_To_Standing",
+      "category": "idle",
+      "subcategory": "crouched_to_standing",
+      "duration": 3.3,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crouch",
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Dancing",
+      "asset": "/Game/AoC/Animations/Misc/Dancing",
+      "category": "misc",
+      "subcategory": "dancing",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Death_From_The_Front",
+      "asset": "/Game/AoC/Animations/Death/Death_From_The_Front",
+      "category": "death",
+      "subcategory": "death_from_the_front",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "death",
+        "front"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Defeat",
+      "asset": "/Game/AoC/Animations/Death/Defeat",
+      "category": "death",
+      "subcategory": "defeat",
+      "duration": 2.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "death",
+        "defeat"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Defeated",
+      "asset": "/Game/AoC/Animations/Death/Defeated",
+      "category": "death",
+      "subcategory": "defeated",
+      "duration": 3.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "death",
+        "defeat"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Dig_And_Plant_Seeds",
+      "asset": "/Game/AoC/Animations/Crafting/Dig_And_Plant_Seeds",
+      "category": "crafting",
+      "subcategory": "dig_and_plant_seeds",
+      "duration": 3.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting",
+        "digging"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Dismissing_Gesture",
+      "asset": "/Game/AoC/Animations/Emotes/Dismissing_Gesture",
+      "category": "social",
+      "subcategory": "dismissing_gesture",
+      "duration": 2.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "gesture",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Dodge_While_Sitting",
+      "asset": "/Game/AoC/Animations/Idle/Dodge_While_Sitting",
+      "category": "idle",
+      "subcategory": "dodge_while_sitting",
+      "duration": 4.4,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "dodge",
+        "idle",
+        "sitting"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Dodging",
+      "asset": "/Game/AoC/Animations/Misc/Dodging",
+      "category": "misc",
+      "subcategory": "dodging",
+      "duration": 2.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Double_Dagger_Stab",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Double_Dagger_Stab",
+      "category": "combat_melee",
+      "subcategory": "double_dagger_stab",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "dagger",
+        "melee",
+        "one_handed",
+        "stab"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Draw_Sword_1",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Draw_Sword_1",
+      "category": "combat_melee",
+      "subcategory": "draw_sword_1",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "one_handed",
+        "sword"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Dribble",
+      "asset": "/Game/AoC/Animations/Misc/Dribble",
+      "category": "misc",
+      "subcategory": "dribble",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dribble",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Drop_Kick",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Drop_Kick",
+      "category": "combat_melee",
+      "subcategory": "drop_kick",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "kick",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Drunk_Idle_Variation",
+      "asset": "/Game/AoC/Animations/Movement/Drunk_Idle_Variation",
+      "category": "movement",
+      "subcategory": "drunk_idle_variation",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Dying",
+      "asset": "/Game/AoC/Animations/Death/Dying",
+      "category": "death",
+      "subcategory": "dying",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "death",
+        "dying"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Dying_Backwards",
+      "asset": "/Game/AoC/Animations/Death/Dying_Backwards",
+      "category": "death",
+      "subcategory": "dying_backwards",
+      "duration": 3.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "back",
+        "backward",
+        "death",
+        "dying"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Elbow_Punch",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Elbow_Punch",
+      "category": "combat_melee",
+      "subcategory": "elbow_punch",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "elbow",
+        "melee",
+        "punch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Emerging",
+      "asset": "/Game/AoC/Animations/Stealth/Emerging",
+      "category": "stealth",
+      "subcategory": "emerging",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "stealth"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Entry",
+      "asset": "/Game/AoC/Animations/Misc/Entry",
+      "category": "misc",
+      "subcategory": "entry",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Esquiva_1",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Esquiva_1",
+      "category": "combat_melee",
+      "subcategory": "esquiva_1",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Esquiva_5",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Esquiva_5",
+      "category": "combat_melee",
+      "subcategory": "esquiva_5",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Excited",
+      "asset": "/Game/AoC/Animations/Emotes/Excited",
+      "category": "social",
+      "subcategory": "excited",
+      "duration": 2.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Fall_A_Land_To_Run_Forward",
+      "asset": "/Game/AoC/Animations/Movement/Fall_A_Land_To_Run_Forward",
+      "category": "movement",
+      "subcategory": "fall_a_land_to",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Fall_Flat",
+      "asset": "/Game/AoC/Animations/Death/Fall_Flat",
+      "category": "death",
+      "subcategory": "fall_flat",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "death"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Falling_Forward_Death",
+      "asset": "/Game/AoC/Animations/Death/Falling_Forward_Death",
+      "category": "death",
+      "subcategory": "falling_forward_death",
+      "duration": 3.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "death",
+        "forward"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Falling_To_Roll",
+      "asset": "/Game/AoC/Animations/Movement/Falling_To_Roll",
+      "category": "movement",
+      "subcategory": "falling_to_roll",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Female_Crouch_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Female_Crouch_Pose",
+      "category": "idle",
+      "subcategory": "crouch_pose",
+      "duration": 4.2,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Female_Dance_Pose",
+      "asset": "/Game/AoC/Animations/Dance/Female_Dance_Pose",
+      "category": "dance",
+      "subcategory": "dance_pose",
+      "duration": 9.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Female_Dynamic_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Female_Dynamic_Pose",
+      "category": "idle",
+      "subcategory": "dynamic_pose",
+      "duration": 3.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Female_Laying_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Female_Laying_Pose",
+      "category": "idle",
+      "subcategory": "laying_pose",
+      "duration": 3.4,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Female_Peek_And_Aim",
+      "asset": "/Game/AoC/Animations/Combat_Ranged/Female_Peek_And_Aim",
+      "category": "combat_ranged",
+      "subcategory": "peek_and_aim",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "aim",
+        "combat",
+        "peek",
+        "ranged"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Female_Sitting_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Female_Sitting_Pose",
+      "category": "idle",
+      "subcategory": "sitting_pose",
+      "duration": 4.0,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "idle",
+        "sitting"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Female_Standing_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Female_Standing_Pose",
+      "category": "idle",
+      "subcategory": "standing_pose",
+      "duration": 3.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Female_Walk",
+      "asset": "/Game/AoC/Animations/Movement/Female_Walk",
+      "category": "movement",
+      "subcategory": "walk",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Fishing_Cast",
+      "asset": "/Game/AoC/Animations/Magic/Fishing_Cast",
+      "category": "magic",
+      "subcategory": "fishing_cast",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "cast",
+        "fishing",
+        "magic"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Fist_Fight_A",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Fist_Fight_A",
+      "category": "combat_melee",
+      "subcategory": "fist_fight_a",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Flying_Knee_Punch_Combo",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Flying_Knee_Punch_Combo",
+      "category": "combat_melee",
+      "subcategory": "flying_knee_punch_combo",
+      "duration": 2.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "combo",
+        "knee",
+        "melee",
+        "punch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Football_Stance",
+      "asset": "/Game/AoC/Animations/Misc/Football_Stance",
+      "category": "misc",
+      "subcategory": "football_stance",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "football",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Freehang_Climb",
+      "asset": "/Game/AoC/Animations/Movement/Freehang_Climb",
+      "category": "movement",
+      "subcategory": "freehang_climb",
+      "duration": 2.1,
+      "bodyStateStart": "hanging",
+      "bodyStateEnd": "hanging",
+      "tags": [
+        "climb",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Front_Raises",
+      "asset": "/Game/AoC/Animations/Misc/Front_Raises",
+      "category": "misc",
+      "subcategory": "front_raises",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "front",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Ginga_Sideways_To_Au",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Ginga_Sideways_To_Au",
+      "category": "combat_melee",
+      "subcategory": "ginga_sideways_to_au",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Ginga_Variation_1",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Ginga_Variation_1",
+      "category": "combat_melee",
+      "subcategory": "ginga_variation_1",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Ginga_Variation_3",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Ginga_Variation_3",
+      "category": "combat_melee",
+      "subcategory": "ginga_variation_3",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Goalkeeper_Body_Block",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Goalkeeper_Body_Block",
+      "category": "combat_melee",
+      "subcategory": "goalkeeper_body_block",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "body",
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Goalkeeper_Catch",
+      "asset": "/Game/AoC/Animations/Misc/Goalkeeper_Catch",
+      "category": "misc",
+      "subcategory": "goalkeeper_catch",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Goalkeeper_Diving_Save",
+      "asset": "/Game/AoC/Animations/Misc/Goalkeeper_Diving_Save",
+      "category": "misc",
+      "subcategory": "goalkeeper_diving_save",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Goalkeeper_Drop_Kick",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Goalkeeper_Drop_Kick",
+      "category": "combat_melee",
+      "subcategory": "goalkeeper_drop_kick",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "kick",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Goalkeeper_Placing_Ball",
+      "asset": "/Game/AoC/Animations/Misc/Goalkeeper_Placing_Ball",
+      "category": "misc",
+      "subcategory": "goalkeeper_placing_ball",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Goalkeeper_Sidestep",
+      "asset": "/Game/AoC/Animations/Misc/Goalkeeper_Sidestep",
+      "category": "misc",
+      "subcategory": "goalkeeper_sidestep",
+      "duration": 2.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Golf_Bad_Shot",
+      "asset": "/Game/AoC/Animations/Misc/Golf_Bad_Shot",
+      "category": "misc",
+      "subcategory": "golf_bad_shot",
+      "duration": 2.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "golf",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Golf_Drive",
+      "asset": "/Game/AoC/Animations/Misc/Golf_Drive",
+      "category": "misc",
+      "subcategory": "golf_drive",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "golf",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Golf_Pre_Putt",
+      "asset": "/Game/AoC/Animations/Misc/Golf_Pre_Putt",
+      "category": "misc",
+      "subcategory": "golf_pre_putt",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "golf",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Grab_And_Slam",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Grab_And_Slam",
+      "category": "combat_melee",
+      "subcategory": "grab_and_slam",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "grab",
+        "melee",
+        "slam"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Grabbing_Ammo",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Grabbing_Ammo",
+      "category": "combat_melee",
+      "subcategory": "grabbing_ammo",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "grab",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Great_Sword_180_Turn",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Great_Sword_180_Turn",
+      "category": "combat_melee",
+      "subcategory": "great_sword_180_turn",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "sword",
+        "turn",
+        "two_handed"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Great_Sword_Blocking",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Great_Sword_Blocking",
+      "category": "combat_melee",
+      "subcategory": "great_sword_blocking",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "combat",
+        "melee",
+        "sword",
+        "two_handed"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Great_Sword_Run",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Great_Sword_Run",
+      "category": "combat_melee",
+      "subcategory": "great_sword_run",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "run",
+        "sword",
+        "two_handed"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Great_Sword_Slash",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Great_Sword_Slash",
+      "category": "combat_melee",
+      "subcategory": "great_sword_slash",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "slash",
+        "sword",
+        "two_handed"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Guitar_Playing",
+      "asset": "/Game/AoC/Animations/Crafting/Guitar_Playing",
+      "category": "crafting",
+      "subcategory": "guitar_playing",
+      "duration": 3.8,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "crafting",
+        "guitar"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Hanging",
+      "asset": "/Game/AoC/Animations/Movement/Hanging",
+      "category": "movement",
+      "subcategory": "hanging",
+      "duration": 1.9,
+      "bodyStateStart": "hanging",
+      "bodyStateEnd": "hanging",
+      "tags": [
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Hard_Landing",
+      "asset": "/Game/AoC/Animations/Movement/Hard_Landing",
+      "category": "movement",
+      "subcategory": "hard_landing",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Head_Hit",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Head_Hit",
+      "category": "combat_melee",
+      "subcategory": "head_hit",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "head",
+        "hit",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Headbutt",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Headbutt",
+      "category": "combat_melee",
+      "subcategory": "headbutt",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "head",
+        "headbutt",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Header",
+      "asset": "/Game/AoC/Animations/Misc/Header",
+      "category": "misc",
+      "subcategory": "header",
+      "duration": 2.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "head",
+        "header",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Hip_Hop_Dancing",
+      "asset": "/Game/AoC/Animations/Dance/Hip_Hop_Dancing",
+      "category": "dance",
+      "subcategory": "hip_hop_dancing",
+      "duration": 8.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance",
+        "hip_hop"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Hit_To_Body",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Hit_To_Body",
+      "category": "combat_melee",
+      "subcategory": "hit_to_body",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "body",
+        "combat",
+        "hit",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Hit_To_Side_Of_Body",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Hit_To_Side_Of_Body",
+      "category": "combat_melee",
+      "subcategory": "hit_to_side_of",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "body",
+        "combat",
+        "hit",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Holding_Walk",
+      "asset": "/Game/AoC/Animations/Movement/Holding_Walk",
+      "category": "movement",
+      "subcategory": "holding_walk",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Hook",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Hook",
+      "category": "combat_melee",
+      "subcategory": "hook",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "hook",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Hook_Punch",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Hook_Punch",
+      "category": "combat_melee",
+      "subcategory": "hook_punch",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "hook",
+        "melee",
+        "punch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Hurricane_Kick",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Hurricane_Kick",
+      "category": "combat_melee",
+      "subcategory": "hurricane_kick",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "kick",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Idle",
+      "asset": "/Game/AoC/Animations/Idle/Idle",
+      "category": "idle",
+      "subcategory": "idle",
+      "duration": 4.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Idle_To_Sprint",
+      "asset": "/Game/AoC/Animations/Movement/Idle_To_Sprint",
+      "category": "movement",
+      "subcategory": "idle_to_sprint",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "movement",
+        "sprint"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Illegal_Elbow_Punch",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Illegal_Elbow_Punch",
+      "category": "combat_melee",
+      "subcategory": "illegal_elbow_punch",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "elbow",
+        "melee",
+        "punch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Illegal_Knee",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Illegal_Knee",
+      "category": "combat_melee",
+      "subcategory": "illegal_knee",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "knee",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Injured_Run",
+      "asset": "/Game/AoC/Animations/Movement/Injured_Run",
+      "category": "movement",
+      "subcategory": "injured_run",
+      "duration": 0.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Jog_Forward_Diagonal",
+      "asset": "/Game/AoC/Animations/Movement/Jog_Forward_Diagonal",
+      "category": "movement",
+      "subcategory": "jog_forward_diagonal",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "jog",
+        "movement"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Jog_In_Circle",
+      "asset": "/Game/AoC/Animations/Movement/Jog_In_Circle",
+      "category": "movement",
+      "subcategory": "jog_in_circle",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "jog",
+        "movement"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Jogging",
+      "asset": "/Game/AoC/Animations/Movement/Jogging",
+      "category": "movement",
+      "subcategory": "jogging",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "jog",
+        "movement"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Jogging_With_Box",
+      "asset": "/Game/AoC/Animations/Movement/Jogging_With_Box",
+      "category": "movement",
+      "subcategory": "jogging_with_box",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "jog",
+        "movement"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Jump",
+      "asset": "/Game/AoC/Animations/Movement/Jump",
+      "category": "movement",
+      "subcategory": "jump",
+      "duration": 0.8,
+      "bodyStateStart": "jumping",
+      "bodyStateEnd": "jumping",
+      "tags": [
+        "jump",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Jump_Down",
+      "asset": "/Game/AoC/Animations/Movement/Jump_Down",
+      "category": "movement",
+      "subcategory": "jump_down",
+      "duration": 1.3,
+      "bodyStateStart": "jumping",
+      "bodyStateEnd": "jumping",
+      "tags": [
+        "jump",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "down",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Jumping_Down",
+      "asset": "/Game/AoC/Animations/Movement/Jumping_Down",
+      "category": "movement",
+      "subcategory": "jumping_down",
+      "duration": 1.3,
+      "bodyStateStart": "jumping",
+      "bodyStateEnd": "jumping",
+      "tags": [
+        "jump",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "down",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Kick_To_The_Groin",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Kick_To_The_Groin",
+      "category": "combat_melee",
+      "subcategory": "kick_to_the_groin",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "kick",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Kicking",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Kicking",
+      "category": "combat_melee",
+      "subcategory": "kicking",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "kick",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Kneeling_Down",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Kneeling_Down",
+      "category": "combat_melee",
+      "subcategory": "kneeling_down",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "knee",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Laying_Severe_Cough",
+      "asset": "/Game/AoC/Animations/Misc/Laying_Severe_Cough",
+      "category": "misc",
+      "subcategory": "laying_severe_cough",
+      "duration": 2.3,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Lead_Jab",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Lead_Jab",
+      "category": "combat_melee",
+      "subcategory": "lead_jab",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Left_Block",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Left_Block",
+      "category": "combat_melee",
+      "subcategory": "left_block",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "combat",
+        "left",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Left_Strafe_Walking",
+      "asset": "/Game/AoC/Animations/Movement/Left_Strafe_Walking",
+      "category": "movement",
+      "subcategory": "left_strafe_walking",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "strafe",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "left",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Left_Turn",
+      "asset": "/Game/AoC/Animations/Movement/Left_Turn",
+      "category": "movement",
+      "subcategory": "left_turn",
+      "duration": 0.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Left_Turn_45",
+      "asset": "/Game/AoC/Animations/Movement/Left_Turn_45",
+      "category": "movement",
+      "subcategory": "left_turn_45",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Left_Turn_W__Briefcase",
+      "asset": "/Game/AoC/Animations/Movement/Left_Turn_W__Briefcase",
+      "category": "movement",
+      "subcategory": "left_turn_w_",
+      "duration": 0.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Left_Turn_W_Briefcase",
+      "asset": "/Game/AoC/Animations/Movement/Left_Turn_W_Briefcase",
+      "category": "movement",
+      "subcategory": "left_turn_w_briefcase",
+      "duration": 0.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Light_Hit_To_Head",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Light_Hit_To_Head",
+      "category": "combat_melee",
+      "subcategory": "light_hit_to_head",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "head",
+        "hit",
+        "light",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Long_Step_Forward",
+      "asset": "/Game/AoC/Animations/Misc/Long_Step_Forward",
+      "category": "misc",
+      "subcategory": "long_step_forward",
+      "duration": 2.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Look_Around",
+      "asset": "/Game/AoC/Animations/Misc/Look_Around",
+      "category": "misc",
+      "subcategory": "look_around",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "look",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Look_Over_Shoulder",
+      "asset": "/Game/AoC/Animations/Misc/Look_Over_Shoulder",
+      "category": "misc",
+      "subcategory": "look_over_shoulder",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "look",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Looking",
+      "asset": "/Game/AoC/Animations/Misc/Looking",
+      "category": "misc",
+      "subcategory": "looking",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "look",
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Macaco_Side",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Macaco_Side",
+      "category": "combat_melee",
+      "subcategory": "macaco_side",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Male_Action_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Male_Action_Pose",
+      "category": "idle",
+      "subcategory": "action_pose",
+      "duration": 3.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Male_Dance_Pose",
+      "asset": "/Game/AoC/Animations/Dance/Male_Dance_Pose",
+      "category": "dance",
+      "subcategory": "dance_pose",
+      "duration": 7.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Male_Dynamic_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Male_Dynamic_Pose",
+      "category": "idle",
+      "subcategory": "dynamic_pose",
+      "duration": 3.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Male_Laying_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Male_Laying_Pose",
+      "category": "idle",
+      "subcategory": "laying_pose",
+      "duration": 3.4,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Male_Locomotion_Pose",
+      "asset": "/Game/AoC/Animations/Movement/Male_Locomotion_Pose",
+      "category": "movement",
+      "subcategory": "locomotion_pose",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Male_Sitting_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Male_Sitting_Pose",
+      "category": "idle",
+      "subcategory": "sitting_pose",
+      "duration": 4.3,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "idle",
+        "sitting"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Male_Standing_Pose",
+      "asset": "/Game/AoC/Animations/Idle/Male_Standing_Pose",
+      "category": "idle",
+      "subcategory": "standing_pose",
+      "duration": 3.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Medium_Hit_To_Head",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Medium_Hit_To_Head",
+      "category": "combat_melee",
+      "subcategory": "medium_hit_to_head",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "head",
+        "hit",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Military_Signaling",
+      "asset": "/Game/AoC/Animations/Emotes/Military_Signaling",
+      "category": "social",
+      "subcategory": "military_signaling",
+      "duration": 2.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Moving_Backward_In_Prone_Position",
+      "asset": "/Game/AoC/Animations/Movement/Moving_Backward_In_Prone_Position",
+      "category": "movement",
+      "subcategory": "moving_backward_in_prone",
+      "duration": 1.1,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "back",
+        "backward",
+        "movement",
+        "prone",
+        "sitting"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Moving_Object",
+      "asset": "/Game/AoC/Animations/Crafting/Moving_Object",
+      "category": "crafting",
+      "subcategory": "moving_object",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Mutant_Flexing_Muscles",
+      "asset": "/Game/AoC/Animations/Creature/Mutant_Flexing_Muscles",
+      "category": "creature",
+      "subcategory": "mutant_flexing_muscles",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "creature",
+        "mutant"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Mutant_Walking",
+      "asset": "/Game/AoC/Animations/Movement/Mutant_Walking",
+      "category": "movement",
+      "subcategory": "mutant_walking",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "mutant",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Northern_Soul_Spin",
+      "asset": "/Game/AoC/Animations/Dance/Northern_Soul_Spin",
+      "category": "dance",
+      "subcategory": "northern_soul_spin",
+      "duration": 5.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Offensive_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Offensive_Idle",
+      "category": "idle",
+      "subcategory": "offensive_idle",
+      "duration": 4.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Old_Man_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Old_Man_Idle",
+      "category": "idle",
+      "subcategory": "old_man_idle",
+      "duration": 4.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Opening",
+      "asset": "/Game/AoC/Animations/Crafting/Opening",
+      "category": "crafting",
+      "subcategory": "opening",
+      "duration": 2.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Opening_Door_Inwards",
+      "asset": "/Game/AoC/Animations/Crafting/Opening_Door_Inwards",
+      "category": "crafting",
+      "subcategory": "opening_door_inwards",
+      "duration": 3.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Paddling",
+      "asset": "/Game/AoC/Animations/Crafting/Paddling",
+      "category": "crafting",
+      "subcategory": "paddling",
+      "duration": 3.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Pain_Gesture",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Pain_Gesture",
+      "category": "combat_melee",
+      "subcategory": "pain_gesture",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "gesture",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Pick_Fruit",
+      "asset": "/Game/AoC/Animations/Crafting/Pick_Fruit",
+      "category": "crafting",
+      "subcategory": "pick_fruit",
+      "duration": 2.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Picking_Up_Object",
+      "asset": "/Game/AoC/Animations/Crafting/Picking_Up_Object",
+      "category": "crafting",
+      "subcategory": "picking_up_object",
+      "duration": 2.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Pilot_Flips_Switches",
+      "asset": "/Game/AoC/Animations/Crafting/Pilot_Flips_Switches",
+      "category": "crafting",
+      "subcategory": "pilot_flips_switches",
+      "duration": 2.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Pontera",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Pontera",
+      "category": "combat_melee",
+      "subcategory": "pontera",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Prone_Backwards_Stop",
+      "asset": "/Game/AoC/Animations/Movement/Prone_Backwards_Stop",
+      "category": "movement",
+      "subcategory": "prone_backwards_stop",
+      "duration": 1.7,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "back",
+        "backward",
+        "movement",
+        "prone"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Prone_Forward",
+      "asset": "/Game/AoC/Animations/Movement/Prone_Forward",
+      "category": "movement",
+      "subcategory": "prone_forward",
+      "duration": 1.7,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "forward",
+        "movement",
+        "prone"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Prone_Left_Turn",
+      "asset": "/Game/AoC/Animations/Movement/Prone_Left_Turn",
+      "category": "movement",
+      "subcategory": "prone_left_turn",
+      "duration": 1.0,
+      "bodyStateStart": "prone",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "left",
+        "movement",
+        "prone",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Prone_To_Crouch_Transition",
+      "asset": "/Game/AoC/Animations/Movement/Prone_To_Crouch_Transition",
+      "category": "movement",
+      "subcategory": "prone_to_crouch_transition",
+      "duration": 1.1,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "movement",
+        "prone",
+        "sitting"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Pulling_Lever",
+      "asset": "/Game/AoC/Animations/Crafting/Pulling_Lever",
+      "category": "crafting",
+      "subcategory": "pulling_lever",
+      "duration": 2.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Punching",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Punching",
+      "category": "combat_melee",
+      "subcategory": "punching",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "punch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Punching_Bag",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Punching_Bag",
+      "category": "combat_melee",
+      "subcategory": "punching_bag",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "punch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Push",
+      "asset": "/Game/AoC/Animations/Misc/Push",
+      "category": "misc",
+      "subcategory": "push",
+      "duration": 2.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Reaction",
+      "asset": "/Game/AoC/Animations/Emotes/Reaction",
+      "category": "social",
+      "subcategory": "reaction",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "react",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Receive",
+      "asset": "/Game/AoC/Animations/Misc/Receive",
+      "category": "misc",
+      "subcategory": "receive",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Receive_Stomach_Uppercut",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Receive_Stomach_Uppercut",
+      "category": "combat_melee",
+      "subcategory": "receive_stomach_uppercut",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "uppercut"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Receive_Uppercut_To_The_Face",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Receive_Uppercut_To_The_Face",
+      "category": "combat_melee",
+      "subcategory": "receive_uppercut_to_the",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "uppercut"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Rejected",
+      "asset": "/Game/AoC/Animations/Emotes/Rejected",
+      "category": "social",
+      "subcategory": "rejected",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Right_Cover_Sneak",
+      "asset": "/Game/AoC/Animations/Stealth/Right_Cover_Sneak",
+      "category": "stealth",
+      "subcategory": "right_cover_sneak",
+      "duration": 2.9,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "cover",
+        "right",
+        "sneak",
+        "stealth"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Right_Strafe_Walk",
+      "asset": "/Game/AoC/Animations/Movement/Right_Strafe_Walk",
+      "category": "movement",
+      "subcategory": "right_strafe_walk",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "right",
+        "strafe",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "right",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Right_Turn_W__Briefcase",
+      "asset": "/Game/AoC/Animations/Movement/Right_Turn_W__Briefcase",
+      "category": "movement",
+      "subcategory": "right_turn_w_",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "right",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Roar",
+      "asset": "/Game/AoC/Animations/Emotes/Roar",
+      "category": "social",
+      "subcategory": "roar",
+      "duration": 2.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "roar",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Rummaging",
+      "asset": "/Game/AoC/Animations/Crafting/Rummaging",
+      "category": "crafting",
+      "subcategory": "rummaging",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Run",
+      "asset": "/Game/AoC/Animations/Movement/Run",
+      "category": "movement",
+      "subcategory": "run",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Run_Backwards",
+      "asset": "/Game/AoC/Animations/Movement/Run_Backwards",
+      "category": "movement",
+      "subcategory": "run_backwards",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "backward",
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Run_Look_Back",
+      "asset": "/Game/AoC/Animations/Movement/Run_Look_Back",
+      "category": "movement",
+      "subcategory": "run_look_back",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "look",
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Run_To_Rolling",
+      "asset": "/Game/AoC/Animations/Movement/Run_To_Rolling",
+      "category": "movement",
+      "subcategory": "run_to_rolling",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Run_To_Stop",
+      "asset": "/Game/AoC/Animations/Movement/Run_To_Stop",
+      "category": "movement",
+      "subcategory": "run_to_stop",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Running",
+      "asset": "/Game/AoC/Animations/Movement/Running",
+      "category": "movement",
+      "subcategory": "running",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Running_Arc",
+      "asset": "/Game/AoC/Animations/Movement/Running_Arc",
+      "category": "movement",
+      "subcategory": "running_arc",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Running_To_Stop",
+      "asset": "/Game/AoC/Animations/Movement/Running_To_Stop",
+      "category": "movement",
+      "subcategory": "running_to_stop",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Running_To_Turn",
+      "asset": "/Game/AoC/Animations/Movement/Running_To_Turn",
+      "category": "movement",
+      "subcategory": "running_to_turn",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run",
+        "turn"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Salsa_Dancing",
+      "asset": "/Game/AoC/Animations/Dance/Salsa_Dancing",
+      "category": "dance",
+      "subcategory": "salsa_dancing",
+      "duration": 5.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance",
+        "salsa"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Salute",
+      "asset": "/Game/AoC/Animations/Emotes/Salute",
+      "category": "social",
+      "subcategory": "salute",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "salute",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Scary_Clown_Walk",
+      "asset": "/Game/AoC/Animations/Movement/Scary_Clown_Walk",
+      "category": "movement",
+      "subcategory": "scary_clown_walk",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "scary",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Seated_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Seated_Idle",
+      "category": "idle",
+      "subcategory": "seated_idle",
+      "duration": 3.5,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "idle",
+        "seated"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Sheathing_Sword",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Sheathing_Sword",
+      "category": "combat_melee",
+      "subcategory": "sheathing_sword",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "one_handed",
+        "sword"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Shove_Reaction",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Shove_Reaction",
+      "category": "combat_melee",
+      "subcategory": "shove_reaction",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "react"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Shoved",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Shoved",
+      "category": "combat_melee",
+      "subcategory": "shoved",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Shoved_Reaction_With_Spin",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Shoved_Reaction_With_Spin",
+      "category": "combat_melee",
+      "subcategory": "shoved_reaction_with_spin",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "react"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sitting_And_Pointing",
+      "asset": "/Game/AoC/Animations/Idle/Sitting_And_Pointing",
+      "category": "idle",
+      "subcategory": "sitting_and_pointing",
+      "duration": 5.0,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "idle",
+        "pointing",
+        "sitting"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Sitting_Angry",
+      "asset": "/Game/AoC/Animations/Idle/Sitting_Angry",
+      "category": "idle",
+      "subcategory": "sitting_angry",
+      "duration": 4.1,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "angry",
+        "idle",
+        "sitting"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Sitting_Clap",
+      "asset": "/Game/AoC/Animations/Idle/Sitting_Clap",
+      "category": "idle",
+      "subcategory": "sitting_clap",
+      "duration": 4.4,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "clap",
+        "idle",
+        "sitting"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Sitting_Talking",
+      "asset": "/Game/AoC/Animations/Idle/Sitting_Talking",
+      "category": "idle",
+      "subcategory": "sitting_talking",
+      "duration": 3.3,
+      "bodyStateStart": "sitting",
+      "bodyStateEnd": "sitting",
+      "tags": [
+        "idle",
+        "sitting",
+        "talking"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Situp_To_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Situp_To_Idle",
+      "category": "idle",
+      "subcategory": "situp_to_idle",
+      "duration": 3.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "sitting"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Skateboarding",
+      "asset": "/Game/AoC/Animations/Misc/Skateboarding",
+      "category": "misc",
+      "subcategory": "skateboarding",
+      "duration": 3.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc",
+        "skateboard"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Skinning_Test",
+      "asset": "/Game/AoC/Animations/Crafting/Skinning_Test",
+      "category": "crafting",
+      "subcategory": "skinning_test",
+      "duration": 3.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "crafting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Slow_Jog_Backwards",
+      "asset": "/Game/AoC/Animations/Movement/Slow_Jog_Backwards",
+      "category": "movement",
+      "subcategory": "slow_jog_backwards",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "backward",
+        "jog",
+        "movement"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Snatch",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Snatch",
+      "category": "combat_melee",
+      "subcategory": "snatch",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Soccer_Trip",
+      "asset": "/Game/AoC/Animations/Misc/Soccer_Trip",
+      "category": "misc",
+      "subcategory": "soccer_trip",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc",
+        "soccer"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Spell_Casting",
+      "asset": "/Game/AoC/Animations/Magic/Spell_Casting",
+      "category": "magic",
+      "subcategory": "spell_casting",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "cast",
+        "magic",
+        "spell"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Spin_In_Place",
+      "asset": "/Game/AoC/Animations/Misc/Spin_In_Place",
+      "category": "misc",
+      "subcategory": "spin_in_place",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Sprint_Backward_Left",
+      "asset": "/Game/AoC/Animations/Movement/Sprint_Backward_Left",
+      "category": "movement",
+      "subcategory": "sprint_backward_left",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "backward",
+        "left",
+        "movement",
+        "sprint"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sprint_Turn",
+      "asset": "/Game/AoC/Animations/Movement/Sprint_Turn",
+      "category": "movement",
+      "subcategory": "sprint_turn",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "sprint",
+        "turn"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Stabbing",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Stabbing",
+      "category": "combat_melee",
+      "subcategory": "stabbing",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "stab"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Stand_To_Cover",
+      "asset": "/Game/AoC/Animations/Idle/Stand_To_Cover",
+      "category": "idle",
+      "subcategory": "stand_to_cover",
+      "duration": 3.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "cover",
+        "idle"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standard_Walk",
+      "asset": "/Game/AoC/Animations/Movement/Standard_Walk",
+      "category": "movement",
+      "subcategory": "standard_walk",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing",
+      "asset": "/Game/AoC/Animations/Idle/Standing",
+      "category": "idle",
+      "subcategory": "standing",
+      "duration": 4.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_2H_Magic_Attack_01",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_2H_Magic_Attack_01",
+      "category": "combat_melee",
+      "subcategory": "2h_magic_attack_01",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "magic",
+        "melee",
+        "standing",
+        "two_handed"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_2H_Magic_Attack_03",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_2H_Magic_Attack_03",
+      "category": "combat_melee",
+      "subcategory": "2h_magic_attack_03",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "magic",
+        "melee",
+        "standing",
+        "two_handed"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Aim_Idle_01",
+      "asset": "/Game/AoC/Animations/Combat_Ranged/Standing_Aim_Idle_01",
+      "category": "combat_ranged",
+      "subcategory": "aim_idle_01",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "aim",
+        "combat",
+        "idle",
+        "ranged",
+        "standing"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Block_React_Large",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Block_React_Large",
+      "category": "combat_melee",
+      "subcategory": "block_react_large",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "combat",
+        "large",
+        "melee",
+        "react",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Block_Start",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Block_Start",
+      "category": "combat_melee",
+      "subcategory": "block_start",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "combat",
+        "melee",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Clap",
+      "asset": "/Game/AoC/Animations/Idle/Standing_Clap",
+      "category": "idle",
+      "subcategory": "clap",
+      "duration": 4.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "clap",
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Death_Backward_01",
+      "asset": "/Game/AoC/Animations/Death/Standing_Death_Backward_01",
+      "category": "death",
+      "subcategory": "death_backward_01",
+      "duration": 3.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "back",
+        "backward",
+        "death",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Standing_Death_Forward_01",
+      "asset": "/Game/AoC/Animations/Death/Standing_Death_Forward_01",
+      "category": "death",
+      "subcategory": "death_forward_01",
+      "duration": 2.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "death",
+        "forward",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Standing_Death_Left_01",
+      "asset": "/Game/AoC/Animations/Death/Standing_Death_Left_01",
+      "category": "death",
+      "subcategory": "death_left_01",
+      "duration": 3.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "death",
+        "left",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Standing_Greeting",
+      "asset": "/Game/AoC/Animations/Idle/Standing_Greeting",
+      "category": "idle",
+      "subcategory": "greeting",
+      "duration": 4.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Idle_01",
+      "asset": "/Game/AoC/Animations/Idle/Standing_Idle_01",
+      "category": "idle",
+      "subcategory": "idle_01",
+      "duration": 4.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Idle_03",
+      "asset": "/Game/AoC/Animations/Idle/Standing_Idle_03",
+      "category": "idle",
+      "subcategory": "idle_03",
+      "duration": 3.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Idle_To_Fight_Idle",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Idle_To_Fight_Idle",
+      "category": "combat_melee",
+      "subcategory": "idle_to_fight_idle",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "idle",
+        "melee",
+        "standing"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Melee_Attack_Downward",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Melee_Attack_Downward",
+      "category": "combat_melee",
+      "subcategory": "melee_attack_downward",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "downward",
+        "melee",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Melee_Combo_Attack_Ver__3",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Melee_Combo_Attack_Ver__3",
+      "category": "combat_melee",
+      "subcategory": "melee_combo_attack_ver",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "combo",
+        "melee",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_React_Death_Left",
+      "asset": "/Game/AoC/Animations/Death/Standing_React_Death_Left",
+      "category": "death",
+      "subcategory": "react_death_left",
+      "duration": 3.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "prone",
+      "tags": [
+        "death",
+        "left",
+        "react",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 8
+    },
+    {
+      "name": "Standing_React_Large_From_Front",
+      "asset": "/Game/AoC/Animations/Idle/Standing_React_Large_From_Front",
+      "category": "idle",
+      "subcategory": "react_large_from_front",
+      "duration": 3.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "front",
+        "idle",
+        "large",
+        "react",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_React_Large_From_Right",
+      "asset": "/Game/AoC/Animations/Idle/Standing_React_Large_From_Right",
+      "category": "idle",
+      "subcategory": "react_large_from_right",
+      "duration": 3.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "large",
+        "react",
+        "right",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_React_Small_From_Left",
+      "asset": "/Game/AoC/Animations/Idle/Standing_React_Small_From_Left",
+      "category": "idle",
+      "subcategory": "react_small_from_left",
+      "duration": 4.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "left",
+        "react",
+        "small",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Run_Left",
+      "asset": "/Game/AoC/Animations/Movement/Standing_Run_Left",
+      "category": "movement",
+      "subcategory": "run_left",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "run",
+        "standing"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_Idle_01",
+      "asset": "/Game/AoC/Animations/Idle/Standing_Torch_Idle_01",
+      "category": "idle",
+      "subcategory": "torch_idle_01",
+      "duration": 3.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing",
+        "torch"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Torch_Jump",
+      "asset": "/Game/AoC/Animations/Movement/Standing_Torch_Jump",
+      "category": "movement",
+      "subcategory": "torch_jump",
+      "duration": 1.5,
+      "bodyStateStart": "jumping",
+      "bodyStateEnd": "jumping",
+      "tags": [
+        "jump",
+        "movement",
+        "standing",
+        "torch"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_Melee_Attack_01",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Torch_Melee_Attack_01",
+      "category": "combat_melee",
+      "subcategory": "torch_melee_attack_01",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "melee",
+        "standing",
+        "torch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_Melee_Attack_04",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Torch_Melee_Attack_04",
+      "category": "combat_melee",
+      "subcategory": "torch_melee_attack_04",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "melee",
+        "standing",
+        "torch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_Melee_Attack_Stab",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Standing_Torch_Melee_Attack_Stab",
+      "category": "combat_melee",
+      "subcategory": "torch_melee_attack_stab",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "melee",
+        "stab",
+        "standing",
+        "torch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_Run_Forward_Stop",
+      "asset": "/Game/AoC/Animations/Movement/Standing_Torch_Run_Forward_Stop",
+      "category": "movement",
+      "subcategory": "torch_run_forward_stop",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "movement",
+        "run",
+        "standing",
+        "torch"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_To_Crouch_Torch",
+      "asset": "/Game/AoC/Animations/Idle/Standing_Torch_To_Crouch_Torch",
+      "category": "idle",
+      "subcategory": "torch_to_crouch_torch",
+      "duration": 4.9,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "idle",
+        "standing",
+        "torch"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Torch_Turn_Left_180",
+      "asset": "/Game/AoC/Animations/Movement/Standing_Torch_Turn_Left_180",
+      "category": "movement",
+      "subcategory": "torch_turn_left_180",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "standing",
+        "torch",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_Turn_Right_180",
+      "asset": "/Game/AoC/Animations/Movement/Standing_Torch_Turn_Right_180",
+      "category": "movement",
+      "subcategory": "torch_turn_right_180",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "right",
+        "standing",
+        "torch",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Torch_Walk_Back",
+      "asset": "/Game/AoC/Animations/Movement/Standing_Torch_Walk_Back",
+      "category": "movement",
+      "subcategory": "torch_walk_back",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "movement",
+        "standing",
+        "torch",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Standing_Up",
+      "asset": "/Game/AoC/Animations/Idle/Standing_Up",
+      "category": "idle",
+      "subcategory": "up",
+      "duration": 3.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "up",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Standing_Walk_Back",
+      "asset": "/Game/AoC/Animations/Movement/Standing_Walk_Back",
+      "category": "movement",
+      "subcategory": "walk_back",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "movement",
+        "standing",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Start_Climbing_Ladder",
+      "asset": "/Game/AoC/Animations/Movement/Start_Climbing_Ladder",
+      "category": "movement",
+      "subcategory": "start_climbing_ladder",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "climb",
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Start_Plank",
+      "asset": "/Game/AoC/Animations/Misc/Start_Plank",
+      "category": "misc",
+      "subcategory": "start_plank",
+      "duration": 2.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Start_Walking",
+      "asset": "/Game/AoC/Animations/Movement/Start_Walking",
+      "category": "movement",
+      "subcategory": "start_walking",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Strafe",
+      "asset": "/Game/AoC/Animations/Movement/Strafe",
+      "category": "movement",
+      "subcategory": "strafe",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "strafe"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Strafing",
+      "asset": "/Game/AoC/Animations/Movement/Strafing",
+      "category": "movement",
+      "subcategory": "strafing",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Struck_In_Head",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Struck_In_Head",
+      "category": "combat_melee",
+      "subcategory": "struck_in_head",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "head",
+        "melee"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Strut_Walking",
+      "asset": "/Game/AoC/Animations/Movement/Strut_Walking",
+      "category": "movement",
+      "subcategory": "strut_walking",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sumo_High_Pull",
+      "asset": "/Game/AoC/Animations/Misc/Sumo_High_Pull",
+      "category": "misc",
+      "subcategory": "sumo_high_pull",
+      "duration": 2.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Swing_Dancing",
+      "asset": "/Game/AoC/Animations/Dance/Swing_Dancing",
+      "category": "dance",
+      "subcategory": "swing_dancing",
+      "duration": 9.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance",
+        "swing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Swing_To_Land",
+      "asset": "/Game/AoC/Animations/Movement/Swing_To_Land",
+      "category": "movement",
+      "subcategory": "swing_to_land",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "swing"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Swinging",
+      "asset": "/Game/AoC/Animations/Misc/Swinging",
+      "category": "misc",
+      "subcategory": "swinging",
+      "duration": 2.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc",
+        "swing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Sword_And_Shield_Attack",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Sword_And_Shield_Attack",
+      "category": "combat_melee",
+      "subcategory": "sword_and_shield_attack",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "attack",
+        "combat",
+        "melee",
+        "one_handed",
+        "shield",
+        "sword"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sword_And_Shield_Block",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Sword_And_Shield_Block",
+      "category": "combat_melee",
+      "subcategory": "sword_and_shield_block",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "block",
+        "combat",
+        "melee",
+        "one_handed",
+        "shield",
+        "sword"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sword_And_Shield_Jump",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Sword_And_Shield_Jump",
+      "category": "combat_melee",
+      "subcategory": "sword_and_shield_jump",
+      "duration": 1.3,
+      "bodyStateStart": "jumping",
+      "bodyStateEnd": "jumping",
+      "tags": [
+        "combat",
+        "jump",
+        "melee",
+        "one_handed",
+        "shield",
+        "sword"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sword_And_Shield_Run",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Sword_And_Shield_Run",
+      "category": "combat_melee",
+      "subcategory": "sword_and_shield_run",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "one_handed",
+        "run",
+        "shield",
+        "sword"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sword_And_Shield_Slash",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Sword_And_Shield_Slash",
+      "category": "combat_melee",
+      "subcategory": "sword_and_shield_slash",
+      "duration": 1.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "one_handed",
+        "shield",
+        "slash",
+        "sword"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Sword_Fight_One",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Sword_Fight_One",
+      "category": "combat_melee",
+      "subcategory": "sword_fight_one",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "one_handed",
+        "sword"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Talking_At_Watercooler",
+      "asset": "/Game/AoC/Animations/Emotes/Talking_At_Watercooler",
+      "category": "social",
+      "subcategory": "talking_at_watercooler",
+      "duration": 2.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social",
+        "talking"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Talking_On_Phone",
+      "asset": "/Game/AoC/Animations/Emotes/Talking_On_Phone",
+      "category": "social",
+      "subcategory": "talking_on_phone",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social",
+        "talking"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Taunt",
+      "asset": "/Game/AoC/Animations/Emotes/Taunt",
+      "category": "social",
+      "subcategory": "taunt",
+      "duration": 2.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social",
+        "taunt"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Thoughtful_Head_Nod",
+      "asset": "/Game/AoC/Animations/Emotes/Thoughtful_Head_Nod",
+      "category": "social",
+      "subcategory": "thoughtful_head_nod",
+      "duration": 2.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "head",
+        "social"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Thriller_Part_2",
+      "asset": "/Game/AoC/Animations/Dance/Thriller_Part_2",
+      "category": "dance",
+      "subcategory": "thriller_part_2",
+      "duration": 9.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance",
+        "thriller"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Throw",
+      "asset": "/Game/AoC/Animations/Combat_Ranged/Throw",
+      "category": "combat_ranged",
+      "subcategory": "throw",
+      "duration": 1.6,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "ranged",
+        "throw"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Thrust_Slash",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Thrust_Slash",
+      "category": "combat_melee",
+      "subcategory": "thrust_slash",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "slash"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Transition",
+      "asset": "/Game/AoC/Animations/Misc/Transition",
+      "category": "misc",
+      "subcategory": "transition",
+      "duration": 2.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "misc",
+        "sitting"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Treading_Water",
+      "asset": "/Game/AoC/Animations/Movement/Treading_Water",
+      "category": "movement",
+      "subcategory": "treading_water",
+      "duration": 1.0,
+      "bodyStateStart": "swimming",
+      "bodyStateEnd": "swimming",
+      "tags": [
+        "movement"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Treadmill_Running",
+      "asset": "/Game/AoC/Animations/Movement/Treadmill_Running",
+      "category": "movement",
+      "subcategory": "treadmill_running",
+      "duration": 1.3,
+      "bodyStateStart": "swimming",
+      "bodyStateEnd": "swimming",
+      "tags": [
+        "movement",
+        "run"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Turn_90_Left",
+      "asset": "/Game/AoC/Animations/Movement/Turn_90_Left",
+      "category": "movement",
+      "subcategory": "turn_90_left",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Turn_Left",
+      "asset": "/Game/AoC/Animations/Movement/Turn_Left",
+      "category": "movement",
+      "subcategory": "turn_left",
+      "duration": 0.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Turn_Left_45_Degrees",
+      "asset": "/Game/AoC/Animations/Movement/Turn_Left_45_Degrees",
+      "category": "movement",
+      "subcategory": "turn_left_45_degrees",
+      "duration": 0.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Turning",
+      "asset": "/Game/AoC/Animations/Movement/Turning",
+      "category": "movement",
+      "subcategory": "turning",
+      "duration": 0.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "turn"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Tut_Hip_Hop_Dance",
+      "asset": "/Game/AoC/Animations/Dance/Tut_Hip_Hop_Dance",
+      "category": "dance",
+      "subcategory": "tut_hip_hop_dance",
+      "duration": 7.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance",
+        "hip_hop"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Unarmed_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Unarmed_Idle",
+      "category": "idle",
+      "subcategory": "unarmed_idle",
+      "duration": 3.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "unarmed"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Unarmed_Idle_01",
+      "asset": "/Game/AoC/Animations/Idle/Unarmed_Idle_01",
+      "category": "idle",
+      "subcategory": "unarmed_idle_01",
+      "duration": 3.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "unarmed"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Unarmed_Run_Forward",
+      "asset": "/Game/AoC/Animations/Movement/Unarmed_Run_Forward",
+      "category": "movement",
+      "subcategory": "unarmed_run_forward",
+      "duration": 1.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "movement",
+        "run",
+        "unarmed"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Unarmed_Turn_Left_90",
+      "asset": "/Game/AoC/Animations/Movement/Unarmed_Turn_Left_90",
+      "category": "movement",
+      "subcategory": "unarmed_turn_left_90",
+      "duration": 1.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "turn",
+        "unarmed"
+      ],
+      "looping": false,
+      "hasRootMotion": true,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Upward_Thrust",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Upward_Thrust",
+      "category": "combat_melee",
+      "subcategory": "upward_thrust",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "melee",
+        "upward"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Victory",
+      "asset": "/Game/AoC/Animations/Emotes/Victory",
+      "category": "social",
+      "subcategory": "victory",
+      "duration": 2.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "social",
+        "victory"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Victory_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Victory_Idle",
+      "category": "idle",
+      "subcategory": "victory_idle",
+      "duration": 4.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "victory"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Walk_Crouching_Right",
+      "asset": "/Game/AoC/Animations/Movement/Walk_Crouching_Right",
+      "category": "movement",
+      "subcategory": "walk_crouching_right",
+      "duration": 1.1,
+      "bodyStateStart": "crouching",
+      "bodyStateEnd": "crouching",
+      "tags": [
+        "crouch",
+        "movement",
+        "right",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "right",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walk_Forward_Arc_Right",
+      "asset": "/Game/AoC/Animations/Movement/Walk_Forward_Arc_Right",
+      "category": "movement",
+      "subcategory": "walk_forward_arc_right",
+      "duration": 1.1,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "movement",
+        "right",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walk_Forward_Left",
+      "asset": "/Game/AoC/Animations/Movement/Walk_Forward_Left",
+      "category": "movement",
+      "subcategory": "walk_forward_left",
+      "duration": 1.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "forward",
+        "left",
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walk_Left",
+      "asset": "/Game/AoC/Animations/Movement/Walk_Left",
+      "category": "movement",
+      "subcategory": "walk_left",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "left",
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "left",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walk_Right",
+      "asset": "/Game/AoC/Animations/Movement/Walk_Right",
+      "category": "movement",
+      "subcategory": "walk_right",
+      "duration": 1.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "right",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "right",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walk_To_Stop",
+      "asset": "/Game/AoC/Animations/Movement/Walk_To_Stop",
+      "category": "movement",
+      "subcategory": "walk_to_stop",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walker_Walk",
+      "asset": "/Game/AoC/Animations/Movement/Walker_Walk",
+      "category": "movement",
+      "subcategory": "walker_walk",
+      "duration": 1.9,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walking",
+      "asset": "/Game/AoC/Animations/Movement/Walking",
+      "category": "movement",
+      "subcategory": "walking",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Walking_Backward_Arc_Right",
+      "asset": "/Game/AoC/Animations/Movement/Walking_Backward_Arc_Right",
+      "category": "movement",
+      "subcategory": "walking_backward_arc_right",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "back",
+        "backward",
+        "movement",
+        "right",
+        "walk"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "backward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Wave_Hip_Hop_Dance",
+      "asset": "/Game/AoC/Animations/Dance/Wave_Hip_Hop_Dance",
+      "category": "dance",
+      "subcategory": "wave_hip_hop_dance",
+      "duration": 5.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "dance",
+        "hip_hop",
+        "wave"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 6
+    },
+    {
+      "name": "Wheelbarrow_Idle",
+      "asset": "/Game/AoC/Animations/Combat_Ranged/Wheelbarrow_Idle",
+      "category": "combat_ranged",
+      "subcategory": "wheelbarrow_idle",
+      "duration": 2.3,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "idle",
+        "ranged"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Yelling_While_Standing",
+      "asset": "/Game/AoC/Animations/Idle/Yelling_While_Standing",
+      "category": "idle",
+      "subcategory": "yelling_while_standing",
+      "duration": 4.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "standing"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Zombie_Idle",
+      "asset": "/Game/AoC/Animations/Idle/Zombie_Idle",
+      "category": "idle",
+      "subcategory": "zombie_idle",
+      "duration": 3.8,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "zombie"
+      ],
+      "looping": true,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Zombie_Neck_Bite",
+      "asset": "/Game/AoC/Animations/Creature/Zombie_Neck_Bite",
+      "category": "creature",
+      "subcategory": "zombie_neck_bite",
+      "duration": 2.4,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "creature",
+        "zombie"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 3
+    },
+    {
+      "name": "Zombie_Reaction_Hit",
+      "asset": "/Game/AoC/Animations/Combat_Melee/Zombie_Reaction_Hit",
+      "category": "combat_melee",
+      "subcategory": "zombie_reaction_hit",
+      "duration": 1.2,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "combat",
+        "hit",
+        "melee",
+        "react",
+        "zombie"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "stationary",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Zombie_Running",
+      "asset": "/Game/AoC/Animations/Movement/Zombie_Running",
+      "category": "movement",
+      "subcategory": "zombie_running",
+      "duration": 1.5,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "run",
+        "zombie"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    },
+    {
+      "name": "Zombie_Stand_Up",
+      "asset": "/Game/AoC/Animations/Idle/Zombie_Stand_Up",
+      "category": "idle",
+      "subcategory": "zombie_stand_up",
+      "duration": 4.7,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "idle",
+        "zombie"
+      ],
+      "looping": false,
+      "hasRootMotion": false,
+      "movementType": "up",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 5
+    },
+    {
+      "name": "Zombie_Walk",
+      "asset": "/Game/AoC/Animations/Movement/Zombie_Walk",
+      "category": "movement",
+      "subcategory": "zombie_walk",
+      "duration": 2.0,
+      "bodyStateStart": "standing",
+      "bodyStateEnd": "standing",
+      "tags": [
+        "movement",
+        "walk",
+        "zombie"
+      ],
+      "looping": true,
+      "hasRootMotion": true,
+      "movementType": "forward",
+      "blendIn": 0.25,
+      "blendOut": 0.25,
+      "priority": 10
+    }
+  ]
+}

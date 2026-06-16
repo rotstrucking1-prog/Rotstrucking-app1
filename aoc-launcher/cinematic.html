@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architect of Creation — The Beginning</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; color:#e0d5c0; font-family:'Palatino Linotype','Book Antiqua',Palatino,serif; overflow:hidden; width:100vw; height:100vh; cursor:none; }
+  
+  /* Cinematic bars */
+  .letterbox-top, .letterbox-bottom { position:fixed; left:0; right:0; height:60px; background:#000; z-index:100; }
+  .letterbox-top { top:0; }
+  .letterbox-bottom { bottom:0; }
+  
+  /* Background slideshow */
+  .bg-slide { position:fixed; top:0; left:0; width:100%; height:100%; background-size:cover; background-position:center; opacity:0; transition:opacity 2s ease-in-out; z-index:1; }
+  .bg-slide.active { opacity:0.4; }
+  
+  /* Dark overlay */
+  .overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%); z-index:2; }
+  
+  /* Lore text */
+  .lore-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:900px; text-align:center; z-index:10; }
+  .lore-text { font-size:1.6em; line-height:1.8; letter-spacing:0.04em; opacity:0; transform:translateY(30px); transition:opacity 1.5s ease, transform 1.5s ease; text-shadow:0 0 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.7); }
+  .lore-text.visible { opacity:1; transform:translateY(0); }
+  .lore-text.fading { opacity:0; transform:translateY(-30px); }
+  .lore-accent { color:#c4302b; font-weight:bold; }
+  .lore-title { font-size:2.4em; letter-spacing:0.15em; color:#c4302b; text-shadow:0 0 40px rgba(196,48,43,0.5); margin-bottom:20px; }
+  
+  /* Skip button */
+  .skip-btn { position:fixed; bottom:80px; right:40px; z-index:200; color:rgba(255,255,255,0.3); font-size:0.85em; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:color 0.3s; font-family:inherit; }
+  .skip-btn:hover { color:rgba(255,255,255,0.8); }
+  
+  /* Particles */
+  .particle { position:fixed; width:2px; height:2px; background:rgba(196,48,43,0.3); border-radius:50%; z-index:3; pointer-events:none; animation:float 8s infinite; }
+  @keyframes float { 0%{transform:translateY(0) rotate(0deg);opacity:0} 20%{opacity:1} 80%{opacity:1} 100%{transform:translateY(-100vh) rotate(360deg);opacity:0} }
+  
+  /* Fade to black */
+  .fade-black { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:500; opacity:0; pointer-events:none; transition:opacity 2s ease; }
+  .fade-black.active { opacity:1; pointer-events:all; }
+</style>
+</head>
+<body>
+  <div class="letterbox-top"></div>
+  <div class="letterbox-bottom"></div>
+  
+  <div class="bg-slide" id="bg1" style="background-image:url('img/bg-hero.jpg')"></div>
+  <div class="bg-slide" id="bg2" style="background-image:url('img/bg-exploration.jpg')"></div>
+  <div class="bg-slide" id="bg3" style="background-image:url('img/bg-siege.jpg')"></div>
+  <div class="bg-slide" id="bg4" style="background-image:url('img/bg-magic-combat.jpg')"></div>
+  <div class="bg-slide" id="bg5" style="background-image:url('img/bg-hero-v3.jpg')"></div>
+  
+  <div class="overlay"></div>
+  
+  <div class="lore-container">
+    <div class="lore-text" id="lore"></div>
+  </div>
+  
+  <div class="skip-btn" id="skipBtn">[ SKIP ]</div>
+  <div class="fade-black" id="fadeBlack"></div>
+  
+  <audio id="themeAudio" preload="auto">
+    <source src="assets/audio/aoc-theme.mp3" type="audio/mpeg">
+  </audio>
+  
+  <script>
+    // Floating particles
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = (100 + Math.random() * 20) + '%';
+      p.style.animationDelay = Math.random() * 8 + 's';
+      p.style.animationDuration = (6 + Math.random() * 6) + 's';
+      p.style.width = p.style.height = (1 + Math.random() * 3) + 'px';
+      document.body.appendChild(p);
+    }
+    
+    const loreSlides = [
+      {
+        bg: 'bg1',
+        text: '<div class="lore-title">ARCHITECT OF CREATION</div>'
+      },
+      {
+        bg: 'bg1',
+        text: 'In the age before memory, the world was shaped by the <span class="lore-accent">Architects</span> — beings of immeasurable power who wove reality from the raw threads of creation itself.'
+      },
+      {
+        bg: 'bg2',
+        text: 'They carved mountains from chaos, filled oceans with starlight, and breathed life into the stillness. For millennia, their works stood as monuments to perfection.'
+      },
+      {
+        bg: 'bg3',
+        text: 'But perfection breeds ambition. The <span class="lore-accent">War of Fractures</span> shattered the world into kingdoms of blood and fire. The Architects vanished — some say destroyed, others say sleeping.'
+      },
+      {
+        bg: 'bg4',
+        text: 'Now, ancient magic stirs in forgotten places. Dark forces gather beneath a <span class="lore-accent">crimson moon</span>. The old seals weaken. Something is awakening.'
+      },
+      {
+        bg: 'bg5',
+        text: 'You are no ordinary soul. You carry the spark of creation within you — the power to reshape the world or let it fall to ruin. <span class="lore-accent">The choice is yours.</span>'
+      },
+      {
+        bg: 'bg5',
+        text: '<div class="lore-title">YOUR STORY BEGINS NOW</div>'
+      }
+    ];
+    
+    const loreEl = document.getElementById('lore');
+    const audio = document.getElementById('themeAudio');
+    const fadeBlack = document.getElementById('fadeBlack');
+    const skipBtn = document.getElementById('skipBtn');
+    let currentSlide = 0;
+    let running = true;
+    
+    // Start theme music
+    audio.volume = 0;
+    audio.play().catch(() => {});
+    // Fade in audio
+    let volFade = setInterval(() => {
+      if (audio.volume < 0.7) audio.volume = Math.min(0.7, audio.volume + 0.02);
+      else clearInterval(volFade);
+    }, 100);
+    
+    function showSlide(index) {
+      if (!running || index >= loreSlides.length) { endCinematic(); return; }
+      const slide = loreSlides[index];
+      
+      // Switch background
+      document.querySelectorAll('.bg-slide').forEach(el => el.classList.remove('active'));
+      document.getElementById(slide.bg)?.classList.add('active');
+      
+      // Fade out old text
+      loreEl.classList.remove('visible');
+      loreEl.classList.add('fading');
+      
+      setTimeout(() => {
+        loreEl.innerHTML = slide.text;
+        loreEl.classList.remove('fading');
+        
+        setTimeout(() => {
+          loreEl.classList.add('visible');
+          currentSlide = index;
+          
+          // Auto-advance
+          const duration = index === 0 ? 4000 : index === loreSlides.length - 1 ? 3500 : 6500;
+          setTimeout(() => showSlide(index + 1), duration);
+        }, 200);
+      }, 800);
+    }
+    
+    function endCinematic() {
+      if (!running) return;
+      running = false;
+      
+      // Fade out audio
+      let fadeOut = setInterval(() => {
+        if (audio.volume > 0.02) audio.volume = Math.max(0, audio.volume - 0.03);
+        else { clearInterval(fadeOut); audio.pause(); }
+      }, 80);
+      
+      // Fade to black
+      fadeBlack.classList.add('active');
+      
+      setTimeout(() => {
+        window.aocAPI.navigate('post-cinematic');
+      }, 2500);
+    }
+    
+    // Skip
+    skipBtn.addEventListener('click', endCinematic);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') endCinematic();
+    });
+    
+    // Start after brief delay
+    setTimeout(() => showSlide(0), 1500);
+  </script>
+</body>
+</html>

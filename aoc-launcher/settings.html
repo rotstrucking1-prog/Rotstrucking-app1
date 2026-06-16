@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Architect of Creation — Settings</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:100vw; height:100vh; overflow:hidden; font-family:'Inter',sans-serif; color:#c4b59a; background:#0a0a0a; }
+
+  .titlebar { position:fixed; top:0; left:0; right:0; height:32px; -webkit-app-region:drag; z-index:1000; display:flex; justify-content:flex-end; align-items:center; padding-right:4px; }
+  .titlebar-btn { -webkit-app-region:no-drag; width:36px; height:28px; border:none; background:transparent; color:#666; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:'Segoe MDL2 Assets',sans-serif; }
+  .titlebar-btn:hover { color:#fff; background:rgba(255,255,255,.1); }
+  .titlebar-btn.close:hover { background:#c0392b; color:#fff; }
+
+  .bg { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+  .bg img { width:100%; height:100%; object-fit:cover; filter:brightness(.25) blur(3px); }
+  .bg::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.2) 0%, rgba(0,0,0,.7) 80%); }
+
+  .main { position:relative; z-index:10; width:100%; height:100%; display:grid;
+    grid-template-columns:200px 1fr; grid-template-rows:60px 1fr 70px; padding:32px 24px 0; gap:0 20px; }
+
+  /* Header */
+  .header { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; }
+  .page-title { font-family:'Cinzel Decorative','Cinzel',serif; font-size:24px; font-weight:700; color:#c41e1e; letter-spacing:6px; text-shadow:0 0 30px rgba(196,30,30,.3); }
+  .btn-back { height:34px; padding:0 16px; background:transparent; border:1px solid rgba(138,115,80,.15); border-radius:3px; color:#8a7350; font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; cursor:pointer; transition:all .3s; }
+  .btn-back:hover { border-color:rgba(138,115,80,.3); color:#c4b59a; background:rgba(138,115,80,.05); }
+
+  /* Tab sidebar */
+  .tabs { display:flex; flex-direction:column; gap:4px; padding:10px 0; }
+  .tab-btn { height:44px; background:rgba(15,10,8,.6); border:1px solid rgba(138,115,80,.08); border-radius:4px; color:#5a4d3a; font-family:'Cinzel',serif; font-size:11px; font-weight:600; letter-spacing:3px; cursor:pointer; transition:all .3s; display:flex; align-items:center; padding:0 16px; gap:10px; text-align:left; }
+  .tab-btn:hover { border-color:rgba(138,115,80,.2); color:#c4b59a; background:rgba(20,14,10,.8); }
+  .tab-btn.active { background:rgba(196,30,30,.08); border-color:rgba(196,30,30,.3); color:#c41e1e; box-shadow:0 0 20px rgba(196,30,30,.08); }
+  .tab-icon { font-size:16px; width:24px; text-align:center; }
+
+  /* Content panel */
+  .content { background:rgba(12,8,6,.7); border:1px solid rgba(138,115,80,.1); border-radius:6px; padding:24px 28px; overflow-y:auto; }
+  .content::-webkit-scrollbar { width:6px; }
+  .content::-webkit-scrollbar-track { background:transparent; }
+  .content::-webkit-scrollbar-thumb { background:rgba(138,115,80,.2); border-radius:3px; }
+
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  /* Section headers */
+  .section-title { font-family:'Cinzel',serif; font-size:14px; font-weight:700; color:#c41e1e; letter-spacing:4px; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid rgba(196,30,30,.15); }
+  .section-title:not(:first-child) { margin-top:28px; }
+
+  /* Auto-detect banner */
+  .auto-detect-banner { display:flex; align-items:center; gap:16px; padding:14px 18px; background:rgba(196,30,30,.05); border:1px solid rgba(196,30,30,.2); border-radius:6px; margin-bottom:24px; }
+  .auto-detect-banner .icon { font-size:28px; }
+  .auto-detect-banner .info { flex:1; }
+  .auto-detect-banner .info h3 { font-family:'Cinzel',serif; font-size:13px; color:#c4b59a; letter-spacing:2px; margin-bottom:2px; }
+  .auto-detect-banner .info p { font-size:11px; color:#5a4d3a; }
+  .btn-autodetect { height:38px; padding:0 20px; background:linear-gradient(180deg,#8b0000 0%,#6b0000 100%); border:1px solid rgba(196,30,30,.4); border-radius:4px; color:#e8d5b5; font-family:'Cinzel',serif; font-size:11px; font-weight:600; letter-spacing:3px; cursor:pointer; transition:all .3s; white-space:nowrap; }
+  .btn-autodetect:hover { background:linear-gradient(180deg,#a01010 0%,#7b0000 100%); box-shadow:0 0 20px rgba(196,30,30,.3); }
+  .btn-autodetect.detecting { opacity:.6; pointer-events:none; }
+
+  .system-info { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; font-size:11px; }
+  .sys-item { display:flex; justify-content:space-between; padding:6px 10px; background:rgba(0,0,0,.3); border-radius:3px; border:1px solid rgba(138,115,80,.05); }
+  .sys-label { color:#5a4d3a; }
+  .sys-value { color:#c4b59a; font-weight:500; }
+
+  /* Setting rows */
+  .setting-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(138,115,80,.05); }
+  .setting-row:last-child { border-bottom:none; }
+  .setting-label { font-size:13px; color:#c4b59a; }
+  .setting-desc { font-size:10px; color:#5a4d3a; margin-top:2px; }
+
+  /* Select dropdown */
+  .setting-select { height:32px; min-width:180px; background:rgba(15,10,8,.8); border:1px solid rgba(138,115,80,.15); border-radius:4px; color:#c4b59a; font-family:'Inter',sans-serif; font-size:12px; padding:0 12px; cursor:pointer; outline:none; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7350'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
+  .setting-select:hover { border-color:rgba(138,115,80,.3); }
+  .setting-select:focus { border-color:rgba(196,30,30,.4); }
+  .setting-select option { background:#1a1210; color:#c4b59a; }
+
+  /* Quality buttons */
+  .quality-group { display:flex; gap:4px; }
+  .quality-btn { height:30px; padding:0 12px; background:rgba(15,10,8,.8); border:1px solid rgba(138,115,80,.1); border-radius:3px; color:#5a4d3a; font-size:10px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:all .25s; font-family:'Inter',sans-serif; }
+  .quality-btn:hover { border-color:rgba(138,115,80,.25); color:#c4b59a; }
+  .quality-btn.active { background:rgba(196,30,30,.15); border-color:rgba(196,30,30,.4); color:#c41e1e; }
+
+  /* Slider */
+  .setting-slider { width:180px; -webkit-appearance:none; height:6px; background:rgba(15,10,8,.8); border:1px solid rgba(138,115,80,.1); border-radius:3px; outline:none; }
+  .setting-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:linear-gradient(180deg,#c41e1e,#8b0000); border:2px solid rgba(196,30,30,.4); cursor:pointer; box-shadow:0 0 8px rgba(196,30,30,.3); }
+  .slider-group { display:flex; align-items:center; gap:10px; }
+  .slider-value { font-size:12px; color:#c41e1e; font-weight:600; min-width:35px; text-align:right; }
+
+  /* Toggle switch */
+  .toggle { position:relative; width:44px; height:24px; cursor:pointer; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .toggle-track { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(15,10,8,.8); border:1px solid rgba(138,115,80,.15); border-radius:12px; transition:all .3s; }
+  .toggle-knob { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#5a4d3a; transition:all .3s; }
+  .toggle input:checked ~ .toggle-track { background:rgba(196,30,30,.2); border-color:rgba(196,30,30,.4); }
+  .toggle input:checked ~ .toggle-knob { left:23px; background:#c41e1e; box-shadow:0 0 8px rgba(196,30,30,.3); }
+
+  /* Footer */
+  .footer { grid-column:1/-1; display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:10px 0; }
+  .btn-footer { height:42px; padding:0 28px; border-radius:4px; font-family:'Cinzel',serif; font-size:12px; font-weight:600; letter-spacing:3px; cursor:pointer; transition:all .3s; }
+  .btn-apply { background:linear-gradient(180deg,#8b0000 0%,#5a0000 100%); border:1px solid rgba(196,30,30,.4); color:#e8d5b5; }
+  .btn-apply:hover { background:linear-gradient(180deg,#a01010 0%,#6b0000 100%); box-shadow:0 0 20px rgba(196,30,30,.3); }
+  .btn-reset { background:transparent; border:1px solid rgba(138,115,80,.15); color:#8a7350; }
+  .btn-reset:hover { border-color:rgba(138,115,80,.3); color:#c4b59a; }
+
+  .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(196,30,30,.15); border:1px solid rgba(196,30,30,.3); border-radius:4px; padding:10px 24px; font-family:'Cinzel',serif; font-size:12px; color:#c41e1e; letter-spacing:3px; opacity:0; transition:all .4s; pointer-events:none; z-index:100; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* Keybind rows */
+  .keybind-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(138,115,80,.05); }
+  .keybind-label { font-size:12px; color:#c4b59a; }
+  .keybind-key { height:30px; min-width:80px; padding:0 12px; background:rgba(15,10,8,.8); border:1px solid rgba(138,115,80,.15); border-radius:3px; color:#8a7350; font-size:12px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .3s; }
+  .keybind-key:hover { border-color:rgba(196,30,30,.3); color:#c41e1e; }
+  .keybind-key.listening { border-color:rgba(196,30,30,.5); color:#c41e1e; animation:pulse 1s ease infinite; box-shadow:0 0 12px rgba(196,30,30,.2); }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.5} }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <button class="titlebar-btn" onclick="aocAPI.minimize()">&#xE921;</button>
+  <button class="titlebar-btn close" onclick="aocAPI.close()">&#xE8BB;</button>
+</div>
+
+<div class="bg"><img src="img/bg-siege.jpg" alt=""></div>
+
+<div class="main">
+  <div class="header">
+    <div class="page-title">⚙ SETTINGS</div>
+    <button class="btn-back" onclick="goBack()">✦ BACK</button>
+  </div>
+
+  <!-- Tab Sidebar -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="video" onclick="switchTab('video')"><span class="tab-icon">🖥</span> VIDEO</button>
+    <button class="tab-btn" data-tab="audio" onclick="switchTab('audio')"><span class="tab-icon">🔊</span> AUDIO</button>
+    <button class="tab-btn" data-tab="controls" onclick="switchTab('controls')"><span class="tab-icon">🎮</span> CONTROLS</button>
+    <button class="tab-btn" data-tab="gameplay" onclick="switchTab('gameplay')"><span class="tab-icon">⚔</span> GAMEPLAY</button>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content">
+
+    <!-- ═══════════ VIDEO TAB ═══════════ -->
+    <div class="tab-content active" id="tab-video">
+      <div class="auto-detect-banner">
+        <div class="icon">🔍</div>
+        <div class="info">
+          <h3>AUTO-DETECT SETTINGS</h3>
+          <p>Analyze your hardware and optimize for the best performance</p>
+        </div>
+        <button class="btn-autodetect" id="btnAutoDetect" onclick="autoDetect()">DETECT</button>
+      </div>
+      <div class="system-info" id="systemInfo" style="display:none;"></div>
+
+      <div class="section-title">DISPLAY</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Resolution</div><div class="setting-desc">Screen resolution</div></div>
+        <select class="setting-select" id="resolution" onchange="markDirty()">
+          <option value="1280x720">1280 × 720 (HD)</option>
+          <option value="1600x900">1600 × 900 (HD+)</option>
+          <option value="1920x1080" selected>1920 × 1080 (Full HD)</option>
+          <option value="2560x1440">2560 × 1440 (QHD)</option>
+          <option value="3440x1440">3440 × 1440 (Ultrawide)</option>
+          <option value="3840x2160">3840 × 2160 (4K UHD)</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Window Mode</div><div class="setting-desc">How the game window is displayed</div></div>
+        <select class="setting-select" id="windowMode" onchange="markDirty()">
+          <option value="fullscreen">Fullscreen</option>
+          <option value="borderless">Borderless Windowed</option>
+          <option value="windowed" selected>Windowed</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Frame Rate Limit</div><div class="setting-desc">Cap maximum FPS</div></div>
+        <select class="setting-select" id="fpsLimit" onchange="markDirty()">
+          <option value="30">30 FPS</option>
+          <option value="60" selected>60 FPS</option>
+          <option value="90">90 FPS</option>
+          <option value="120">120 FPS</option>
+          <option value="144">144 FPS</option>
+          <option value="165">165 FPS</option>
+          <option value="240">240 FPS</option>
+          <option value="0">Unlimited</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">VSync</div><div class="setting-desc">Synchronize frame rate with monitor refresh rate</div></div>
+        <label class="toggle"><input type="checkbox" id="vsync" onchange="markDirty()"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Dynamic Resolution</div><div class="setting-desc">Automatically lower resolution to maintain frame rate</div></div>
+        <label class="toggle"><input type="checkbox" id="dynamicRes" onchange="markDirty()"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+
+      <div class="section-title">QUALITY PRESET</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Overall Quality</div><div class="setting-desc">Sets all quality options at once</div></div>
+        <div class="quality-group" id="presetGroup">
+          <button class="quality-btn" data-q="0" onclick="applyPreset(0)">LOW</button>
+          <button class="quality-btn" data-q="1" onclick="applyPreset(1)">MED</button>
+          <button class="quality-btn active" data-q="2" onclick="applyPreset(2)">HIGH</button>
+          <button class="quality-btn" data-q="3" onclick="applyPreset(3)">EPIC</button>
+          <button class="quality-btn" data-q="4" onclick="applyPreset(4)">CINE</button>
+        </div>
+      </div>
+
+      <div class="section-title">QUALITY DETAILS</div>
+      <div id="qualityDetails"></div>
+
+      <div class="section-title">RESOLUTION SCALE</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Resolution Scale</div><div class="setting-desc">Render at lower resolution for performance (100% = native)</div></div>
+        <div class="slider-group"><input type="range" class="setting-slider" id="resScale" min="50" max="100" value="100" oninput="updateSliderVal(this,'resScaleVal');markDirty()"><span class="slider-value" id="resScaleVal">100%</span></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ AUDIO TAB ═══════════ -->
+    <div class="tab-content" id="tab-audio">
+      <div class="section-title">VOLUME</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Master Volume</div><div class="setting-desc">Overall game audio</div></div>
+        <div class="slider-group"><input type="range" class="setting-slider" id="volMaster" min="0" max="100" value="80" oninput="updateSliderVal(this,'volMasterVal')"><span class="slider-value" id="volMasterVal">80</span></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Music</div><div class="setting-desc">Background music and ambience tracks</div></div>
+        <div class="slider-group"><input type="range" class="setting-slider" id="volMusic" min="0" max="100" value="70" oninput="updateSliderVal(this,'volMusicVal')"><span class="slider-value" id="volMusicVal">70</span></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Sound Effects</div><div class="setting-desc">Combat, footsteps, abilities, UI sounds</div></div>
+        <div class="slider-group"><input type="range" class="setting-slider" id="volSFX" min="0" max="100" value="85" oninput="updateSliderVal(this,'volSFXVal')"><span class="slider-value" id="volSFXVal">85</span></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Voice / Dialogue</div><div class="setting-desc">NPC dialogue and player voice</div></div>
+        <div class="slider-group"><input type="range" class="setting-slider" id="volVoice" min="0" max="100" value="90" oninput="updateSliderVal(this,'volVoiceVal')"><span class="slider-value" id="volVoiceVal">90</span></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Ambient</div><div class="setting-desc">Wind, rain, environmental sounds</div></div>
+        <div class="slider-group"><input type="range" class="setting-slider" id="volAmbient" min="0" max="100" value="60" oninput="updateSliderVal(this,'volAmbientVal')"><span class="slider-value" id="volAmbientVal">60</span></div>
+      </div>
+
+      <div class="section-title">OUTPUT</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Audio Output</div><div class="setting-desc">Select playback device</div></div>
+        <select class="setting-select" id="audioOutput">
+          <option>System Default</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Audio Quality</div><div class="setting-desc">Higher quality uses more CPU</div></div>
+        <div class="quality-group">
+          <button class="quality-btn" onclick="setAudioQ(this,0)">LOW</button>
+          <button class="quality-btn active" onclick="setAudioQ(this,1)">MED</button>
+          <button class="quality-btn" onclick="setAudioQ(this,2)">HIGH</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Subtitles</div><div class="setting-desc">Show dialogue text on screen</div></div>
+        <label class="toggle"><input type="checkbox" id="subtitles" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+    </div>
+
+    <!-- ═══════════ CONTROLS TAB ═══════════ -->
+    <div class="tab-content" id="tab-controls">
+      <div class="section-title">MOUSE</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Mouse Sensitivity</div><div class="setting-desc">Camera rotation speed</div></div>
+        <div class="slider-group"><input type="range" class="setting-slider" id="mouseSens" min="1" max="100" value="50" oninput="updateSliderVal(this,'mouseSensVal')"><span class="slider-value" id="mouseSensVal">50</span></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Invert Y-Axis</div><div class="setting-desc">Reverse vertical camera movement</div></div>
+        <label class="toggle"><input type="checkbox" id="invertY"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Invert X-Axis</div><div class="setting-desc">Reverse horizontal camera movement</div></div>
+        <label class="toggle"><input type="checkbox" id="invertX"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Camera Smoothing</div><div class="setting-desc">Smooth camera transitions</div></div>
+        <label class="toggle"><input type="checkbox" id="camSmooth" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+
+      <div class="section-title">KEY BINDINGS</div>
+      <div id="keybindList"></div>
+    </div>
+
+    <!-- ═══════════ GAMEPLAY TAB ═══════════ -->
+    <div class="tab-content" id="tab-gameplay">
+      <div class="section-title">INTERFACE</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Language</div><div class="setting-desc">Game language</div></div>
+        <select class="setting-select" id="language">
+          <option value="en" selected>English</option>
+          <option value="de">Deutsch</option>
+          <option value="fr">Français</option>
+          <option value="es">Español</option>
+          <option value="pt">Português</option>
+          <option value="ru">Русский</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Show FPS Counter</div><div class="setting-desc">Display frames per second on screen</div></div>
+        <label class="toggle"><input type="checkbox" id="showFPS"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Show Ping</div><div class="setting-desc">Display network latency</div></div>
+        <label class="toggle"><input type="checkbox" id="showPing" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+
+      <div class="section-title">COMBAT</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Show Damage Numbers</div><div class="setting-desc">Floating damage/heal numbers</div></div>
+        <label class="toggle"><input type="checkbox" id="dmgNumbers" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Show Nameplates</div><div class="setting-desc">Player and NPC names above characters</div></div>
+        <label class="toggle"><input type="checkbox" id="nameplates" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Camera Shake</div><div class="setting-desc">Shake camera on big hits and explosions</div></div>
+        <label class="toggle"><input type="checkbox" id="camShake" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Auto-Target</div><div class="setting-desc">Automatically target nearest enemy in combat</div></div>
+        <label class="toggle"><input type="checkbox" id="autoTarget"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Show Health Bars</div><div class="setting-desc">Display HP bars on enemies and allies</div></div>
+        <label class="toggle"><input type="checkbox" id="healthBars" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+
+      <div class="section-title">SOCIAL</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Chat Timestamps</div><div class="setting-desc">Show time in chat messages</div></div>
+        <label class="toggle"><input type="checkbox" id="chatTime"><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Chat Filter</div><div class="setting-desc">Filter profanity in chat</div></div>
+        <label class="toggle"><input type="checkbox" id="chatFilter" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Show Trade Requests</div><div class="setting-desc">Receive trade notifications from other players</div></div>
+        <label class="toggle"><input type="checkbox" id="tradeReqs" checked><span class="toggle-track"></span><span class="toggle-knob"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="btn-footer btn-reset" onclick="resetDefaults()">RESET DEFAULTS</button>
+    <button class="btn-footer btn-apply" onclick="applySettings()">APPLY & SAVE</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ══════════════════════════════════
+  //  Quality settings config
+  // ══════════════════════════════════
+  const QUALITY_NAMES = ['Low','Medium','High','Epic','Cinematic'];
+  const QUALITY_SETTINGS = [
+    { key:'viewDistance',  label:'View Distance',       desc:'How far objects render' },
+    { key:'antiAliasing',  label:'Anti-Aliasing',       desc:'Smooth jagged edges (TSR/FXAA/TAA)' },
+    { key:'shadows',       label:'Shadow Quality',      desc:'Shadow resolution and cascades' },
+    { key:'globalIllum',   label:'Global Illumination',  desc:'Lumen/screen-space light bouncing' },
+    { key:'reflections',   label:'Reflections',          desc:'Lumen/SSR reflection quality' },
+    { key:'postProcess',   label:'Post Processing',      desc:'Bloom, DOF, motion blur' },
+    { key:'textures',      label:'Textures',             desc:'Texture resolution and filtering' },
+    { key:'effects',       label:'Effects',              desc:'Particle quality and count' },
+    { key:'foliage',       label:'Foliage',              desc:'Grass and tree density/quality' },
+    { key:'shading',       label:'Shading',              desc:'Material complexity and detail' },
+  ];
+
+  let currentQuality = {};
+  let isDirty = false;
+
+  // Build quality detail rows
+  function buildQualityDetails() {
+    const container = document.getElementById('qualityDetails');
+    let html = '';
+    QUALITY_SETTINGS.forEach(s => {
+      currentQuality[s.key] = 2; // Default: High
+      html += `<div class="setting-row"><div><div class="setting-label">${s.label}</div><div class="setting-desc">${s.desc}</div></div><div class="quality-group" id="qg-${s.key}">`;
+      for (let i = 0; i < 5; i++) {
+        html += `<button class="quality-btn${i===2?' active':''}" data-q="${i}" onclick="setQuality('${s.key}',${i},this)">${QUALITY_NAMES[i].substr(0,i<4?QUALITY_NAMES[i].length:4).toUpperCase()}</button>`;
+      }
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function setQuality(key, level, btn) {
+    currentQuality[key] = level;
+    const group = btn.parentElement;
+    group.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Clear preset highlight since custom
+    document.querySelectorAll('#presetGroup .quality-btn').forEach(b => b.classList.remove('active'));
+    markDirty();
+  }
+
+  function applyPreset(level) {
+    document.querySelectorAll('#presetGroup .quality-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.q) === level));
+    QUALITY_SETTINGS.forEach(s => {
+      currentQuality[s.key] = level;
+      const group = document.getElementById('qg-' + s.key);
+      if (group) group.querySelectorAll('.quality-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.q) === level));
+    });
+    markDirty();
+  }
+
+  // ══════════════════════════════════
+  //  Keybindings
+  // ══════════════════════════════════
+  const DEFAULT_KEYBINDS = [
+    { action:'Move Forward', key:'W' }, { action:'Move Backward', key:'S' },
+    { action:'Move Left', key:'A' }, { action:'Move Right', key:'D' },
+    { action:'Jump', key:'Space' }, { action:'Sprint', key:'LShift' },
+    { action:'Crouch', key:'C' }, { action:'Dodge Roll', key:'V' },
+    { action:'Attack', key:'LMB' }, { action:'Block / Parry', key:'RMB' },
+    { action:'Spell Slot 1', key:'1' }, { action:'Spell Slot 2', key:'2' },
+    { action:'Spell Slot 3', key:'3' }, { action:'Spell Slot 4', key:'4' },
+    { action:'Spell Slot 5', key:'5' }, { action:'Spell Slot 6', key:'6' },
+    { action:'Spell Slot 7', key:'7' }, { action:'Spell Slot 8', key:'8' },
+    { action:'Inventory', key:'I' }, { action:'Spellbook', key:'K' },
+    { action:'Character Sheet', key:'P' }, { action:'Map', key:'M' },
+    { action:'Chat', key:'Enter' }, { action:'Interact', key:'E' },
+    { action:'Radial Menu', key:'Q' }, { action:'Toggle Combat', key:'Tab' },
+    { action:'Sheathe Weapon', key:'X' }, { action:'Screenshot', key:'F12' },
+  ];
+
+  let keybinds = [...DEFAULT_KEYBINDS.map(k => ({...k}))];
+  let listeningIndex = -1;
+
+  function buildKeybinds() {
+    const container = document.getElementById('keybindList');
+    let html = '';
+    keybinds.forEach((kb, i) => {
+      html += `<div class="keybind-row"><span class="keybind-label">${kb.action}</span><button class="keybind-key" id="kb-${i}" onclick="startListening(${i})">${kb.key}</button></div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function startListening(index) {
+    if (listeningIndex >= 0) {
+      document.getElementById('kb-' + listeningIndex).classList.remove('listening');
+      document.getElementById('kb-' + listeningIndex).textContent = keybinds[listeningIndex].key;
+    }
+    listeningIndex = index;
+    const btn = document.getElementById('kb-' + index);
+    btn.classList.add('listening');
+    btn.textContent = '... press a key ...';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (listeningIndex < 0) return;
+    e.preventDefault();
+    const keyMap = { ' ':'Space','Shift':'LShift','Control':'LCtrl','Alt':'LAlt','Escape':'Esc',
+      'ArrowUp':'Up','ArrowDown':'Down','ArrowLeft':'Left','ArrowRight':'Right' };
+    let keyName = keyMap[e.key] || e.key.length === 1 ? e.key.toUpperCase() : (keyMap[e.key] || e.key);
+    if (e.key === 'Escape') { keyName = keybinds[listeningIndex].key; } // Cancel
+    else { keybinds[listeningIndex].key = keyName; markDirty(); }
+    const btn = document.getElementById('kb-' + listeningIndex);
+    btn.classList.remove('listening');
+    btn.textContent = keyName;
+    listeningIndex = -1;
+  });
+
+  document.addEventListener('mousedown', e => {
+    if (listeningIndex < 0) return;
+    if (e.target.classList.contains('keybind-key')) return;
+    e.preventDefault();
+    const mouseMap = { 0:'LMB', 1:'MMB', 2:'RMB', 3:'MB4', 4:'MB5' };
+    keybinds[listeningIndex].key = mouseMap[e.button] || ('MB'+e.button);
+    const btn = document.getElementById('kb-' + listeningIndex);
+    btn.classList.remove('listening');
+    btn.textContent = keybinds[listeningIndex].key;
+    listeningIndex = -1;
+    markDirty();
+  });
+
+  // ══════════════════════════════════
+  //  Auto-detect
+  // ══════════════════════════════════
+  async function autoDetect() {
+    const btn = document.getElementById('btnAutoDetect');
+    btn.classList.add('detecting');
+    btn.textContent = 'DETECTING...';
+
+    // Gather system info via Electron
+    const sysInfo = await aocAPI.getSystemInfo();
+
+    // Display system info
+    const infoDiv = document.getElementById('systemInfo');
+    infoDiv.style.display = 'grid';
+    infoDiv.innerHTML = `
+      <div class="sys-item"><span class="sys-label">GPU</span><span class="sys-value">${sysInfo.gpu || 'Unknown'}</span></div>
+      <div class="sys-item"><span class="sys-label">VRAM</span><span class="sys-value">${sysInfo.vram || 'Unknown'}</span></div>
+      <div class="sys-item"><span class="sys-label">CPU</span><span class="sys-value">${sysInfo.cpu || 'Unknown'}</span></div>
+      <div class="sys-item"><span class="sys-label">RAM</span><span class="sys-value">${sysInfo.ram || 'Unknown'}</span></div>
+    `;
+
+    // Determine recommended preset based on VRAM
+    let preset = 2; // Default: High
+    const vramGB = sysInfo.vramMB ? sysInfo.vramMB / 1024 : 4;
+    if (vramGB >= 10) preset = 4;       // Cinematic: 10+ GB (RTX 3080+)
+    else if (vramGB >= 7) preset = 3;   // Epic: 8 GB (RTX 3070, etc.)
+    else if (vramGB >= 5) preset = 2;   // High: 6 GB
+    else if (vramGB >= 3) preset = 1;   // Medium: 4 GB
+    else preset = 0;                     // Low: <3 GB
+
+    // Set resolution based on VRAM
+    const resSel = document.getElementById('resolution');
+    if (vramGB >= 10) resSel.value = '2560x1440';
+    else if (vramGB >= 6) resSel.value = '1920x1080';
+    else resSel.value = '1600x900';
+
+    // Apply preset
+    applyPreset(preset);
+
+    // Set FPS limit
+    const fpsSel = document.getElementById('fpsLimit');
+    if (vramGB >= 10) fpsSel.value = '144';
+    else if (vramGB >= 6) fpsSel.value = '60';
+    else fpsSel.value = '60';
+
+    btn.classList.remove('detecting');
+    btn.textContent = 'DETECT';
+    showToast('Settings optimized for your hardware — ' + QUALITY_NAMES[preset] + ' quality');
+  }
+
+  // ══════════════════════════════════
+  //  Helpers
+  // ══════════════════════════════════
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+  }
+
+  function updateSliderVal(slider, valId) {
+    const el = document.getElementById(valId);
+    el.textContent = valId.includes('res') ? slider.value + '%' : slider.value;
+  }
+
+  function markDirty() { isDirty = true; }
+
+  function setAudioQ(btn, level) {
+    btn.parentElement.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  async function applySettings() {
+    const settings = gatherSettings();
+    await aocAPI.saveSettings(settings);
+    isDirty = false;
+    showToast('Settings saved successfully');
+  }
+
+  function gatherSettings() {
+    return {
+      video: {
+        resolution: document.getElementById('resolution').value,
+        windowMode: document.getElementById('windowMode').value,
+        fpsLimit: parseInt(document.getElementById('fpsLimit').value),
+        vsync: document.getElementById('vsync').checked,
+        dynamicRes: document.getElementById('dynamicRes').checked,
+        resolutionScale: parseInt(document.getElementById('resScale').value),
+        quality: { ...currentQuality },
+      },
+      audio: {
+        master: parseInt(document.getElementById('volMaster').value),
+        music: parseInt(document.getElementById('volMusic').value),
+        sfx: parseInt(document.getElementById('volSFX').value),
+        voice: parseInt(document.getElementById('volVoice').value),
+        ambient: parseInt(document.getElementById('volAmbient').value),
+        subtitles: document.getElementById('subtitles').checked,
+      },
+      controls: {
+        mouseSensitivity: parseInt(document.getElementById('mouseSens').value),
+        invertY: document.getElementById('invertY').checked,
+        invertX: document.getElementById('invertX').checked,
+        cameraSmoothing: document.getElementById('camSmooth').checked,
+        keybinds: keybinds,
+      },
+      gameplay: {
+        language: document.getElementById('language').value,
+        showFPS: document.getElementById('showFPS').checked,
+        showPing: document.getElementById('showPing').checked,
+        damageNumbers: document.getElementById('dmgNumbers').checked,
+        nameplates: document.getElementById('nameplates').checked,
+        cameraShake: document.getElementById('camShake').checked,
+        autoTarget: document.getElementById('autoTarget').checked,
+        healthBars: document.getElementById('healthBars').checked,
+        chatTimestamps: document.getElementById('chatTime').checked,
+        chatFilter: document.getElementById('chatFilter').checked,
+        tradeRequests: document.getElementById('tradeReqs').checked,
+      }
+    };
+  }
+
+  async function resetDefaults() {
+    applyPreset(2); // High
+    document.getElementById('resolution').value = '1920x1080';
+    document.getElementById('windowMode').value = 'windowed';
+    document.getElementById('fpsLimit').value = '60';
+    document.getElementById('vsync').checked = false;
+    document.getElementById('dynamicRes').checked = false;
+    document.getElementById('resScale').value = 100;
+    document.getElementById('resScaleVal').textContent = '100%';
+    document.getElementById('volMaster').value = 80; document.getElementById('volMasterVal').textContent = '80';
+    document.getElementById('volMusic').value = 70; document.getElementById('volMusicVal').textContent = '70';
+    document.getElementById('volSFX').value = 85; document.getElementById('volSFXVal').textContent = '85';
+    document.getElementById('volVoice').value = 90; document.getElementById('volVoiceVal').textContent = '90';
+    document.getElementById('volAmbient').value = 60; document.getElementById('volAmbientVal').textContent = '60';
+    document.getElementById('mouseSens').value = 50; document.getElementById('mouseSensVal').textContent = '50';
+    keybinds = [...DEFAULT_KEYBINDS.map(k => ({...k}))];
+    buildKeybinds();
+    showToast('Settings reset to defaults');
+  }
+
+  function goBack() {
+    // Go to the screen user came from (server-select by default)
+    aocAPI.navigate('server-select');
+  }
+
+  // Load saved settings on page load
+  async function loadSettings() {
+    const settings = await aocAPI.loadSettings();
+    if (!settings) return;
+
+    // Video
+    if (settings.video) {
+      const v = settings.video;
+      if (v.resolution) document.getElementById('resolution').value = v.resolution;
+      if (v.windowMode) document.getElementById('windowMode').value = v.windowMode;
+      if (v.fpsLimit !== undefined) document.getElementById('fpsLimit').value = v.fpsLimit;
+      if (v.vsync) document.getElementById('vsync').checked = v.vsync;
+      if (v.dynamicRes) document.getElementById('dynamicRes').checked = v.dynamicRes;
+      if (v.resolutionScale) { document.getElementById('resScale').value = v.resolutionScale; document.getElementById('resScaleVal').textContent = v.resolutionScale + '%'; }
+      if (v.quality) {
+        Object.entries(v.quality).forEach(([key, level]) => {
+          currentQuality[key] = level;
+          const group = document.getElementById('qg-' + key);
+          if (group) group.querySelectorAll('.quality-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.q) === level));
+        });
+      }
+    }
+
+    // Audio
+    if (settings.audio) {
+      const a = settings.audio;
+      ['master','music','sfx','voice','ambient'].forEach(k => {
+        const id = 'vol' + k.charAt(0).toUpperCase() + k.slice(1);
+        const el = document.getElementById(id);
+        if (el && a[k] !== undefined) { el.value = a[k]; document.getElementById(id + 'Val').textContent = a[k]; }
+      });
+      if (a.subtitles !== undefined) document.getElementById('subtitles').checked = a.subtitles;
+    }
+
+    // Controls
+    if (settings.controls) {
+      const c = settings.controls;
+      if (c.mouseSensitivity) { document.getElementById('mouseSens').value = c.mouseSensitivity; document.getElementById('mouseSensVal').textContent = c.mouseSensitivity; }
+      if (c.invertY) document.getElementById('invertY').checked = c.invertY;
+      if (c.invertX) document.getElementById('invertX').checked = c.invertX;
+      if (c.cameraSmoothing !== undefined) document.getElementById('camSmooth').checked = c.cameraSmoothing;
+      if (c.keybinds) { keybinds = c.keybinds; buildKeybinds(); }
+    }
+
+    // Gameplay
+    if (settings.gameplay) {
+      const g = settings.gameplay;
+      if (g.language) document.getElementById('language').value = g.language;
+      ['showFPS','showPing','dmgNumbers','nameplates','camShake','autoTarget','healthBars','chatTime','chatFilter','tradeReqs'].forEach(id => {
+        const map = { showFPS:'showFPS',showPing:'showPing',dmgNumbers:'damageNumbers',nameplates:'nameplates',camShake:'cameraShake',autoTarget:'autoTarget',healthBars:'healthBars',chatTime:'chatTimestamps',chatFilter:'chatFilter',tradeReqs:'tradeRequests' };
+        const el = document.getElementById(id);
+        if (el && g[map[id]] !== undefined) el.checked = g[map[id]];
+      });
+    }
+  }
+
+  // Init
+  buildQualityDetails();
+  buildKeybinds();
+  loadSettings();
+</script>
+
+  <!-- Theme music -->
+  <audio id="bgTheme" autoplay loop preload="auto" style="display:none">
+    <source src="assets/audio/aoc-theme.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function() {
+      const a = document.getElementById('bgTheme');
+      if (a) {
+        a.volume = 0;
+        a.play().catch(() => {});
+        let fi = setInterval(() => {
+          if (a.volume < 0.15) a.volume = Math.min(0.15, a.volume + 0.005);
+          else clearInterval(fi);
+        }, 100);
+      }
+    })();
+  </script>
+
+</body>
+</html>

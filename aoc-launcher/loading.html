@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Architect of Creation — Loading</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:100vw; height:100vh; overflow:hidden; font-family:'Inter',sans-serif; color:#c4b59a; background:#0a0a0a; display:flex; align-items:center; justify-content:center; }
+
+  .titlebar { position:fixed; top:0; left:0; right:0; height:32px; -webkit-app-region:drag; z-index:1000; display:flex; justify-content:flex-end; align-items:center; padding-right:4px; }
+  .titlebar-btn { -webkit-app-region:no-drag; width:36px; height:28px; border:none; background:transparent; color:#666; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:'Segoe MDL2 Assets',sans-serif; }
+  .titlebar-btn:hover { color:#fff; background:rgba(255,255,255,.1); }
+  .titlebar-btn.close:hover { background:#c0392b; color:#fff; }
+
+  .bg { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+  .bg img { width:100%; height:100%; object-fit:cover; }
+  .bg::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,.1) 40%,rgba(0,0,0,.2) 70%,rgba(0,0,0,.95) 100%); }
+
+  .content { position:relative; z-index:1; text-align:center; width:100%; padding:0 60px; margin-top:30vh; }
+
+  .logo-text { font-family:'Cinzel Decorative','Cinzel',serif; font-size:48px; font-weight:900; color:#c41e1e; letter-spacing:12px; text-shadow:0 0 60px rgba(196,30,30,.4),0 0 120px rgba(196,30,30,.2),0 4px 8px rgba(0,0,0,.8); margin-bottom:8px; line-height:1; }
+  .logo-sub { font-family:'Cinzel',serif; font-size:14px; font-weight:600; letter-spacing:10px; color:#8a7350; text-shadow:0 2px 4px rgba(0,0,0,.6); margin-bottom:60px; }
+
+  .loading-container { max-width:600px; margin:0 auto; }
+
+  .loading-tip { font-size:12px; color:#5a4d3a; letter-spacing:2px; margin-bottom:16px; font-style:italic; min-height:20px; transition:opacity .5s; }
+
+  .progress-outer { height:8px; background:rgba(0,0,0,.6); border-radius:4px; border:1px solid rgba(138,115,80,.15); overflow:hidden; margin-bottom:12px; position:relative; }
+  .progress-bar { height:100%; width:0%; background:linear-gradient(90deg,#8b0000,#c41e1e,#e05050,#c41e1e); border-radius:3px; transition:width .3s ease; position:relative; box-shadow:0 0 12px rgba(196,30,30,.5); }
+  .progress-bar::after { content:''; position:absolute; top:0; right:0; width:60px; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent); animation:shimmer 1.5s infinite; }
+  @keyframes shimmer { 0% { transform:translateX(-60px); } 100% { transform:translateX(60px); } }
+
+  .progress-info { display:flex; justify-content:space-between; align-items:center; }
+  .progress-text { font-size:11px; color:#5a4d3a; letter-spacing:2px; text-transform:uppercase; }
+  .progress-pct { font-family:'Cinzel',serif; font-size:16px; font-weight:700; color:#c41e1e; }
+
+  /* Floating embers */
+  .ember { position:fixed; width:3px; height:3px; background:#c41e1e; border-radius:50%; opacity:0; z-index:2; animation:float-up linear infinite; box-shadow:0 0 6px rgba(196,30,30,.6); }
+  @keyframes float-up {
+    0% { opacity:0; transform:translateY(0) translateX(0); }
+    10% { opacity:.8; }
+    90% { opacity:.3; }
+    100% { opacity:0; transform:translateY(-100vh) translateX(var(--drift)); }
+  }
+
+  .version { position:fixed; bottom:12px; right:16px; font-size:9px; color:#3d2819; letter-spacing:2px; z-index:1; }
+</style>
+</head>
+<body>
+  <div class="titlebar">
+    <button class="titlebar-btn" onclick="aocAPI.minimize()">&#xE949;</button>
+    <button class="titlebar-btn close" onclick="aocAPI.close()">&#xE106;</button>
+  </div>
+  <div class="bg"><img src="img/bg-loading.jpg" alt=""></div>
+
+  <div class="content">
+    <div class="logo-text">Architect of Creation</div>
+    <div class="logo-sub">MMORPG</div>
+
+    <div class="loading-container">
+      <div class="loading-tip" id="tip">Tip: Combining fire and ice magic creates devastating Frostfire spells...</div>
+      <div class="progress-outer">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-info">
+        <div class="progress-text" id="loadingText">Connecting to realm...</div>
+        <div class="progress-pct" id="progressPct">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="version">v0.1.0-alpha</div>
+
+  <script>
+    // Create floating embers
+    for (let i=0; i<20; i++) {
+      const e = document.createElement('div');
+      e.className = 'ember';
+      e.style.left = Math.random()*100+'%';
+      e.style.bottom = '-10px';
+      e.style.setProperty('--drift', (Math.random()*100-50)+'px');
+      e.style.animationDuration = (4+Math.random()*6)+'s';
+      e.style.animationDelay = Math.random()*8+'s';
+      e.style.width = (2+Math.random()*3)+'px';
+      e.style.height = e.style.width;
+      document.body.appendChild(e);
+    }
+
+    const TIPS = [
+      'Tip: Combining fire and ice magic creates devastating Frostfire spells...',
+      'Tip: Dwarven smiths can forge weapons that rival the gods themselves...',
+      'Tip: The deeper you venture into the Shadowmere, the more dangerous the creatures become...',
+      'Tip: Joining a guild unlocks powerful group abilities and shared crafting stations...',
+      'Tip: Some creatures are only vulnerable to specific schools of magic...',
+      'Tip: The ancient ruins hold secrets that predate the Age of Creation...',
+      'Tip: Orcs gain a damage bonus when fighting alongside other Orcs...',
+      'Tip: Elven mages can channel moonlight to enhance their spells at night...',
+      'Tip: The Architect\'s Tower appears only to those who have mastered three schools of magic...',
+      'Tip: Trading between regions can make you wealthy — prices vary by supply and demand...',
+      'Tip: Some NPCs remember how you treated them and will react accordingly...',
+      'Tip: Siege warfare requires careful preparation — build defenses before the enemy arrives...'
+    ];
+
+    const PHASES = [
+      { pct:15, text:'Connecting to realm...' },
+      { pct:30, text:'Loading world data...' },
+      { pct:45, text:'Preparing terrain...' },
+      { pct:60, text:'Spawning entities...' },
+      { pct:75, text:'Loading player data...' },
+      { pct:88, text:'Initializing systems...' },
+      { pct:95, text:'Almost ready...' },
+      { pct:100, text:'Entering the realm...' }
+    ];
+
+    let currentPhase = 0;
+    let currentProgress = 0;
+    let tipIndex = 0;
+
+    // Rotate tips
+    setInterval(() => {
+      const tip = document.getElementById('tip');
+      tip.style.opacity = 0;
+      setTimeout(() => {
+        tipIndex = (tipIndex+1) % TIPS.length;
+        tip.textContent = TIPS[tipIndex];
+        tip.style.opacity = 1;
+      }, 500);
+    }, 4000);
+
+    // Simulate loading
+    function advanceLoading() {
+      if (currentPhase >= PHASES.length) {
+        // Loading complete — launch game
+        setTimeout(() => {
+          // Stop all music before launching game
+          try {
+            document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; a.src = ''; });
+          } catch(e) {}
+          aocAPI.launchGame();
+        }, 1500);
+        return;
+      }
+      const target = PHASES[currentPhase].pct;
+      const text = PHASES[currentPhase].text;
+      document.getElementById('loadingText').textContent = text;
+
+      const step = () => {
+        if (currentProgress < target) {
+          currentProgress += Math.random() * 3 + 0.5;
+          if (currentProgress > target) currentProgress = target;
+          document.getElementById('progressBar').style.width = currentProgress + '%';
+          document.getElementById('progressPct').textContent = Math.round(currentProgress) + '%';
+          setTimeout(step, 50 + Math.random() * 150);
+        } else {
+          currentPhase++;
+          setTimeout(advanceLoading, 300 + Math.random() * 700);
+        }
+      };
+      step();
+    }
+
+    // Start loading after a brief pause
+    setTimeout(advanceLoading, 800);
+  </script>
+
+  <!-- Theme music -->
+  <audio id="bgTheme" autoplay loop preload="auto" style="display:none">
+    <source src="assets/audio/aoc-theme.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function() {
+      const a = document.getElementById('bgTheme');
+      if (a) {
+        a.volume = 0;
+        a.play().catch(() => {});
+        let fi = setInterval(() => {
+          if (a.volume < 0.35) a.volume = Math.min(0.35, a.volume + 0.005);
+          else clearInterval(fi);
+        }, 100);
+      }
+    })();
+  </script>
+
+</body>
+</html>
